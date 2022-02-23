@@ -7,18 +7,26 @@ import meowv64.core._
 
 /** BHT prediction type: branch taken, branch not taken, or missing in BHT
   */
-object BHTPrediction extends ChiselEnum {
+object BranchPrediction extends ChiselEnum {
   val taken, notTaken, missed = Value
 }
 
-class BHTSlot(implicit val coredef: CoreDef) extends Bundle {
+class MicroBTBEntry(implicit val coredef: CoreDef) extends Bundle {
   val OFFSET_WIDTH = log2Ceil(coredef.L1I.TRANSFER_WIDTH)
   val INDEX_WIDTH = log2Ceil(coredef.BHT_SIZE)
 
   val TAG_WIDTH = coredef.VADDR_WIDTH - OFFSET_WIDTH - INDEX_WIDTH
 
+  /** Tag equals && valid -> match
+    */
   val tag = UInt(TAG_WIDTH.W)
   val valid = Bool()
+
+  /** Branch type: b* or jal?
+    *
+    * If jal, it is always taken.
+    */
+  val isBr = Bool()
 
   /** BHT history counter
     */
@@ -26,7 +34,7 @@ class BHTSlot(implicit val coredef: CoreDef) extends Bundle {
 
   /** Target address if branch is taken.
     *
-    * If necessary, store offset instead of target address.
+    * If necessary, store offset instead of target address here.
     */
   val targetAddress = UInt(coredef.XLEN.W)
 
@@ -35,8 +43,12 @@ class BHTSlot(implicit val coredef: CoreDef) extends Bundle {
   def taken(tag: UInt) = {
     val ret = Wire(new BPUResult())
     ret.valid := valid && this.tag === tag
-    ret.history := history
+    ret.isBr := isBr
+    // if jal, always taken
+    // otherwise, check msb of history counter
+    ret.taken := !this.isBr || history(coredef.BHT_WIDTH - 1)
     ret.targetAddress := targetAddress
+    ret.history := history
     ret
   }
 }
@@ -50,33 +62,42 @@ class BPUResult(implicit val coredef: CoreDef) extends Bundle {
     */
   val valid = Bool()
 
-  /** BHT history counter
+  /** This branch is taken
     */
-  val history = UInt(coredef.BHT_WIDTH.W)
+  val taken = Bool()
 
-  /** Predicted target address.
+  /** Branch type: b* or jal?
     *
-    * For BRANCH/JAL instructions, this is pc + imm. For JALR(RET) instruction,
-    * this comes from RAS.
+    * If jal, it is always taken.
+    */
+  val isBr = Bool()
+
+  /** Predicted target address
     */
   val targetAddress = UInt(coredef.XLEN.W)
 
-  // predict by msb: <1/2 not taken, >1/2 taken
+  /** BHT history counter.
+    *
+    * Metadata to pass with pipeline.
+    */
+  val history = UInt(coredef.BHT_WIDTH.W)
+
   def prediction = Mux(
     valid,
     Mux(
-      history(coredef.BHT_WIDTH - 1),
-      BHTPrediction.taken,
-      BHTPrediction.notTaken
+      taken,
+      BranchPrediction.taken,
+      BranchPrediction.notTaken
     ),
-    BHTPrediction.missed
+    BranchPrediction.missed
   )
 
-  def up(tag: UInt): BHTSlot = {
-    val ret = Wire(new BHTSlot())
+  def up(tag: UInt): MicroBTBEntry = {
+    val ret = Wire(new MicroBTBEntry())
 
     ret.valid := true.B
     ret.tag := tag
+    ret.isBr := isBr
     ret.targetAddress := targetAddress
 
     when(this.valid) {
@@ -93,11 +114,12 @@ class BPUResult(implicit val coredef: CoreDef) extends Bundle {
     ret
   }
 
-  def down(tag: UInt): BHTSlot = {
-    val ret = Wire(new BHTSlot())
+  def down(tag: UInt): MicroBTBEntry = {
+    val ret = Wire(new MicroBTBEntry())
 
     ret.valid := true.B
     ret.tag := tag
+    ret.isBr := isBr
     ret.targetAddress := targetAddress
 
     when(this.valid) {
@@ -135,9 +157,9 @@ object BPUResult {
 
 }
 
-/** Branch prediction unit. It only considers branch instructions and jal.
+/** Micro Branch Target Buffer. It only considers branch instructions and jal.
   */
-class BPU(implicit val coredef: CoreDef) extends Module {
+class MicroBTB(implicit val coredef: CoreDef) extends Module {
   val toFetch = IO(new Bundle {
 
     /** the address (pc) of the query branch */
@@ -175,9 +197,9 @@ class BPU(implicit val coredef: CoreDef) extends Module {
     OFFSET_WIDTH.W
   ) // The input address should be aligned anyway
 
-  val store = Mem(coredef.BHT_SIZE, Vec(INLINE_COUNT, new BHTSlot))
+  val store = Mem(coredef.BHT_SIZE, Vec(INLINE_COUNT, new MicroBTBEntry))
 
-  val reseting = RegInit(true.B)
+  val doingReset = RegInit(true.B)
   val resetCnt = RegInit(0.U(log2Ceil(coredef.BHT_SIZE).W))
 
   // Prediction part
@@ -192,7 +214,7 @@ class BPU(implicit val coredef: CoreDef) extends Module {
   }
 
   // valid is stale when in reset state
-  when(reseting) {
+  when(doingReset) {
     for (res <- toFetch.results) {
       res.valid := false.B
     }
@@ -207,15 +229,14 @@ class BPU(implicit val coredef: CoreDef) extends Module {
     VecInit.fill(coredef.BPU_WRITE_BYPASS_COUNT)(0.U(coredef.XLEN.W))
   )
   val wrBypassState = RegInit(
-    VecInit.fill(coredef.BPU_WRITE_BYPASS_COUNT)(BPUResult.empty)
+    VecInit.fill(coredef.BPU_WRITE_BYPASS_COUNT)(0.U(coredef.BHT_WIDTH.W))
   )
   val wrBypassWriteIdx = RegInit(
     0.U(log2Ceil(coredef.BPU_WRITE_BYPASS_COUNT).W)
   )
 
   val wrBypassHitVec = wrBypassPc
-    .zip(wrBypassState)
-    .map({ case (pc, state) => pc === toExec.lpc && state.valid })
+    .map({ case pc => pc === toExec.lpc })
   val wrBypassHit = wrBypassHitVec.reduce(_ || _)
   val wrBypassHitIdx = PriorityEncoder(wrBypassHitVec)
 
@@ -231,7 +252,7 @@ class BPU(implicit val coredef: CoreDef) extends Module {
   val history = WireInit(toExec.hist)
   when(wrBypassHit) {
     val bypass = wrBypassState(wrBypassHitIdx)
-    history.history := bypass.history
+    history.history := bypass
   }
 
   val updated = history.update(toExec.taken, updateTag)
@@ -243,23 +264,24 @@ class BPU(implicit val coredef: CoreDef) extends Module {
       ret := false.B
     }
 
-    when(reseting) {
+    when(doingReset) {
       ret := true.B
     }
 
     ret
   })
 
-  val init = Wire(new BHTSlot)
+  val init = Wire(new MicroBTBEntry)
+  init.isBr := false.B
   init.history := 0.U
   init.tag := 0.U
   init.targetAddress := 0.U
   init.valid := false.B
 
-  val waddr = Mux(reseting, resetCnt, getIndex(toExec.lpc))
+  val waddr = Mux(doingReset, resetCnt, getIndex(toExec.lpc))
   val data = VecInit(
     Seq.fill(coredef.L1I.TRANSFER_WIDTH / Const.INSTR_MIN_WIDTH)(
-      Mux(reseting, init, updated)
+      Mux(doingReset, init, updated)
     )
   )
 
@@ -269,10 +291,10 @@ class BPU(implicit val coredef: CoreDef) extends Module {
   when(toExec.valid) {
     when(wrBypassHit) {
       // update in-place
-      wrBypassState(wrBypassHitIdx) := updated
+      wrBypassState(wrBypassHitIdx) := updated.history
     }.otherwise {
       wrBypassPc(wrBypassWriteIdx) := toExec.lpc
-      wrBypassState(wrBypassWriteIdx) := updated
+      wrBypassState(wrBypassWriteIdx) := updated.history
 
       when(wrBypassWriteIdx === (coredef.BPU_WRITE_BYPASS_COUNT - 1).U) {
         wrBypassWriteIdx := 0.U
@@ -282,10 +304,10 @@ class BPU(implicit val coredef: CoreDef) extends Module {
     }
   }
 
-  when(reseting) {
+  when(doingReset) {
     resetCnt := resetCnt +% 1.U
     when(resetCnt.andR()) {
-      reseting := false.B
+      doingReset := false.B
     }
   }
 }

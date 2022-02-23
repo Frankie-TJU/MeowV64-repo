@@ -59,7 +59,7 @@ class Core(implicit val coredef: CoreDef) extends Module {
   l1d.ptw <> ptw.dc
 
   val fetch = Module(new InstrFetch)
-  val bpu = Module(new BPU)
+  val bpu = Module(new MicroBTB)
   val ras = Module(new RAS)
   val exec = Module(new Exec)
   val regFiles = for ((ty, width) <- coredef.REGISTER_TYPES) yield {

@@ -10,7 +10,7 @@ import meowv64.core.ExReq
 import meowv64.core.ExType
 import meowv64.core.PrivLevel
 import meowv64.core.Status
-import meowv64.instr.BHTPrediction
+import meowv64.instr.BranchPrediction
 import meowv64.instr.BPUResult
 import meowv64.instr.Decoder.InstrType
 import meowv64.instr.InstrExt
@@ -235,7 +235,7 @@ class InflightInstr(implicit val coredef: CoreDef) extends Bundle {
     */
   val overridePred = Bool() // FIXME: change to default pred
 
-  def taken = overridePred || pred.prediction === BHTPrediction.taken
+  def taken = overridePred || pred.prediction === BranchPrediction.taken
   def npc = Mux(isC, 2.U, 4.U) +% addr
 }
 

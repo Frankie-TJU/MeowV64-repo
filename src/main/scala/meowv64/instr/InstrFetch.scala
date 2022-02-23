@@ -50,7 +50,7 @@ class InstrExt(implicit val coredef: CoreDef) extends Bundle {
 
   /** Whether this instruction breaks the instruction flow
     */
-  def taken: Bool = overridePred || pred.prediction === BHTPrediction.taken
+  def taken: Bool = overridePred || pred.prediction === BranchPrediction.taken
 
   /** Illegal instruction
     */
@@ -176,7 +176,7 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
   ) {
     val res = toBPU.results(i)
     when(i.U >= s2PcOffset) {
-      when(res.valid && res.prediction === BHTPrediction.taken) {
+      when(res.valid && res.prediction === BranchPrediction.taken) {
         s1FPc := res.targetAddress
         s1Successive := false.B
 
@@ -416,7 +416,7 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
     when(instr.op === Decoder.Op("JAL").ident) {
       // force predict branch to be taken if it was not predicted in BPU
       when(
-        pred.prediction =/= BHTPrediction.taken || pred.targetAddress =/= targetAddress
+        pred.prediction =/= BranchPrediction.taken || pred.targetAddress =/= targetAddress
       ) {
         decoded(i).overridePred := true.B
         // compute target address for JAL instruction
@@ -437,7 +437,7 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
       }
       decoded(i).pred.targetAddress := toRAS.pop.bits
     }.elsewhen(instr.op === Decoder.Op("BRANCH").ident) {
-      when(instr.imm < 0.S && pred.prediction === BHTPrediction.missed) {
+      when(instr.imm < 0.S && pred.prediction === BranchPrediction.missed) {
         // for backward branches
         // when BHT missed,
         // force predict branch to be taken
