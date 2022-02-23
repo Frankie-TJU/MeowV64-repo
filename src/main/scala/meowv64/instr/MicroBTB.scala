@@ -163,12 +163,12 @@ class MicroBTB(implicit val coredef: CoreDef) extends Module {
   val toFetch = IO(new Bundle {
 
     /** the address (pc) of the query branch */
-    val pc =
+    val s1Pc =
       Input(Valid(UInt(coredef.VADDR_WIDTH.W)))
     // for each possible branch instruction
     // return a BPUResult
     // it has one cycle delay
-    val results = Output(
+    val s2Res = Output(
       Vec(coredef.L1I.TRANSFER_WIDTH / Const.INSTR_MIN_WIDTH, new BPUResult)
     )
   })
@@ -197,25 +197,24 @@ class MicroBTB(implicit val coredef: CoreDef) extends Module {
     OFFSET_WIDTH.W
   ) // The input address should be aligned anyway
 
-  val store = Mem(coredef.BHT_SIZE, Vec(INLINE_COUNT, new MicroBTBEntry))
+  val store = SyncReadMem(coredef.BHT_SIZE, Vec(INLINE_COUNT, new MicroBTBEntry))
 
   val doingReset = RegInit(true.B)
   val resetCnt = RegInit(0.U(log2Ceil(coredef.BHT_SIZE).W))
 
   // Prediction part
-  val readout = store.read(getIndex(toFetch.pc.bits))
-  val tag = getTag(toFetch.pc.bits)
-  val pipeReadout = RegNext(readout)
-  val pipeTag = RegNext(tag)
-  when(RegNext(toFetch.pc.valid)) {
-    toFetch.results := VecInit(pipeReadout.map(_.taken(pipeTag)))
+  val s1Tag = getTag(toFetch.s1Pc.bits)
+  val s2Tag = RegNext(s1Tag)
+  val s2Readout = store.read(getIndex(toFetch.s1Pc.bits))
+  when(RegNext(toFetch.s1Pc.valid)) {
+    toFetch.s2Res := VecInit(s2Readout.map(_.taken(s2Tag)))
   }.otherwise {
-    toFetch.results := 0.U.asTypeOf(toFetch.results)
+    toFetch.s2Res := 0.U.asTypeOf(toFetch.s2Res)
   }
 
   // valid is stale when in reset state
   when(doingReset) {
-    for (res <- toFetch.results) {
+    for (res <- toFetch.s2Res) {
       res.valid := false.B
     }
   }

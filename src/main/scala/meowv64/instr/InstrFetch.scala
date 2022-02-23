@@ -95,8 +95,8 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
   val toExec = IO(Flipped(new MultiQueueIO(new InstrExt, coredef.ISSUE_NUM)))
 
   val toBPU = IO(new Bundle {
-    val pc = Output(Valid(UInt(coredef.XLEN.W)))
-    val results = Input(
+    val s1Pc = Output(Valid(UInt(coredef.XLEN.W)))
+    val s2Res = Input(
       Vec(coredef.L1I.TRANSFER_WIDTH / Const.INSTR_MIN_WIDTH, new BPUResult)
     )
   })
@@ -174,9 +174,9 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
   for (
     i <- (0 until coredef.L1I.TRANSFER_WIDTH / Const.INSTR_MIN_WIDTH).reverse
   ) {
-    val res = toBPU.results(i)
+    val res = toBPU.s2Res(i)
     when(i.U >= s2PcOffset) {
-      when(res.valid && res.prediction === BranchPrediction.taken) {
+      when(res.prediction === BranchPrediction.taken) {
         s1FPc := res.targetAddress
         s1Successive := false.B
 
@@ -200,12 +200,12 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
   tlb.flush := toCtrl.tlbRst
 
   // Predict by virtual memory
-  toBPU.pc.bits := Mux(
+  toBPU.s1Pc.bits := Mux(
     readFire,
     s1FPc,
-    RegNext(toBPU.pc.bits)
+    RegNext(toBPU.s1Pc.bits)
   )
-  toBPU.pc.valid := readFire
+  toBPU.s1Pc.valid := readFire
   // TODO: flush BPU on context switch
 
   // First, push all IC readouts into a queue
@@ -263,7 +263,7 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
   ICQueue.io.enq.bits.addr := s2AlignedPc
   ICQueue.io.enq.bits.mask := s2Mask
   ICQueue.io.enq.bits.last := s2LastMask
-  ICQueue.io.enq.bits.pred := toBPU.results
+  ICQueue.io.enq.bits.pred := toBPU.s2Res
   ICQueue.io.enq.bits.fault := s2Fault
   ICQueue.io.enq.bits.successive := s2Successive
   ICQueue.io.enq.valid := (!toIC.stall && toIC.data.valid) || s2Fault
@@ -407,12 +407,9 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
     decodedRASPop(i) := false.B
     decodedRASPush(i) := false.B
 
-    when(pred.valid && instr.op =/= Decoder.Op("BRANCH").ident) {
-      // TODO predicted as a branch, but actually not
-    }
-
     val targetAddress = (decoded(i).instr.imm
       +% decoded(i).addr.asSInt()).asUInt()
+    decoded(i).pred.isBr := false.B
     when(instr.op === Decoder.Op("JAL").ident) {
       // force predict branch to be taken if it was not predicted in BPU
       when(
@@ -424,7 +421,6 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
         decoded(i).pred.targetAddress := targetAddress
       }
       decodedRASPush(i) := instr.rd === 1.U || instr.rd === 5.U
-
     }.elsewhen(instr.op === Decoder.Op("JALR").ident) {
       decodedRASPush(i) := instr.rd === 1.U || instr.rd === 5.U
       val doPop =
@@ -447,8 +443,15 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
       // will be written to BPU later
       decoded(i).pred.targetAddress := (decoded(i).instr.imm
         +% decoded(i).addr.asSInt()).asUInt()
+      decoded(i).pred.isBr := true.B
     }.otherwise {
       decoded(i).pred.valid := false.B
+    }
+
+    when(
+      pred.prediction === BranchPrediction.taken
+    ) {
+      // TODO predicted as a branch/jal, but actually not
     }
   }
 
