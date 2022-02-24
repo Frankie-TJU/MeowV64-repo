@@ -33,7 +33,7 @@ class Exec(implicit val coredef: CoreDef) extends Module {
     val retCnt = Output(UInt(log2Ceil(coredef.RETIRE_NUM + 1).W))
     val nepc = Output(UInt(coredef.XLEN.W))
 
-    val branch = Output(new BranchResult)
+    val branch = Output(new ExceptionResult)
     val tval = Output(UInt(coredef.XLEN.W))
 
     val int = Input(Bool())
@@ -385,9 +385,9 @@ class Exec(implicit val coredef: CoreDef) extends Module {
 
   val pendingBr = RegInit(false.B)
   val pendingBrTag = RegInit(0.U(log2Ceil(coredef.INFLIGHT_INSTR_LIMIT).W))
-  val pendingBrResult = RegInit(BranchResult.empty)
+  val pendingBrResult = RegInit(ExceptionResult.empty)
   val pendingBrTval = RegInit(0.U(coredef.XLEN.W))
-  assert(!pendingBr || pendingBrResult.branched())
+  assert(!pendingBr || pendingBrResult.fire())
 
   // find the first branch instruction
   // branch here means control flow interruption (trap, missed prediction)
@@ -402,7 +402,7 @@ class Exec(implicit val coredef: CoreDef) extends Module {
   val brSel = VecInit(PriorityEncoderOH(brMux.asBools())).asUInt()
   val brSeled = Wire(Vec(units.size, Bool()))
   // branch result and branch trap target
-  val brResults = Wire(Vec(units.size, new BranchResult))
+  val brResults = Wire(Vec(units.size, new ExceptionResult))
   val brTvals = Wire(Vec(units.size, UInt(coredef.XLEN.W)))
 
   when(brSeled.asUInt.orR()) {
@@ -422,8 +422,8 @@ class Exec(implicit val coredef: CoreDef) extends Module {
     // TODO: maybe pipeline here?
     val dist = u.retire.instr.tag -% retirePtr
     val oh = UIntToOH(dist)
-    val branchResult = u.retire.info.branch
-    val canBr = u.retire.instr.instr.valid && branchResult.branched()
+    val branchResult = u.retire.info.exception
+    val canBr = u.retire.instr.instr.valid && branchResult.fire()
     brMask(idx) := Mux(canBr, oh, 0.U)
     brSeled(idx) := brSel === oh && canBr
     brResults(idx) := branchResult
@@ -478,7 +478,7 @@ class Exec(implicit val coredef: CoreDef) extends Module {
         rwp.data := 0.U
       }
     }
-    toCtrl.branch := BranchResult.empty
+    toCtrl.branch := ExceptionResult.empty
   }.elsewhen(retireNext.hasMem) {
     // Is memory operation, wait for memAccSucc
     for (i <- 0 until coredef.REGISTER_TYPES.length) {
@@ -494,7 +494,7 @@ class Exec(implicit val coredef: CoreDef) extends Module {
     val memResult = releaseMem.deq()
 
     // For BPU mis-predict on previous instructions
-    toCtrl.branch := BranchResult.empty
+    toCtrl.branch := ExceptionResult.empty
 
     when(releaseMem.fire) {
       retireNum := 1.U
@@ -533,7 +533,7 @@ class Exec(implicit val coredef: CoreDef) extends Module {
       }
     }
 
-    toCtrl.branch := BranchResult.empty
+    toCtrl.branch := ExceptionResult.empty
   }.otherwise {
     val blocked = Wire(Vec(coredef.RETIRE_NUM, Bool()))
     val isBranch = Wire(Vec(coredef.RETIRE_NUM, Bool()))
@@ -631,7 +631,7 @@ class Exec(implicit val coredef: CoreDef) extends Module {
       }
     }
 
-    toCtrl.branch := BranchResult.empty
+    toCtrl.branch := ExceptionResult.empty
     when(pendingBr && pendingBrTag -% retirePtr < retireNumFast) {
       toCtrl.branch := pendingBrResult
     }

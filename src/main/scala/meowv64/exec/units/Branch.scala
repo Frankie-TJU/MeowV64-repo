@@ -137,15 +137,15 @@ class Branch(override implicit val coredef: CoreDef)
     when(ext.ex === ExReq.ex) {
       // info.regWaddr := 0.U
       // info.wb := 0.U // tval
-      info.branch.ex(ext.exType)
+      info.exception.ex(ext.exType)
     }.elsewhen(ext.ex =/= ExReq.none) {
       // info.regWaddr := 0.U
-      info.branch.ret(ext.ex)
+      info.exception.ret(ext.ex)
     }.elsewhen(pipe.instr.instr.op === Decoder.Op("SYSTEM").ident) {
       when(pipe.instr.instr.funct7 === Decoder.PRIV_FUNCT7("SFENCE.VMA")) {
-        info.branch.sfence(pipe.instr.addr +% 4.U)
+        info.exception.sfence(pipe.instr.addr +% 4.U)
       }.otherwise {
-        info.branch.nofire
+        info.exception.nofire
       }
     }.elsewhen(pipe.instr.instr.op === Decoder.Op("BRANCH").ident) {
       // info.regWaddr := 0.U
@@ -163,9 +163,9 @@ class Branch(override implicit val coredef: CoreDef)
       when(ext.branchTaken =/= pipe.instr.taken) {
         // mis-predict
         // branch to actual address
-        info.branch.fire(target)
+        info.exception.fire(target)
       }.otherwise {
-        info.branch.nofire
+        info.exception.nofire
       }
     }.otherwise { // JAL/JALR, JAL is now in Bypass, so this must be JALR
       val linked = Wire(UInt(coredef.XLEN.W))
@@ -183,10 +183,10 @@ class Branch(override implicit val coredef: CoreDef)
 
       when(pipe.instr.taken && dest === pipe.instr.pred.targetAddress) {
         // predicted to be taken and destination is correctly predicted
-        info.branch.nofire
+        info.exception.nofire
       }.otherwise {
         // mis-predict
-        info.branch.fire(dest)
+        info.exception.fire(dest)
       }
     }
 

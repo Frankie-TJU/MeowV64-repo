@@ -16,11 +16,11 @@ import meowv64.instr.Decoder.InstrType
 import meowv64.instr.InstrExt
 import meowv64.instr.RegIndex
 
-/** Branch result
+/** Exception result
   *
-  * Branch are used to state an interrupt in pipelined execution, which comes
-  * from the execution of an instruction. Following conditions are considered as
-  * a branch:
+  * Exceptions are used to state an interrupt in pipelined execution, which
+  * comes from the execution of an instruction. Following conditions are
+  * considered as a branch:
   *   - Jumps and branches that don't match branch prediction results
   *   - Instructions caused an exceptions
   *   - Instructions have side-effects on previous stages, so that we need to
@@ -31,11 +31,11 @@ import meowv64.instr.RegIndex
   * @param coredef:
   *   Core definition
   */
-class BranchResult(implicit val coredef: CoreDef) extends Bundle {
+class ExceptionResult(implicit val coredef: CoreDef) extends Bundle {
 
-  /** Whether a pipeline branch occurs
+  /** Whether a pipeline exception occurs
     */
-  val branch = Bool()
+  val valid = Bool()
 
   /** ICache Flush for fence.i
     */
@@ -53,7 +53,7 @@ class BranchResult(implicit val coredef: CoreDef) extends Bundle {
   val exType = ExType()
 
   def nofire = {
-    branch := false.B
+    valid := false.B
     target := 0.U
     iRst := false.B
     tlbRst := false.B
@@ -62,8 +62,10 @@ class BranchResult(implicit val coredef: CoreDef) extends Bundle {
     exType := DontCare
   }
 
+  /** Flush pipeline and jump to addr
+    */
   def fire(addr: UInt) = {
-    branch := true.B
+    valid := true.B
     target := addr
     iRst := false.B
     tlbRst := false.B
@@ -73,7 +75,7 @@ class BranchResult(implicit val coredef: CoreDef) extends Bundle {
   }
 
   def ifence(addr: UInt) = {
-    branch := true.B
+    valid := true.B
     target := addr
     iRst := true.B
     tlbRst := false.B
@@ -83,7 +85,7 @@ class BranchResult(implicit val coredef: CoreDef) extends Bundle {
   }
 
   def sfence(addr: UInt) = {
-    branch := true.B
+    valid := true.B
     target := addr
     iRst := false.B
     tlbRst := true.B
@@ -92,8 +94,10 @@ class BranchResult(implicit val coredef: CoreDef) extends Bundle {
     exType := DontCare
   }
 
+  /** RISC-V Exception
+    */
   def ex(et: ExType.Type) {
-    branch := false.B
+    valid := false.B
     target := DontCare
     iRst := false.B
     tlbRst := false.B
@@ -102,8 +106,10 @@ class BranchResult(implicit val coredef: CoreDef) extends Bundle {
     exType := et
   }
 
+  /** MRET/SRET
+    */
   def ret(req: ExReq.Type) {
-    branch := false.B
+    valid := false.B
     target := DontCare
     iRst := false.B
     tlbRst := false.B
@@ -112,12 +118,12 @@ class BranchResult(implicit val coredef: CoreDef) extends Bundle {
     exType := DontCare
   }
 
-  def branched(): Bool = branch || ex =/= ExReq.none
+  def fire(): Bool = valid || ex =/= ExReq.none
 }
 
-object BranchResult {
-  def empty(implicit coredef: CoreDef): BranchResult = {
-    val ret = Wire(new BranchResult)
+object ExceptionResult {
+  def empty(implicit coredef: CoreDef): ExceptionResult = {
+    val ret = Wire(new ExceptionResult)
     ret.nofire
     ret
   }
@@ -140,9 +146,12 @@ class RetireInfo(implicit val coredef: CoreDef) extends Bundle {
   val updateFFlags = Bool()
   val fflags = UInt(5.W)
 
-  /** Generic branch result
+  /** Exception result
     */
-  val branch = new BranchResult
+  val exception = new ExceptionResult
+
+  /** Has delayed memory ops?
+    */
   val hasMem = Bool()
 
   /** Whether this branch has taken. Used in updating BPU.
@@ -154,7 +163,7 @@ object RetireInfo {
   def vacant(implicit coredef: CoreDef): RetireInfo = {
     val info = Wire(new RetireInfo)
 
-    info.branch.nofire
+    info.exception.nofire
     info.wb := 0.U
     info.hasMem := false.B
     info.branchTaken := false.B

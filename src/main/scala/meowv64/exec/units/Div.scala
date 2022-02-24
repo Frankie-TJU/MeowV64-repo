@@ -18,7 +18,7 @@ class Div(val ROUND_PER_STAGE: Int)(override implicit val coredef: CoreDef)
       new DivExt
     ) {
   val unroll = 2
-  val round = RegInit(0.U(log2Ceil(ROUND_PER_STAGE/unroll).W))
+  val round = RegInit(0.U(log2Ceil(ROUND_PER_STAGE / unroll).W))
 
   var idle = true.B
 
@@ -102,10 +102,15 @@ class Div(val ROUND_PER_STAGE: Int)(override implicit val coredef: CoreDef)
         (round << log2Up(unroll)) + i.U
       }
 
-      val shift = ((this.DEPTH - stage + 1) * ROUND_PER_STAGE - 1).U - effectiveRound
+      val shift =
+        ((this.DEPTH - stage + 1) * ROUND_PER_STAGE - 1).U - effectiveRound
       val shifted = lastExt.d << shift
 
-      when(lastExt.r(coredef.XLEN * 2 - 1) && ((stage != 1).B || effectiveRound =/= 0.U)) { // Prev is negative
+      when(
+        lastExt.r(
+          coredef.XLEN * 2 - 1
+        ) && ((stage != 1).B || effectiveRound =/= 0.U)
+      ) { // Prev is negative
         curExt.r := lastExt.r + shifted
       }.otherwise {
         curExt.r := lastExt.r - shifted

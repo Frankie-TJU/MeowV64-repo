@@ -51,13 +51,13 @@ class Bypass(override implicit val coredef: CoreDef)
     }
 
     when(pipe.instr.fetchEx === FetchEx.pageFault) {
-      info.branch.ex(ExType.INSTR_PAGE_FAULT)
+      info.exception.ex(ExType.INSTR_PAGE_FAULT)
       info.wb := ifAddr
     }.elsewhen(pipe.instr.fetchEx === FetchEx.invalAddr) {
-      info.branch.ex(ExType.INSTR_ACCESS_FAULT)
+      info.exception.ex(ExType.INSTR_ACCESS_FAULT)
       info.wb := ifAddr
     }.elsewhen(ext.illegal) {
-      info.branch.ex(ExType.ILLEGAL_INSTR)
+      info.exception.ex(ExType.ILLEGAL_INSTR)
       info.wb := 0.U
     }.elsewhen(pipe.instr.instr.op === Decoder.Op("JAL").ident) {
       val linked = Wire(UInt(coredef.XLEN.W))
@@ -70,7 +70,7 @@ class Bypass(override implicit val coredef: CoreDef)
 
       // JAL mispredict is handled in InstrFetch
       info.branchTaken := true.B
-      info.branch.nofire
+      info.exception.nofire
     }.otherwise {
       info.wb := ext.acc
     }

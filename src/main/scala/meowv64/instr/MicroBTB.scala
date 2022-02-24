@@ -197,7 +197,8 @@ class MicroBTB(implicit val coredef: CoreDef) extends Module {
     OFFSET_WIDTH.W
   ) // The input address should be aligned anyway
 
-  val store = SyncReadMem(coredef.BHT_SIZE, Vec(INLINE_COUNT, new MicroBTBEntry))
+  val store =
+    SyncReadMem(coredef.BHT_SIZE, Vec(INLINE_COUNT, new MicroBTBEntry))
 
   val doingReset = RegInit(true.B)
   val resetCnt = RegInit(0.U(log2Ceil(coredef.BHT_SIZE).W))

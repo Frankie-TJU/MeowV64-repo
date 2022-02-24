@@ -388,13 +388,13 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   when(pipeFenceLike) {
     retire.info.wb := DontCare
     when(pipeInstr.instr.instr.funct3 === Decoder.MEM_MISC_FUNC("FENCE.I")) {
-      retire.info.branch.ifence(pipeInstr.instr.addr + 4.U)
+      retire.info.exception.ifence(pipeInstr.instr.addr + 4.U)
     }.otherwise {
-      retire.info.branch.nofire
+      retire.info.exception.nofire
     }
   }.elsewhen(pipeInvalAddr) {
     retire.info.wb := pipeRawAddr
-    retire.info.branch.ex(
+    retire.info.exception.ex(
       Mux(
         pipeRead,
         ExType.LOAD_ACCESS_FAULT,
@@ -403,7 +403,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
     )
   }.elsewhen(pipeFault) {
     retire.info.wb := pipeRawAddr
-    retire.info.branch.ex(
+    retire.info.exception.ex(
       Mux(
         pipeRead,
         ExType.LOAD_PAGE_FAULT,
@@ -412,7 +412,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
     )
   }.elsewhen(pipeMisaligned) {
     retire.info.wb := pipeRawAddr
-    retire.info.branch.ex(
+    retire.info.exception.ex(
       Mux(
         pipeRead,
         ExType.LOAD_ADDR_MISALIGN,
@@ -420,7 +420,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
       )
     )
   }.elsewhen(pipeRead && !pipeUncached) {
-    retire.info.branch.nofire
+    retire.info.exception.nofire
     retire.info.wb := result
     when(pipeAMO) { // Must be LR
       mem.op := DelayedMemOp.s
@@ -429,7 +429,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
       mem.data := result
     }
   }.elsewhen(pipeRead) {
-    retire.info.branch.nofire
+    retire.info.exception.nofire
 
     mem.op := DelayedMemOp.ul
     mem.addr := pipeAddr
@@ -469,7 +469,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
     retire.info.wb := DontCare
     mem.data := DontCare
   }.elsewhen(pipeWrite) {
-    retire.info.branch.nofire
+    retire.info.exception.nofire
 
     mem.len := DontCare
     switch(pipeInstr.instr.instr.funct3) {
@@ -512,7 +512,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
     mem.data := pipeInstr.rs2val
   }.otherwise {
     // Inval instr?
-    retire.info.branch.ex(ExType.ILLEGAL_INSTR)
+    retire.info.exception.ex(ExType.ILLEGAL_INSTR)
     retire.info.wb := DontCare
   }
 

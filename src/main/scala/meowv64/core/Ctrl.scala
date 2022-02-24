@@ -3,7 +3,7 @@ package meowv64.core
 import chisel3._
 import chisel3.experimental.ChiselEnum
 import chisel3.util._
-import meowv64.exec.BranchResult
+import meowv64.exec.ExceptionResult
 
 class StageCtrl extends Bundle {
   val stall = Input(Bool())
@@ -81,7 +81,7 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
   })
 
   val br = IO(new Bundle {
-    val req = Input(new BranchResult()(coredef))
+    val req = Input(new ExceptionResult()(coredef))
     val tval = Input(UInt(coredef.XLEN.W))
   })
 
@@ -357,7 +357,7 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
   csr.stval <> CSRPort.fromReg(coredef.XLEN, stval)
   csr.scause <> CSRPort.fromReg(coredef.XLEN, scause)
 
-  branch := br.req.branch
+  branch := br.req.valid
   baddr := br.req.target
 
   // fcsr: frm + fflags

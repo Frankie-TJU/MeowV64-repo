@@ -183,14 +183,14 @@ class CSR(implicit val coredef: CoreDef)
   val info = WireDefault(RetireInfo.vacant)
 
   when(fault) {
-    info.branch.ex(ExType.ILLEGAL_INSTR)
+    info.exception.ex(ExType.ILLEGAL_INSTR)
   }.elsewhen(pipeWritten) {
     // csr is updated
     // flush pipeline to avoid stale value
-    info.branch.fire(instr.addr + 4.U)
+    info.exception.fire(instr.addr + 4.U)
     info.wb := pipeRdata
   } otherwise {
-    info.branch.nofire
+    info.exception.nofire
     info.wb := pipeRdata
   }
 
