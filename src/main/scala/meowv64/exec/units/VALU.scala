@@ -19,6 +19,8 @@ class VALU(override implicit val coredef: CoreDef)
     val acc = Wire(SInt(coredef.VLEN.W))
     acc := DontCare
 
+    ext.acc := 0.U
+
     (ext, false.B)
   }
 

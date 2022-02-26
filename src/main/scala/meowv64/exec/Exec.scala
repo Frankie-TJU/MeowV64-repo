@@ -187,15 +187,13 @@ class Exec(implicit val coredef: CoreDef) extends Module {
 
   val stations = units.zipWithIndex.map({
     case (u, idx) => {
-      // FIXME: do not hardcode 3
-      val rs = if (idx != 3) {
-        Module(new OoOResStation(idx)).suggestName(s"ResStation_${idx}")
-      } else {
-        assert(u.isInstanceOf[LSU])
+      val rs = if (u.isInstanceOf[LSU]) {
         val lsb = Module(new LSBuf(idx)).suggestName(s"LSBuf")
         lsb.hasPending := hasPendingMem
         lsb.fs := toDC.fs
         lsb
+      } else {
+        Module(new OoOResStation(idx)).suggestName(s"ResStation_${idx}")
       }
       rs.cdb := cdb
       rs.egress <> u.rs

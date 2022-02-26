@@ -54,13 +54,18 @@ abstract class CoreDef {
       ExecUnitType.floatMisc,
       ExecUnitType.fDivSqrt
     ),
-    // port 4: LSU
+    // port 4: VALU
+    Seq(
+      ExecUnitType.vAlu
+    ),
+    // port 5: LSU
     Seq(ExecUnitType.lsu)
   )
 
   val UNIT_COUNT: Int = EXECUTION_UNITS.length
   val RESERVATION_STATION_DEPTHS = Seq(
     8,
+    4,
     4,
     4,
     16
