@@ -705,6 +705,7 @@ class Instr extends Bundle {
   def funct5() = funct7 >> 2
   // for vector
   def funct6() = funct7 >> 1
+  def simm5() = rs1.asSInt
   // floating point format
   def fmt() = funct7(1, 0)
   // for fmadd

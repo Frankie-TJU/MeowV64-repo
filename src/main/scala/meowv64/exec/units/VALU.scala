@@ -24,19 +24,45 @@ class VALU(override implicit val coredef: CoreDef)
       ext.res(i) := 0.U
     }
 
+    val simm = Wire(SInt(coredef.XLEN.W))
+    simm := pipe.instr.instr.simm5()
+
     val rs1Elements = Wire(Vec(coredef.vectorBankCount, UInt(coredef.XLEN.W)))
     rs1Elements := pipe.rs1val.asTypeOf(rs1Elements)
+    val rs2Elements = Wire(Vec(coredef.vectorBankCount, UInt(coredef.XLEN.W)))
+    rs2Elements := pipe.rs2val.asTypeOf(rs1Elements)
 
     switch(pipe.instr.instr.funct6) {
       is(Decoder.VP_FUNC("VMV_S")) {
         switch(pipe.instr.instr.funct3) {
           is(2.U) {
             // VMV_X_S
-            ext.res(0) := pipe.rs1val
+            // TODO: retain other lanes
+            ext.res(0) := pipe.rs2val
           }
           is(6.U) {
             // VMV_S_X
             ext.res(0) := rs1Elements(0)
+          }
+        }
+      }
+      is(Decoder.VP_FUNC("VMV_V")) {
+        switch(pipe.instr.instr.funct3) {
+          is(0.U) {
+            // VMV_V_V
+            ext.res := rs1Elements
+          }
+          is(3.U) {
+            // VMV_V_I
+            for (i <- 0 until coredef.vectorBankCount) {
+              ext.res(i) := simm.asUInt
+            }
+          }
+          is(4.U) {
+            // VMV_V_X
+            for (i <- 0 until coredef.vectorBankCount) {
+              ext.res(i) := pipe.rs1val
+            }
           }
         }
       }
