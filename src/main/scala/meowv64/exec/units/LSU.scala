@@ -105,9 +105,10 @@ class DelayedMem(implicit val coredef: CoreDef) extends Bundle {
 
 class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   val retireWidth = coredef.XLEN
+  val valueWidth = coredef.XLEN
   val flush = IO(Input(Bool()))
-  val rs = IO(Flipped(new ResStationEgress))
-  val retire = IO(Output(new Retirement(retireWidth)))
+  val rs = IO(Flipped(new ResStationEgress(valueWidth)))
+  val retire = IO(Output(new Retirement(valueWidth, retireWidth)))
   val extras = new mutable.HashMap[String, Data]()
 
   def isUncached(addr: UInt) = addr < BigInt("80000000", 16).U
@@ -294,7 +295,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
 
   /** Stage 2 state
     */
-  val pipeInstr = RegInit(PipeInstr.empty)
+  val pipeInstr = RegInit(PipeInstr.empty(valueWidth))
   val pipeRawAddr = Reg(UInt(coredef.XLEN.W))
   val pipeAddr = Reg(UInt(coredef.XLEN.W))
   val pipeFault = Reg(Bool())

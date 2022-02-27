@@ -135,7 +135,8 @@ object ExceptionResult {
   *
   * @param coredef
   */
-class RetireInfo(val retireWidth: Int)(implicit val coredef: CoreDef) extends Bundle {
+class RetireInfo(val retireWidth: Int)(implicit val coredef: CoreDef)
+    extends Bundle {
 
   /** Writeback data or trap value(mtval, stval)
     */
@@ -189,12 +190,13 @@ object RetireInfo {
   *
   * @param coredef
   */
-class PipeInstr(implicit val coredef: CoreDef) extends Bundle {
+class PipeInstr(val valueWidth: Int)(implicit val coredef: CoreDef)
+    extends Bundle {
   val instr = new InstrExt
 
-  val rs1val = UInt(coredef.XLEN.W)
-  val rs2val = UInt(coredef.XLEN.W)
-  val rs3val = UInt(coredef.XLEN.W)
+  val rs1val = UInt(valueWidth.W)
+  val rs2val = UInt(valueWidth.W)
+  val rs3val = UInt(valueWidth.W)
 
   val rdname = UInt(log2Ceil(coredef.INFLIGHT_INSTR_LIMIT).W)
   val tag = UInt(log2Ceil(coredef.INFLIGHT_INSTR_LIMIT).W)
@@ -212,7 +214,9 @@ class PipeInstr(implicit val coredef: CoreDef) extends Bundle {
   *
   * @param coredef
   */
-class ReservedInstr(override implicit val coredef: CoreDef) extends PipeInstr {
+class ReservedInstr(override val valueWidth: Int)(
+    override implicit val coredef: CoreDef
+) extends PipeInstr(valueWidth) {
   val rs1name = UInt(log2Ceil(coredef.INFLIGHT_INSTR_LIMIT).W)
   val rs2name = UInt(log2Ceil(coredef.INFLIGHT_INSTR_LIMIT).W)
   val rs3name = UInt(log2Ceil(coredef.INFLIGHT_INSTR_LIMIT).W)
@@ -263,8 +267,8 @@ object InflightInstr {
 }
 
 object PipeInstr {
-  def empty(implicit coredef: CoreDef): PipeInstr = {
-    val ret = Wire(new PipeInstr)
+  def empty(valueWidth: Int)(implicit coredef: CoreDef): PipeInstr = {
+    val ret = Wire(new PipeInstr(valueWidth))
     ret.instr := InstrExt.empty
     ret.rs1val := DontCare
     ret.rs2val := DontCare
@@ -277,8 +281,8 @@ object PipeInstr {
 }
 
 object ReservedInstr {
-  def empty(implicit coredef: CoreDef): ReservedInstr = {
-    val ret = Wire(new ReservedInstr)
+  def empty(valueWidth: Int)(implicit coredef: CoreDef): ReservedInstr = {
+    val ret = Wire(new ReservedInstr(valueWidth))
     ret := DontCare
     ret.instr := InstrExt.empty
 
@@ -296,8 +300,10 @@ object ReservedInstr {
   *
   * @param coredef
   */
-class ExecUnitPort(val retireWidth: Int)(implicit val coredef: CoreDef) extends Bundle {
-  val next = Input(new PipeInstr)
+class ExecUnitPort(val valueWidth: Int, val retireWidth: Int)(implicit
+    val coredef: CoreDef
+) extends Bundle {
+  val next = Input(new PipeInstr(valueWidth))
 
   val stall = Output(Bool())
   val flush = Input(Bool())
@@ -308,7 +314,7 @@ class ExecUnitPort(val retireWidth: Int)(implicit val coredef: CoreDef) extends 
 
   /** Result of execution
     */
-  val retired = Output(new PipeInstr)
+  val retired = Output(new PipeInstr(valueWidth))
 }
 
 /** Trait representing an execution unit
@@ -347,15 +353,16 @@ abstract class ExecUnit[T <: Data](
     val coredef: CoreDef
 ) extends Module
     with ExecUnitInt {
+  def valueWidth: Int = ???
   def retireWidth: Int = ???
-  val io = IO(new ExecUnitPort(retireWidth))
+  val io = IO(new ExecUnitPort(valueWidth, retireWidth))
 
   var current = if (DEPTH != 0) {
     val storeInit = Wire(
       Vec(
         DEPTH,
         new Bundle {
-          val pipe = new PipeInstr
+          val pipe = new PipeInstr(valueWidth)
           val ext = ExtData.cloneType
         }
       )
@@ -412,7 +419,7 @@ abstract class ExecUnit[T <: Data](
 
       when(io.flush) { // Override current
         for (c <- current) {
-          c.pipe := PipeInstr.empty
+          c.pipe := PipeInstr.empty(valueWidth)
           c.ext := DontCare
         }
       }
@@ -467,18 +474,18 @@ abstract class ExecUnit[T <: Data](
   *   - data: value to be broadcasted
   *
   * @param coredef
-  *   core defination
+  *   core definition
   */
 class CDBEntry(implicit val coredef: CoreDef) extends Bundle {
   val valid = Bool()
   val name = UInt(log2Ceil(coredef.INFLIGHT_INSTR_LIMIT).W)
-  val data = UInt(coredef.XLEN.W)
+  val data = UInt(coredef.VLEN.W)
 }
 
 /** Common data bus
   *
   * @param coredef
-  *   core defination
+  *   core definition
   */
 class CDB(implicit val coredef: CoreDef) extends Bundle {
   val entries = Vec(coredef.UNIT_COUNT + 1, new CDBEntry)

@@ -12,6 +12,7 @@ class VALUExt(implicit val coredef: CoreDef) extends Bundle {
 
 class VALU(override implicit val coredef: CoreDef)
     extends ExecUnit(0, new VALUExt) {
+  override def valueWidth = coredef.VLEN
   override def retireWidth = coredef.VLEN
   def map(
       stage: Int,

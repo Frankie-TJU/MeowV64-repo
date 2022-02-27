@@ -24,9 +24,10 @@ class CSR(implicit val coredef: CoreDef)
   object CSRState extends ChiselEnum {
     val read, pipe = Value
   }
+  val valueWidth = coredef.XLEN
   val retireWidth = coredef.XLEN
 
-  val io = IO(new ExecUnitPort(retireWidth))
+  val io = IO(new ExecUnitPort(valueWidth, retireWidth))
   val priv = IO(Input(PrivLevel()))
   val status = IO(Input(new Status))
   val writer = IO(new CSRWriter())

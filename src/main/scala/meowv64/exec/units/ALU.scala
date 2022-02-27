@@ -12,6 +12,7 @@ class ALUExt(implicit val coredef: CoreDef) extends Bundle {
 
 class ALU(override implicit val coredef: CoreDef)
     extends ExecUnit(0, new ALUExt) {
+  override def valueWidth = coredef.XLEN
   override def retireWidth = coredef.XLEN
 
   def map(stage: Int, pipe: PipeInstr, ext: Option[ALUExt]): (ALUExt, Bool) = {

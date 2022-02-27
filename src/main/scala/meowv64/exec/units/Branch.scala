@@ -24,6 +24,7 @@ class Branch(override implicit val coredef: CoreDef)
     extends ExecUnit(0, new BranchExt)
     with WithPrivPort
     with WithStatus {
+  override def valueWidth = coredef.XLEN
   override def retireWidth: Int = coredef.XLEN
   val priv = IO(Input(PrivLevel()))
   val status = IO(Input(new Status))

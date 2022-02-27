@@ -22,6 +22,7 @@ class FDivSqrt(override implicit val coredef: CoreDef)
       1,
       new FDivSqrtExt
     ) {
+  override def valueWidth = coredef.XLEN
   override def retireWidth = coredef.XLEN
 
   val idle = RegInit(true.B)

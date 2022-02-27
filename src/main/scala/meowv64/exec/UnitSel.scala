@@ -42,16 +42,18 @@ class UnitSel(
 
   val flush = IO(Input(Bool()))
 
-  /** Input from reservation station
-    */
-  val rs = IO(Flipped(new ResStationEgress))
-
+  val valueWidth = units.map(_.io.valueWidth).max
+  println(s"Value Width: ${valueWidth} bits")
   val retireWidth = units.map(_.io.retirement.retireWidth).max
   println(s"Retire Width: ${retireWidth} bits")
 
+  /** Input from reservation station
+    */
+  val rs = IO(Flipped(new ResStationEgress(valueWidth)))
+
   /** Retired instruction
     */
-  val retire = IO(Output(new Retirement(retireWidth)))
+  val retire = IO(Output(new Retirement(valueWidth, retireWidth)))
 
   // Extra ports
   val extras = new mutable.HashMap[String, Data]()
@@ -100,7 +102,7 @@ class UnitSel(
 
   // Arbitration
   for (u <- units) {
-    u.io.next := PipeInstr.empty
+    u.io.next := PipeInstr.empty(valueWidth)
   }
 
   val execMap = Wire(Vec(units.length, Bool()))
@@ -122,7 +124,7 @@ class UnitSel(
   assert(!rs.instr.valid || execMapNoDup && execMapUInt.orR())
 
   val pipeExecMap = RegInit(VecInit(Seq.fill(units.length)(false.B)))
-  val pipeInstr = RegInit(ReservedInstr.empty)
+  val pipeInstr = RegInit(ReservedInstr.empty(valueWidth))
   val pipeInstrValid = RegInit(false.B)
 
   val pipeInput = Wire(Bool())
@@ -173,29 +175,31 @@ class UnitSel(
 
   if (units.length == 1) {
     println("UnitSel: Single unit")
-    val pipeRetire = RegInit(Retirement.empty(retireWidth))
+    val pipeRetire = RegInit(Retirement.empty(valueWidth, retireWidth))
     retire := pipeRetire
     when(units(0).io.stall) {
-      pipeRetire := Retirement.empty(retireWidth)
+      pipeRetire := Retirement.empty(valueWidth, retireWidth)
     }.otherwise {
       pipeRetire := Retirement.from(units(0).io)
     }
     when(flush) {
-      pipeRetire := Retirement.empty(retireWidth)
+      pipeRetire := Retirement.empty(valueWidth, retireWidth)
     }
   } else if (maxDepth == 0) {
     println("UnitSel: All units have 0 delay")
-    val pipeRetire = RegInit(Retirement.empty(retireWidth))
+    val pipeRetire = RegInit(Retirement.empty(valueWidth, retireWidth))
     retire := pipeRetire
     val validMap = units.map(u => !u.io.stall && u.io.retired.instr.valid)
     pipeRetire := Mux1H(validMap.zip(units.map(u => Retirement.from(u.io))))
     when(!VecInit(validMap).asUInt.orR || flush) {
-      pipeRetire := Retirement.empty(retireWidth)
+      pipeRetire := Retirement.empty(valueWidth, retireWidth)
     }
   } else {
     println(s"UnitSel: with FIFO depth $fifoDepth")
 
-    val retireFifo = RegInit(VecInit(Seq.fill(fifoDepth)(Retirement.empty(retireWidth))))
+    val retireFifo = RegInit(
+      VecInit(Seq.fill(fifoDepth)(Retirement.empty(valueWidth, retireWidth)))
+    )
     val retireHead = RegInit(0.U(log2Ceil(fifoDepth).W))
     val retireTail = RegInit(0.U(log2Ceil(fifoDepth).W))
 
@@ -217,7 +221,7 @@ class UnitSel(
     // Output
 
     when(retireTail === retireHead) {
-      retire := Retirement.empty(retireWidth)
+      retire := Retirement.empty(valueWidth, retireWidth)
     }.otherwise {
       retire := retireFifo(retireHead)
       retireHead := Mux(
@@ -240,8 +244,10 @@ class UnitSel(
 }
 
 object UnitSel {
-  class Retirement(val retireWidth: Int)(implicit val coredef: CoreDef) extends Bundle {
-    val instr = new PipeInstr
+  class Retirement(val valueWidth: Int, val retireWidth: Int)(implicit
+      val coredef: CoreDef
+  ) extends Bundle {
+    val instr = new PipeInstr(valueWidth)
     val info = new RetireInfo(retireWidth)
 
     /** This retirement is valid
@@ -250,16 +256,18 @@ object UnitSel {
   }
 
   object Retirement {
-    def empty(retireWidth: Int)(implicit coredef: CoreDef): Retirement = {
-      val ret = Wire(new Retirement(retireWidth))
-      ret.instr := PipeInstr.empty
+    def empty(valueWidth: Int, retireWidth: Int)(implicit
+        coredef: CoreDef
+    ): Retirement = {
+      val ret = Wire(new Retirement(valueWidth, retireWidth))
+      ret.instr := PipeInstr.empty(valueWidth)
       ret.info := RetireInfo.vacant(retireWidth)
 
       ret
     }
 
     def from(port: ExecUnitPort)(implicit coredef: CoreDef): Retirement = {
-      val ret = Wire(new Retirement(port.retireWidth))
+      val ret = Wire(new Retirement(port.valueWidth, port.retireWidth))
       ret.instr := port.retired
       ret.info := port.retirement
 

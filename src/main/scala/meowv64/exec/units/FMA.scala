@@ -35,6 +35,7 @@ class FMA(override implicit val coredef: CoreDef)
       1,
       new FMAExt
     ) {
+  override def valueWidth = coredef.XLEN
   override def retireWidth = coredef.XLEN
 
   def map(stage: Int, pipe: PipeInstr, ext: Option[FMAExt]): (FMAExt, Bool) = {

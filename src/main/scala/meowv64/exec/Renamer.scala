@@ -35,7 +35,7 @@ class Renamer(implicit coredef: CoreDef) extends Module {
     val ntag = Input(
       UInt(log2Ceil(coredef.INFLIGHT_INSTR_LIMIT).W)
     ) // Next tag also used for next rdname
-    val output = Output(Vec(coredef.ISSUE_NUM, new ReservedInstr))
+    val output = Output(Vec(coredef.ISSUE_NUM, new ReservedInstr(coredef.VLEN)))
     val allowBit = Output(Vec(coredef.ISSUE_NUM, Bool()))
 
     val releases = Vec(coredef.RETIRE_NUM, new Release)

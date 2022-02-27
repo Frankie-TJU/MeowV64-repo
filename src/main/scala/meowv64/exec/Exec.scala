@@ -187,13 +187,15 @@ class Exec(implicit val coredef: CoreDef) extends Module {
 
   val stations = units.zipWithIndex.map({
     case (u, idx) => {
+      val valueWidth = u.rs.valueWidth
       val rs = if (u.isInstanceOf[LSU]) {
-        val lsb = Module(new LSBuf(idx)).suggestName(s"LSBuf")
+        val lsb = Module(new LSBuf(valueWidth, idx)).suggestName(s"LSBuf")
         lsb.hasPending := hasPendingMem
         lsb.fs := toDC.fs
         lsb
       } else {
-        Module(new OoOResStation(idx)).suggestName(s"ResStation_${idx}")
+        Module(new OoOResStation(valueWidth, idx))
+          .suggestName(s"ResStation_${idx}")
       }
       rs.cdb := cdb
       rs.egress <> u.rs
@@ -261,7 +263,7 @@ class Exec(implicit val coredef: CoreDef) extends Module {
     val selfCanIssue = Wire(Bool()).suggestName(s"selfCanIssue_$idx")
     // sending to which station
     val sending = Wire(UInt(coredef.UNIT_COUNT.W)).suggestName(s"sending_$idx")
-    val instr = Wire(new ReservedInstr)
+    val instr = Wire(new ReservedInstr(coredef.XLEN))
 
     // Is global fence? (FENCE.I, CSR)
     val isGFence = (

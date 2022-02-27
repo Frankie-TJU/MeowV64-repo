@@ -24,7 +24,9 @@ class IntFloatExt(implicit val coredef: CoreDef) extends Bundle {
   */
 class FloatMisc(override implicit val coredef: CoreDef)
     extends ExecUnit(0, new IntFloatExt) {
+  override def valueWidth = coredef.XLEN
   override def retireWidth = coredef.XLEN
+
   def map(
       stage: Int,
       pipe: PipeInstr,

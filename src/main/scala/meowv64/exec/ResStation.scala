@@ -8,8 +8,9 @@ import meowv64.core.CoreDef
 import meowv64.instr.Decoder
 import meowv64.util.FlushableSlot
 
-class ResStationEgress(implicit val coredef: CoreDef) extends Bundle {
-  val instr = Decoupled(new ReservedInstr)
+class ResStationEgress(val valueWidth: Int)(implicit val coredef: CoreDef)
+    extends Bundle {
+  val instr = Decoupled(new ReservedInstr(valueWidth))
 }
 
 trait ResStation {
@@ -39,19 +40,20 @@ trait ResStation {
   * For every cycle, only one instr maybe issued into this station, and only one
   * ready instr may start executing
   */
-class OoOResStation(val idx: Int)(implicit val coredef: CoreDef)
-    extends Module
+class OoOResStation(val valueWidth: Int, val idx: Int)(implicit
+    val coredef: CoreDef
+) extends Module
     with ResStation {
 
   val DEPTH = coredef.RESERVATION_STATION_DEPTHS(idx)
 
   val ingress = IO(new Bundle {
-    val instr = Input(new ReservedInstr)
+    val instr = Input(new ReservedInstr(valueWidth))
     val free = Output(Bool())
     val push = Input(Bool())
   })
 
-  val egress = IO(new ResStationEgress)
+  val egress = IO(new ResStationEgress(valueWidth))
 
   val cdb = IO(Input(new CDB))
   val ctrl = IO(new Bundle {
@@ -59,7 +61,7 @@ class OoOResStation(val idx: Int)(implicit val coredef: CoreDef)
   })
 
   val count = RegInit(0.U(log2Ceil(DEPTH + 1).W))
-  val store = RegInit(VecInit(Seq.fill(DEPTH)(ReservedInstr.empty)))
+  val store = RegInit(VecInit(Seq.fill(DEPTH)(ReservedInstr.empty(valueWidth))))
   val occupied = VecInit(Seq.fill(DEPTH)(false.B))
   for (i <- 0 until DEPTH) {
     occupied(i) := i.U < count
@@ -77,7 +79,9 @@ class OoOResStation(val idx: Int)(implicit val coredef: CoreDef)
   val egIdx = PriorityEncoder(egMask)
   val maskedStore = WireDefault(store)
 
-  val egSlot = Module(new FlushableSlot(new ReservedInstr(), true, false))
+  val egSlot = Module(
+    new FlushableSlot(new ReservedInstr(valueWidth), true, false)
+  )
 
   egress.instr.valid := egSlot.io.deq.valid
   // zero when invalid
@@ -208,19 +212,19 @@ class OoOResStation(val idx: Int)(implicit val coredef: CoreDef)
   * L1 may do RAW and WAW reordering, so the effect may not be in program order
   * for other cores
   */
-class LSBuf(val idx: Int)(implicit val coredef: CoreDef)
+class LSBuf(val valueWidth: Int, val idx: Int)(implicit val coredef: CoreDef)
     extends Module
     with ResStation {
 
   val DEPTH = coredef.RESERVATION_STATION_DEPTHS(idx)
 
   val ingress = IO(new Bundle {
-    val instr = Input(new ReservedInstr)
+    val instr = Input(new ReservedInstr(valueWidth))
     val free = Output(Bool())
     val push = Input(Bool())
   })
 
-  val egress = IO(new ResStationEgress)
+  val egress = IO(new ResStationEgress(valueWidth))
 
   val fs = IO(new DCFenceStatus(coredef.L1D))
 
@@ -234,7 +238,7 @@ class LSBuf(val idx: Int)(implicit val coredef: CoreDef)
     Input(Bool())
   )
 
-  val store = RegInit(VecInit(Seq.fill(DEPTH)(ReservedInstr.empty)))
+  val store = RegInit(VecInit(Seq.fill(DEPTH)(ReservedInstr.empty(valueWidth))))
 
   val head = RegInit(0.U(log2Ceil(DEPTH).W))
   val tail = RegInit(0.U(log2Ceil(DEPTH).W))

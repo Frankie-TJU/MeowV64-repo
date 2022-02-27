@@ -16,6 +16,7 @@ class BypassExt(implicit val coredef: CoreDef) extends Bundle {
 
 class Bypass(override implicit val coredef: CoreDef)
     extends ExecUnit(0, new BypassExt) {
+  override def valueWidth = coredef.XLEN
   override def retireWidth = coredef.XLEN
 
   def map(
