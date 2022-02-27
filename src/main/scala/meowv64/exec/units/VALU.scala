@@ -47,7 +47,7 @@ class VALU(override implicit val coredef: CoreDef)
 
   def finalize(pipe: PipeInstr, ext: VALUExt): RetireInfo = {
     val info = WireDefault(RetireInfo.vacant(retireWidth))
-    info.wb := Cat(ext.res)
+    info.wb := Cat(ext.res.reverse)
 
     info
   }
