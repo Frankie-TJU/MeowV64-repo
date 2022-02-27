@@ -24,6 +24,7 @@ class Branch(override implicit val coredef: CoreDef)
     extends ExecUnit(0, new BranchExt)
     with WithPrivPort
     with WithStatus {
+  override def retireWidth: Int = coredef.XLEN
   val priv = IO(Input(PrivLevel()))
   val status = IO(Input(new Status))
 
@@ -132,7 +133,7 @@ class Branch(override implicit val coredef: CoreDef)
   }
 
   def finalize(pipe: PipeInstr, ext: BranchExt): RetireInfo = {
-    val info = WireDefault(RetireInfo.vacant)
+    val info = WireDefault(RetireInfo.vacant(retireWidth))
 
     when(ext.ex === ExReq.ex) {
       // info.regWaddr := 0.U

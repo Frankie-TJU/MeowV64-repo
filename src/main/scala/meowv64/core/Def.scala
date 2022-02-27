@@ -115,6 +115,7 @@ abstract class CoreDef {
   def tlbIdxWidth = log2Ceil(TLB_SIZE)
   def vpnWidth = VADDR_WIDTH - 12
   def ppnWidth = PADDR_WIDTH - 12
+  def vectorBankCount = VLEN / XLEN
 }
 
 // TODO: moves into MulticoreDef

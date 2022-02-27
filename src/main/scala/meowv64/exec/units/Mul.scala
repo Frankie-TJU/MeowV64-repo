@@ -18,6 +18,7 @@ class MulExt(implicit val coredef: CoreDef) extends Bundle {
 
 class Mul(override implicit val coredef: CoreDef)
     extends ExecUnit(2, new MulExt) {
+  override def retireWidth = coredef.XLEN
   assert(coredef.XLEN == 64)
 
   override def map(
@@ -129,7 +130,7 @@ class Mul(override implicit val coredef: CoreDef)
   }
 
   override def finalize(pipe: PipeInstr, ext: MulExt): RetireInfo = {
-    val info = WireDefault(RetireInfo.vacant)
+    val info = WireDefault(RetireInfo.vacant(retireWidth))
 
     info.wb := ext.x1
 

@@ -135,11 +135,11 @@ object ExceptionResult {
   *
   * @param coredef
   */
-class RetireInfo(implicit val coredef: CoreDef) extends Bundle {
+class RetireInfo(val retireWidth: Int)(implicit val coredef: CoreDef) extends Bundle {
 
   /** Writeback data or trap value(mtval, stval)
     */
-  val wb = UInt(coredef.XLEN.W)
+  val wb = UInt(retireWidth.W)
 
   /** Update fflags for floating point operations
     */
@@ -160,8 +160,8 @@ class RetireInfo(implicit val coredef: CoreDef) extends Bundle {
 }
 
 object RetireInfo {
-  def vacant(implicit coredef: CoreDef): RetireInfo = {
-    val info = Wire(new RetireInfo)
+  def vacant(dataWidth: Int)(implicit coredef: CoreDef): RetireInfo = {
+    val info = Wire(new RetireInfo(dataWidth))
 
     info.exception.nofire
     info.wb := 0.U
@@ -296,7 +296,7 @@ object ReservedInstr {
   *
   * @param coredef
   */
-class ExecUnitPort(implicit val coredef: CoreDef) extends Bundle {
+class ExecUnitPort(val retireWidth: Int)(implicit val coredef: CoreDef) extends Bundle {
   val next = Input(new PipeInstr)
 
   val stall = Output(Bool())
@@ -304,7 +304,7 @@ class ExecUnitPort(implicit val coredef: CoreDef) extends Bundle {
 
   /** The instruction that just finished execution
     */
-  val retirement = Output(new RetireInfo)
+  val retirement = Output(new RetireInfo(retireWidth))
 
   /** Result of execution
     */
@@ -347,7 +347,8 @@ abstract class ExecUnit[T <: Data](
     val coredef: CoreDef
 ) extends Module
     with ExecUnitInt {
-  val io = IO(new ExecUnitPort)
+  def retireWidth: Int = ???
+  val io = IO(new ExecUnitPort(retireWidth))
 
   var current = if (DEPTH != 0) {
     val storeInit = Wire(
@@ -418,7 +419,7 @@ abstract class ExecUnit[T <: Data](
 
       io.retired := current(DEPTH - 1).pipe
       when(!io.retired.instr.valid) {
-        io.retirement := RetireInfo.vacant
+        io.retirement := RetireInfo.vacant(retireWidth)
       }.otherwise {
         io.retirement := finalize(current(DEPTH - 1).pipe, nExt)
       }
@@ -428,7 +429,7 @@ abstract class ExecUnit[T <: Data](
       // Use chisel's unconnected wire check to enforce that no ext is exported from this exec unit
       io.retired := io.next
       when(!io.retired.instr.valid) {
-        io.retirement := RetireInfo.vacant
+        io.retirement := RetireInfo.vacant(retireWidth)
       }.otherwise {
         io.retirement := finalize(io.next, nExt)
       }

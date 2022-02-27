@@ -264,13 +264,13 @@ object DecodeInfo {
       VSETVL   -> List(Y, Y, integer, Y, integer, Y, integer, N, XX, csr),
 
       // Vector Integer
-      VADD_VV -> List(Y, Y, vector, Y, vector, N, XX, Y, vector, vAlu),
-      VADD_VI -> List(Y, Y, vector, N, XX, N, XX, Y, vector, vAlu),
-      VADD_VX -> List(Y, Y, vector, Y, integer, N, XX, Y, vector, vAlu),
-      VMV_X_S -> List(Y, Y, vector, N, XX, N, XX, Y, integer, vAlu),
-      VMV_S_X -> List(Y, Y, integer, N, XX, N, XX, Y, vector, vAlu),
-      VMV_V_I -> List(Y, N, XX, N, XX, N, XX, Y, vector, vAlu),
-      VMV_V_X -> List(Y, Y, integer, N, XX, N, XX, Y, vector, vAlu)
+      VADD_VV -> List(Y, Y, vector, Y, vector, N, XX, N, XX, vAlu),
+      VADD_VI -> List(Y, Y, vector, N, XX, N, XX, N, XX, vAlu),
+      VADD_VX -> List(Y, Y, vector, Y, integer, N, XX, N, XX, vAlu),
+      VMV_X_S -> List(Y, Y, integer, Y, vector, N, XX, N, XX, vAlu),
+      VMV_S_X -> List(Y, Y, vector, Y, integer, N, XX, N, XX, vAlu),
+      VMV_V_I -> List(Y, Y, vector, N, XX, N, XX, N, XX, vAlu),
+      VMV_V_X -> List(Y, Y, vector, Y, integer, N, XX, N, XX, vAlu)
     )
 
   def assign(inst: BitPat) = {

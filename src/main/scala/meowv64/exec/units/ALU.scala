@@ -12,6 +12,8 @@ class ALUExt(implicit val coredef: CoreDef) extends Bundle {
 
 class ALU(override implicit val coredef: CoreDef)
     extends ExecUnit(0, new ALUExt) {
+  override def retireWidth = coredef.XLEN
+
   def map(stage: Int, pipe: PipeInstr, ext: Option[ALUExt]): (ALUExt, Bool) = {
     val ext = Wire(new ALUExt)
     val acc = Wire(SInt(coredef.XLEN.W))
@@ -128,7 +130,7 @@ class ALU(override implicit val coredef: CoreDef)
 
   def finalize(pipe: PipeInstr, ext: ALUExt): RetireInfo = {
     // Sign extend if needed
-    val info = WireDefault(RetireInfo.vacant)
+    val info = WireDefault(RetireInfo.vacant(retireWidth))
     val extended = Wire(SInt(coredef.XLEN.W))
     extended := ext.acc
     info.wb := extended.asUInt

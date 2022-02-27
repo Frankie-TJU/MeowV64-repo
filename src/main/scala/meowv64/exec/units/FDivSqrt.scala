@@ -22,6 +22,7 @@ class FDivSqrt(override implicit val coredef: CoreDef)
       1,
       new FDivSqrtExt
     ) {
+  override def retireWidth = coredef.XLEN
 
   val idle = RegInit(true.B)
   // if flush occurred when there are inflight instructions
@@ -134,7 +135,7 @@ class FDivSqrt(override implicit val coredef: CoreDef)
   }
 
   def finalize(pipe: PipeInstr, ext: FDivSqrtExt): RetireInfo = {
-    val info = WireDefault(RetireInfo.vacant)
+    val info = WireDefault(RetireInfo.vacant(retireWidth))
     // result
     info.wb := ext.res.asUInt
 

@@ -175,6 +175,12 @@ object Decoder {
     "FMV.D/W.X" -> "11110"
   ).mapValues(Integer.parseInt(_, 2).U(5.W))
 
+  val VP_FUNC: Map[String, UInt] = Map(
+    "VADD" -> "000000",
+    "VMV_S" -> "010000",
+    "VMV_V" -> "010111",
+  ).mapValues(Integer.parseInt(_, 2).U(6.W))
+
   implicit class ConvertToBin(self: String) {
     def asBin = Integer.parseInt(self, 2)
     def asBits(len: Width) = self.asBin.U(len)
@@ -697,6 +703,8 @@ class Instr extends Bundle {
 
   // for R4-type
   def funct5() = funct7 >> 2
+  // for vector
+  def funct6() = funct7 >> 1
   // floating point format
   def fmt() = funct7(1, 0)
   // for fmadd

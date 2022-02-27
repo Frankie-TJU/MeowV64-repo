@@ -104,9 +104,10 @@ class DelayedMem(implicit val coredef: CoreDef) extends Bundle {
 }
 
 class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
+  val retireWidth = coredef.XLEN
   val flush = IO(Input(Bool()))
   val rs = IO(Flipped(new ResStationEgress))
-  val retire = IO(Output(new Retirement))
+  val retire = IO(Output(new Retirement(retireWidth)))
   val extras = new mutable.HashMap[String, Data]()
 
   def isUncached(addr: UInt) = addr < BigInt("80000000", 16).U
@@ -383,7 +384,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   val mem = Wire(new DelayedMem)
   mem.noop() // By default
 
-  retire.info := RetireInfo.vacant
+  retire.info := RetireInfo.vacant(retireWidth)
   retire.info.branchTaken := false.B // not a branch instruction
   when(pipeFenceLike) {
     retire.info.wb := DontCare

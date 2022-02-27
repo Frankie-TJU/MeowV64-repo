@@ -24,6 +24,7 @@ class IntFloatExt(implicit val coredef: CoreDef) extends Bundle {
   */
 class FloatMisc(override implicit val coredef: CoreDef)
     extends ExecUnit(0, new IntFloatExt) {
+  override def retireWidth = coredef.XLEN
   def map(
       stage: Int,
       pipe: PipeInstr,
@@ -416,7 +417,7 @@ class FloatMisc(override implicit val coredef: CoreDef)
   }
 
   def finalize(pipe: PipeInstr, ext: IntFloatExt): RetireInfo = {
-    val info = WireDefault(RetireInfo.vacant)
+    val info = WireDefault(RetireInfo.vacant(retireWidth))
 
     // result
     info.wb := ext.res.asUInt
