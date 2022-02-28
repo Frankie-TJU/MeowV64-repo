@@ -98,7 +98,7 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
     val s1Pc = Output(Valid(UInt(coredef.XLEN.W)))
     val s2Res = Input(
       Vec(
-        coredef.L1I.TO_L2_TRANSFER_WIDTH / Const.INSTR_MIN_WIDTH,
+        coredef.L1I.TO_CORE_TRANSFER_WIDTH / Const.INSTR_MIN_WIDTH,
         new BPUResult
       )
     )
@@ -118,14 +118,14 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
     val ptw = new TLBExt
   })
 
-  val ICAlign = log2Ceil(coredef.L1I.TO_L2_TRANSFER_WIDTH / 8)
+  val ICAlign = log2Ceil(coredef.L1I.TO_CORE_TRANSFER_WIDTH / 8)
 
   // Internal PC counter
   val s1Pc = RegInit(coredef.INIT_VEC.U(coredef.XLEN.W))
   val s1AlignedPc = s1Pc(coredef.XLEN - 1, ICAlign) ## 0.U(ICAlign.W)
 
   val instPerFetchPacket =
-    coredef.L1I.TO_L2_TRANSFER_WIDTH / Const.INSTR_MIN_WIDTH
+    coredef.L1I.TO_CORE_TRANSFER_WIDTH / Const.INSTR_MIN_WIDTH
 
   // pc of last cycle
   val s2Pc = RegInit(0.U(coredef.XLEN.W))
@@ -167,7 +167,7 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
 
     when(toIC.read) {
       // If We send an request to IC, step forward PC counter
-      s1Pc := s1AlignedFPc + (coredef.L1I.TO_L2_TRANSFER_WIDTH / 8).U
+      s1Pc := s1AlignedFPc + (coredef.L1I.TO_CORE_TRANSFER_WIDTH / 8).U
       s1PipeSuccessive := true.B
     }
   }
@@ -177,7 +177,7 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
   s1Successive := s1PipeSuccessive
   for (
     i <-
-      (0 until coredef.L1I.TO_L2_TRANSFER_WIDTH / Const.INSTR_MIN_WIDTH).reverse
+      (0 until coredef.L1I.TO_CORE_TRANSFER_WIDTH / Const.INSTR_MIN_WIDTH).reverse
   ) {
     val res = toBPU.s2Res(i)
     when(i.U >= s2PcOffset) {
@@ -215,7 +215,7 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
 
   // First, push all IC readouts into a queue
   class ICData extends Bundle {
-    val data = UInt(coredef.L1I.TO_L2_TRANSFER_WIDTH.W)
+    val data = UInt(coredef.L1I.TO_CORE_TRANSFER_WIDTH.W)
 
     /** Aligned address of this fetch packet.
       */
@@ -224,13 +224,13 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
     /** Mask of valid 16-bit parts
       */
     val mask = UInt(
-      (coredef.L1I.TO_L2_TRANSFER_WIDTH / Const.INSTR_MIN_WIDTH).W
+      (coredef.L1I.TO_CORE_TRANSFER_WIDTH / Const.INSTR_MIN_WIDTH).W
     )
 
     /** Last bit of valid 16-bit parts, for BTB predictions
       */
     val last = UInt(
-      (coredef.L1I.TO_L2_TRANSFER_WIDTH / Const.INSTR_MIN_WIDTH).W
+      (coredef.L1I.TO_CORE_TRANSFER_WIDTH / Const.INSTR_MIN_WIDTH).W
     )
 
     /** Whether this fetch packet is successive, i.e. the next packet of
@@ -242,7 +242,7 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
       */
     val pred =
       Vec(
-        coredef.L1I.TO_L2_TRANSFER_WIDTH / Const.INSTR_MIN_WIDTH,
+        coredef.L1I.TO_CORE_TRANSFER_WIDTH / Const.INSTR_MIN_WIDTH,
         new BPUResult
       )
 
@@ -312,15 +312,15 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
   ICHead.io.enq <> ICQueue.io.deq
   ICHead.io.deq.nodeq() // Default
 
-  val headPtr = RegInit(0.U(log2Ceil(coredef.L1I.TO_L2_TRANSFER_WIDTH / 16).W))
+  val headPtr = RegInit(0.U(log2Ceil(coredef.L1I.TO_CORE_TRANSFER_WIDTH / 16).W))
 
   val decodeVec = Wire(
-    Vec(coredef.L1I.TO_L2_TRANSFER_WIDTH * 2 / 16, UInt(16.W))
+    Vec(coredef.L1I.TO_CORE_TRANSFER_WIDTH * 2 / 16, UInt(16.W))
   )
   decodeVec := (ICQueue.io.deq.bits.data ## ICHead.io.deq.bits.data)
     .asTypeOf(decodeVec)
   val joinedVec = Wire(
-    Vec(coredef.L1I.TO_L2_TRANSFER_WIDTH * 2 / 16 - 1, UInt(32.W))
+    Vec(coredef.L1I.TO_CORE_TRANSFER_WIDTH * 2 / 16 - 1, UInt(32.W))
   )
   for ((v, i) <- joinedVec.zipWithIndex) {
     v := decodeVec(i + 1) ## decodeVec(i)
@@ -334,7 +334,7 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
   val decodePtr = Wire(
     Vec(
       coredef.FETCH_NUM + 1,
-      UInt(log2Ceil(coredef.L1I.TO_L2_TRANSFER_WIDTH * 2 / 16).W)
+      UInt(log2Ceil(coredef.L1I.TO_CORE_TRANSFER_WIDTH * 2 / 16).W)
     )
   )
   val decoded = Wire(Vec(coredef.FETCH_NUM, new InstrExt))
@@ -346,7 +346,7 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
   for (i <- 0 until coredef.FETCH_NUM) {
     // this instruction spans ICHead and ICQueue
     val overflowed =
-      decodePtr(i) >= (coredef.L1I.TO_L2_TRANSFER_WIDTH / 16 - 1).U
+      decodePtr(i) >= (coredef.L1I.TO_CORE_TRANSFER_WIDTH / 16 - 1).U
 
     when(!overflowed) {
       decodable(i) := ICHead.io.deq.valid
@@ -610,7 +610,7 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
     ICHead.io.flush.get := true.B
     toCtrl.ctrl.stall := false.B
 
-    val ICAlign = log2Ceil(coredef.L1I.TO_L2_TRANSFER_WIDTH / 8)
+    val ICAlign = log2Ceil(coredef.L1I.TO_CORE_TRANSFER_WIDTH / 8)
     // Set pc directly, because we are waiting for one tick
     s1Pc := toCtrl.pc
     s1FPc := toCtrl.pc
