@@ -97,7 +97,7 @@ class L1ICPort(val opts: L1Opts) extends Bundle with L1Port {
   val addr = Output(UInt(opts.ADDR_WIDTH.W))
 
   val stall = Input(Bool())
-  val data = Input(UInt((opts.LINE_BYTES * 8).W))
+  val data = Input(UInt((opts.TO_L2_TRANSFER_WIDTH).W))
 
   override def getAddr: UInt = addr
   override def getReq = {
@@ -178,13 +178,13 @@ class L1DCPort(val opts: L1Opts) extends Bundle with L1Port {
   val l1req = Output(L1DCPort.L1Req())
   val l1addr = Output(UInt(opts.ADDR_WIDTH.W))
   val l1stall = Input(Bool())
-  val l1data = Output(UInt((opts.LINE_BYTES * 8).W))
+  val l1data = Output(UInt((opts.TO_L2_TRANSFER_WIDTH).W))
 
   // L1 <- L2 request
   val l2req = Input(L1DCPort.L2Req())
   val l2addr = Input(UInt(opts.ADDR_WIDTH.W))
   val l2stall = Output(Bool())
-  val l2data = Input(UInt((opts.LINE_BYTES * 8).W))
+  val l2data = Input(UInt((opts.TO_L2_TRANSFER_WIDTH).W))
   // TODO: add a debug signal to show if L1 really has the entry
 
   override def getAddr: UInt = l1addr

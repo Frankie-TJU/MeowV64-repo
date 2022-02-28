@@ -120,10 +120,11 @@ abstract class CoreDef {
 
 // TODO: moves into MulticoreDef
 object CoreDef {
-  def default(id: Int, initVec: BigInt) = {
+  def default(id: Int, initVec: BigInt, cacheLineBytes: Int) = {
     new CoreDef {
       override val HART_ID = id
       override val INIT_VEC = initVec
+      override val L1_LINE_BYTES: Int = cacheLineBytes
     }
   }
 }
