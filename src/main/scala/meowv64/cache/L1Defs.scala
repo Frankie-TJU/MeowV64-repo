@@ -46,8 +46,16 @@ trait CacheOpts {
   assume(SIZE_BYTES % LINE_BYTES == 0)
 
   // Compute widths for cache usage
+  def LINE_PER_ASSOC = SIZE_BYTES / ASSOC / LINE_BYTES
   def INDEX_OFFSET_WIDTH = log2Ceil(SIZE_BYTES / ASSOC)
+  def ASSOC_IDX_WIDTH = log2Ceil(ASSOC)
+
+  // three parts: tag, index, offset
   def TAG_WIDTH = ADDR_WIDTH - INDEX_OFFSET_WIDTH
+  def INDEX_WIDTH = log2Ceil(LINE_PER_ASSOC)
+  def OFFSET_WIDTH = log2Ceil(LINE_BYTES)
+
+  assert(INDEX_WIDTH == log2Ceil(LINE_PER_ASSOC))
 }
 
 trait L1Opts extends CacheOpts {

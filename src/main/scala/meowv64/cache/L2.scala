@@ -127,7 +127,6 @@ class L2Cache(val opts: L2Opts) extends Module {
   val INDEX_OFFSET_LENGTH = log2Ceil(opts.SIZE_BYTES / opts.ASSOC)
   val INDEX_LENGTH = INDEX_OFFSET_LENGTH - OFFSET_LENGTH
   val TAG_LENGTH = opts.ADDR_WIDTH - INDEX_OFFSET_LENGTH
-  val ASSOC_IDX_WIDTH = log2Ceil(opts.ASSOC)
   val LINE_COUNT = opts.SIZE_BYTES / opts.LINE_BYTES / opts.ASSOC
 
   object GeneralMMIODef
@@ -740,7 +739,7 @@ class L2Cache(val opts: L2Opts) extends Module {
     is(L2MainState.waitFlush) {
       // flushing(M -> I) core, wait for completion
       val ent = Wire(new L2DirEntry(opts))
-      val writtenTowards = Wire(UInt(ASSOC_IDX_WIDTH.W))
+      val writtenTowards = Wire(UInt(opts.ASSOC_IDX_WIDTH.W))
 
       // TODO: can we merge victim and pipeHitIdx? their use case are mutually exclusive
       when(pendingVictim) {

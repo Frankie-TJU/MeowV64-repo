@@ -44,25 +44,18 @@ class L1IC(opts: L1Opts) extends Module {
   toL2.addr := DontCare
   toL2.read := false.B
 
-  val LINE_COUNT = opts.SIZE_BYTES / opts.LINE_BYTES
-  val LINE_PER_ASSOC = LINE_COUNT / opts.ASSOC
-
-  val ASSOC_IDX_WIDTH = log2Ceil(opts.ASSOC)
-
-  val OFFSET_WIDTH = log2Ceil(opts.LINE_BYTES)
-  val INDEX_OFFSET_WIDTH = log2Ceil(opts.SIZE_BYTES / opts.ASSOC)
-  val INDEX_WIDTH = INDEX_OFFSET_WIDTH - OFFSET_WIDTH
   val IGNORED_WIDTH = log2Ceil(opts.TO_CORE_TRANSFER_WIDTH / 8)
 
-  assume(INDEX_WIDTH == log2Ceil(LINE_PER_ASSOC))
-
-  val directories = Mem(LINE_PER_ASSOC, Vec(opts.ASSOC, new ILine(opts)))
+  val directories = Mem(opts.LINE_PER_ASSOC, Vec(opts.ASSOC, new ILine(opts)))
   val stores = SyncReadMem(
-    LINE_PER_ASSOC,
-    Vec(opts.ASSOC, Vec(opts.TRANSFER_COUNT, UInt(opts.TO_CORE_TRANSFER_WIDTH.W)))
+    opts.LINE_PER_ASSOC,
+    Vec(
+      opts.ASSOC,
+      Vec(opts.TRANSFER_COUNT, UInt(opts.TO_CORE_TRANSFER_WIDTH.W))
+    )
   )
 
-  val writerAddr = Wire(UInt(INDEX_WIDTH.W))
+  val writerAddr = Wire(UInt(opts.INDEX_WIDTH.W))
   val writerDir = Wire(new ILine(opts))
   val writerData = Wire(
     Vec(opts.TRANSFER_COUNT, UInt(opts.TO_CORE_TRANSFER_WIDTH.W))
@@ -85,11 +78,12 @@ class L1IC(opts: L1Opts) extends Module {
   writerData := DontCare
   writerMask := VecInit(Seq.fill(opts.ASSOC)(false.B))
 
-  def getTransferOffset(addr: UInt) = addr(OFFSET_WIDTH - 1, IGNORED_WIDTH)
-  def getIndex(addr: UInt) = addr(INDEX_OFFSET_WIDTH - 1, OFFSET_WIDTH)
-  def getTag(addr: UInt) = addr(opts.ADDR_WIDTH - 1, INDEX_OFFSET_WIDTH)
+  def getTransferOffset(addr: UInt) = addr(opts.OFFSET_WIDTH - 1, IGNORED_WIDTH)
+  def getIndex(addr: UInt) =
+    addr(opts.INDEX_OFFSET_WIDTH - 1, opts.OFFSET_WIDTH)
+  def getTag(addr: UInt) = addr(opts.ADDR_WIDTH - 1, opts.INDEX_OFFSET_WIDTH)
   def toAligned(addr: UInt) =
-    getTag(addr) ## getIndex(addr) ## 0.U(OFFSET_WIDTH.W)
+    getTag(addr) ## getIndex(addr) ## 0.U(opts.OFFSET_WIDTH.W)
 
   // Stage 1, tag fetch, data fetch
   val pipeRead = RegInit(false.B)
@@ -125,7 +119,7 @@ class L1IC(opts: L1Opts) extends Module {
   val rand = chisel3.util.random.LFSR(8)
   val victim = RegInit(0.U(log2Ceil(opts.ASSOC)))
 
-  val rstCnt = RegInit(0.U(INDEX_WIDTH.W))
+  val rstCnt = RegInit(0.U(opts.INDEX_WIDTH.W))
   val rstLine = Wire(new ILine(opts))
   rstLine.tag := 0.U
   rstLine.valid := false.B
@@ -200,7 +194,7 @@ class L1IC(opts: L1Opts) extends Module {
         written.tag := getTag(pipeAddr)
         written.valid := true.B
 
-        val victim = rand(ASSOC_IDX_WIDTH - 1, 0)
+        val victim = rand(opts.ASSOC_IDX_WIDTH - 1, 0)
         val mask = UIntToOH(victim)
 
         val dataView = toL2.data.asTypeOf(writerData)

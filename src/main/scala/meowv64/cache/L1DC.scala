@@ -152,16 +152,13 @@ object DLine {
 class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
   // Constants and helpers
   val IGNORED_WIDTH = log2Ceil(opts.TO_CORE_TRANSFER_WIDTH / 8)
-  val OFFSET_WIDTH = log2Ceil(opts.LINE_BYTES)
-  val LINE_PER_ASSOC = opts.SIZE_BYTES / opts.ASSOC / opts.LINE_BYTES
-  val INDEX_WIDTH = log2Ceil(LINE_PER_ASSOC)
-  val ASSOC_IDX_WIDTH = log2Ceil(opts.ASSOC)
 
   def getLineAddr(addr: UInt) =
     addr(opts.ADDR_WIDTH - 1, IGNORED_WIDTH) ## 0.U(IGNORED_WIDTH.W)
-  def getTag(addr: UInt) = addr >> (INDEX_WIDTH + OFFSET_WIDTH)
-  def getIndex(addr: UInt) = addr(INDEX_WIDTH + OFFSET_WIDTH - 1, OFFSET_WIDTH)
-  def getSublineIdx(addr: UInt) = addr(OFFSET_WIDTH - 1, IGNORED_WIDTH)
+  def getTag(addr: UInt) = addr >> (opts.INDEX_WIDTH + opts.OFFSET_WIDTH)
+  def getIndex(addr: UInt) =
+    addr(opts.INDEX_WIDTH + opts.OFFSET_WIDTH - 1, opts.OFFSET_WIDTH)
+  def getSublineIdx(addr: UInt) = addr(opts.OFFSET_WIDTH - 1, IGNORED_WIDTH)
 
   def muxBE(be: UInt, wdata: UInt, base: UInt): UInt = {
     assume(be.getWidth * 8 == wdata.getWidth)
@@ -182,7 +179,8 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
     ret.asUInt
   }
 
-  val stores = SyncReadMem(LINE_PER_ASSOC, Vec(opts.ASSOC, new DLine(opts)))
+  val stores =
+    SyncReadMem(opts.LINE_PER_ASSOC, Vec(opts.ASSOC, new DLine(opts)))
 
   // Ports, mr = Memory read, ptw = Page table walker
   val mr = IO(Flipped(new CoreDCReader))
@@ -353,7 +351,7 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
   val wdirtyHit = VecInit(wdirtyHits).asUInt.orR
 
   val rand = chisel3.util.random.LFSR(8)
-  val victim = RegInit(0.U(ASSOC_IDX_WIDTH.W))
+  val victim = RegInit(0.U(opts.ASSOC_IDX_WIDTH.W))
 
   // writing / reading is never directly gone to
   assert(
@@ -364,7 +362,7 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
   val writing = Wire(Vec(opts.ASSOC, Bool()))
   val l1writing = Wire(Vec(opts.ASSOC, Bool()))
   val writingData = Wire(new DLine(opts))
-  val writingAddr = Wire(UInt(INDEX_WIDTH.W))
+  val writingAddr = Wire(UInt(opts.INDEX_WIDTH.W))
   l1writing := VecInit(Seq.fill(opts.ASSOC)(false.B))
   writing := l1writing
   writingData := DontCare
@@ -373,7 +371,7 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
   stores.write(writingAddr, VecInit(Seq.fill(opts.ASSOC)(writingData)), writing)
 
   // Rst
-  val rstCnt = RegInit(0.U(log2Ceil(LINE_PER_ASSOC).W))
+  val rstCnt = RegInit(0.U(log2Ceil(opts.LINE_PER_ASSOC).W))
 
   val pipeAddrIdx = Wire(UInt())
   val waddrIdx = Wire(UInt())
@@ -390,7 +388,7 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
 
       rstCnt := rstCnt +% 1.U
 
-      when(rstCnt === (LINE_PER_ASSOC - 1).U) {
+      when(rstCnt === (opts.LINE_PER_ASSOC - 1).U) {
         nstate := MainState.idle
       }
     }
@@ -400,14 +398,16 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
       // for the allocated data to propagate to the read port
       when(pendingRead) {
         nstate := MainState.reading
-        victim := rand(ASSOC_IDX_WIDTH - 1, 0)
+        victim := rand(opts.ASSOC_IDX_WIDTH - 1, 0)
       }.elsewhen(wbufHead =/= wbufTail) {
         nstate := MainState.writing
       }
     }
 
     is(MainState.writing) {
-      toL2.l1addr := getTag(waddr) ## getIndex(waddr) ## 0.U(OFFSET_WIDTH.W)
+      toL2.l1addr := getTag(waddr) ## getIndex(waddr) ## 0.U(
+        opts.OFFSET_WIDTH.W
+      )
 
       assert(wbufHead =/= wbufTail)
 
@@ -488,7 +488,7 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
       }.otherwise {
         // Not hit, goto walloc
         nstate := MainState.walloc
-        victim := rand(ASSOC_IDX_WIDTH - 1, 0)
+        victim := rand(opts.ASSOC_IDX_WIDTH - 1, 0)
       }
     }
 
@@ -497,7 +497,7 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
         && getIndex(pipeAddr) === getIndex(reserved)
         && wlookups(victim).tag === getTag(reserved)
         && resValid)
-      when(if (ASSOC_IDX_WIDTH == 0) { false.B }
+      when(if (opts.ASSOC_IDX_WIDTH == 0) { false.B }
       else { reservedCollision }) {
         // Reselect victim
         victim := victim +% 1.U
@@ -505,7 +505,7 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
         nstate := MainState.readingRefill
       }.otherwise {
         toL2.l1addr := wlookups(victim).tag ## getIndex(pipeAddr) ## 0.U(
-          OFFSET_WIDTH.W
+          opts.OFFSET_WIDTH.W
         )
         toL2.l1req := L1DCPort.L1Req.writeback
         toL2.l1data := wlookups(victim).data.asUInt()
@@ -530,7 +530,7 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
         nstate := MainState.wallocRefill
       }.otherwise {
         toL2.l1addr := wlookups(victim).tag ## getIndex(waddr) ## 0.U(
-          OFFSET_WIDTH.W
+          opts.OFFSET_WIDTH.W
         )
         toL2.l1req := L1DCPort.L1Req.writeback
         toL2.l1data := wlookups(victim).data.asUInt()
@@ -557,7 +557,9 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
         L1DCPort.L1Req.modify
       )
       val l1addr = Mux(state === MainState.readingRefill, pipeAddr, waddr)
-      toL2.l1addr := getTag(l1addr) ## getIndex(l1addr) ## 0.U(OFFSET_WIDTH.W)
+      toL2.l1addr := getTag(l1addr) ## getIndex(l1addr) ## 0.U(
+        opts.OFFSET_WIDTH.W
+      )
 
       val writtenAddr = Mux(state === MainState.readingRefill, pipeAddr, waddr)
 
@@ -761,7 +763,9 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
   when(pipeRead && pipeReserve && !r.stall) {
     resValid := true.B
     resCommitted := false.B
-    reserved := getTag(pipeAddr) ## getIndex(pipeAddr) ## 0.U(OFFSET_WIDTH.W)
+    reserved := getTag(pipeAddr) ## getIndex(pipeAddr) ## 0.U(
+      opts.OFFSET_WIDTH.W
+    )
   }
 
   pendingRead := false.B
