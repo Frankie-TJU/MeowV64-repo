@@ -2,6 +2,7 @@ package meowv64.cache
 
 import chisel3._
 import chisel3.experimental.ChiselEnum
+import chisel3.util.log2Ceil
 
 /** Cache definations and interfaces
   *
@@ -43,6 +44,10 @@ trait CacheOpts {
 
   // TODO: check is log2
   assume(SIZE_BYTES % LINE_BYTES == 0)
+
+  // Compute widths for cache usage
+  def INDEX_OFFSET_WIDTH = log2Ceil(SIZE_BYTES / ASSOC)
+  def TAG_WIDTH = ADDR_WIDTH - INDEX_OFFSET_WIDTH
 }
 
 trait L1Opts extends CacheOpts {
@@ -56,6 +61,10 @@ trait L1Opts extends CacheOpts {
   /** L1 <-> L2 transfer size in bits.
     */
   def TO_L2_TRANSFER_WIDTH: Int = LINE_BYTES * 8
+
+  /** LINE_WIDTH / CORE_DATA_WIDTH
+    */
+  def TRANSFER_COUNT: Int = TO_L2_TRANSFER_WIDTH / TO_CORE_TRANSFER_WIDTH
 }
 
 trait L1DOpts extends L1Opts {

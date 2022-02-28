@@ -132,14 +132,10 @@ class DCFenceStatus(val opts: L1DOpts) extends Bundle {
 }
 
 class DLine(val opts: L1Opts) extends Bundle {
-  val INDEX_OFFSET_WIDTH = log2Ceil(opts.SIZE_BYTES / opts.ASSOC)
-  val TAG_WIDTH = opts.ADDR_WIDTH - INDEX_OFFSET_WIDTH
-  val TRANSFER_COUNT = opts.LINE_BYTES * 8 / opts.TO_CORE_TRANSFER_WIDTH
-
-  val tag = UInt(TAG_WIDTH.W)
+  val tag = UInt(opts.TAG_WIDTH.W)
   val valid = Bool()
   val dirty = Bool()
-  val data = Vec(TRANSFER_COUNT, UInt(opts.TO_CORE_TRANSFER_WIDTH.W))
+  val data = Vec(opts.TRANSFER_COUNT, UInt(opts.TO_CORE_TRANSFER_WIDTH.W))
 }
 
 object DLine {
