@@ -76,9 +76,13 @@ trait L1Opts extends CacheOpts {
     */
   def TO_L2_TRANSFER_WIDTH: Int = LINE_BYTES * 8
 
+  /** Line width in bits.
+    */
+  def LINE_WIDTH: Int = LINE_BYTES * 8
+
   /** LINE_WIDTH / CORE_DATA_WIDTH
     */
-  def TRANSFER_COUNT: Int = TO_L2_TRANSFER_WIDTH / TO_CORE_TRANSFER_WIDTH
+  def TRANSFER_COUNT: Int = LINE_WIDTH / TO_CORE_TRANSFER_WIDTH
 }
 
 trait L1DOpts extends L1Opts {

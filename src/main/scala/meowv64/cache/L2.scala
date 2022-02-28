@@ -107,7 +107,7 @@ object L2WBState extends ChiselEnum {
 class WBEntry(val opts: L2Opts) extends Bundle {
   val OFFSET_LENGTH = log2Ceil(opts.LINE_BYTES)
   val lineaddr = UInt((opts.ADDR_WIDTH - OFFSET_LENGTH).W)
-  val data = UInt((opts.LINE_BYTES * 8).W)
+  val data = UInt((opts.LINE_WIDTH).W)
   val valid = Bool()
 }
 
@@ -165,12 +165,12 @@ class L2Cache(val opts: L2Opts) extends Module {
   // Assoc and writers
   val directories = Mem(LINE_COUNT, Vec(opts.ASSOC, new L2DirEntry(opts)))
   val stores =
-    SyncReadMem(LINE_COUNT, Vec(opts.ASSOC, UInt((opts.LINE_BYTES * 8).W)))
+    SyncReadMem(LINE_COUNT, Vec(opts.ASSOC, UInt(opts.LINE_WIDTH.W)))
 
   val dataWriter = Wire(new Bundle {
     val mask = Vec(opts.ASSOC, Bool())
     val addr = UInt(INDEX_LENGTH.W)
-    val data = UInt((opts.LINE_BYTES * 8).W)
+    val data = UInt(opts.LINE_WIDTH.W)
   })
 
   val dirWriter = Wire(new Bundle {
@@ -201,7 +201,7 @@ class L2Cache(val opts: L2Opts) extends Module {
   }
 
   def writeData(idx: UInt, addr: UInt, data: UInt) {
-    assume(data.getWidth == opts.LINE_BYTES * 8)
+    assume(data.getWidth == opts.LINE_WIDTH)
 
     val mask = Wire(Vec(opts.ASSOC, Bool()))
     for ((m, i) <- mask.zipWithIndex) {
@@ -238,7 +238,7 @@ class L2Cache(val opts: L2Opts) extends Module {
   // Joint ports
   val addrs = Wire(Vec(opts.CORE_COUNT * 2, UInt(opts.ADDR_WIDTH.W)))
   val ops = Wire(Vec(opts.CORE_COUNT * 2, L1DCPort.L1Req()))
-  val rdatas = Wire(Vec(opts.CORE_COUNT * 2, UInt((opts.LINE_BYTES * 8).W)))
+  val rdatas = Wire(Vec(opts.CORE_COUNT * 2, UInt(opts.LINE_WIDTH.W)))
   val stalls = Wire(Vec(opts.CORE_COUNT * 2, Bool()))
   for ((p, a) <- ports.zip(addrs.iterator)) {
     a := p.getAddr
@@ -293,7 +293,7 @@ class L2Cache(val opts: L2Opts) extends Module {
     VecInit(
       Seq.fill(opts.CORE_COUNT * 2)(
         VecInit(
-          Seq.fill(opts.LINE_BYTES * 8 / axi.DATA_WIDTH)(0.U(axi.DATA_WIDTH.W))
+          Seq.fill(opts.LINE_WIDTH / axi.DATA_WIDTH)(0.U(axi.DATA_WIDTH.W))
         )
       )
     )
@@ -414,7 +414,7 @@ class L2Cache(val opts: L2Opts) extends Module {
   }
 
   // For debugging
-  val rememberedHitData = Reg(UInt((opts.LINE_BYTES * 8).W))
+  val rememberedHitData = Reg(UInt(opts.LINE_WIDTH.W))
 
   switch(state) {
     is(L2MainState.reset) {
@@ -630,7 +630,7 @@ class L2Cache(val opts: L2Opts) extends Module {
       val isDC = target < opts.CORE_COUNT.U
 
       def commit() = {
-        val rdata = bufs(target).asTypeOf(UInt((opts.LINE_BYTES * 8).W))
+        val rdata = bufs(target).asTypeOf(UInt(opts.LINE_WIDTH.W))
 
         assert(misses(target))
         assert(refilled(target))
@@ -752,7 +752,7 @@ class L2Cache(val opts: L2Opts) extends Module {
       }
 
       val writtenAddr = ent.tag ## targetAddr(INDEX_OFFSET_LENGTH - 1, 0)
-      val writtenData = Wire(UInt((opts.LINE_BYTES * 8).W))
+      val writtenData = Wire(UInt(opts.LINE_WIDTH.W))
       val commit = Wire(Bool())
       writtenData := DontCare
       commit := false.B
@@ -848,7 +848,7 @@ class L2Cache(val opts: L2Opts) extends Module {
           val isDC = target < opts.CORE_COUNT.U
 
           def commit() = {
-            val rdata = bufs(target).asTypeOf(UInt((opts.LINE_BYTES * 8).W))
+            val rdata = bufs(target).asTypeOf(UInt(opts.LINE_WIDTH.W))
             // TODO: check if CORE_COUNT = 2^n
             val coreWidth = if (opts.CORE_COUNT != 1) {
               log2Ceil(opts.CORE_COUNT)
@@ -932,7 +932,7 @@ class L2Cache(val opts: L2Opts) extends Module {
   }
 
   // Refiller, only deals with AR channel
-  val axiGrpNum = opts.LINE_BYTES * 8 / axi.DATA_WIDTH
+  val axiGrpNum = opts.LINE_WIDTH / axi.DATA_WIDTH
 
   val reqTarget = RegInit(0.U(log2Ceil(opts.CORE_COUNT * 3).W))
   val rawReqAddr = missesAddr(reqTarget)
@@ -952,7 +952,7 @@ class L2Cache(val opts: L2Opts) extends Module {
       // Yeah.. we are finally using id
       axi.ARID := reqTarget
       assume(
-        opts.LINE_BYTES * 8 % axi.DATA_WIDTH == 0,
+        opts.LINE_WIDTH % axi.DATA_WIDTH == 0,
         "Line cannot be filled with an integer number of AXI transfers"
       )
       axi.ARLEN := (axiGrpNum - 1).U
@@ -1003,7 +1003,7 @@ class L2Cache(val opts: L2Opts) extends Module {
   val bufptrs = RegInit(
     VecInit(
       Seq.fill(opts.CORE_COUNT * 2)(
-        0.U(log2Ceil(opts.LINE_BYTES * 8 / axi.DATA_WIDTH).W)
+        0.U(log2Ceil(opts.LINE_WIDTH / axi.DATA_WIDTH).W)
       )
     )
   )
