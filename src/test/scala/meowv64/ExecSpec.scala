@@ -378,7 +378,7 @@ object Simulator {
       annotations
     } else {
       // fst is smaller than vcd
-      annotations ++ Seq(WriteVcdAnnotation)
+      annotations ++ Seq(WriteFstAnnotation)
     }
   }
 }
