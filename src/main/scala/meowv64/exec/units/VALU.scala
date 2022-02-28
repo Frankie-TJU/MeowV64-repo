@@ -35,13 +35,13 @@ class VALU(override implicit val coredef: CoreDef)
     switch(pipe.instr.instr.funct6) {
       is(Decoder.VP_FUNC("VMV_S")) {
         switch(pipe.instr.instr.funct3) {
-          is(2.U) {
-            // VMV_X_S
+          is(1.U, 2.U) {
+            // VFMV_F_S/VMV_X_S
             // TODO: retain other lanes
             ext.res(0) := pipe.rs2val
           }
-          is(6.U) {
-            // VMV_S_X
+          is(5.U, 6.U) {
+            // VFMV_S_F/VMV_S_X
             ext.res(0) := rs1Elements(0)
           }
         }
@@ -58,8 +58,8 @@ class VALU(override implicit val coredef: CoreDef)
               ext.res(i) := simm.asUInt
             }
           }
-          is(4.U) {
-            // VMV_V_X
+          is(4.U, 5.U) {
+            // VMV_V_X/VFMV_V_F
             for (i <- 0 until coredef.vectorBankCount) {
               ext.res(i) := pipe.rs1val
             }

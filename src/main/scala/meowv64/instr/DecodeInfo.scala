@@ -264,14 +264,17 @@ object DecodeInfo {
       VSETVL   -> List(Y, Y, integer, Y, integer, Y, integer, N, XX, csr),
 
       // Vector Integer
-      VADD_VV -> List(Y, Y, vector, Y, vector, N, XX, N, XX, vAlu),
-      VADD_VI -> List(Y, Y, vector, N, XX, N, XX, N, XX, vAlu),
-      VADD_VX -> List(Y, Y, vector, Y, integer, N, XX, N, XX, vAlu),
-      VMV_X_S -> List(Y, Y, integer, N, XX, Y, vector, N, XX, vAlu),
-      VMV_S_X -> List(Y, Y, vector, Y, integer, N, XX, N, XX, vAlu),
-      VMV_V_V -> List(Y, Y, vector, Y, vector, N, XX, N, XX, vAlu),
-      VMV_V_I -> List(Y, Y, vector, N, XX, N, XX, N, XX, vAlu),
-      VMV_V_X -> List(Y, Y, vector, Y, integer, N, XX, N, XX, vAlu)
+      VADD_VV  -> List(Y, Y, vector, Y, vector, N, XX, N, XX, vAlu),
+      VADD_VI  -> List(Y, Y, vector, N, XX, N, XX, N, XX, vAlu),
+      VADD_VX  -> List(Y, Y, vector, Y, integer, N, XX, N, XX, vAlu),
+      VFMV_F_S -> List(Y, Y, float, N, XX, Y, vector, N, XX, vAlu),
+      VMV_X_S  -> List(Y, Y, integer, N, XX, Y, vector, N, XX, vAlu),
+      VFMV_S_F -> List(Y, Y, vector, Y, float, N, XX, N, XX, vAlu),
+      VMV_S_X  -> List(Y, Y, vector, Y, integer, N, XX, N, XX, vAlu),
+      VMV_V_V  -> List(Y, Y, vector, Y, vector, N, XX, N, XX, vAlu),
+      VMV_V_I  -> List(Y, Y, vector, N, XX, N, XX, N, XX, vAlu),
+      VMV_V_X  -> List(Y, Y, vector, Y, integer, N, XX, N, XX, vAlu),
+      VFMV_V_F -> List(Y, Y, vector, Y, float, N, XX, N, XX, vAlu)
     )
 
   def assign(inst: BitPat) = {
@@ -538,12 +541,15 @@ object Instructions {
   val VSE32_V = BitPat("b000000?00000?????110?????0100111")
 
   // Vector Integer
-  val VADD_VV = BitPat("b000000???????????000?????1010111")
-  val VADD_VI = BitPat("b000000???????????011?????1010111")
-  val VADD_VX = BitPat("b000000???????????100?????1010111")
-  val VMV_X_S = BitPat("b0100001?????00000010?????1010111")
-  val VMV_S_X = BitPat("b010000100000?????110?????1010111")
-  val VMV_V_V = BitPat("b010111100000?????000?????1010111")
-  val VMV_V_I = BitPat("b010111100000?????011?????1010111")
-  val VMV_V_X = BitPat("b010111100000?????100?????1010111")
+  val VADD_VV  = BitPat("b000000???????????000?????1010111")
+  val VADD_VI  = BitPat("b000000???????????011?????1010111")
+  val VADD_VX  = BitPat("b000000???????????100?????1010111")
+  val VFMV_F_S = BitPat("b0100001?????00000001?????1010111")
+  val VMV_X_S  = BitPat("b0100001?????00000010?????1010111")
+  val VFMV_S_F = BitPat("b010000100000?????101?????1010111")
+  val VMV_S_X  = BitPat("b010000100000?????110?????1010111")
+  val VMV_V_V  = BitPat("b010111100000?????000?????1010111")
+  val VMV_V_I  = BitPat("b010111100000?????011?????1010111")
+  val VMV_V_X  = BitPat("b010111100000?????100?????1010111")
+  val VFMV_V_F = BitPat("b010111100000?????101?????1010111")
 }
