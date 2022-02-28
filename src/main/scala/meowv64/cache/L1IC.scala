@@ -79,9 +79,8 @@ class L1IC(opts: L1Opts) extends Module {
   writerMask := VecInit(Seq.fill(opts.ASSOC)(false.B))
 
   def getTransferOffset(addr: UInt) = addr(opts.OFFSET_WIDTH - 1, IGNORED_WIDTH)
-  def getIndex(addr: UInt) =
-    addr(opts.INDEX_OFFSET_WIDTH - 1, opts.OFFSET_WIDTH)
-  def getTag(addr: UInt) = addr(opts.ADDR_WIDTH - 1, opts.INDEX_OFFSET_WIDTH)
+  def getIndex(addr: UInt) = opts.getIndex(addr)
+  def getTag(addr: UInt) = opts.getTag(addr)
   def toAligned(addr: UInt) =
     getTag(addr) ## getIndex(addr) ## 0.U(opts.OFFSET_WIDTH.W)
 

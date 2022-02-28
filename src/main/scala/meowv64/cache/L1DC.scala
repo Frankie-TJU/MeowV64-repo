@@ -155,9 +155,8 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
 
   def getLineAddr(addr: UInt) =
     addr(opts.ADDR_WIDTH - 1, IGNORED_WIDTH) ## 0.U(IGNORED_WIDTH.W)
-  def getTag(addr: UInt) = addr >> (opts.INDEX_WIDTH + opts.OFFSET_WIDTH)
-  def getIndex(addr: UInt) =
-    addr(opts.INDEX_WIDTH + opts.OFFSET_WIDTH - 1, opts.OFFSET_WIDTH)
+  def getTag(addr: UInt) = opts.getTag(addr)
+  def getIndex(addr: UInt) = opts.getIndex(addr)
   def getSublineIdx(addr: UInt) = addr(opts.OFFSET_WIDTH - 1, IGNORED_WIDTH)
 
   def muxBE(be: UInt, wdata: UInt, base: UInt): UInt = {

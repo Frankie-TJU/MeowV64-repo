@@ -55,7 +55,13 @@ trait CacheOpts {
   def INDEX_WIDTH = log2Ceil(LINE_PER_ASSOC)
   def OFFSET_WIDTH = log2Ceil(LINE_BYTES)
 
+  def getTag(addr: UInt) = addr(ADDR_WIDTH - 1, INDEX_OFFSET_WIDTH)
+  def getIndex(addr: UInt) =
+    addr(INDEX_OFFSET_WIDTH - 1, OFFSET_WIDTH)
+
+  // sanity check
   assert(INDEX_WIDTH == log2Ceil(LINE_PER_ASSOC))
+  assert(INDEX_OFFSET_WIDTH == INDEX_WIDTH + OFFSET_WIDTH)
 }
 
 trait L1Opts extends CacheOpts {
