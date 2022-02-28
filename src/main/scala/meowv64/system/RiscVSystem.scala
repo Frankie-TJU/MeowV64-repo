@@ -26,9 +26,8 @@ class RiscVSystem(implicit val sDef: SystemDef = new DefaultSystemDef)
     ) // HART_ID doesn't matter here
   })
 
-  val cores = (0 until sDef.CORE_COUNT).map(id =>
-    Module(new Core()(coreConfigs(id)))
-  )
+  val cores =
+    (0 until sDef.CORE_COUNT).map(id => Module(new Core()(coreConfigs(id))))
 
   val l2 = Module(new L2Cache(sDef.L2))
   val clint = Module(new CLINT)

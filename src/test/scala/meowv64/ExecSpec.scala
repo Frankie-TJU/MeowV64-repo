@@ -36,6 +36,9 @@ class ExecTest(dut: system.RiscVSystem, file: String) {
     dut.io.axi.ARREADY.poke(false.B)
     dut.io.axi.RVALID.poke(false.B)
 
+    val axiDataWidth = dut.io.axi.DATA_WIDTH
+    val axiDataBytes = axiDataWidth / 8
+
     // reset for some time
     dut.reset.poke(true.B)
     dut.clock.step(16)
@@ -49,19 +52,19 @@ class ExecTest(dut: system.RiscVSystem, file: String) {
     // Load up memory
     val bytes = java.nio.file.Files.readAllBytes(Paths.get(file))
     val len = bytes.length
-    val paddedLen = ((len + 7) / 8) * 8
+    val paddedLen = ((len + 3) / 4) * 4
     val padded = bytes ++ Array.fill(paddedLen - len)(0.asInstanceOf[Byte])
     val buffer = ByteBuffer.wrap(padded)
     buffer.order(ByteOrder.LITTLE_ENDIAN)
-    val longs = buffer.asLongBuffer()
+    val ints = buffer.asIntBuffer()
     var idx = 0
-    while (longs.hasRemaining()) {
-      var value = BigInt(longs.get())
-      // make it positive because Java only has signed long
+    while (ints.hasRemaining()) {
+      var value = BigInt(ints.get())
+      // make it positive because Java only has signed int
       if (value < 0) {
-        value += BigInt(1) << 64
+        value += BigInt(1) << 32
       }
-      mem.put(idx * 8 + 0x80000000L, value)
+      mem.put(idx * 4 + 0x80000000L, value)
       idx += 1
     }
     println(s"Initialized: $idx longs")
@@ -133,17 +136,23 @@ class ExecTest(dut: system.RiscVSystem, file: String) {
         val rdata = if (ptr == 0x10001014) { // LSR
           BigInt(1L << (32 + 5))
         } else {
-          mem.get((ptr >> 3) << 3).getOrElse(BigInt(0))
+
+          val aligned = (ptr / axiDataBytes) * axiDataBytes
+          var res = BigInt(0)
+          for (i <- 0 until axiDataBytes / 4) {
+            val addr = aligned + i * 4
+            val r = mem.get(addr).getOrElse(BigInt(0))
+            res |= r << (i * 32)
+          }
+          res
         }
-        val mask = BigInt(if (size == 3) {
-          0xffffffffffffffffL
-        } else {
-          (1L << ((1L << size) * 8)) - 1L
-        })
-        val shiftedMask = mask << ((ptr & 7) * 8).toInt
+        val mask = (BigInt(1) << ((1 << size.toInt) * 8)) - 1L
+        val shiftedMask =
+          mask << ((ptr & (axiDataBytes - 1)) * axiDataBytes).toInt
         // println(s"  Raw: 0x${rdata.toHexString}")
         // println(s"  Shifted: 0x${shifted.toHexString}")
         // println(s"  Mask: 0x${mask.toHexString}")
+        // println(s"Read: 0x${(rdata & shiftedMask).toString(16)}")
         axi.RDATA.poke((rdata & shiftedMask).U)
         axi.RLAST.poke((left == 0).B)
         // println(s"Returning: 0x${(shifted & mask).toHexString}")
@@ -180,14 +189,25 @@ class ExecTest(dut: system.RiscVSystem, file: String) {
         val wstrb = axi.WSTRB.peek
 
         if (axi.WVALID.peek.litToBoolean == true) {
-          val muxed = ExecTest.longMux(
-            mem.get((ptr >> 3) << 3).getOrElse(0),
-            wdata.litValue.toLong,
-            wstrb.litValue.toByte,
-            ptr & 7,
-            1L << size
-          )
-          mem.put((ptr >> 3) << 3, muxed)
+          // compute byte mask from offset & size
+          val mask = (BigInt(1) << (1 << size.toInt)) - 1L
+          val shiftedMask =
+            mask << (ptr & (axiDataBytes - 1)).toInt
+          val aligned = (ptr / axiDataBytes) * axiDataBytes
+          for (i <- 0 until axiDataBytes / 4) {
+            val addr = aligned + i * 4
+            val localWData = ((wdata.litValue >> (i * 32)) & 0xffffffffL).toLong
+            val localWStrb = ((wstrb.litValue >> (i * 4)) & 0xf).toLong
+            val localMask = ((shiftedMask >> (i * 4)) & 0xf).toLong
+            if ((localMask & localWStrb) != 0) {
+              val muxed = ExecTest.longMux(
+                mem.get(addr).getOrElse(0),
+                localWData,
+                localMask & localWStrb
+              )
+              mem.put(addr, muxed)
+            }
+          }
 
           writing match {
             case Some((addr, _, _)) if addr == 0x10001000L => {
@@ -257,24 +277,20 @@ object ExecTest {
   def longMux(
       base: BigInt,
       input: BigInt,
-      be: Byte,
-      offset: Long,
-      size: Long
+      be: Long
   ): BigInt = {
     var ret = BigInt(0)
-    // println(s"Muxing: 0x${base.toHexString} <- 0x${input.toHexString} & 0x${be}, offset $offset, size $size")
-    for (i <- (0 until 8)) {
-      val sel = if (i < offset) {
-        (base >> (i * 8)) & 0xff
-      } else if (i >= offset + size) {
-        (base >> (i * 8)) & 0xff
-      } else if (((be >>> i) & 1) == 1) {
+    // println(s"Muxing: 0x${base.toString(16)} <- 0x${input.toString(16)} & ${be}")
+    for (i <- (0 until 4)) {
+      val strb = ((be >>> i) & 1)
+      val sel = if (strb == 1) {
         (input >> (i * 8)) & 0xff
       } else {
         (base >> (i * 8)) & 0xff
       }
       ret = (sel << (i * 8)) | ret
     }
+    // println(s"Result: 0x${ret.toString(16)}")
 
     ret
   }
