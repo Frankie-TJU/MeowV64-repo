@@ -12,7 +12,7 @@ object BranchPrediction extends ChiselEnum {
 }
 
 class MicroBTBEntry(implicit val coredef: CoreDef) extends Bundle {
-  val OFFSET_WIDTH = log2Ceil(coredef.L1I.TRANSFER_WIDTH)
+  val OFFSET_WIDTH = log2Ceil(coredef.L1I.TO_L2_TRANSFER_WIDTH)
   val INDEX_WIDTH = log2Ceil(coredef.BHT_SIZE)
 
   val TAG_WIDTH = coredef.VADDR_WIDTH - OFFSET_WIDTH - INDEX_WIDTH
@@ -54,7 +54,7 @@ class MicroBTBEntry(implicit val coredef: CoreDef) extends Bundle {
 }
 
 class BPUResult(implicit val coredef: CoreDef) extends Bundle {
-  val OFFSET_WIDTH = log2Ceil(coredef.L1I.TRANSFER_WIDTH / 8)
+  val OFFSET_WIDTH = log2Ceil(coredef.L1I.TO_L2_TRANSFER_WIDTH / 8)
   val INDEX_WIDTH = log2Ceil(coredef.BHT_SIZE)
   val TAG_WIDTH = coredef.VADDR_WIDTH - OFFSET_WIDTH - INDEX_WIDTH
 
@@ -169,7 +169,10 @@ class MicroBTB(implicit val coredef: CoreDef) extends Module {
     // return a BPUResult
     // it has one cycle delay
     val s2Res = Output(
-      Vec(coredef.L1I.TRANSFER_WIDTH / Const.INSTR_MIN_WIDTH, new BPUResult)
+      Vec(
+        coredef.L1I.TO_L2_TRANSFER_WIDTH / Const.INSTR_MIN_WIDTH,
+        new BPUResult
+      )
     )
   })
 
@@ -183,8 +186,8 @@ class MicroBTB(implicit val coredef: CoreDef) extends Module {
     val taken = Input(Bool())
   })
 
-  val INLINE_COUNT = coredef.L1I.TRANSFER_WIDTH / Const.INSTR_MIN_WIDTH
-  val OFFSET_WIDTH = log2Ceil(coredef.L1I.TRANSFER_WIDTH / 8)
+  val INLINE_COUNT = coredef.L1I.TO_L2_TRANSFER_WIDTH / Const.INSTR_MIN_WIDTH
+  val OFFSET_WIDTH = log2Ceil(coredef.L1I.TO_L2_TRANSFER_WIDTH / 8)
   val INDEX_WIDTH = log2Ceil(coredef.BHT_SIZE)
   val INDEX_OFFSET_WIDTH = OFFSET_WIDTH + INDEX_WIDTH
   val TAG_WIDTH = coredef.VADDR_WIDTH - OFFSET_WIDTH - INDEX_WIDTH
@@ -244,7 +247,7 @@ class MicroBTB(implicit val coredef: CoreDef) extends Module {
   val updateOffset = getOffset(toExec.lpc)
   assert(
     updateOffset.getWidth == log2Ceil(
-      coredef.L1I.TRANSFER_WIDTH / Const.INSTR_MIN_WIDTH
+      coredef.L1I.TO_L2_TRANSFER_WIDTH / Const.INSTR_MIN_WIDTH
     )
   )
 
@@ -280,7 +283,7 @@ class MicroBTB(implicit val coredef: CoreDef) extends Module {
 
   val waddr = Mux(doingReset, resetCnt, getIndex(toExec.lpc))
   val data = VecInit(
-    Seq.fill(coredef.L1I.TRANSFER_WIDTH / Const.INSTR_MIN_WIDTH)(
+    Seq.fill(coredef.L1I.TO_L2_TRANSFER_WIDTH / Const.INSTR_MIN_WIDTH)(
       Mux(doingReset, init, updated)
     )
   )

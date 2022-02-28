@@ -26,7 +26,8 @@ abstract class SystemDef(val coreCount: Int) {
         val ASSOC: Int = 4
         val CORE_COUNT: Int = outer.CORE_COUNT
         val LINE_BYTES: Int = outer.L2_LINE_BYTES
-        val TRANSFER_WIDTH: Int = 0 // Actually ignored
+        val TO_L2_TRANSFER_WIDTH: Int = 0 // Actually ignored
+        val TO_CORE_TRANSFER_WIDTH: Int = 0 // Actually ignored
         val SIZE_BYTES: Int = 16384 // 16KB L2
         val WB_DEPTH: Int = 4
         val XLEN: Int = outer.XLEN

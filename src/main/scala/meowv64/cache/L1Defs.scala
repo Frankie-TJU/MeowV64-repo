@@ -33,12 +33,16 @@ trait L1Opts {
   // Address width
   val ADDR_WIDTH: Int
 
+  /** Core <-> L1 transfer size in bits.
+    */
+  val TO_CORE_TRANSFER_WIDTH: Int
+
   /** L1 <-> L2 transfer size in bits.
     *
-    * Currently, it's only possible that TRANSFER_WIDTH = L1 LINE_BYTES = L2
-    * LINE_BYTES
+    * Currently, it's only possible that TO_L2_TRANSFER_WIDTH = L1 LINE_BYTES =
+    * L2 LINE_BYTES
     */
-  val TRANSFER_WIDTH: Int
+  val TO_L2_TRANSFER_WIDTH: Int
 
   /** Line width in bytes
     */

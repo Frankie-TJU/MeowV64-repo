@@ -71,13 +71,13 @@ abstract class CoreDef {
     16
   )
 
-  /** L1 line with in bytes
+  /** L1 line width in bytes
     */
   val L1_LINE_BYTES: Int = 16
 
   /** Return address stack size
     */
-  val RAS_SIZE: Int = 8;
+  val RAS_SIZE: Int = 8
 
   /** List of (register type, width)
     */
@@ -94,7 +94,8 @@ abstract class CoreDef {
         val ASSOC: Int = 2
         val LINE_BYTES: Int = outer.L1_LINE_BYTES
         val SIZE_BYTES: Int = 2048 // 2KB L1 I
-        val TRANSFER_WIDTH: Int = 64 // 64 bits
+        val TO_L2_TRANSFER_WIDTH: Int = 64 // 64 bits
+        val TO_CORE_TRANSFER_WIDTH: Int = 64 // 64 bits
         val XLEN: Int = outer.XLEN
       }
       with L1Opts
@@ -105,7 +106,9 @@ abstract class CoreDef {
         val ASSOC: Int = 2
         val LINE_BYTES: Int = outer.L1_LINE_BYTES
         val SIZE_BYTES: Int = 2048 // 2KB L1 D
-        val TRANSFER_WIDTH: Int = outer.XLEN // Currently, this is required
+        val TO_L2_TRANSFER_WIDTH: Int =
+          outer.XLEN // Currently, this is required
+        val TO_CORE_TRANSFER_WIDTH: Int = outer.XLEN
         val XLEN: Int = outer.XLEN
 
         val WRITE_BUF_DEPTH: Int = 4
