@@ -40,6 +40,7 @@ object L2CacheTestDef
       val SIZE_BYTES: Int = 256
       val WB_DEPTH: Int = 4
       val XLEN: Int = 64
+      val AXI_DATA_WIDTH = 64
       val MMIO = Seq(
         CLINTMapping,
         PLICMapping

@@ -29,6 +29,7 @@ abstract class SystemDef(val coreCount: Int) {
         val SIZE_BYTES: Int = 16384 // 16KB L2
         val WB_DEPTH: Int = 4
         val XLEN: Int = outer.XLEN
+        val AXI_DATA_WIDTH: Int = 64
 
         val MMIO = Seq(
           CLINTMapping,

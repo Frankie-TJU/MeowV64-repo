@@ -20,11 +20,25 @@ import meowv64.interrupt._
   */
 
 trait L2Opts extends L1Opts {
+
+  /** Write back FIFO depth
+    */
   val WB_DEPTH: Int
+
+  /** Number of cores
+    */
   val CORE_COUNT: Int
 
   val MMIO: Seq[MMIOMapping]
 
+  /** AXI data width
+    */
+  val AXI_DATA_WIDTH: Int
+
+  /** Unused
+    *
+    * @return
+    */
   val TO_CORE_TRANSFER_WIDTH = 0
 }
 
@@ -154,13 +168,17 @@ class L2Cache(val opts: L2Opts) extends Module {
   // dc comes first to match MSI directory
   def ports = dc.iterator ++ ic.iterator
 
-  val axi = IO(new AXI(opts.XLEN, opts.ADDR_WIDTH))
+  val axi = IO(new AXI(opts.AXI_DATA_WIDTH, opts.ADDR_WIDTH))
   axi := DontCare
   axi.ARVALID := false.B
   axi.RREADY := false.B
   axi.AWVALID := false.B
   axi.WVALID := false.B
   axi.BREADY := false.B
+  // sanity check
+  assert(
+    opts.LINE_WIDTH % axi.DATA_WIDTH == 0
+  )
 
   // Assoc and writers
   val directories = Mem(LINE_COUNT, Vec(opts.ASSOC, new L2DirEntry(opts)))
@@ -289,11 +307,12 @@ class L2Cache(val opts: L2Opts) extends Module {
   val refilled = RegInit(VecInit(Seq.fill(opts.CORE_COUNT * 2)(false.B)))
   val sent = RegInit(VecInit(Seq.fill(opts.CORE_COUNT * 2)(false.B)))
   val ucSent = RegInit(VecInit(Seq.fill(opts.CORE_COUNT)(false.B)))
+  val axiGrpNum = opts.LINE_WIDTH / axi.DATA_WIDTH
   val bufs = RegInit(
     VecInit(
       Seq.fill(opts.CORE_COUNT * 2)(
         VecInit(
-          Seq.fill(opts.LINE_WIDTH / axi.DATA_WIDTH)(0.U(axi.DATA_WIDTH.W))
+          Seq.fill(axiGrpNum)(0.U(axi.DATA_WIDTH.W))
         )
       )
     )
@@ -932,7 +951,6 @@ class L2Cache(val opts: L2Opts) extends Module {
   }
 
   // Refiller, only deals with AR channel
-  val axiGrpNum = opts.LINE_WIDTH / axi.DATA_WIDTH
 
   val reqTarget = RegInit(0.U(log2Ceil(opts.CORE_COUNT * 3).W))
   val rawReqAddr = missesAddr(reqTarget)
@@ -989,8 +1007,6 @@ class L2Cache(val opts: L2Opts) extends Module {
       axi.ARLEN := 0.U
       axi.ARSIZE := DCWriteLen.toAXISize(directs(id).len)
 
-      assume(axi.DATA_WIDTH == opts.XLEN)
-
       axi.ARVALID := true.B
       when(axi.ARREADY) {
         ucSent(reqTarget) := true.B
@@ -1003,7 +1019,7 @@ class L2Cache(val opts: L2Opts) extends Module {
   val bufptrs = RegInit(
     VecInit(
       Seq.fill(opts.CORE_COUNT * 2)(
-        0.U(log2Ceil(opts.LINE_WIDTH / axi.DATA_WIDTH).W)
+        0.U((log2Ceil(axiGrpNum) max 1).W)
       )
     )
   )
@@ -1041,7 +1057,7 @@ class L2Cache(val opts: L2Opts) extends Module {
 
   // Write-back...er? Handles AXI AW/W/B
   // Also handles memory mapped reads (CLINT, PLIC, etc...)
-  val wbPtr = RegInit(0.U(log2Ceil(axiGrpNum).W))
+  val wbPtr = RegInit(0.U((log2Ceil(axiGrpNum) max 1).W))
   val wbDataView =
     wbFifo(wbFifoHead).data.asTypeOf(Vec(axiGrpNum, UInt(axi.DATA_WIDTH.W)))
 
