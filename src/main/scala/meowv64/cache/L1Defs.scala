@@ -38,9 +38,6 @@ trait L1Opts {
   val TO_CORE_TRANSFER_WIDTH: Int
 
   /** L1 <-> L2 transfer size in bits.
-    *
-    * Currently, it's only possible that TO_L2_TRANSFER_WIDTH = L1 LINE_BYTES =
-    * L2 LINE_BYTES
     */
   val TO_L2_TRANSFER_WIDTH: Int
 

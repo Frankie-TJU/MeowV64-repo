@@ -9,23 +9,23 @@ import meowv64.cache.L1DCPort.L2Req
 import meowv64.core.CoreDef
 import meowv64.data._
 
-class DCRead(implicit val coredef: CoreDef) extends Bundle {
+class CoreDCReadReq(implicit val coredef: CoreDef) extends Bundle {
   val addr = UInt(coredef.PADDR_WIDTH.W)
 
   /** for lr instruction */
   val reserve = Bool()
 }
 
-object DCRead {
-  def load(addr: UInt)(implicit coredef: CoreDef): DCRead = {
-    val ret = Wire(new DCRead)
+object CoreDCReadReq {
+  def load(addr: UInt)(implicit coredef: CoreDef): CoreDCReadReq = {
+    val ret = Wire(new CoreDCReadReq)
     ret.reserve := false.B
     ret.addr := addr
     ret
   }
 
   def lr(addr: UInt)(implicit coredef: CoreDef) = {
-    val ret = Wire(new DCRead)
+    val ret = Wire(new CoreDCReadReq)
     ret.reserve := true.B
     ret.addr := addr
   }
@@ -33,8 +33,8 @@ object DCRead {
 
 /** DCache reader from core to cache
   */
-class DCReader(implicit val coredef: CoreDef) extends Bundle {
-  val req = Decoupled(new DCRead)
+class CoreDCReader(implicit val coredef: CoreDef) extends Bundle {
+  val req = Decoupled(new CoreDCReadReq)
   val resp = Input(Valid(UInt(coredef.L1D.TO_CORE_TRANSFER_WIDTH.W)))
 }
 
@@ -78,7 +78,7 @@ object DCWriteLen extends ChiselEnum {
 
 /** DCache write port (from LSU to DCache)
   */
-class DCWriter(val opts: L1DOpts) extends Bundle {
+class CoreDCWriter(val opts: L1DOpts) extends Bundle {
   // Offset is now embedded inside addr
   val addr = Output(
     UInt(opts.ADDR_WIDTH.W)
@@ -189,16 +189,16 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
   val stores = SyncReadMem(LINE_PER_ASSOC, Vec(opts.ASSOC, new DLine(opts)))
 
   // Ports, mr = Memory read, ptw = Page table walker
-  val mr = IO(Flipped(new DCReader))
-  val ptw = IO(Flipped(new DCReader))
+  val mr = IO(Flipped(new CoreDCReader))
+  val ptw = IO(Flipped(new CoreDCReader))
   // w = Memory write
-  val w = IO(Flipped(new DCWriter(opts)))
+  val w = IO(Flipped(new CoreDCWriter(opts)))
   // memory fence
   val fs = IO(Flipped(new DCFenceStatus(opts)))
   val toL2 = IO(new L1DCPort(opts))
 
   // Convert mr + ptw to r
-  val rArbiter = Module(new RRArbiter(new DCRead, 2))
+  val rArbiter = Module(new RRArbiter(new CoreDCReadReq, 2))
   class RReq extends Bundle {
     val addr = UInt(coredef.PADDR_WIDTH.W)
     val chosen = UInt()

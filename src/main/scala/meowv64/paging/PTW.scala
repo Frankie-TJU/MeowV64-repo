@@ -19,7 +19,7 @@ class PTW(implicit coredef: CoreDef) extends Module {
   val dtlb = IO(Flipped(new TLBExt))
 
   val satp = IO(Input(new Satp))
-  val dc = IO(new DCReader)
+  val dc = IO(new CoreDCReader)
   dc.req.noenq()
   dc.req.bits.addr := 0.U
   dc.req.bits.reserve := false.B
@@ -98,7 +98,7 @@ class PTW(implicit coredef: CoreDef) extends Module {
         }
 
         dc.req.enq(
-          DCRead.load(satp.ppn ## initSeg ## 0.U(3.W))
+          CoreDCReadReq.load(satp.ppn ## initSeg ## 0.U(3.W))
         ) // PTE are aligned in 64-bits
         when(dc.req.fire) {
           state := PTWState.reading
@@ -123,7 +123,7 @@ class PTW(implicit coredef: CoreDef) extends Module {
             dcSlot.io.deq.deq()
           } otherwise {
             // Continue searching
-            dc.req.enq(DCRead.load(pte.ppn ## segs(level + 1.U) ## 0.U(3.W)))
+            dc.req.enq(CoreDCReadReq.load(pte.ppn ## segs(level + 1.U) ## 0.U(3.W)))
             when(dc.req.fire) { // Wait for request to go in
               level := level + 1.U
               dcSlot.io.deq.deq()

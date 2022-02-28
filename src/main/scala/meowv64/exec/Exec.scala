@@ -2,8 +2,8 @@ package meowv64.exec
 import chisel3._
 import chisel3.util._
 import meowv64.cache.DCFenceStatus
-import meowv64.cache.DCReader
-import meowv64.cache.DCWriter
+import meowv64.cache.CoreDCReader
+import meowv64.cache.CoreDCWriter
 import meowv64.cache.L1UCPort
 import meowv64.core.CSRWriter
 import meowv64.core.CoreDef
@@ -88,8 +88,8 @@ class Exec(implicit val coredef: CoreDef) extends Module {
   val toIF = IO(new MultiQueueIO(new InstrExt, coredef.ISSUE_NUM))
 
   val toDC = IO(new Bundle {
-    val r = new DCReader
-    val w = new DCWriter(coredef.L1D)
+    val r = new CoreDCReader
+    val w = new CoreDCWriter(coredef.L1D)
     val fs = new DCFenceStatus(coredef.L1D)
     val u = new L1UCPort(coredef.L1D)
   })

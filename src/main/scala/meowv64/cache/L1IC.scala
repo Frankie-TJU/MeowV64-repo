@@ -5,7 +5,7 @@ import chisel3.experimental.ChiselEnum
 import chisel3.util._
 import chisel3.util.log2Ceil
 
-class ICPort(val opts: L1Opts) extends Bundle {
+class CoreICPort(val opts: L1Opts) extends Bundle {
   // read & ~stall means a read transaction
   val addr = Input(UInt(opts.ADDR_WIDTH.W))
   val read = Input(Bool())
@@ -13,7 +13,7 @@ class ICPort(val opts: L1Opts) extends Bundle {
   val stall = Output(Bool())
   val rst = Input(Bool())
 
-  val data = Valid(UInt(opts.TO_L2_TRANSFER_WIDTH.W)) // Data delay is 1 cycle
+  val data = Valid(UInt(opts.TO_CORE_TRANSFER_WIDTH.W)) // Data delay is 1 cycle
 }
 
 object S2State extends ChiselEnum {
@@ -41,7 +41,7 @@ object ILine {
 
 // TODO: Change to xpm_tdpmem
 class L1IC(opts: L1Opts) extends Module {
-  val toCPU = IO(new ICPort(opts))
+  val toCPU = IO(new CoreICPort(opts))
   val toL2 = IO(new L1ICPort(opts))
 
   toCPU.data := DontCare

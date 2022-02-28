@@ -121,8 +121,8 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
 
   // FIXME: ValidIO resp
   val toMem = IO(new Bundle {
-    val reader = new DCReader
-    val writer = new DCWriter(coredef.L1D)
+    val reader = new CoreDCReader
+    val writer = new CoreDCWriter(coredef.L1D)
     val uncached = new L1UCPort(coredef.L1D)
   })
 

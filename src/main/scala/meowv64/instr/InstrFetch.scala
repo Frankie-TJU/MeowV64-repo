@@ -91,7 +91,7 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
     val allowFloat = Input(Bool())
   })
 
-  val toIC = IO(Flipped(new ICPort(coredef.L1I)))
+  val toIC = IO(Flipped(new CoreICPort(coredef.L1I)))
   val toExec = IO(Flipped(new MultiQueueIO(new InstrExt, coredef.ISSUE_NUM)))
 
   val toBPU = IO(new Bundle {

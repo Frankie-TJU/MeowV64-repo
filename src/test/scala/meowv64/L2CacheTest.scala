@@ -53,8 +53,8 @@ object L2CacheTestDef
 class WrappedL2(l1do: L1DOpts, l2o: L2Opts, implicit val coredef: CoreDef)
     extends Module {
   val io = IO(new Bundle {
-    val reader = Flipped(new DCReader())
-    val writer = Flipped(new DCWriter(l1do))
+    val reader = Flipped(new CoreDCReader())
+    val writer = Flipped(new CoreDCWriter(l1do))
   })
 
   val mem = Module(new AXIMem(None, L2CacheTest.RAM_SIZE, 48))
@@ -185,7 +185,7 @@ class L2CacheTest(dut: WrappedL2, seed: Long, len: Int) {
         val aligned = align(cur.addr)
         val original = ref.get(aligned).getOrElse(BigInt(0))
 
-        // compute DCWriter.be
+        // compute CoreDCWriter.be
         // 0x0, D => 0b11111111
         // 0x1, B => 0b00000010
         // 0x2, H => 0b00001100
