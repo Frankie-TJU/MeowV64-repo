@@ -123,7 +123,9 @@ class PTW(implicit coredef: CoreDef) extends Module {
             dcSlot.io.deq.deq()
           } otherwise {
             // Continue searching
-            dc.req.enq(CoreDCReadReq.load(pte.ppn ## segs(level + 1.U) ## 0.U(3.W)))
+            dc.req.enq(
+              CoreDCReadReq.load(pte.ppn ## segs(level + 1.U) ## 0.U(3.W))
+            )
             when(dc.req.fire) { // Wait for request to go in
               level := level + 1.U
               dcSlot.io.deq.deq()

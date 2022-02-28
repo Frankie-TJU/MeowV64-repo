@@ -24,6 +24,8 @@ trait L2Opts extends L1Opts {
   val CORE_COUNT: Int
 
   val MMIO: Seq[MMIOMapping]
+
+  val TO_CORE_TRANSFER_WIDTH = 0
 }
 
 /** MSI protocol states: vacant(I), shared(S), modified(M)

@@ -312,7 +312,9 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
   ICHead.io.enq <> ICQueue.io.deq
   ICHead.io.deq.nodeq() // Default
 
-  val headPtr = RegInit(0.U(log2Ceil(coredef.L1I.TO_CORE_TRANSFER_WIDTH / 16).W))
+  val headPtr = RegInit(
+    0.U(log2Ceil(coredef.L1I.TO_CORE_TRANSFER_WIDTH / 16).W)
+  )
 
   val decodeVec = Wire(
     Vec(coredef.L1I.TO_CORE_TRANSFER_WIDTH * 2 / 16, UInt(16.W))

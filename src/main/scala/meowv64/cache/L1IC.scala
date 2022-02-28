@@ -23,7 +23,7 @@ object S2State extends ChiselEnum {
 class ILine(val opts: L1Opts) extends Bundle {
   val INDEX_OFFSET_WIDTH = log2Ceil(opts.SIZE_BYTES / opts.ASSOC)
   val TAG_WIDTH = opts.ADDR_WIDTH - INDEX_OFFSET_WIDTH
-  val TRANSFER_COUNT = opts.LINE_BYTES * 8 / opts.TO_L2_TRANSFER_WIDTH
+  val TRANSFER_COUNT = opts.LINE_BYTES * 8 / opts.TO_CORE_TRANSFER_WIDTH
 
   val tag = UInt(TAG_WIDTH.W)
   val valid = Bool()
@@ -56,21 +56,23 @@ class L1IC(opts: L1Opts) extends Module {
   val OFFSET_WIDTH = log2Ceil(opts.LINE_BYTES)
   val INDEX_OFFSET_WIDTH = log2Ceil(opts.SIZE_BYTES / opts.ASSOC)
   val INDEX_WIDTH = INDEX_OFFSET_WIDTH - OFFSET_WIDTH
-  val IGNORED_WIDTH = log2Ceil(opts.TO_L2_TRANSFER_WIDTH / 8)
+  val IGNORED_WIDTH = log2Ceil(opts.TO_CORE_TRANSFER_WIDTH / 8)
 
   assume(INDEX_WIDTH == log2Ceil(LINE_PER_ASSOC))
 
-  val TRANSFER_COUNT = opts.LINE_BYTES * 8 / opts.TO_L2_TRANSFER_WIDTH
+  val TRANSFER_COUNT = opts.LINE_BYTES * 8 / opts.TO_CORE_TRANSFER_WIDTH
 
   val directories = Mem(LINE_PER_ASSOC, Vec(opts.ASSOC, new ILine(opts)))
   val stores = SyncReadMem(
     LINE_PER_ASSOC,
-    Vec(opts.ASSOC, Vec(TRANSFER_COUNT, UInt(opts.TO_L2_TRANSFER_WIDTH.W)))
+    Vec(opts.ASSOC, Vec(TRANSFER_COUNT, UInt(opts.TO_CORE_TRANSFER_WIDTH.W)))
   )
 
   val writerAddr = Wire(UInt(INDEX_WIDTH.W))
   val writerDir = Wire(new ILine(opts))
-  val writerData = Wire(Vec(TRANSFER_COUNT, UInt(opts.TO_L2_TRANSFER_WIDTH.W)))
+  val writerData = Wire(
+    Vec(TRANSFER_COUNT, UInt(opts.TO_CORE_TRANSFER_WIDTH.W))
+  )
   val writerMask = Wire(Vec(opts.ASSOC, Bool()))
 
   directories.write(

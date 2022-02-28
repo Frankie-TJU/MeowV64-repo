@@ -27,19 +27,10 @@ trait L1Port extends Bundle {
   def getWdata: UInt
 }
 
-trait L1Opts {
-  // Word width
-  val XLEN: Int
-  // Address width
+trait CacheOpts {
+
+  /** Address width in bits */
   val ADDR_WIDTH: Int
-
-  /** Core <-> L1 transfer size in bits.
-    */
-  val TO_CORE_TRANSFER_WIDTH: Int
-
-  /** L1 <-> L2 transfer size in bits.
-    */
-  val TO_L2_TRANSFER_WIDTH: Int
 
   /** Line width in bytes
     */
@@ -54,6 +45,19 @@ trait L1Opts {
   assume(SIZE_BYTES % LINE_BYTES == 0)
 }
 
+trait L1Opts extends CacheOpts {
+  // Word width
+  val XLEN: Int
+
+  /** Core <-> L1 transfer size in bits.
+    */
+  val TO_CORE_TRANSFER_WIDTH: Int
+
+  /** L1 <-> L2 transfer size in bits.
+    */
+  def TO_L2_TRANSFER_WIDTH: Int = LINE_BYTES * 8
+}
+
 trait L1DOpts extends L1Opts {
   // Write buffer depth in L1DC
   val WRITE_BUF_DEPTH: Int
@@ -62,8 +66,8 @@ trait L1DOpts extends L1Opts {
 /** I$ -> L2
   *
   * I$ doesn't enforce cache coherence restrictions, so we don't have coherence
-  * protocol-related wires Also, I$ doesn't have write channel, so we don't have
-  * uplink data wires
+  * protocol-related wires. Also, I$ doesn't have write channel, so we don't
+  * have uplink data wires
   */
 class L1ICPort(val opts: L1Opts) extends Bundle with L1Port {
   val read = Output(Bool())
@@ -110,10 +114,9 @@ class L1UCPort(val opts: L1Opts) extends Bundle {
   val write = Output(Bool())
   val addr = Output(UInt(opts.ADDR_WIDTH.W))
   val len = Output(DCWriteLen())
-
+  val wdata = Output(UInt(opts.XLEN.W))
   val stall = Input(Bool())
 
-  val wdata = Output(UInt(opts.XLEN.W))
   val rdata = Input(UInt(opts.XLEN.W))
 }
 

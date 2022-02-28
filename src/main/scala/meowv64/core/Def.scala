@@ -94,7 +94,6 @@ abstract class CoreDef {
         val ASSOC: Int = 2
         val LINE_BYTES: Int = outer.L1_LINE_BYTES
         val SIZE_BYTES: Int = 2048 // 2KB L1 I
-        val TO_L2_TRANSFER_WIDTH: Int = 64 // 64 bits
         val TO_CORE_TRANSFER_WIDTH: Int = 64 // 64 bits
         val XLEN: Int = outer.XLEN
       }
@@ -106,8 +105,6 @@ abstract class CoreDef {
         val ASSOC: Int = 2
         val LINE_BYTES: Int = outer.L1_LINE_BYTES
         val SIZE_BYTES: Int = 2048 // 2KB L1 D
-        val TO_L2_TRANSFER_WIDTH: Int =
-          outer.XLEN // Currently, this is required
         val TO_CORE_TRANSFER_WIDTH: Int = outer.XLEN
         val XLEN: Int = outer.XLEN
 

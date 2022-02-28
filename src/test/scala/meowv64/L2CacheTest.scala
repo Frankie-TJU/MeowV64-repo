@@ -24,7 +24,6 @@ object L1DCacheTestDef
       val ASSOC: Int = 2
       val LINE_BYTES: Int = 16
       val SIZE_BYTES: Int = 128
-      val TO_L2_TRANSFER_WIDTH: Int = 64
       val TO_CORE_TRANSFER_WIDTH: Int = 64
       val XLEN: Int = 64
 
@@ -38,8 +37,6 @@ object L2CacheTestDef
       val ASSOC: Int = 4
       val CORE_COUNT: Int = 1
       val LINE_BYTES: Int = 16
-      val TO_L2_TRANSFER_WIDTH: Int = 0 // Actually ignored
-      val TO_CORE_TRANSFER_WIDTH: Int = 0 // Actually ignored
       val SIZE_BYTES: Int = 256
       val WB_DEPTH: Int = 4
       val XLEN: Int = 64
