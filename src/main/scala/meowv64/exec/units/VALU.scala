@@ -33,6 +33,28 @@ class VALU(override implicit val coredef: CoreDef)
     rs2Elements := pipe.rs2val.asTypeOf(rs1Elements)
 
     switch(pipe.instr.instr.funct6) {
+      is(Decoder.VP_FUNC("VADD")) {
+        switch(pipe.instr.instr.funct3) {
+          is(0.U) {
+            // VADD_VV
+            for (i <- 0 until coredef.vectorBankCount) {
+              ext.res(i) := rs1Elements(i) + rs2Elements(i)
+            }
+          }
+          is(3.U) {
+            // VADD_VI
+            for (i <- 0 until coredef.vectorBankCount) {
+              ext.res(i) := simm.asUInt + rs2Elements(i)
+            }
+          }
+          is(4.U) {
+            // VADD_VX
+            for (i <- 0 until coredef.vectorBankCount) {
+              ext.res(i) := rs1Elements(0) + rs2Elements(i)
+            }
+          }
+        }
+      }
       is(Decoder.VP_FUNC("VMV_S")) {
         switch(pipe.instr.instr.funct3) {
           is(1.U, 2.U) {
@@ -61,7 +83,7 @@ class VALU(override implicit val coredef: CoreDef)
           is(4.U, 5.U) {
             // VMV_V_X/VFMV_V_F
             for (i <- 0 until coredef.vectorBankCount) {
-              ext.res(i) := pipe.rs1val
+              ext.res(i) := rs1Elements(0)
             }
           }
         }
