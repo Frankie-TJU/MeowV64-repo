@@ -12,3 +12,4 @@ RUN mill -i resolve _
 RUN rm build.sc
 RUN apt install -y make bsdextrautils autoconf g++ build-essential
 RUN apt install -y zlib1g-dev
+RUN apt install -y libgmp-dev
