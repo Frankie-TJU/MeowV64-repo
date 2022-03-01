@@ -1,5 +1,6 @@
 #include "VRiscVSystem.h"
 #include <elf.h>
+#include <gmpxx.h>
 #include <iostream>
 #include <map>
 #include <signal.h>
@@ -10,11 +11,11 @@
 #include <verilated_fst_c.h>
 
 // memory mapping
-// 8 byte aligned
-std::map<uint64_t, uint64_t> memory;
+// 4 byte aligned
+std::map<uint64_t, uint32_t> memory;
 
-// align to 8 byte boundary
-uint64_t align(uint64_t addr) { return (addr >> 3) << 3; }
+// align to 4 byte boundary
+uint64_t align(uint64_t addr) { return (addr >> 2) << 2; }
 
 VRiscVSystem *top;
 
@@ -24,6 +25,9 @@ double sc_time_stamp() { return main_time; }
 
 bool finished = false;
 int res = 0;
+
+const uint64_t AXI_DATA_WIDTH = 128;
+const uint64_t AXI_DATA_BYTES = AXI_DATA_WIDTH / 8;
 
 // tohost/fromhost
 // default at 0x60000000
@@ -77,19 +81,32 @@ void step() {
   if (pending_read) {
     top->io_axi_RVALID = 1;
     top->io_axi_RID = pending_read_id;
-    uint64_t r_data;
+    mpz_class r_data;
     if (pending_read_addr == 0x10001014) {
       // serial lsr
       r_data = 1L << (32 + 5);
     } else {
-      r_data = memory[align(pending_read_addr)];
+      uint64_t aligned = (pending_read_addr / AXI_DATA_BYTES) * AXI_DATA_BYTES;
+      for (int i = 0; i < AXI_DATA_BYTES / 4; i++) {
+        uint64_t addr = aligned + i * 4;
+        uint32_t r = memory[addr];
+        mpz_class res = r;
+        res <<= (i * 32);
+        r_data += res;
+      }
     }
-    uint64_t mask = 0xffffffffffffffffL;
-    if (pending_read_size != 3) {
-      mask = (1L << ((1L << pending_read_size) * 8)) - 1L;
-    }
-    uint64_t shifted_mask = mask << ((pending_read_addr & 7) * 8);
-    top->io_axi_RDATA = r_data & shifted_mask;
+
+    mpz_class mask = 1;
+    mask <<= (1L << pending_read_size) * 8;
+    mask -= 1;
+
+    mpz_class shifted_mask =
+        mask << ((pending_read_addr & (AXI_DATA_BYTES - 1)) * 8);
+    r_data &= shifted_mask;
+
+    // top->io_axi_RDATA = r_data & shifted_mask;
+    memset(top->io_axi_RDATA, 0, sizeof(top->io_axi_RDATA));
+    mpz_export(top->io_axi_RDATA, NULL, -1, 4, -1, 0, r_data.get_mpz_t());
     top->io_axi_RLAST = pending_read_len == 0;
 
     // RREADY might be stale without eval()
@@ -129,29 +146,49 @@ void step() {
     // WVALID might be stale without eval()
     top->eval();
     if (top->io_axi_WVALID) {
-      uint64_t base = memory[align(pending_write_addr)];
-      uint64_t input = top->io_axi_WDATA;
-      uint64_t be = top->io_axi_WSTRB;
-      uint64_t offset = pending_write_addr & 7;
-      uint64_t size = 1 << pending_write_size;
+      mpz_class mask = 1;
+      mask <<= 1L << pending_write_size;
+      mask -= 1;
 
-      uint64_t muxed = 0;
-      for (int i = 0; i < 8; i++) {
-        uint64_t sel;
-        if (i < offset) {
-          sel = (base >> (i * 8)) & 0xff;
-        } else if (i >= offset + size) {
-          sel = (base >> (i * 8)) & 0xff;
-        } else if (((be >> i) & 1) == 1) {
-          sel = (input >> (i * 8)) & 0xff;
-        } else {
-          sel = (base >> (i * 8)) & 0xff;
+      mpz_class shifted_mask = mask
+                               << (pending_write_addr & (AXI_DATA_BYTES - 1));
+      mpz_class wdata;
+      mpz_import(wdata.get_mpz_t(), AXI_DATA_BYTES / 4, -1, 4, -1, 0,
+                 top->io_axi_WDATA);
+
+      uint64_t aligned = pending_write_addr / AXI_DATA_BYTES * AXI_DATA_BYTES;
+      for (int i = 0; i < AXI_DATA_BYTES / 4; i++) {
+        uint64_t addr = aligned + i * 4;
+
+        mpz_class local_wdata_mpz = wdata >> (i * 32);
+        uint64_t local_wdata = local_wdata_mpz.get_ui() & 0xffffffffL;
+
+        uint64_t local_wstrb = (top->io_axi_WSTRB >> (i * 4)) & 0xfL;
+
+        mpz_class local_mask_mpz = shifted_mask >> (i * 4);
+        uint64_t local_mask = local_mask_mpz.get_ui() & 0xfL;
+        if (local_mask & local_wstrb) {
+          uint64_t base = memory[addr];
+          uint64_t input = local_wdata;
+          uint64_t be = local_mask & local_wstrb;
+
+          uint64_t muxed = 0;
+          for (int i = 0; i < 4; i++) {
+            uint64_t sel;
+            if (((be >> i) & 1) == 1) {
+              sel = (input >> (i * 8)) & 0xff;
+            } else {
+              sel = (base >> (i * 8)) & 0xff;
+            }
+            muxed |= (sel << (i * 8));
+          }
+
+          memory[addr] = muxed;
+          // printf("mem[%08x] = %09x\n", addr, muxed);
         }
-        muxed |= (sel << (i * 8));
       }
 
-      memory[align(pending_write_addr)] = muxed;
-
+      uint64_t input = wdata.get_ui();
       if (pending_write_addr == 0x10001000) {
         // serial
         printf("%c", input & 0xFF);
@@ -221,11 +258,11 @@ void load_file(const std::string &path) {
     assert(fp);
     uint64_t addr = 0x80000000;
 
-    // read whole file and pad to multiples of 8
+    // read whole file and pad to multiples of 4
     fseek(fp, 0, SEEK_END);
     size_t size = ftell(fp);
     fseek(fp, 0, SEEK_SET);
-    size_t padded_size = align(size + 7);
+    size_t padded_size = align(size + 3);
     uint8_t *buffer = new uint8_t[padded_size];
     memset(buffer, 0, padded_size);
 
@@ -238,8 +275,8 @@ void load_file(const std::string &path) {
       offset += read;
     }
 
-    for (int i = 0; i < padded_size; i += 8) {
-      memory[addr + i] = *((uint64_t *)&buffer[i]);
+    for (int i = 0; i < padded_size; i += 4) {
+      memory[addr + i] = *((uint32_t *)&buffer[i]);
     }
     printf("> Loaded %ld bytes from BIN %s\n", size, path.c_str());
     fclose(fp);
@@ -287,8 +324,8 @@ void load_file(const std::string &path) {
         size_t offset = hdr->p_offset;
         size_t dest = hdr->p_paddr;
         total_size += size;
-        for (int i = 0; i < size; i += 8) {
-          uint64_t data = *(uint64_t *)&buffer[offset + i];
+        for (int i = 0; i < size; i += 4) {
+          uint32_t data = *(uint32_t *)&buffer[offset + i];
           memory[dest + i] = data;
         }
       }
