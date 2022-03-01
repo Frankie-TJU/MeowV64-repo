@@ -11,11 +11,11 @@
 #include <verilated_fst_c.h>
 
 // memory mapping
-// 4 byte aligned
-std::map<uint64_t, uint32_t> memory;
+typedef uint32_t mem_t;
+std::map<uint64_t, mem_t> memory;
 
-// align to 4 byte boundary
-uint64_t align(uint64_t addr) { return (addr >> 2) << 2; }
+// align to mem_t boundary
+uint64_t align(uint64_t addr) { return (addr / sizeof(mem_t)) * sizeof(mem_t); }
 
 VRiscVSystem *top;
 
@@ -87,11 +87,11 @@ void step() {
       r_data = 1L << (32 + 5);
     } else {
       uint64_t aligned = (pending_read_addr / AXI_DATA_BYTES) * AXI_DATA_BYTES;
-      for (int i = 0; i < AXI_DATA_BYTES / 4; i++) {
-        uint64_t addr = aligned + i * 4;
-        uint32_t r = memory[addr];
+      for (int i = 0; i < AXI_DATA_BYTES / sizeof(mem_t); i++) {
+        uint64_t addr = aligned + i * sizeof(mem_t);
+        mem_t r = memory[addr];
         mpz_class res = r;
-        res <<= (i * 32);
+        res <<= (i * (sizeof(mem_t) * 8));
         r_data += res;
       }
     }
@@ -157,24 +157,24 @@ void step() {
                  top->io_axi_WDATA);
 
       uint64_t aligned = pending_write_addr / AXI_DATA_BYTES * AXI_DATA_BYTES;
-      for (int i = 0; i < AXI_DATA_BYTES / 4; i++) {
-        uint64_t addr = aligned + i * 4;
+      for (int i = 0; i < AXI_DATA_BYTES / sizeof(mem_t); i++) {
+        uint64_t addr = aligned + i * sizeof(mem_t);
 
-        mpz_class local_wdata_mpz = wdata >> (i * 32);
-        uint64_t local_wdata = local_wdata_mpz.get_ui() & 0xffffffffL;
+        mpz_class local_wdata_mpz = wdata >> (i * (sizeof(mem_t) * 8));
+        mem_t local_wdata = local_wdata_mpz.get_ui();
 
-        uint64_t local_wstrb = (top->io_axi_WSTRB >> (i * 4)) & 0xfL;
+        uint64_t local_wstrb = (top->io_axi_WSTRB >> (i * sizeof(mem_t))) & 0xfL;
 
-        mpz_class local_mask_mpz = shifted_mask >> (i * 4);
+        mpz_class local_mask_mpz = shifted_mask >> (i * sizeof(mem_t));
         uint64_t local_mask = local_mask_mpz.get_ui() & 0xfL;
         if (local_mask & local_wstrb) {
-          uint64_t base = memory[addr];
-          uint64_t input = local_wdata;
+          mem_t base = memory[addr];
+          mem_t input = local_wdata;
           uint64_t be = local_mask & local_wstrb;
 
-          uint64_t muxed = 0;
-          for (int i = 0; i < 4; i++) {
-            uint64_t sel;
+          mem_t muxed = 0;
+          for (int i = 0; i < sizeof(mem_t); i++) {
+            mem_t sel;
             if (((be >> i) & 1) == 1) {
               sel = (input >> (i * 8)) & 0xff;
             } else {
@@ -258,11 +258,11 @@ void load_file(const std::string &path) {
     assert(fp);
     uint64_t addr = 0x80000000;
 
-    // read whole file and pad to multiples of 4
+    // read whole file and pad to multiples of mem_t
     fseek(fp, 0, SEEK_END);
     size_t size = ftell(fp);
     fseek(fp, 0, SEEK_SET);
-    size_t padded_size = align(size + 3);
+    size_t padded_size = align(size + sizeof(mem_t) - 1);
     uint8_t *buffer = new uint8_t[padded_size];
     memset(buffer, 0, padded_size);
 
@@ -275,8 +275,8 @@ void load_file(const std::string &path) {
       offset += read;
     }
 
-    for (int i = 0; i < padded_size; i += 4) {
-      memory[addr + i] = *((uint32_t *)&buffer[i]);
+    for (int i = 0; i < padded_size; i += sizeof(mem_t)) {
+      memory[addr + i] = *((mem_t *)&buffer[i]);
     }
     printf("> Loaded %ld bytes from BIN %s\n", size, path.c_str());
     fclose(fp);
@@ -324,8 +324,8 @@ void load_file(const std::string &path) {
         size_t offset = hdr->p_offset;
         size_t dest = hdr->p_paddr;
         total_size += size;
-        for (int i = 0; i < size; i += 4) {
-          uint32_t data = *(uint32_t *)&buffer[offset + i];
+        for (int i = 0; i < size; i += sizeof(mem_t)) {
+          mem_t data = *(mem_t *)&buffer[offset + i];
           memory[dest + i] = data;
         }
       }
