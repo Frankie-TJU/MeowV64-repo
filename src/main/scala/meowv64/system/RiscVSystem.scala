@@ -17,7 +17,7 @@ class RiscVSystem(implicit val sDef: SystemDef = new DefaultSystemDef)
   )
 
   val io = IO(new Bundle {
-    val axi = new AXI(sDef.XLEN, sDef.PADDR_WIDTH)
+    val axi = new AXI(sDef.L2.AXI_DATA_WIDTH, sDef.PADDR_WIDTH)
     val eints = Input(Vec(sDef.INTERRUPT_CNT + 1, Bool()))
 
     // Debug infos

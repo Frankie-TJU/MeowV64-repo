@@ -36,7 +36,7 @@ class ExecTest(dut: system.RiscVSystem, file: String) {
     dut.io.axi.ARREADY.poke(false.B)
     dut.io.axi.RVALID.poke(false.B)
 
-    val axiDataWidth = dut.io.axi.DATA_WIDTH
+    val axiDataWidth = ExecDef.L2.AXI_DATA_WIDTH
     val axiDataBytes = axiDataWidth / 8
 
     // reset for some time
@@ -67,7 +67,8 @@ class ExecTest(dut: system.RiscVSystem, file: String) {
       mem.put(idx * 4 + 0x80000000L, value)
       idx += 1
     }
-    println(s"Initialized: $idx longs")
+    println(s"Initialized: $idx ints")
+    // println(s"AXI bytes: $axiDataBytes")
 
     val axi = dut.io.axi
     val failed: mutable.HashSet[Long] = mutable.HashSet.empty
@@ -136,7 +137,6 @@ class ExecTest(dut: system.RiscVSystem, file: String) {
         val rdata = if (ptr == 0x10001014) { // LSR
           BigInt(1L << (32 + 5))
         } else {
-
           val aligned = (ptr / axiDataBytes) * axiDataBytes
           var res = BigInt(0)
           for (i <- 0 until axiDataBytes / 4) {
@@ -148,10 +148,9 @@ class ExecTest(dut: system.RiscVSystem, file: String) {
         }
         val mask = (BigInt(1) << ((1 << size.toInt) * 8)) - 1L
         val shiftedMask =
-          mask << ((ptr & (axiDataBytes - 1)) * axiDataBytes).toInt
-        // println(s"  Raw: 0x${rdata.toHexString}")
-        // println(s"  Shifted: 0x${shifted.toHexString}")
-        // println(s"  Mask: 0x${mask.toHexString}")
+          mask << ((ptr & (axiDataBytes - 1)) * 8).toInt
+        // println(s"Raw: 0x${rdata.toString(16)}")
+        // println(s"Mask: 0x${shiftedMask.toString(16)}")
         // println(s"Read: 0x${(rdata & shiftedMask).toString(16)}")
         axi.RDATA.poke((rdata & shiftedMask).U)
         axi.RLAST.poke((left == 0).B)
@@ -206,6 +205,7 @@ class ExecTest(dut: system.RiscVSystem, file: String) {
                 localMask & localWStrb
               )
               mem.put(addr, muxed)
+              // println(s"Write ${muxed.toString(16)} to ${addr.toHexString}")
             }
           }
 
@@ -394,7 +394,7 @@ object Simulator {
       annotations
     } else {
       // fst is smaller than vcd
-      annotations ++ Seq(WriteFstAnnotation)
+      annotations ++ Seq(WriteVcdAnnotation)
     }
   }
 }
