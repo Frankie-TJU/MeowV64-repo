@@ -11,6 +11,7 @@ import meowv64.exec.UnitSel.Retirement
 import meowv64.instr.Instr
 
 import scala.collection.mutable
+import chisel3.util.PopCount
 
 trait UnitSelIO {
   val flush: Bool
@@ -120,8 +121,8 @@ class UnitSel(
 
   // Asserts exactly one can exec this instr
   val execMapUInt = execMap.asUInt
-  val execMapNoDup = !((execMapUInt -% 1.U) & execMapUInt).orR
-  assert(!rs.instr.valid || execMapNoDup && execMapUInt.orR())
+  val execMapCheckOneHot = PopCount(execMapUInt) <= 1.U
+  assert(!rs.instr.valid || execMapCheckOneHot)
 
   val pipeExecMap = RegInit(VecInit(Seq.fill(units.length)(false.B)))
   val pipeInstr = RegInit(ReservedInstr.empty(valueWidth))
