@@ -1,3 +1,8 @@
+> Loaded 33880 bytes from ELF ../../testcases/riscv-tests/build/benchmarks/coremark.riscv
+2K performance run parameters for coremark.
+CoreMark Size    : 666
+Total ticks      : 360652
+Total time (secs): 0.003607
 > Loaded 22232 bytes from ELF ../../testcases/riscv-tests/build/benchmarks/dhrystone.riscv
 Microseconds for one run through Dhrystone: 370
 Dhrystones per Second:                      2696
