@@ -168,12 +168,12 @@ class MicroBTB(implicit val coredef: CoreDef) extends Module {
     // for each possible branch instruction
     // return a BPUResult
     // it has one cycle delay
-    val s2Res = Output(
+    val s2Res = Output(Valid(
       Vec(
         coredef.L1I.TO_CORE_TRANSFER_WIDTH / Const.INSTR_MIN_WIDTH,
         new BPUResult
       )
-    )
+    ))
   })
 
   val toExec = IO(new Bundle {
@@ -210,15 +210,18 @@ class MicroBTB(implicit val coredef: CoreDef) extends Module {
   val s1Tag = getTag(toFetch.s1Pc.bits)
   val s2Tag = RegNext(s1Tag)
   val s2Readout = store.read(getIndex(toFetch.s1Pc.bits))
-  when(RegNext(toFetch.s1Pc.valid)) {
-    toFetch.s2Res := VecInit(s2Readout.map(_.taken(s2Tag)))
+  // one cycle delay
+  toFetch.s2Res.valid := RegNext(toFetch.s1Pc.valid)
+  when(toFetch.s2Res.valid) {
+    toFetch.s2Res.bits := VecInit(s2Readout.map(_.taken(s2Tag)))
   }.otherwise {
-    toFetch.s2Res := 0.U.asTypeOf(toFetch.s2Res)
+    toFetch.s2Res.bits := 0.U.asTypeOf(toFetch.s2Res.bits)
   }
 
   // valid is stale when in reset state
   when(doingReset) {
-    for (res <- toFetch.s2Res) {
+    toFetch.s2Res.valid := false.B
+    for (res <- toFetch.s2Res.bits) {
       res.valid := false.B
     }
   }

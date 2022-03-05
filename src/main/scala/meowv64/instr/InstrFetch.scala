@@ -96,12 +96,12 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
 
   val toBPU = IO(new Bundle {
     val s1Pc = Output(Valid(UInt(coredef.XLEN.W)))
-    val s2Res = Input(
+    val s2Res = Input(Valid(
       Vec(
         coredef.L1I.TO_CORE_TRANSFER_WIDTH / Const.INSTR_MIN_WIDTH,
         new BPUResult
       )
-    )
+    ))
   })
 
   val toRAS = IO(new Bundle {
@@ -180,8 +180,8 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
     i <-
       (0 until coredef.L1I.TO_CORE_TRANSFER_WIDTH / Const.INSTR_MIN_WIDTH).reverse
   ) {
-    val res = toBPU.s2Res(i)
-    when(i.U >= s2PcOffset) {
+    val res = toBPU.s2Res.bits(i)
+    when(i.U >= s2PcOffset && toBPU.s2Res.valid) {
       when(res.prediction === BranchPrediction.taken) {
         s1FPc := res.targetAddress
         s1Successive := false.B
@@ -276,7 +276,7 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
   ICQueue.io.enq.bits.addr := s2AlignedPc
   ICQueue.io.enq.bits.mask := s2Mask
   ICQueue.io.enq.bits.last := s2LastMask
-  ICQueue.io.enq.bits.pred := toBPU.s2Res
+  ICQueue.io.enq.bits.pred := toBPU.s2Res.bits
   ICQueue.io.enq.bits.fault := s2Fault
   ICQueue.io.enq.bits.successive := s2Successive
   ICQueue.io.enq.valid := (toIC.read.ready && toIC.data.valid) || s2Fault
