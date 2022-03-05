@@ -148,7 +148,7 @@ class L2CacheTest(dut: WrappedL2, seed: Long, len: Int) {
       // read port should be aligned
       dut.io.reader.req.bits.addr.poke(align(cur.addr).U)
 
-      dut.io.writer.req.valid.poke(!cur.isRead.B)
+      dut.io.writer.req.valid.poke((!cur.isRead).B)
       dut.io.writer.req.bits.op.poke(DCWriteOp.write)
       dut.io.writer.req.bits.addr.poke(cur.addr.U)
       dut.io.writer.req.bits.len.poke(DCWriteLen.safe(cur.lg2Len.U)._1)

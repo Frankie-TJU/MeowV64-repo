@@ -132,7 +132,7 @@ object L1ICPort {
   def empty(opts: L1Opts): L1ICPort = {
     val port = Wire(Flipped(new L1ICPort(opts)))
     port := DontCare
-    port.read := false.B
+    port.read.valid := false.B
 
     port
   }
