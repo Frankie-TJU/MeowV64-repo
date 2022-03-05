@@ -51,12 +51,12 @@ class L1ICacheTest(dut: L1IC, seed: Long, len: Int) {
   def run(): Unit = {
     for (i <- (0 until len)) {
       // println("Cycle: " + i)
-      dut.toCPU.read.poke(addrs(cnt).isDefined.B)
-      dut.toCPU.addr.poke(
+      dut.toCPU.read.valid.poke(addrs(cnt).isDefined.B)
+      dut.toCPU.read.bits.poke(
         (addrs(cnt).getOrElse(rng.nextInt().abs % L1ICacheTest.RAM_SIZE)).U
       )
 
-      if (dut.toCPU.stall.peek.litToBoolean == false) {
+      if (dut.toCPU.read.ready.peek.litToBoolean == true) {
         // Check last
         if (cnt == 0 || addrs(cnt - 1).isEmpty) {
           if (dut.toCPU.data.valid.peek.litToBoolean == true) {

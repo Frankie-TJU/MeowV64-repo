@@ -155,8 +155,9 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
   val requiresTranslate =
     toCore.satp.mode =/= SatpMode.bare && toCtrl.priv <= PrivLevel.S
   // TODO: this will cause the flush to be sent one more tick
-  val readStalled = toIC.stall || (requiresTranslate && !tlb.query.req.ready)
-  val readFire = !readStalled && toIC.read
+  val readStalled =
+    ~toIC.read.ready || (requiresTranslate && !tlb.query.req.ready)
+  val readFire = !readStalled && toIC.read.valid
 
   // predict fpc from BPU result
 
@@ -165,7 +166,7 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
     s2Fault := tlb.query.resp.fault
     s2Successive := s1Successive
 
-    when(toIC.read) {
+    when(toIC.read.valid) {
       // If We send an request to IC, step forward PC counter
       s1Pc := s1AlignedFPc + (coredef.L1I.TO_CORE_TRANSFER_WIDTH / 8).U
       s1PipeSuccessive := true.B
@@ -278,7 +279,7 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
   ICQueue.io.enq.bits.pred := toBPU.s2Res
   ICQueue.io.enq.bits.fault := s2Fault
   ICQueue.io.enq.bits.successive := s2Successive
-  ICQueue.io.enq.valid := (!toIC.stall && toIC.data.valid) || s2Fault
+  ICQueue.io.enq.valid := (toIC.read.ready && toIC.data.valid) || s2Fault
 
   // when successive, first instruction must be decodable
   when(ICQueue.io.enq.bits.successive && ICQueue.io.enq.fire) {
@@ -304,8 +305,8 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
     icAddr := tlb.query.resp.ppn ## s1AlignedFPc(11, 0)
     icRead := (!haltIC && tlb.query.req.ready) && !tlb.query.resp.fault
   }
-  toIC.read := icRead && !toCtrl.ctrl.flush
-  toIC.addr := icAddr
+  toIC.read.valid := icRead && !toCtrl.ctrl.flush
+  toIC.read.bits := icAddr
   toIC.rst := toCtrl.ctrl.flush && toCtrl.iRst
 
   val ICHead = Module(new FlushableSlot(new ICData, true, false))
@@ -548,7 +549,7 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
   issueFifo.writer.view := decoded
   issueFifo.writer.cnt := stepping
 
-  toCtrl.ctrl.stall := haltIC || toIC.stall
+  toCtrl.ctrl.stall := haltIC || ~toIC.read.ready
 
   val pendingIRst = RegInit(false.B)
   val pendingTLBRst = RegInit(false.B)
@@ -634,7 +635,7 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
     // it might assert tlbRst when pendingFlush is true
     tlb.flush := toCtrl.tlbRst | pendingTLBRst
     ICQueue.io.enq.noenq()
-    when(!toIC.stall) { // TLB will flush within one tick
+    when(toIC.read.ready) { // TLB will flush within one tick
       pendingFlush := false.B
     }
   }

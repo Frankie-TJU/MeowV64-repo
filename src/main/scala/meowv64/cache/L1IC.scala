@@ -6,11 +6,7 @@ import chisel3.util._
 import chisel3.util.log2Ceil
 
 class CoreICPort(val opts: L1Opts) extends Bundle {
-  // read & ~stall means a read transaction
-  val addr = Input(UInt(opts.ADDR_WIDTH.W))
-  val read = Input(Bool())
-
-  val stall = Output(Bool())
+  val read = Flipped(Decoupled(UInt(opts.ADDR_WIDTH.W)))
   val rst = Input(Bool())
 
   val data = Valid(UInt(opts.TO_CORE_TRANSFER_WIDTH.W)) // Data delay is 1 cycle
@@ -90,10 +86,10 @@ class L1IC(opts: L1Opts) extends Module {
   val pipeAddr = RegInit(0.U(opts.ADDR_WIDTH.W))
 
   val readingAddr = Wire(UInt(opts.ADDR_WIDTH.W))
-  when(toCPU.stall) {
-    readingAddr := pipeAddr
+  when(toCPU.read.ready) {
+    readingAddr := toCPU.read.bits
   }.otherwise {
-    readingAddr := toCPU.addr
+    readingAddr := pipeAddr
   }
   val readouts = directories.read(getIndex(readingAddr))
   val dataReadouts = stores.read(getIndex(readingAddr))
@@ -127,13 +123,13 @@ class L1IC(opts: L1Opts) extends Module {
   state := nstate
 
   val stalled = nstate =/= S2State.idle
-  toCPU.stall := stalled
+  toCPU.read.ready := ~stalled
   toCPU.data.valid := false.B
   toCPU.data.bits := DontCare
 
-  when(!toCPU.stall) {
-    pipeRead := toCPU.read
-    pipeAddr := toCPU.addr
+  when(toCPU.read.ready) {
+    pipeRead := toCPU.read.valid
+    pipeAddr := toCPU.read.bits
     pipeRst := toCPU.rst
   }
 
