@@ -9,8 +9,8 @@ import meowv64.cache.L1DCPort.L2Req
 import meowv64.core.CoreDef
 import meowv64.data._
 
-class CoreDCReadReq(implicit val coredef: CoreDef) extends Bundle {
-  val addr = UInt(coredef.PADDR_WIDTH.W)
+class CoreDCReadReq(val opts: L1DOpts) extends Bundle {
+  val addr = UInt(opts.ADDR_WIDTH.W)
 
   /** for lr instruction */
   val reserve = Bool()
@@ -18,14 +18,14 @@ class CoreDCReadReq(implicit val coredef: CoreDef) extends Bundle {
 
 object CoreDCReadReq {
   def load(addr: UInt)(implicit coredef: CoreDef): CoreDCReadReq = {
-    val ret = Wire(new CoreDCReadReq)
+    val ret = Wire(new CoreDCReadReq(coredef.L1D))
     ret.reserve := false.B
     ret.addr := addr
     ret
   }
 
   def lr(addr: UInt)(implicit coredef: CoreDef) = {
-    val ret = Wire(new CoreDCReadReq)
+    val ret = Wire(new CoreDCReadReq(coredef.L1D))
     ret.reserve := true.B
     ret.addr := addr
   }
@@ -34,20 +34,14 @@ object CoreDCReadReq {
 /** DCache reader from core to cache
   */
 class CoreDCReader(implicit val coredef: CoreDef) extends Bundle {
-  val req = Decoupled(new CoreDCReadReq)
+  val req = Decoupled(new CoreDCReadReq(coredef.L1D))
   val resp = Input(Valid(UInt(coredef.L1D.TO_CORE_TRANSFER_WIDTH.W)))
 }
 
 class DCInnerReader(val opts: L1DOpts) extends Bundle {
-  val addr = Output(UInt(opts.ADDR_WIDTH.W))
-
-  /** for lr instruction */
-  val reserve = Output(Bool())
-
-  val read = Output(Bool())
+  val req = Decoupled(new CoreDCReadReq(opts))
 
   val data = Input(UInt(opts.TO_CORE_TRANSFER_WIDTH.W))
-  val stall = Input(Bool())
 }
 
 object DCWriteOp extends ChiselEnum {
@@ -225,17 +219,17 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
   val toL2 = IO(new L1DCPort(opts))
 
   // Convert mr + ptw to r
-  val rArbiter = Module(new RRArbiter(new CoreDCReadReq, 2))
+  val rArbiter = Module(new RRArbiter(new CoreDCReadReq(opts), 2))
   class RReq extends Bundle {
     val addr = UInt(coredef.PADDR_WIDTH.W)
     val chosen = UInt()
   }
 
   val r = Wire(new DCInnerReader(opts))
-  r.read := rArbiter.io.out.valid
-  rArbiter.io.out.ready := !r.stall
-  r.addr := rArbiter.io.out.bits.addr
-  r.reserve := rArbiter.io.out.bits.reserve
+  r.req.valid := rArbiter.io.out.valid
+  rArbiter.io.out.ready := r.req.ready
+  r.req.bits.addr := rArbiter.io.out.bits.addr
+  r.req.bits.reserve := rArbiter.io.out.bits.reserve
 
   rArbiter.io.in(0) <> ptw.req
   rArbiter.io.in(1) <> mr.req
@@ -246,7 +240,7 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
   }
 
   // Asserting that in-line offset is 0
-  assert((!r.read) || r.addr(IGNORED_WIDTH - 1, 0) === 0.U)
+  assert((!r.req.valid) || r.req.bits.addr(IGNORED_WIDTH - 1, 0) === 0.U)
   // assert((!w.write) || w.addr(IGNORED_WIDTH-1, 0) === 0.U)
   //   The check for write is no longer true, because of AMO
 
@@ -260,9 +254,9 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
   val pipeAddr = RegInit(0.U(opts.ADDR_WIDTH.W))
 
   ptw.resp.bits := r.data
-  ptw.resp.valid := pipeRead && !r.stall && current === 0.U
+  ptw.resp.valid := pipeRead && r.req.ready && current === 0.U
   mr.resp.bits := r.data
-  mr.resp.valid := pipeRead && !r.stall && current === 1.U
+  mr.resp.valid := pipeRead && r.req.ready && current === 1.U
 
   val queryAddr = Wire(UInt(opts.ADDR_WIDTH.W))
   val lookups = stores.read(getIndex(queryAddr))
@@ -753,19 +747,19 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
     lookupRdata
   )
 
-  when(!r.stall) {
-    pipeRead := r.read
-    pipeReserve := r.reserve
-    pipeAddr := r.addr
+  when(r.req.ready) {
+    pipeRead := r.req.valid
+    pipeReserve := r.req.bits.reserve
+    pipeAddr := r.req.bits.addr
 
-    queryAddr := r.addr
+    queryAddr := r.req.bits.addr
 
     assert((!pipeRead) || RegNext(queryAddr) === pipeAddr)
   }.otherwise {
     queryAddr := pipeAddr
   }
 
-  when(pipeRead && pipeReserve && !r.stall) {
+  when(pipeRead && pipeReserve && r.req.ready) {
     resValid := true.B
     resCommitted := false.B
     reserved := getTag(pipeAddr) ## getIndex(pipeAddr) ## 0.U(
@@ -778,11 +772,11 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
   // FIXME: change this one back?
   when(RegNext(toL2.l2req) =/= L2Req.idle) {
     // read port occupied
-    r.stall := true.B
+    r.req.ready := false.B
   }.elsewhen((!pipeRead) || hit || storeJustWritten) {
-    r.stall := false.B
+    r.req.ready := true.B
   }.otherwise {
-    r.stall := true.B
+    r.req.ready := false.B
     pendingRead := true.B
   }
 
