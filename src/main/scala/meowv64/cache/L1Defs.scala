@@ -83,6 +83,11 @@ trait L1Opts extends CacheOpts {
   /** LINE_WIDTH / CORE_DATA_WIDTH
     */
   def TRANSFER_COUNT: Int = LINE_WIDTH / TO_CORE_TRANSFER_WIDTH
+
+  // check
+  if (TO_CORE_TRANSFER_WIDTH != 0) {
+    assert(LINE_WIDTH % TO_CORE_TRANSFER_WIDTH == 0 && TRANSFER_COUNT >= 1)
+  }
 }
 
 trait L1DOpts extends L1Opts {

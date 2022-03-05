@@ -93,9 +93,11 @@ class CoreDCWriter(val opts: L1DOpts) extends Bundle {
   val rdata = Input(UInt(opts.TO_CORE_TRANSFER_WIDTH.W)) // AMOSWAP and friends
   val stall = Input(Bool())
 
+  val IGNORED_WIDTH = log2Ceil(opts.TO_CORE_TRANSFER_WIDTH / 8)
+
   /** Generate raw byte enable */
   def be = {
-    val offset = addr(log2Ceil(opts.TO_CORE_TRANSFER_WIDTH / 8) - 1, 0)
+    val offset = addr(IGNORED_WIDTH - 1, 0)
     val mask = MuxLookup(
       len.asUInt(),
       0.U,
@@ -113,7 +115,7 @@ class CoreDCWriter(val opts: L1DOpts) extends Bundle {
 
   /** Shifted wdata */
   def sdata = {
-    val offset = addr(log2Ceil(opts.TO_CORE_TRANSFER_WIDTH / 8) - 1, 0)
+    val offset = addr(IGNORED_WIDTH - 1, 0)
     val sliced = Wire(UInt(opts.TO_CORE_TRANSFER_WIDTH.W))
     sliced := wdata << (offset << 3)
     sliced
@@ -121,7 +123,7 @@ class CoreDCWriter(val opts: L1DOpts) extends Bundle {
 
   /** Aligned address
     */
-  def aligned = addr(opts.ADDR_WIDTH - 1, 3) ## 0.U(3.W)
+  def aligned = addr(opts.ADDR_WIDTH - 1, IGNORED_WIDTH) ## 0.U(IGNORED_WIDTH.W)
 }
 
 class DCFenceStatus(val opts: L1DOpts) extends Bundle {
@@ -149,6 +151,34 @@ object DLine {
   }
 }
 
+// Write FIFO
+class WriteEv(val opts: L1DOpts) extends Bundle {
+  val aligned = UInt(opts.ADDR_WIDTH.W)
+  val be = UInt((opts.TO_CORE_TRANSFER_WIDTH / 8).W)
+  val sdata = UInt(opts.TO_CORE_TRANSFER_WIDTH.W)
+  val isAMO = Bool()
+
+  /** Store conditional
+    */
+  val isCond = Bool()
+  val valid = Bool()
+}
+
+object WriteEv {
+  def default(opts: L1DOpts): WriteEv = {
+    val ret = Wire(new WriteEv(opts))
+
+    ret.aligned := 0.U
+    ret.be := 0.U
+    ret.sdata := 0.U
+    ret.valid := false.B
+    ret.isAMO := false.B
+    ret.isCond := false.B
+
+    ret
+  }
+}
+
 class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
   // Constants and helpers
   val IGNORED_WIDTH = log2Ceil(opts.TO_CORE_TRANSFER_WIDTH / 8)
@@ -157,7 +187,11 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
     addr(opts.ADDR_WIDTH - 1, IGNORED_WIDTH) ## 0.U(IGNORED_WIDTH.W)
   def getTag(addr: UInt) = opts.getTag(addr)
   def getIndex(addr: UInt) = opts.getIndex(addr)
-  def getSublineIdx(addr: UInt) = addr(opts.OFFSET_WIDTH - 1, IGNORED_WIDTH)
+  def getSublineIdx(addr: UInt) = if (opts.TRANSFER_COUNT == 1) {
+    0.U
+  } else {
+    addr(opts.OFFSET_WIDTH - 1, IGNORED_WIDTH)
+  }
 
   def muxBE(be: UInt, wdata: UInt, base: UInt): UInt = {
     assume(be.getWidth * 8 == wdata.getWidth)
@@ -257,34 +291,6 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
   /** Write result for amo and sc instructions
     */
   val pendingWret = RegInit(0.U(opts.XLEN.W))
-
-  // Write FIFO
-  class WriteEv(val opts: L1DOpts) extends Bundle {
-    val aligned = UInt(opts.ADDR_WIDTH.W)
-    val be = UInt((opts.TO_CORE_TRANSFER_WIDTH / 8).W)
-    val sdata = UInt(opts.TO_CORE_TRANSFER_WIDTH.W)
-    val isAMO = Bool()
-
-    /** Store conditional
-      */
-    val isCond = Bool()
-    val valid = Bool()
-  }
-
-  object WriteEv {
-    def default(opts: L1DOpts): WriteEv = {
-      val ret = Wire(new WriteEv(opts))
-
-      ret.aligned := 0.U
-      ret.be := 0.U
-      ret.sdata := 0.U
-      ret.valid := false.B
-      ret.isAMO := false.B
-      ret.isCond := false.B
-
-      ret
-    }
-  }
 
   val wbuf = RegInit(
     VecInit(Seq.fill(opts.WRITE_BUF_DEPTH)(WriteEv.default(opts)))
