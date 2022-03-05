@@ -73,7 +73,7 @@ class AMOALU(val opts: L1DOpts) extends Module {
   val filtered = Wire(UInt(opts.XLEN.W))
   filtered := 0.U
   switch(io.op) {
-    is(DCWriteOp.idle, DCWriteOp.write, DCWriteOp.cond, DCWriteOp.swap) {
+    is(DCWriteOp.write, DCWriteOp.cond, DCWriteOp.swap) {
       filtered := io.wdata
     }
 

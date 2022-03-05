@@ -492,7 +492,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
     when(pipeAMO) {
       mem.wop := MuxLookup(
         pipeInstr.instr.instr.funct7(6, 2),
-        DCWriteOp.idle,
+        DCWriteOp.write,
         Seq(
           Decoder.AMO_FUNC("SC") -> DCWriteOp.cond,
           Decoder.AMO_FUNC("AMOSWAP") -> DCWriteOp.swap,
@@ -526,26 +526,25 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
 
   // Delayed memory ops
   val pendingHead = pendings.io.deq.bits
-  toMem.writer.wdata := pendingHead.data
+  toMem.writer.req.bits.wdata := pendingHead.data
   toMem.uncached.wdata := pendingHead.data
 
-  toMem.writer.addr := pendingHead.addr
+  toMem.writer.req.bits.addr := pendingHead.addr
   toMem.uncached.addr := pendingHead.addr
 
   // toMem.writer.be := pendingHead.be
-  toMem.writer.len := pendingHead.len
+  toMem.writer.req.bits.len := pendingHead.len
   toMem.uncached.len := pendingHead.len
 
-  toMem.writer.op := DCWriteOp.idle
+  toMem.writer.req.valid := false.B
+  toMem.writer.req.bits.op := DCWriteOp.write
   toMem.uncached.read := false.B
   toMem.uncached.write := false.B
 
   when(pendings.io.deq.valid && release.ready) {
-    toMem.writer.op := Mux(
-      pendingHead.op === DelayedMemOp.s,
-      pendingHead.wop,
-      DCWriteOp.idle
-    )
+    toMem.writer.req.bits.op := pendingHead.wop
+    toMem.writer.req.valid := pendingHead.op === DelayedMemOp.s
+
     toMem.uncached.read := pendingHead.op === DelayedMemOp.ul
     toMem.uncached.write := pendingHead.op === DelayedMemOp.us
   }
@@ -577,7 +576,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
     pendings.io.deq.valid
       && Mux(
         pendingHead.op === DelayedMemOp.s,
-        !toMem.writer.stall,
+        toMem.writer.req.ready,
         !toMem.uncached.stall
       )
   )

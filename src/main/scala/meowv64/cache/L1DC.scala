@@ -45,7 +45,6 @@ class DCInnerReader(val opts: L1DOpts) extends Bundle {
 }
 
 object DCWriteOp extends ChiselEnum {
-  val idle = Value
   val write = Value
   // store conditional
   // Write cond
@@ -70,30 +69,29 @@ object DCWriteLen extends ChiselEnum {
   )
 }
 
+class CoreDCWriteReq(val opts: L1DOpts) extends Bundle {
+  // Offset is now embedded inside addr
+  val addr = UInt(opts.ADDR_WIDTH.W)
+  val len = DCWriteLen()
+  val op = DCWriteOp()
+  // WData should be sign extended
+  val wdata = UInt(opts.TO_CORE_TRANSFER_WIDTH.W)
+}
+
 /** DCache write port (from LSU to DCache)
   */
 class CoreDCWriter(val opts: L1DOpts) extends Bundle {
-  // Offset is now embedded inside addr
-  val addr = Output(
-    UInt(opts.ADDR_WIDTH.W)
-  )
-  val len = Output(DCWriteLen())
-  val op = Output(DCWriteOp())
-
-  val wdata = Output(
-    UInt(opts.TO_CORE_TRANSFER_WIDTH.W)
-  ) // WData should be sign extended
+  val req = Decoupled(new CoreDCWriteReq(opts))
 
   val rdata = Input(UInt(opts.TO_CORE_TRANSFER_WIDTH.W)) // AMOSWAP and friends
-  val stall = Input(Bool())
 
   val IGNORED_WIDTH = log2Ceil(opts.TO_CORE_TRANSFER_WIDTH / 8)
 
   /** Generate raw byte enable */
   def be = {
-    val offset = addr(IGNORED_WIDTH - 1, 0)
+    val offset = req.bits.addr(IGNORED_WIDTH - 1, 0)
     val mask = MuxLookup(
-      len.asUInt(),
+      req.bits.len.asUInt(),
       0.U,
       Seq(
         DCWriteLen.B.asUInt -> 0x1.U,
@@ -109,15 +107,16 @@ class CoreDCWriter(val opts: L1DOpts) extends Bundle {
 
   /** Shifted wdata */
   def sdata = {
-    val offset = addr(IGNORED_WIDTH - 1, 0)
+    val offset = req.bits.addr(IGNORED_WIDTH - 1, 0)
     val sliced = Wire(UInt(opts.TO_CORE_TRANSFER_WIDTH.W))
-    sliced := wdata << (offset << 3)
+    sliced := req.bits.wdata << (offset << 3)
     sliced
   }
 
   /** Aligned address
     */
-  def aligned = addr(opts.ADDR_WIDTH - 1, IGNORED_WIDTH) ## 0.U(IGNORED_WIDTH.W)
+  def aligned =
+    req.bits.addr(opts.ADDR_WIDTH - 1, IGNORED_WIDTH) ## 0.U(IGNORED_WIDTH.W)
 }
 
 class DCFenceStatus(val opts: L1DOpts) extends Bundle {
@@ -273,10 +272,10 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
       && getIndex(reserved) === getIndex(addr)
   )
 
-  val pendingWOp = RegNext(w.op)
-  val pendingWData = RegNext(w.wdata)
-  val pendingWLen = RegNext(w.len)
-  val pendingWAddr = RegNext(w.addr)
+  val pendingWOp = RegNext(w.req.bits.op)
+  val pendingWData = RegNext(w.req.bits.wdata)
+  val pendingWLen = RegNext(w.req.bits.len)
+  val pendingWAddr = RegNext(w.req.bits.addr)
   amoalu.io.offset := pendingWAddr(log2Ceil(opts.XLEN / 8) - 1, 0)
   amoalu.io.wdata := pendingWData
   amoalu.io.length := pendingWLen
@@ -633,29 +632,31 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
   w.rdata := pendingWret
   val pushed = RegInit(false.B) // Pushed state for
 
-  when(w.op === DCWriteOp.idle) {
+  when(~w.req.valid) {
     // No request
-    w.stall := false.B
-  }.elsewhen(w.op === DCWriteOp.commitLR) {
-    w.stall := false.B
+    w.req.ready := true.B
+  }.elsewhen(w.req.bits.op === DCWriteOp.commitLR) {
+    w.req.ready := true.B
     when(
-      getTag(w.addr) === getTag(reserved) && getIndex(w.addr) === getIndex(
+      getTag(w.req.bits.addr) === getTag(reserved) && getIndex(
+        w.req.bits.addr
+      ) === getIndex(
         reserved
       )
     ) {
       resCommitted := true.B
     }
-  }.elsewhen(w.op =/= DCWriteOp.write) {
+  }.elsewhen(w.req.bits.op =/= DCWriteOp.write) {
     // Wait for write queue to clear up
     when(!pushed) {
-      w.stall := true.B
+      w.req.ready := false.B
       when(wbufTail +% 1.U =/= wbufHead) {
         wbuf(wbufTail).aligned := w.aligned
         wbuf(wbufTail).be := w.be
         wbuf(wbufTail).sdata := w.sdata
         wbuf(wbufTail).valid := true.B
-        wbuf(wbufTail).isAMO := w.op =/= DCWriteOp.cond
-        wbuf(wbufTail).isCond := w.op === DCWriteOp.cond
+        wbuf(wbufTail).isAMO := w.req.bits.op =/= DCWriteOp.cond
+        wbuf(wbufTail).isCond := w.req.bits.op === DCWriteOp.cond
 
         wbufTail := wbufTail +% 1.U
 
@@ -663,13 +664,13 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
       }
     }.elsewhen(wbufHead === wbufTail) {
       pushed := false.B
-      w.stall := false.B
+      w.req.ready := true.B
     }.otherwise {
-      w.stall := true.B
+      w.req.ready := false.B
     }
   }.elsewhen(wmHitHead) {
     // Head may be being processed right now, wait for it to finish and do a push
-    w.stall := true.B
+    w.req.ready := false.B
   }.otherwise {
     for (buf <- wbuf) {
       when(buf.aligned === w.aligned) {
@@ -680,7 +681,7 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
 
     when(wmHit) {
       // Write merge completing
-      w.stall := false.B
+      w.req.ready := true.B
     }.elsewhen(wbufTail +% 1.U =/= wbufHead) {
       // Write merge miss, waiting to push
       assert(w.aligned(IGNORED_WIDTH - 1, 0) === 0.U)
@@ -693,10 +694,10 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
 
       wbufTail := wbufTail +% 1.U
 
-      w.stall := false.B
+      w.req.ready := true.B
     }.otherwise {
       // Wtire merge miss, fifo full, wait for fifo
-      w.stall := true.B
+      w.req.ready := false.B
     }
   }
 

@@ -148,13 +148,11 @@ class L2CacheTest(dut: WrappedL2, seed: Long, len: Int) {
       // read port should be aligned
       dut.io.reader.req.bits.addr.poke(align(cur.addr).U)
 
-      dut.io.writer.op.poke(
-        if (cur.isRead) { DCWriteOp.idle }
-        else { DCWriteOp.write }
-      )
-      dut.io.writer.addr.poke(cur.addr.U)
-      dut.io.writer.len.poke(DCWriteLen.safe(cur.lg2Len.U)._1)
-      dut.io.writer.wdata.poke(cur.wdata.U)
+      dut.io.writer.req.valid.poke(!cur.isRead.B)
+      dut.io.writer.req.bits.op.poke(DCWriteOp.write)
+      dut.io.writer.req.bits.addr.poke(cur.addr.U)
+      dut.io.writer.req.bits.len.poke(DCWriteLen.safe(cur.lg2Len.U)._1)
+      dut.io.writer.req.bits.wdata.poke(cur.wdata.U)
 
       if (cur.isRead && dut.io.reader.req.ready.peek.litToBoolean == true) {
         waitingRead match {
@@ -178,7 +176,7 @@ class L2CacheTest(dut: WrappedL2, seed: Long, len: Int) {
           }
         }
       } else if (
-        !cur.isRead && dut.io.writer.stall.peek.litToBoolean == false
+        !cur.isRead && dut.io.writer.req.ready.peek.litToBoolean == true
       ) {
         val aligned = align(cur.addr)
         val original = ref.get(aligned).getOrElse(BigInt(0))
