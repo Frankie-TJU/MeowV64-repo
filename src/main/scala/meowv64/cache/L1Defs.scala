@@ -3,6 +3,7 @@ package meowv64.cache
 import chisel3._
 import chisel3.experimental.ChiselEnum
 import chisel3.util.log2Ceil
+import chisel3.util.Valid
 
 /** Cache definations and interfaces
   *
@@ -102,16 +103,14 @@ trait L1DOpts extends L1Opts {
   * have uplink data wires
   */
 class L1ICPort(val opts: L1Opts) extends Bundle with L1Port {
-  val read = Output(Bool())
-  val addr = Output(UInt(opts.ADDR_WIDTH.W))
-
+  val read = Valid(UInt(opts.ADDR_WIDTH.W))
   val stall = Input(Bool())
   val data = Input(UInt((opts.TO_L2_TRANSFER_WIDTH).W))
 
-  override def getAddr: UInt = addr
+  override def getAddr: UInt = read.bits
   override def getReq = {
     val result = Wire(L1DCPort.L1Req())
-    when(read) {
+    when(read.valid) {
       result := L1DCPort.L1Req.read
     }.otherwise {
       result := L1DCPort.L1Req.idle

@@ -89,7 +89,7 @@ class L1ICacheTest(dut: L1IC, seed: Long, len: Int) {
 
       var heldCycles: Option[Int] = None
 
-      if (dut.toL2.read.peek.litToBoolean == true) {
+      if (dut.toL2.read.valid.peek.litToBoolean == true) {
         // Randomly waits on L2
 
         heldCycles = heldCycles match {
@@ -100,7 +100,7 @@ class L1ICacheTest(dut: L1IC, seed: Long, len: Int) {
         if (heldCycles == Some(0)) {
           dut.toL2.stall.poke(false.B)
 
-          val addr = dut.toL2.addr.peek.litValue.toInt
+          val addr = dut.toL2.read.bits.peek.litValue.toInt
           var data = BigInt(0)
           for (i <- (0 until 4)) {
             val added = addr + i * 4;

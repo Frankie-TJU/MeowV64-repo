@@ -37,8 +37,8 @@ class L1IC(opts: L1Opts) extends Module {
   val toL2 = IO(new L1ICPort(opts))
 
   toCPU.data := DontCare
-  toL2.addr := DontCare
-  toL2.read := false.B
+  toL2.read.bits := DontCare
+  toL2.read.valid := false.B
 
   val IGNORED_WIDTH = log2Ceil(opts.TO_CORE_TRANSFER_WIDTH / 8)
 
@@ -181,8 +181,8 @@ class L1IC(opts: L1Opts) extends Module {
     }
 
     is(S2State.refill) {
-      toL2.addr := toAligned(pipeAddr)
-      toL2.read := true.B
+      toL2.read.bits := toAligned(pipeAddr)
+      toL2.read.valid := true.B
 
       when(!toL2.stall) {
         val written = Wire(new ILine(opts))
