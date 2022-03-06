@@ -206,7 +206,7 @@ class Exec(implicit val coredef: CoreDef) extends Module {
   })
 
   // collect rs free mask to find bottleneck
-  toCore.rsEmptyMask := Cat(stations.map(_.ingress.free).reverse)
+  toCore.rsEmptyMask := Cat(stations.map(_.ingress.empty).reverse)
   toCore.rsFullMask := Cat(stations.map(!_.ingress.free).reverse)
 
   for (s <- stations) {

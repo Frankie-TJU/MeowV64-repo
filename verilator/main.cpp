@@ -421,7 +421,7 @@ int main(int argc, char **argv) {
   top->clock = 0;
   init();
 
-  const size_t MAX_RS_COUNT = 8;
+  const size_t MAX_RS_COUNT = 5;
   size_t rs_empty_cycle_count[MAX_RS_COUNT] = {};
   size_t rs_full_cycle_count[MAX_RS_COUNT] = {};
   size_t cycles = 0;
@@ -490,16 +490,12 @@ int main(int argc, char **argv) {
           (double)top->io_debug_0_mcycle * 1000000 / elapsed_us);
   fprintf(stderr, "> RS empty cycle:");
   for (int i = 0; i < MAX_RS_COUNT; i++) {
-    if (rs_empty_cycle_count[i]) {
-      fprintf(stderr, " %.2lf%%", rs_empty_cycle_count[i] * 100.0 / cycles);
-    }
+    fprintf(stderr, " %.2lf%%", rs_empty_cycle_count[i] * 100.0 / cycles);
   }
   fprintf(stderr, "\n");
   fprintf(stderr, "> RS full cycle:");
   for (int i = 0; i < MAX_RS_COUNT; i++) {
-    if (rs_full_cycle_count[i]) {
-      fprintf(stderr, " %.2lf%%", rs_full_cycle_count[i] * 100.0 / cycles);
-    }
+    fprintf(stderr, " %.2lf%%", rs_full_cycle_count[i] * 100.0 / cycles);
   }
   fprintf(stderr, "\n");
   fprintf(stderr, "> Cycles when issue num is bounded by ROB size: %.2lf%%\n",
