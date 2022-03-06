@@ -422,7 +422,8 @@ int main(int argc, char **argv) {
   init();
 
   const size_t MAX_RS_COUNT = 8;
-  size_t rs_free_cycle_count[MAX_RS_COUNT] = {};
+  size_t rs_empty_cycle_count[MAX_RS_COUNT] = {};
+  size_t rs_full_cycle_count[MAX_RS_COUNT] = {};
   size_t cycles = 0;
   size_t issue_num_bounded_by_rob_size = 0;
 
@@ -456,8 +457,11 @@ int main(int argc, char **argv) {
 
       // accumulate rs free cycles
       for (int i = 0; i < MAX_RS_COUNT; i++) {
-        if ((top->io_debug_0_rsFreeMask >> i) & 1) {
-          rs_free_cycle_count[i]++;
+        if ((top->io_debug_0_rsEmptyMask >> i) & 1) {
+          rs_empty_cycle_count[i]++;
+        }
+        if ((top->io_debug_0_rsFullMask >> i) & 1) {
+          rs_full_cycle_count[i]++;
         }
       }
 
@@ -484,10 +488,17 @@ int main(int argc, char **argv) {
           (double)top->io_debug_0_minstret / top->io_debug_0_mcycle);
   fprintf(stderr, "> Simulation speed: %.2lf mcycle/s\n",
           (double)top->io_debug_0_mcycle * 1000000 / elapsed_us);
-  fprintf(stderr, "> RS free cycle:");
+  fprintf(stderr, "> RS empty cycle:");
   for (int i = 0; i < MAX_RS_COUNT; i++) {
-    if (rs_free_cycle_count[i]) {
-      fprintf(stderr, " %.2lf%%", rs_free_cycle_count[i] * 100.0 / cycles);
+    if (rs_empty_cycle_count[i]) {
+      fprintf(stderr, " %.2lf%%", rs_empty_cycle_count[i] * 100.0 / cycles);
+    }
+  }
+  fprintf(stderr, "\n");
+  fprintf(stderr, "> RS full cycle:");
+  for (int i = 0; i < MAX_RS_COUNT; i++) {
+    if (rs_full_cycle_count[i]) {
+      fprintf(stderr, " %.2lf%%", rs_full_cycle_count[i] * 100.0 / cycles);
     }
   }
   fprintf(stderr, "\n");

@@ -26,7 +26,8 @@ class CoreDebug(implicit val coredef: CoreDef) extends Bundle {
   val mcycle = UInt(coredef.XLEN.W)
 
   // exec
-  val rsFreeMask = UInt(coredef.UNIT_COUNT.W)
+  val rsEmptyMask = UInt(coredef.UNIT_COUNT.W)
+  val rsFullMask = UInt(coredef.UNIT_COUNT.W)
   val issueNumBoundedByROBSize = Output(Bool())
 }
 
@@ -176,6 +177,7 @@ class Core(implicit val coredef: CoreDef) extends Module {
 
   io.debug.mcycle := ctrl.csr.mcycle.rdata
   io.debug.minstret := ctrl.csr.minstret.rdata
-  io.debug.rsFreeMask := exec.toCore.rsFreeMask
+  io.debug.rsEmptyMask := exec.toCore.rsEmptyMask
+  io.debug.rsFullMask := exec.toCore.rsFullMask
   io.debug.issueNumBoundedByROBSize := exec.toCore.issueNumBoundedByROBSize
 }

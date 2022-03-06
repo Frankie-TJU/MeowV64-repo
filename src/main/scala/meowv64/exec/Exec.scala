@@ -64,7 +64,8 @@ class Exec(implicit val coredef: CoreDef) extends Module {
     val ptw = new TLBExt
 
     // debug
-    val rsFreeMask = Output(UInt(coredef.UNIT_COUNT.W))
+    val rsEmptyMask = Output(UInt(coredef.UNIT_COUNT.W))
+    val rsFullMask = Output(UInt(coredef.UNIT_COUNT.W))
     val issueNumBoundedByROBSize = Output(Bool())
   })
 
@@ -205,7 +206,8 @@ class Exec(implicit val coredef: CoreDef) extends Module {
   })
 
   // collect rs free mask to find bottleneck
-  toCore.rsFreeMask := Cat(stations.map(_.ingress.free).reverse)
+  toCore.rsEmptyMask := Cat(stations.map(_.ingress.free).reverse)
+  toCore.rsFullMask := Cat(stations.map(!_.ingress.free).reverse)
 
   for (s <- stations) {
     s.cdb := cdb

@@ -1,8 +1,22 @@
 > Loaded 33880 bytes from ELF ../../testcases/riscv-tests/build/benchmarks/coremark.riscv
 2K performance run parameters for coremark.
 CoreMark Size    : 666
-Total ticks      : 360652
-Total time (secs): 0.003607
+Total ticks      : 360497
+Total time (secs): 0.003605
+Iterations/Sec   : 277.394819
+ERROR! Must execute for at least 10 secs for a valid result!
+Iterations       : 1
+Compiler version : GCC12.0.1 20220129 (experimental)
+Compiler flags   : -O2 -ffast-math -fno-common -fno-builtin-printf -fno-tree-loop-distribute-patterns
+Memory location  : STACK
+seedcrc          : 0xe9f5
+[0]crclist       : 0xe714
+[0]crcmatrix     : 0x1fd7
+[0]crcstate      : 0x8e3a
+[0]crcfinal      : 0xe714
+Errors detected
+mcycle = 360580
+minstret = 354144
 > Loaded 22232 bytes from ELF ../../testcases/riscv-tests/build/benchmarks/dhrystone.riscv
 Microseconds for one run through Dhrystone: 370
 Dhrystones per Second:                      2696
@@ -30,7 +44,7 @@ mcycle = 20541
 minstret = 24099
 > Loaded 18904 bytes from ELF ../../testcases/riscv-tests/build/benchmarks/pmp.riscv
 > Loaded 34440 bytes from ELF ../../testcases/riscv-tests/build/benchmarks/qsort.riscv
-mcycle = 194013
+mcycle = 194055
 minstret = 123504
 > Loaded 34808 bytes from ELF ../../testcases/riscv-tests/build/benchmarks/rsort.riscv
 mcycle = 241777

@@ -18,6 +18,9 @@ trait ResStation {
   val ingress: Bundle {
     val instr: ReservedInstr
 
+    // For debugging
+    val empty: Bool
+
     /** This is not a simple decoupled valid-ready handshake
       *
       * free should always be asserted before commit, because the issuer may
@@ -49,6 +52,7 @@ class OoOResStation(val valueWidth: Int, val idx: Int)(implicit
 
   val ingress = IO(new Bundle {
     val instr = Input(new ReservedInstr(valueWidth))
+    val empty = Output(Bool())
     val free = Output(Bool())
     val push = Input(Bool())
   })
@@ -142,6 +146,7 @@ class OoOResStation(val valueWidth: Int, val idx: Int)(implicit
   //
   // Placed after CDB fetch to avoid being overwritten after a flush,
   // when a pending instruction may lies in the store
+  ingress.empty := count === 0.U
   ingress.free := count < DEPTH.U
 
   val pop = egSlot.io.enq.fire
@@ -220,6 +225,7 @@ class LSBuf(val valueWidth: Int, val idx: Int)(implicit val coredef: CoreDef)
 
   val ingress = IO(new Bundle {
     val instr = Input(new ReservedInstr(valueWidth))
+    val empty = Output(Bool())
     val free = Output(Bool())
     val push = Input(Bool())
   })
@@ -318,6 +324,7 @@ class LSBuf(val valueWidth: Int, val idx: Int)(implicit val coredef: CoreDef)
   }
 
   // Ingress part
+  ingress.empty := tail === head
   ingress.free := tail +% 1.U =/= head
   when(ingress.push) {
     store(tail) := ingress.instr
