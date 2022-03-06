@@ -118,7 +118,9 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   val vectorReadGroupNum = coredef.VLEN / coredef.XLEN
   val vectorReadReqIndex = RegInit(0.U(log2Ceil(vectorReadGroupNum).W))
   val vectorReadRespIndex = RegInit(0.U(log2Ceil(vectorReadGroupNum).W))
-  val vectorReadRespData = RegInit(VecInit.fill(vectorReadGroupNum)(0.U(coredef.XLEN.W)))
+  val vectorReadRespData = RegInit(
+    VecInit.fill(vectorReadGroupNum)(0.U(coredef.XLEN.W))
+  )
   val inflightVectorReadInstr = Reg(new ReservedInstr(valueWidth))
   val state = RegInit(LSUState.idle)
 
@@ -235,7 +237,10 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   )
 
   // FIXME: This is incorrect for vle8.v
-  val nextInstrIsVLE = WireInit(next.instr.instr.op === Decoder.Op("LOAD-FP").ident && next.instr.instr.funct3(2))
+  val nextInstrIsVLE = WireInit(
+    next.instr.instr.op === Decoder.Op("LOAD-FP").ident && next.instr.instr
+      .funct3(2)
+  )
 
   /** Stage 1 state
     */
@@ -323,10 +328,12 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   when(canRead && l1pass) {
     switch(state) {
       is(LSUState.idle) {
-        state := LSUState.vectorLoad
-        vectorReadReqIndex := 1.U
-        vectorReadRespIndex := 0.U
-        inflightVectorReadInstr := rs.instr.bits
+        when(nextInstrIsVLE) {
+          state := LSUState.vectorLoad
+          vectorReadReqIndex := 1.U
+          vectorReadRespIndex := 0.U
+          inflightVectorReadInstr := rs.instr.bits
+        }
       }
       is(LSUState.vectorLoad) {
         vectorReadReqIndex := vectorReadReqIndex + 1.U
