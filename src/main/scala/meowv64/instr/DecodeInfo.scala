@@ -263,6 +263,9 @@ object DecodeInfo {
       VSETIVLI -> List(Y, Y, integer, N, XX, N, XX, N, XX, csr),
       VSETVL   -> List(Y, Y, integer, Y, integer, Y, integer, N, XX, csr),
 
+      // Vector Load/Store
+      VLE64_V  -> List(Y, Y, vector, Y, integer, N, XX, N, XX, lsu),
+
       // Vector Integer
       VADD_VV  -> List(Y, Y, vector, Y, vector, N, XX, N, XX, vAlu),
       VADD_VI  -> List(Y, Y, vector, N, XX, N, XX, N, XX, vAlu),

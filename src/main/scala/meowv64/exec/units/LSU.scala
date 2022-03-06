@@ -103,20 +103,38 @@ class DelayedMem(implicit val coredef: CoreDef) extends Bundle {
   }
 }
 
+object LSUState extends ChiselEnum {
+  val idle, vectorLoad = Value
+}
+
 class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
-  val retireWidth = coredef.XLEN
+  val retireWidth = coredef.VLEN
   val valueWidth = coredef.XLEN
   val flush = IO(Input(Bool()))
   val rs = IO(Flipped(new ResStationEgress(valueWidth)))
   val retire = IO(Output(new Retirement(valueWidth, retireWidth)))
   val extras = new mutable.HashMap[String, Data]()
 
+  val vectorReadGroupNum = coredef.VLEN / coredef.XLEN
+  val vectorReadReqIndex = RegInit(0.U(log2Ceil(vectorReadGroupNum).W))
+  val vectorReadRespIndex = RegInit(0.U(log2Ceil(vectorReadGroupNum).W))
+  val vectorReadRespData = RegInit(VecInit.fill(vectorReadGroupNum)(0.U(coredef.XLEN.W)))
+  val inflightVectorReadInstr = Reg(new ReservedInstr(valueWidth))
+  val state = RegInit(LSUState.idle)
+
   def isUncached(addr: UInt) = addr < BigInt("80000000", 16).U
 
   val hasNext = rs.instr.valid // TODO: merge into rs.instr
-  val next = WireDefault(rs.instr.bits)
-  when(!rs.instr.valid) {
-    next.instr.valid := false.B
+  val next = WireInit(rs.instr.bits)
+  switch(state) {
+    is(LSUState.idle) {
+      when(!rs.instr.valid) {
+        next.instr.valid := false.B
+      }
+    }
+    is(LSUState.vectorLoad) {
+      next := inflightVectorReadInstr
+    }
   }
 
   // FIXME: ValidIO resp
@@ -216,11 +234,20 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
     )
   )
 
+  // FIXME: This is incorrect for vle8.v
+  val nextInstrIsVLE = WireInit(next.instr.instr.op === Decoder.Op("LOAD-FP").ident && next.instr.instr.funct3(2))
+
   /** Stage 1 state
     */
   assert(coredef.PADDR_WIDTH > coredef.VADDR_WIDTH)
-  val rawAddr =
-    (next.rs1val.asSInt + next.instr.instr.imm).asUInt // We have imm = 0 for R-type instructions
+  val rawAddr = Wire(UInt(coredef.XLEN.W))
+  when(nextInstrIsVLE) {
+    // VLE.V instructions have no imm
+    // Compute address from readIndex instead
+    rawAddr := next.rs1val + (vectorReadReqIndex << log2Ceil(coredef.XLEN / 8))
+  }.otherwise {
+    rawAddr := (next.rs1val.asSInt + next.instr.instr.imm).asUInt // We have imm = 0 for R-type instructions
+  }
   tlb.query.req.bits.vpn := rawAddr(47, 12)
   val addr = WireDefault(rawAddr)
   when(requiresTranslate) {
@@ -281,7 +308,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
     l1pass := !l2stall
   }.elsewhen(requiresTranslate && !tlb.query.req.ready) {
     l1pass := false.B
-  }.elsewhen(toMem.reader.req.valid) {
+  }.elsewhen(canRead) {
     l1pass := toMem.reader.req.ready
   }.otherwise {
     l1pass := !l2stall // Not a DC access, has no waiting side effect, hence we can block indefinitely
@@ -291,7 +318,32 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
     assert(!toMem.reader.req.ready) // req.ready must be false
   }
 
-  rs.instr.ready := l1pass
+  // handle vector load
+  // req
+  when(canRead && l1pass) {
+    switch(state) {
+      is(LSUState.idle) {
+        state := LSUState.vectorLoad
+        vectorReadReqIndex := 1.U
+        vectorReadRespIndex := 0.U
+        inflightVectorReadInstr := rs.instr.bits
+      }
+      is(LSUState.vectorLoad) {
+        vectorReadReqIndex := vectorReadReqIndex + 1.U
+        when(vectorReadReqIndex === (vectorReadGroupNum - 1).U) {
+          vectorReadReqIndex := 0.U
+          state := LSUState.idle
+        }
+      }
+    }
+  }
+  // resp
+  when(state === LSUState.vectorLoad && toMem.reader.resp.valid) {
+    vectorReadRespIndex := vectorReadRespIndex + 1.U
+    vectorReadRespData(vectorReadRespIndex) := toMem.reader.resp.bits
+  }
+
+  rs.instr.ready := l1pass && state === LSUState.idle
 
   /** Stage 2 state
     */
@@ -326,6 +378,9 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
 
   when(flush) {
     pipeInstr.instr.valid := false.B
+    state := LSUState.idle
+    vectorReadReqIndex := 0.U
+    vectorReadRespIndex := 0.U
   }
 
   val pipeAligned = pipeAddr(coredef.PADDR_WIDTH - 1, 3) ## 0.U(3.W)
@@ -338,6 +393,10 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   )
 
   retire.instr := pipeInstr
+  when(state === LSUState.vectorLoad) {
+    retire.instr.instr.valid := false.B
+  }
+
   /*
    * We should be able to ignore keeping track of flushed here
    * Because if there was an flush, and an corresponding request is running inside DC,
@@ -352,7 +411,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   val shifted =
     toMem.reader.resp.bits >> (pipeOffset << 3) // TODO: use lookup table?
   val signedResult = Wire(SInt(coredef.XLEN.W)).suggestName("signedResult")
-  val result = Wire(UInt(coredef.XLEN.W)).suggestName("result")
+  val result = Wire(UInt(coredef.VLEN.W)).suggestName("result")
   shifted.suggestName("shifted")
   result := signedResult.asUInt
   signedResult := DontCare
@@ -367,7 +426,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
     is(Decoder.MEM_WIDTH_FUNC("WU")) { result := shifted(31, 0) }
   }
 
-  // special handling for fld/flw/fsd/fsw
+  // special handling for fld/flw/fsd/fsw/vle.v
   when(
     pipeInstr.instr.instr.op === Decoder.Op("LOAD-FP").ident ||
       pipeInstr.instr.instr.op === Decoder.Op("STORE-FP").ident
@@ -378,6 +437,10 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
         result := Fill(32, 1.U) ## shifted(31, 0)
       }
       is(Decoder.MEM_WIDTH_FUNC("D")) { result := shifted }
+      is(0.U, 5.U, 6.U, 7.U) {
+        // special handling for vle.v
+        result := Cat(vectorReadRespData.reverse)
+      }
     }
   }
 
