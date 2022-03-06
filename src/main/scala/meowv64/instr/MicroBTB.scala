@@ -168,12 +168,14 @@ class MicroBTB(implicit val coredef: CoreDef) extends Module {
     // for each possible branch instruction
     // return a BPUResult
     // it has one cycle delay
-    val s2Res = Output(Valid(
-      Vec(
-        coredef.L1I.TO_CORE_TRANSFER_WIDTH / Const.INSTR_MIN_WIDTH,
-        new BPUResult
+    val s2Res = Output(
+      Valid(
+        Vec(
+          coredef.L1I.TO_CORE_TRANSFER_WIDTH / Const.INSTR_MIN_WIDTH,
+          new BPUResult
+        )
       )
-    ))
+    )
   })
 
   val toExec = IO(new Bundle {

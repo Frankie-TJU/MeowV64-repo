@@ -96,12 +96,14 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
 
   val toBPU = IO(new Bundle {
     val s1Pc = Output(Valid(UInt(coredef.XLEN.W)))
-    val s2Res = Input(Valid(
-      Vec(
-        coredef.L1I.TO_CORE_TRANSFER_WIDTH / Const.INSTR_MIN_WIDTH,
-        new BPUResult
+    val s2Res = Input(
+      Valid(
+        Vec(
+          coredef.L1I.TO_CORE_TRANSFER_WIDTH / Const.INSTR_MIN_WIDTH,
+          new BPUResult
+        )
       )
-    ))
+    )
   })
 
   val toRAS = IO(new Bundle {
@@ -159,19 +161,33 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
     ~toIC.read.ready || (requiresTranslate && !tlb.query.req.ready)
   val readFire = !readStalled && toIC.read.valid
 
-  // predict fpc from BPU result
-
-  when(!readStalled) {
+  // handle page fault
+  when(requiresTranslate && tlb.query.req.fire && tlb.query.resp.fault) {
     s2Pc := s1FPc
-    s2Fault := tlb.query.resp.fault
+    s2Fault := true.B
+    s2Successive := false.B
+  }.otherwise {
+    s2Fault := false.B
+  }
+
+  // update fpc from BPU result
+  when(readFire) {
+    s2Pc := s1FPc
     s2Successive := s1Successive
 
-    when(toIC.read.valid) {
-      // If We send an request to IC, step forward PC counter
-      s1Pc := s1AlignedFPc + (coredef.L1I.TO_CORE_TRANSFER_WIDTH / 8).U
-      s1PipeSuccessive := true.B
-    }
+    // If We send an request to IC, step forward PC counter
+    s1Pc := s1AlignedFPc + (coredef.L1I.TO_CORE_TRANSFER_WIDTH / 8).U
+    s1PipeSuccessive := true.B
   }
+
+  // save bpu result because cache may stall
+  val lastS2ResReg = RegInit(0.U.asTypeOf(toBPU.s2Res.bits))
+  when(toBPU.s2Res.valid) {
+    lastS2ResReg := toBPU.s2Res.bits
+  }
+  val lastS2Res = WireInit(
+    Mux(toBPU.s2Res.valid, toBPU.s2Res.bits, lastS2ResReg)
+  )
 
   // compute stage 1 fpc from stage 2 BPU result
   // find first taken slot
@@ -180,8 +196,8 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
     i <-
       (0 until coredef.L1I.TO_CORE_TRANSFER_WIDTH / Const.INSTR_MIN_WIDTH).reverse
   ) {
-    val res = toBPU.s2Res.bits(i)
-    when(i.U >= s2PcOffset && toBPU.s2Res.valid) {
+    val res = lastS2Res(i)
+    when(i.U >= s2PcOffset) {
       when(res.prediction === BranchPrediction.taken) {
         s1FPc := res.targetAddress
         s1Successive := false.B
@@ -276,10 +292,14 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
   ICQueue.io.enq.bits.addr := s2AlignedPc
   ICQueue.io.enq.bits.mask := s2Mask
   ICQueue.io.enq.bits.last := s2LastMask
-  ICQueue.io.enq.bits.pred := toBPU.s2Res.bits
+  ICQueue.io.enq.bits.pred := Mux(
+    toBPU.s2Res.valid,
+    toBPU.s2Res.bits,
+    lastS2Res
+  )
   ICQueue.io.enq.bits.fault := s2Fault
   ICQueue.io.enq.bits.successive := s2Successive
-  ICQueue.io.enq.valid := (toIC.read.ready && toIC.data.valid) || s2Fault
+  ICQueue.io.enq.valid := toIC.data.valid || s2Fault
 
   // when successive, first instruction must be decodable
   when(ICQueue.io.enq.bits.successive && ICQueue.io.enq.fire) {
@@ -585,6 +605,9 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
     // Do not commit RAS
     toRAS.push.valid := false.B
     toRAS.pop.ready := false.B
+    // Clear saved BPU result
+    lastS2ResReg := 0.U.asTypeOf(lastS2ResReg)
+    lastS2Res := 0.U.asTypeOf(lastS2ResReg)
 
     s1FPc := pipeSpecBrTarget
     s1Successive := false.B
@@ -612,6 +635,10 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
     ICQueue.io.flush.get := true.B
     ICHead.io.flush.get := true.B
     toCtrl.ctrl.stall := false.B
+
+    // Clear saved BPU result
+    lastS2ResReg := 0.U.asTypeOf(lastS2ResReg)
+    lastS2Res := 0.U.asTypeOf(lastS2ResReg)
 
     val ICAlign = log2Ceil(coredef.L1I.TO_CORE_TRANSFER_WIDTH / 8)
     // Set pc directly, because we are waiting for one tick
