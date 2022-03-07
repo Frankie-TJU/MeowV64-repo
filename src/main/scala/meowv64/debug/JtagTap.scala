@@ -3,7 +3,6 @@ package meowv64.debug
 import chisel3._
 import chisel3.util._
 import chisel3.experimental._
-import meowv64.system.SystemDef
 
 // Follows the implementation of SpinalHDL JtagTap
 // See JtagTap.scala and JtagTapinstructions.scala from SpinalHDL
@@ -23,9 +22,10 @@ object JtagState extends ChiselEnum {
     Value
 }
 
-class JtagTap(val instWidth: Int)(implicit sDef: SystemDef) extends Module {
+class JtagTap(val instWidth: Int) extends Module {
   val io = IO(new Bundle {
     val jtag = new Jtag
+    val dmi = Flipped(new DebugModuleInterface)
   })
 
   withClock(io.jtag.tck.asClock) {
@@ -186,22 +186,22 @@ class DTMCS extends Bundle {
   val version = UInt(4.W)
 }
 
-class DMI(implicit sDef: SystemDef) extends Bundle {
-  val address = UInt(sDef.XLEN.W)
+class DMI extends Bundle {
+  val address = UInt(7.W)
   val data = UInt(32.W)
   val op = UInt(2.W)
 }
 
 /** Device Transport Module
   */
-class JtagDTM(implicit sDef: SystemDef) extends Module {
+class JtagDTM extends Module {
   val ctrlDTMCS = IO(Flipped(new JtagTapInstructionCtrl()))
   val ctrlDMI = IO(Flipped(new JtagTapInstructionCtrl()))
 
   // DTMCS logic
   val idle = RegInit(true.B)
   val dmistat = RegInit(0.U(2.W))
-  val abits = sDef.XLEN
+  val abits = 7
 
   val shifterDTMCS = RegInit(0.U(32.W))
   when(ctrlDTMCS.enable) {

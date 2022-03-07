@@ -10,6 +10,7 @@ import meowv64.interrupt.CLINT
 import meowv64.interrupt.PLIC
 import meowv64.debug.JtagTap
 import meowv64.debug.Jtag
+import meowv64.debug.DebugModule
 
 class RiscVSystem(implicit val sDef: SystemDef = new DefaultSystemDef)
     extends Module {
@@ -61,6 +62,8 @@ class RiscVSystem(implicit val sDef: SystemDef = new DefaultSystemDef)
   // TAG TAPs used as a DTM must have an IR of at least 5 bits.
   val jtagTap = Module(new JtagTap(5))
   io.jtag <> jtagTap.io.jtag
+  val dm = Module(new DebugModule)
+  dm.io.dmi <> jtagTap.io.dmi
 
   io.debug := cores.map(_.io.debug)
 }
