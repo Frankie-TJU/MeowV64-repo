@@ -8,6 +8,8 @@ import meowv64.core.CoreDef
 import meowv64.data._
 import meowv64.interrupt.CLINT
 import meowv64.interrupt.PLIC
+import meowv64.debug.JtagTap
+import meowv64.debug.Jtag
 
 class RiscVSystem(implicit val sDef: SystemDef = new DefaultSystemDef)
     extends Module {
@@ -19,6 +21,8 @@ class RiscVSystem(implicit val sDef: SystemDef = new DefaultSystemDef)
   val io = IO(new Bundle {
     val axi = new AXI(sDef.L2.AXI_DATA_WIDTH, sDef.PADDR_WIDTH)
     val eints = Input(Vec(sDef.INTERRUPT_CNT + 1, Bool()))
+
+    val jtag = new Jtag()
 
     // Debug infos
     val debug = Output(
@@ -53,6 +57,10 @@ class RiscVSystem(implicit val sDef: SystemDef = new DefaultSystemDef)
     cores(idx).io.int.meip := plic.eints(idx * 2)
     cores(idx).io.int.seip := plic.eints(idx * 2 + 1)
   }
+
+  // TAG TAPs used as a DTM must have an IR of at least 5 bits.
+  val jtagTap = Module(new JtagTap(5))
+  io.jtag <> jtagTap.io.jtag
 
   io.debug := cores.map(_.io.debug)
 }
