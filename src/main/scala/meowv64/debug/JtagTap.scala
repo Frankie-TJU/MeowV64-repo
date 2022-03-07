@@ -3,6 +3,7 @@ package meowv64.debug
 import chisel3._
 import chisel3.util._
 import chisel3.experimental._
+import meowv64.system.SystemDef
 
 // Follows the implementation of SpinalHDL JtagTap
 // See JtagTap.scala and JtagTapinstructions.scala from SpinalHDL
@@ -22,7 +23,7 @@ object JtagState extends ChiselEnum {
     Value
 }
 
-class JtagTap(val instWidth: Int) extends Module {
+class JtagTap(val instWidth: Int)(implicit sDef: SystemDef) extends Module {
   val io = IO(new Bundle {
     val jtag = new Jtag
   })
@@ -135,6 +136,11 @@ class JtagTap(val instWidth: Int) extends Module {
     val idcode = Module(new JtagTapInstructionIdcode(0x12222001L))
     map(idcode.ctrl, idcodeId)
 
+    // dtmcs & dmi
+    val dtm = Module(new JtagDTM())
+    map(dtm.ctrlDTMCS, 0x10)
+    map(dtm.ctrlDMI, 0x11)
+
     // default inst: idcode
     when(state === JtagState.reset) {
       inst := idcodeId.U
@@ -157,13 +163,93 @@ class JtagTapInstructionIdcode(val id: BigInt) extends Module {
   val ctrl = IO(Flipped(new JtagTapInstructionCtrl()))
   val shifter = RegInit(0.U(32.W))
 
-  when(ctrl.enable && ctrl.shift) {
+  when(ctrl.enable) {
+    when(ctrl.shift) {
+      when(ctrl.capture) {
+        shifter := id.U
+      }
+    }
     shifter := Cat(ctrl.tdi, shifter) >> 1
   }
 
-  when(ctrl.capture) {
-    shifter := id.U
+  ctrl.tdo := shifter(0)
+}
+
+class DTMCS extends Bundle {
+  val dmihardreset = Bool()
+  val dmireset = Bool()
+  val zero = Bool()
+  val idle = Bool()
+  val dmistat = UInt(2.W)
+  val abits = UInt(6.W)
+  val version = UInt(4.W)
+}
+
+class DMI(implicit sDef: SystemDef) extends Bundle {
+  val address = UInt(sDef.XLEN.W)
+  val data = UInt(32.W)
+  val op = UInt(2.W)
+}
+
+/** Device Transport Module
+  */
+class JtagDTM(implicit sDef: SystemDef) extends Module {
+  val ctrlDTMCS = IO(Flipped(new JtagTapInstructionCtrl()))
+  val ctrlDMI = IO(Flipped(new JtagTapInstructionCtrl()))
+
+  // DTMCS logic
+  val idle = RegInit(true.B)
+  val dmistat = RegInit(0.U(2.W))
+  val abits = sDef.XLEN
+
+  val shifterDTMCS = RegInit(0.U(32.W))
+  when(ctrlDTMCS.enable) {
+    when(ctrlDTMCS.shift) {
+      shifterDTMCS := Cat(ctrlDTMCS.tdi, shifterDTMCS) >> 1
+    }
+    when(ctrlDTMCS.update) {
+      // write
+      val dtmcs = Wire(new DTMCS())
+      dtmcs := shifterDTMCS.asTypeOf(dtmcs)
+    }
+    when(ctrlDTMCS.capture) {
+      // read
+      val dtmcs = Wire(new DTMCS())
+      dtmcs.dmihardreset := false.B
+      dtmcs.dmireset := false.B
+      dtmcs.zero := false.B
+      dtmcs.idle := idle
+      dtmcs.dmistat := dmistat
+      dtmcs.abits := abits.U
+      dtmcs.version := 1.U // debug spec 1.0
+
+      shifterDTMCS := dtmcs.asUInt
+    }
   }
 
-  ctrl.tdo := shifter(0)
+  ctrlDTMCS.tdo := shifterDTMCS(0)
+
+  // DMI logic
+  val shifterDMI = RegInit(0.U(new DMI().getWidth.W))
+  when(ctrlDMI.enable) {
+    when(ctrlDMI.shift) {
+      shifterDMI := Cat(ctrlDMI.tdi, shifterDMI) >> 1
+    }
+    when(ctrlDMI.update) {
+      // write
+      val dmi = Wire(new DMI())
+      dmi := shifterDMI.asTypeOf(dmi)
+    }
+    when(ctrlDMI.capture) {
+      // read
+      val dmi = Wire(new DMI())
+      dmi.address := 0.U
+      dmi.data := 0.U
+      dmi.op := 0.U // success
+
+      shifterDMI := dmi.asUInt
+    }
+  }
+
+  ctrlDMI.tdo := shifterDMI(0)
 }
