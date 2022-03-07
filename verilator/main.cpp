@@ -456,6 +456,7 @@ int main(int argc, char **argv) {
     top->io_jtag_tck = 1;
     top->io_jtag_tms = 1;
     top->io_jtag_tdi = 1;
+    top->io_jtag_trstn = 1;
   }
 
   VerilatedFstC *tfp = nullptr;
@@ -567,6 +568,12 @@ int main(int argc, char **argv) {
                 break;
               }
             }
+          } else if (command == 'r' || command == 's') {
+            // trst = 0;
+            top->io_jtag_trstn = 1;
+          } else if (command == 't' || command == 'u') {
+            // trst = 1;
+            top->io_jtag_trstn = 0;
           }
         }
       } else {
