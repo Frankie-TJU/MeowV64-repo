@@ -3,12 +3,14 @@ package meowv64.debug
 import chisel3._
 import chisel3.util._
 import chisel3.experimental._
+import freechips.rocketchip.util.AsyncQueue
 
 // Follows the implementation of SpinalHDL JtagTap
 // See JtagTap.scala and JtagTapinstructions.scala from SpinalHDL
 
 class Jtag extends Bundle {
   val tck = Input(Bool())
+  val trstn = Input(Bool())
   val tms = Input(Bool())
   val tdi = Input(Bool())
   val tdo = Output(Bool())
@@ -28,7 +30,26 @@ class JtagTap(val instWidth: Int) extends Module {
     val dmi = Flipped(new DebugModuleInterface)
   })
 
-  withClock(io.jtag.tck.asClock) {
+  val jtagClock = io.jtag.tck.asClock
+  val jtagReset = ~io.jtag.trstn
+
+  // req queue
+  val reqQueue = Module(new AsyncQueue(new DebugModuleReq))
+  reqQueue.io.enq_clock := jtagClock
+  reqQueue.io.enq_reset := jtagReset
+  reqQueue.io.deq_clock := clock
+  reqQueue.io.deq_reset := reset
+  reqQueue.io.deq <> io.dmi.req
+
+  // resp queue
+  val respQueue = Module(new AsyncQueue(new DebugModuleResp))
+  respQueue.io.enq_clock := clock
+  respQueue.io.enq_reset := reset
+  respQueue.io.deq_clock := jtagClock
+  respQueue.io.deq_reset := jtagReset
+  respQueue.io.enq <> io.dmi.resp
+
+  withClockAndReset(jtagClock, jtagReset) {
     val state = RegInit(JtagState.reset)
     val nextState = WireInit(state)
 
@@ -138,6 +159,8 @@ class JtagTap(val instWidth: Int) extends Module {
 
     // dtmcs & dmi
     val dtm = Module(new JtagDTM())
+    dtm.toDM.req <> reqQueue.io.enq
+    dtm.toDM.resp <> respQueue.io.deq
     map(dtm.ctrlDTMCS, 0x10)
     map(dtm.ctrlDMI, 0x11)
 
@@ -180,7 +203,7 @@ class DTMCS extends Bundle {
   val dmihardreset = Bool()
   val dmireset = Bool()
   val zero = Bool()
-  val idle = Bool()
+  val idle = UInt(3.W)
   val dmistat = UInt(2.W)
   val abits = UInt(6.W)
   val version = UInt(4.W)
@@ -192,17 +215,23 @@ class DMI extends Bundle {
   val op = UInt(2.W)
 }
 
+object JtagDTMState extends ChiselEnum {
+  val idle, req, resp = Value
+}
+
 /** Device Transport Module
   */
 class JtagDTM extends Module {
   val ctrlDTMCS = IO(Flipped(new JtagTapInstructionCtrl()))
   val ctrlDMI = IO(Flipped(new JtagTapInstructionCtrl()))
+  val toDM = IO(Flipped(new DebugModuleInterface))
+
+  val state = RegInit(JtagDTMState.idle)
+  val lastRes = RegInit(0.U(2.W)) // op in dmi
 
   // DTMCS logic
-  val idle = RegInit(true.B)
+  val idle = WireInit(0.U(3.W)) // this is a hint, not idle state
   val dmistat = RegInit(0.U(2.W))
-  val abits = 7
-
   val shifterDTMCS = RegInit(0.U(32.W))
   when(ctrlDTMCS.enable) {
     when(ctrlDTMCS.shift) {
@@ -212,6 +241,10 @@ class JtagDTM extends Module {
       // write
       val dtmcs = Wire(new DTMCS())
       dtmcs := shifterDTMCS.asTypeOf(dtmcs)
+      when(dtmcs.dmireset) {
+        // clear lastRes
+        lastRes := 0.U
+      }
     }
     when(ctrlDTMCS.capture) {
       // read
@@ -221,7 +254,7 @@ class JtagDTM extends Module {
       dtmcs.zero := false.B
       dtmcs.idle := idle
       dtmcs.dmistat := dmistat
-      dtmcs.abits := abits.U
+      dtmcs.abits := 7.U
       dtmcs.version := 1.U // debug spec 1.0
 
       shifterDTMCS := dtmcs.asUInt
@@ -231,6 +264,16 @@ class JtagDTM extends Module {
   ctrlDTMCS.tdo := shifterDTMCS(0)
 
   // DMI logic
+  val currentDMReq = Reg(new DebugModuleReq)
+  toDM.req.valid := false.B
+  toDM.req.bits := currentDMReq
+
+  val currentDMResp = Reg(new DebugModuleResp)
+  toDM.resp.ready := false.B
+  when(toDM.resp.fire) {
+    currentDMResp := toDM.resp.bits
+  }
+
   val shifterDMI = RegInit(0.U(new DMI().getWidth.W))
   when(ctrlDMI.enable) {
     when(ctrlDMI.shift) {
@@ -240,17 +283,45 @@ class JtagDTM extends Module {
       // write
       val dmi = Wire(new DMI())
       dmi := shifterDMI.asTypeOf(dmi)
+      when(state === JtagDTMState.idle) {
+        when(dmi.op === 1.U || dmi.op === 2.U) {
+          // fire
+          currentDMReq.address := dmi.address
+          currentDMReq.data := dmi.data
+          currentDMReq.isRead := dmi.op === 1.U
+          state := JtagDTMState.req
+        }
+      }.otherwise {
+        // busy
+        lastRes := 3.U
+      }
     }
     when(ctrlDMI.capture) {
       // read
       val dmi = Wire(new DMI())
       dmi.address := 0.U
       dmi.data := 0.U
-      dmi.op := 0.U // success
+      dmi.op := lastRes
 
       shifterDMI := dmi.asUInt
     }
   }
 
   ctrlDMI.tdo := shifterDMI(0)
+
+  switch(state) {
+    is(JtagDTMState.req) {
+      toDM.req.valid := true.B
+      when(toDM.req.fire) {
+        state := JtagDTMState.resp
+      }
+    }
+    is(JtagDTMState.resp) {
+      toDM.resp.ready := true.B
+      when(toDM.resp.fire) {
+        lastRes := Mux(toDM.resp.bits.fail, 2.U, 0.U)
+        state := JtagDTMState.idle
+      }
+    }
+  }
 }
