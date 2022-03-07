@@ -89,6 +89,24 @@ class AbstractCmd extends Bundle {
   val control = UInt(24.W)
 }
 
+class SystemBusCS extends Bundle {
+  val sbversion = UInt(3.W)
+  val zero = UInt(6.W)
+  val sbbusyerror = Bool()
+  val sbbusy = Bool()
+  val sbreadonaddr = Bool()
+  val sbaccess = UInt(3.W)
+  val sbautoincrement = Bool()
+  val sbreadondata = Bool()
+  val sberror = UInt(3.W)
+  val sbasize = UInt(7.W)
+  val sbaccess128 = Bool()
+  val sbaccess64 = Bool()
+  val sbaccess32 = Bool()
+  val sbaccess16 = Bool()
+  val sbaccess8 = Bool()
+}
+
 class DebugModule(implicit sDef: SystemDef) extends Module {
   val io = IO(new Bundle {
     val dmi = new DebugModuleInterface()
@@ -132,7 +150,20 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
       curResp.fail := true.B
 
       switch(curReq.address) {
-        is(0x04.U, 0x05.U, 0x06.U, 0x07.U, 0x08.U, 0x09.U, 0x0a.U, 0x0b.U, 0x0c.U, 0x0d.U, 0x0e.U, 0x0f.U) {
+        is(
+          0x04.U,
+          0x05.U,
+          0x06.U,
+          0x07.U,
+          0x08.U,
+          0x09.U,
+          0x0a.U,
+          0x0b.U,
+          0x0c.U,
+          0x0d.U,
+          0x0e.U,
+          0x0f.U
+        ) {
           // data0~data11
           val idx = curReq.address - 0x04.U
           when(curReq.isRead) {
@@ -176,6 +207,7 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
           when(curReq.isRead) {
             val resp = WireInit(0.U.asTypeOf(new DMStatus))
             resp.anynonexistent := hartsel >= sDef.CORE_COUNT.U
+            resp.authenticated := true.B // always authenticated
             resp.version := 3.U // debug 1.0
 
             curResp.data := resp.asUInt
@@ -221,6 +253,21 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
             curResp.data := 0.U
           }.otherwise {
             val req = Wire(new AbstractCmd)
+            req := curReq.data.asTypeOf(req)
+          }
+          curResp.fail := false.B
+          done := true.B
+        }
+        is(0x38.U) {
+          // sbcs
+          when(curReq.isRead) {
+            val resp = WireInit(0.U.asTypeOf(new SystemBusCS))
+            resp.sbversion := 1.U
+            resp.sbaccess := 2.U
+
+            curResp.data := resp.asUInt
+          }.otherwise {
+            val req = Wire(new SystemBusCS)
             req := curReq.data.asTypeOf(req)
           }
           curResp.fail := false.B
