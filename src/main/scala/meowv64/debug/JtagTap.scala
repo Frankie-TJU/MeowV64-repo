@@ -165,11 +165,12 @@ class JtagTapInstructionIdcode(val id: BigInt) extends Module {
 
   when(ctrl.enable) {
     when(ctrl.shift) {
-      when(ctrl.capture) {
-        shifter := id.U
-      }
+      shifter := Cat(ctrl.tdi, shifter) >> 1
     }
-    shifter := Cat(ctrl.tdi, shifter) >> 1
+    when(ctrl.capture) {
+      // read
+      shifter := id.U
+    }
   }
 
   ctrl.tdo := shifter(0)
