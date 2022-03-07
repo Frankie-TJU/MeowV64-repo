@@ -227,11 +227,11 @@ class JtagDTM extends Module {
   val toDM = IO(Flipped(new DebugModuleInterface))
 
   val state = RegInit(JtagDTMState.idle)
-  val lastRes = RegInit(0.U(2.W)) // op in dmi
+  val lastRes = RegInit(0.U(2.W)) // sticky op in dmi
+  val lastRespData = RegInit(0.U(32.W))
 
   // DTMCS logic
   val idle = WireInit(0.U(3.W)) // this is a hint, not idle state
-  val dmistat = RegInit(0.U(2.W))
   val shifterDTMCS = RegInit(0.U(32.W))
   when(ctrlDTMCS.enable) {
     when(ctrlDTMCS.shift) {
@@ -253,7 +253,7 @@ class JtagDTM extends Module {
       dtmcs.dmireset := false.B
       dtmcs.zero := false.B
       dtmcs.idle := idle
-      dtmcs.dmistat := dmistat
+      dtmcs.dmistat := lastRes
       dtmcs.abits := 7.U
       dtmcs.version := 1.U // debug spec 1.0
 
@@ -283,25 +283,33 @@ class JtagDTM extends Module {
       // write
       val dmi = Wire(new DMI())
       dmi := shifterDMI.asTypeOf(dmi)
-      when(state === JtagDTMState.idle) {
-        when(dmi.op === 1.U || dmi.op === 2.U) {
-          // fire
-          currentDMReq.address := dmi.address
-          currentDMReq.data := dmi.data
-          currentDMReq.isRead := dmi.op === 1.U
-          state := JtagDTMState.req
+      when(lastRes === 0.U) {
+        // good to go
+        when(state === JtagDTMState.idle) {
+          // read/write
+          when(dmi.op === 1.U || dmi.op === 2.U) {
+            // fire
+            currentDMReq.address := dmi.address
+            currentDMReq.data := dmi.data
+            currentDMReq.isRead := dmi.op === 1.U
+            state := JtagDTMState.req
+          }
         }
-      }.otherwise {
-        // busy
-        lastRes := 3.U
       }
     }
     when(ctrlDMI.capture) {
       // read
       val dmi = Wire(new DMI())
       dmi.address := 0.U
-      dmi.data := 0.U
-      dmi.op := lastRes
+      dmi.data := lastRespData
+      when(state =/= JtagDTMState.idle || lastRes === 3.U) {
+        // busy
+        dmi.op := 3.U
+        lastRes := 3.U
+      }.otherwise {
+        // fail or success
+        dmi.op := lastRes
+      }
 
       shifterDMI := dmi.asUInt
     }
@@ -319,7 +327,11 @@ class JtagDTM extends Module {
     is(JtagDTMState.resp) {
       toDM.resp.ready := true.B
       when(toDM.resp.fire) {
-        lastRes := Mux(toDM.resp.bits.fail, 2.U, 0.U)
+        when(lastRes === 0.U) {
+          // do not change if lastRes is set
+          lastRes := Mux(toDM.resp.bits.fail, 2.U, 0.U)
+        }
+        lastRespData := toDM.resp.bits.data
         state := JtagDTMState.idle
       }
     }

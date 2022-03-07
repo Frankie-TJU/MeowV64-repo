@@ -94,7 +94,7 @@ class AsyncQueueSource[T <: Data](
     Vec(params.depth, gen)
   ) // This does NOT need to be reset at all.
   val widx = withReset(reset.asAsyncReset)(
-    GrayCounter(bits + 1, io.enq.fire(), !sink_ready, "widx_bin")
+    GrayCounter(bits + 1, io.enq.fire, !sink_ready, "widx_bin")
   )
   val ridx = AsyncResetSynchronizerShiftReg(
     io.async.ridx,
@@ -107,7 +107,7 @@ class AsyncQueueSource[T <: Data](
   val index =
     if (bits == 0) 0.U
     else io.async.widx(bits - 1, 0) ^ (io.async.widx(bits, bits) << (bits - 1))
-  when(io.enq.fire()) { mem(index) := io.enq.bits }
+  when(io.enq.fire) { mem(index) := io.enq.bits }
 
   val ready_reg = withReset(reset.asAsyncReset)(
     RegNext(next = ready, init = false.B).suggestName("ready_reg")
@@ -175,7 +175,7 @@ class AsyncQueueSink[T <: Data](
   val bits = params.bits
   val source_ready = WireInit(true.B)
   val ridx = withReset(reset.asAsyncReset)(
-    GrayCounter(bits + 1, io.deq.fire(), !source_ready, "ridx_bin")
+    GrayCounter(bits + 1, io.deq.fire, !source_ready, "ridx_bin")
   )
   val widx = AsyncResetSynchronizerShiftReg(
     io.async.widx,
