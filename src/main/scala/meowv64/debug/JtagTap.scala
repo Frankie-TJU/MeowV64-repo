@@ -132,7 +132,7 @@ class JtagTap(val instWidth: Int) extends Module {
 
     // idcode
     val idcodeId = 1
-    val idcode = Module(new JtagTapInstructionIdcode(0xffffffffL))
+    val idcode = Module(new JtagTapInstructionIdcode(0x12222001L))
     map(idcode.ctrl, idcodeId)
 
     // default inst: idcode

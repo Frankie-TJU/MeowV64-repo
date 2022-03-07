@@ -530,12 +530,23 @@ int main(int argc, char **argv) {
       tfp->dump(main_time);
     main_time++;
 
-    if ((main_time % 1000) == 0) {
+    if (jtag && (main_time % 100) == 0) {
       // jtag tick
       if (client_fd >= 0) {
-        char command;
-        ssize_t num_read = read(client_fd, &command, sizeof(command));
-        if (num_read > 0) {
+        static char read_buffer[128];
+        static size_t read_buffer_count = 0;
+        static size_t read_buffer_offset = 0;
+
+        if (read_buffer_offset == read_buffer_count) {
+          ssize_t num_read = read(client_fd, read_buffer, sizeof(read_buffer));
+          if (num_read > 0) {
+            read_buffer_count = num_read;
+            read_buffer_offset = 0;
+          }
+        }
+
+        if (read_buffer_offset < read_buffer_count) {
+          char command = read_buffer[read_buffer_offset++];
           if ('0' <= command && command <= '7') {
             // set
             char offset = command - '0';
