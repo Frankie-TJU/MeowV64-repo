@@ -1,5 +1,7 @@
 #include "VRiscVSystem.h"
+#include <arpa/inet.h>
 #include <elf.h>
+#include <fcntl.h>
 #include <gmpxx.h>
 #include <iostream>
 #include <map>
@@ -163,7 +165,8 @@ void step() {
         mpz_class local_wdata_mpz = wdata >> (i * (sizeof(mem_t) * 8));
         mem_t local_wdata = local_wdata_mpz.get_ui();
 
-        uint64_t local_wstrb = (top->io_axi_WSTRB >> (i * sizeof(mem_t))) & 0xfL;
+        uint64_t local_wstrb =
+            (top->io_axi_WSTRB >> (i * sizeof(mem_t))) & 0xfL;
 
         mpz_class local_mask_mpz = shifted_mask >> (i * sizeof(mem_t));
         uint64_t local_mask = local_mask_mpz.get_ui() & 0xfL;
@@ -389,7 +392,8 @@ int main(int argc, char **argv) {
   int opt;
   bool trace = false;
   bool progress = false;
-  while ((opt = getopt(argc, argv, "tp")) != -1) {
+  bool jtag = false;
+  while ((opt = getopt(argc, argv, "tpj")) != -1) {
     switch (opt) {
     case 't':
       trace = true;
@@ -397,16 +401,62 @@ int main(int argc, char **argv) {
     case 'p':
       progress = true;
       break;
+    case 'j':
+      jtag = true;
+      break;
     default: /* '?' */
-      fprintf(stderr, "Usage: %s [-t] name\n", argv[0]);
+      fprintf(stderr, "Usage: %s [-t] [-p] [-j] name\n", argv[0]);
       return 1;
     }
   }
 
-  assert(optind < argc);
-  load_file(argv[optind]);
+  if (optind < argc) {
+    load_file(argv[optind]);
+  }
 
   top = new VRiscVSystem;
+
+  int listen_fd = -1;
+  int client_fd = -1;
+  if (jtag) {
+    // ref rocket chip remote_bitbang.cc
+    listen_fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (listen_fd < 0) {
+      perror("socket");
+      return -1;
+    }
+
+    // set non blocking
+    fcntl(listen_fd, F_SETFL, O_NONBLOCK);
+
+    int reuseaddr = 1;
+    if (setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, &reuseaddr,
+                   sizeof(int)) < 0) {
+      perror("setsockopt");
+      return -1;
+    }
+
+    int port = 12345;
+    struct sockaddr_in addr = {};
+    addr.sin_family = AF_INET;
+    addr.sin_addr.s_addr = INADDR_ANY;
+    addr.sin_port = htons(port);
+
+    if (bind(listen_fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+      perror("bind");
+      return -1;
+    }
+
+    if (listen(listen_fd, 1) == -1) {
+      perror("listen");
+      return -1;
+    }
+
+    // init
+    top->io_jtag_tck = 1;
+    top->io_jtag_tms = 1;
+    top->io_jtag_tdi = 1;
+  }
 
   VerilatedFstC *tfp = nullptr;
   if (trace) {
@@ -479,6 +529,44 @@ int main(int argc, char **argv) {
     if (tfp)
       tfp->dump(main_time);
     main_time++;
+
+    if ((main_time % 1000) == 0) {
+      // jtag tick
+      if (client_fd >= 0) {
+        char command;
+        ssize_t num_read = read(client_fd, &command, sizeof(command));
+        if (num_read > 0) {
+          if ('0' <= command && command <= '7') {
+            // set
+            char offset = command - '0';
+            top->io_jtag_tck = (offset >> 2) & 1;
+            top->io_jtag_tms = (offset >> 1) & 1;
+            top->io_jtag_tdi = (offset >> 0) & 1;
+          } else if (command == 'R') {
+            // read
+            char send = top->io_jtag_tdo ? '1' : '0';
+
+            while (1) {
+              ssize_t sent = write(client_fd, &send, sizeof(send));
+              if (sent > 0) {
+                break;
+              } else if (send < 0) {
+                close(client_fd);
+                client_fd = -1;
+                break;
+              }
+            }
+          }
+        }
+      } else {
+        // accept connection
+        client_fd = accept(listen_fd, NULL, NULL);
+        if (client_fd > 0) {
+          fcntl(client_fd, F_SETFL, O_NONBLOCK);
+          fprintf(stderr, "> JTAG debugger attached\n");
+        }
+      }
+    }
   }
   uint64_t elapsed_us = get_time_us() - begin;
   fprintf(stderr, "> Simulation finished\n");
