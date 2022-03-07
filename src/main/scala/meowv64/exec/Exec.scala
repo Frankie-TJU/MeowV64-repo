@@ -1,9 +1,9 @@
 package meowv64.exec
 import chisel3._
 import chisel3.util._
-import meowv64.cache.DCFenceStatus
 import meowv64.cache.CoreDCReader
 import meowv64.cache.CoreDCWriter
+import meowv64.cache.DCFenceStatus
 import meowv64.cache.L1UCPort
 import meowv64.core.CSRWriter
 import meowv64.core.CoreDef

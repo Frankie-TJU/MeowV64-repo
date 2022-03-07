@@ -10,8 +10,8 @@ import meowv64.core.ExReq
 import meowv64.core.ExType
 import meowv64.core.PrivLevel
 import meowv64.core.Status
-import meowv64.instr.BranchPrediction
 import meowv64.instr.BPUResult
+import meowv64.instr.BranchPrediction
 import meowv64.instr.Decoder.InstrType
 import meowv64.instr.InstrExt
 import meowv64.instr.RegIndex

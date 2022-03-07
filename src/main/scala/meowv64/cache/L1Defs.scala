@@ -2,8 +2,8 @@ package meowv64.cache
 
 import chisel3._
 import chisel3.experimental.ChiselEnum
-import chisel3.util.log2Ceil
 import chisel3.util.Valid
+import chisel3.util.log2Ceil
 
 /** Cache definations and interfaces
   *
