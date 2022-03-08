@@ -1,6 +1,7 @@
 package meowv64.core
 
 import chisel3._
+import chisel3.experimental.ChiselEnum
 import meowv64.cache._
 import meowv64.exec.Exec
 import meowv64.instr._
@@ -31,11 +32,25 @@ class CoreDebug(implicit val coredef: CoreDef) extends Bundle {
   val issueNumBoundedByROBSize = Output(Bool())
 }
 
+class CoreToDebugModule extends Bundle {
+  // debug request
+  val haltreq = Input(Bool())
+
+  // status
+  val halted = Output(Bool())
+}
+
+object CoreState extends ChiselEnum {
+  val running, halting, halted, resuming = Value
+}
+
 class Core(implicit val coredef: CoreDef) extends Module {
   val io = IO(new Bundle {
     val int = Input(new CoreInt)
     val frontend = new CoreFrontend
     val time = Input(UInt(64.W))
+
+    val dm = new CoreToDebugModule
 
     // Debug
     val debug = Output(new CoreDebug)
@@ -47,6 +62,7 @@ class Core(implicit val coredef: CoreDef) extends Module {
   )
 
   val ctrl = Module(new Ctrl)
+  ctrl.dm <> io.dm
 
   // Caches
   val l1i = Module(new L1IC(coredef.L1I))

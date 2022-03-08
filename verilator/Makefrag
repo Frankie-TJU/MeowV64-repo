@@ -14,4 +14,4 @@ VRiscVSystem: ../main.cpp $(VERILOG_SRCS)
 	cp obj_dir/VRiscVSystem .
 
 clean:
-	rm -rf $(VERILOG_SRCS)
+	rm -rf $(VERILOG_SRCS) obj_dir

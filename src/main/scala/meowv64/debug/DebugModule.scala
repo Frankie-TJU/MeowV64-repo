@@ -4,6 +4,11 @@ import chisel3._
 import chisel3.experimental.ChiselEnum
 import chisel3.util._
 import meowv64.system.SystemDef
+import meowv64.core.CoreToDebugModule
+import meowv64.interrupt.MMIODef
+import meowv64.interrupt.MMIOMapping
+import meowv64.interrupt.MMIOAccess
+import meowv64.interrupt.MMIOReqOp
 
 class DebugModuleReq extends Bundle {
   val address = UInt(7.W)
@@ -107,9 +112,44 @@ class SystemBusCS extends Bundle {
   val sbaccess8 = Bool()
 }
 
+object DebugModule {
+  val DM_DATA_REGION_START = BigInt("00000000", 16)
+  val DM_DATA_REGION_SIZE = 0x10000
+  val DM_DATA_ADDR_WIDTH = log2Ceil(DM_DATA_REGION_SIZE)
+
+  val DM_CODE_REGION_START = BigInt("00010000", 16)
+  val DM_CODE_REGION_SIZE = 0x10000
+  val DM_CODE_ADDR_WIDTH = log2Ceil(DM_CODE_REGION_SIZE)
+}
+
+object DebugModuleMMIODef
+    extends {
+      override val ADDR_WIDTH: Int = DebugModule.DM_DATA_ADDR_WIDTH
+      override val XLEN: Int = 64
+    }
+    with MMIODef
+
+object DebugModuleMapping
+    extends {
+      override val MAPPED_START = DebugModule.DM_DATA_REGION_START
+      override val MAPPED_SIZE = BigInt(DebugModule.DM_DATA_REGION_SIZE)
+    }
+    with MMIOMapping
+
+/**
+  * Debug module
+  *
+  * Maps to memory region:
+  * [0x0, 0xFFFF]: maps data0-12 & some internal registers
+  * [0x10000, 0x1FFFF]: maps debug module internal program buffer
+  */
 class DebugModule(implicit sDef: SystemDef) extends Module {
   val io = IO(new Bundle {
     val dmi = new DebugModuleInterface()
+    val core = Vec(sDef.CORE_COUNT, Flipped(new CoreToDebugModule))
+
+    // uncached data access
+    val toL2 = new MMIOAccess(DebugModuleMMIODef)
   })
 
   io.dmi.req.ready := false.B
@@ -130,10 +170,13 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
 
   // dmcontrol registers
   val hartreset = RegInit(false.B)
-  val hasel = RegInit(false.B)
-  val hartsel = RegInit(0.U(log2Ceil(sDef.CORE_COUNT)))
+  val hartsel = RegInit(0.U(log2Ceil(sDef.CORE_COUNT))) // only one hart at a time
   val ndmreset = RegInit(false.B)
   val dmactive = RegInit(false.B)
+  val haltreq = RegInit(VecInit.fill(sDef.CORE_COUNT)(false.B))
+  for (i <- 0 until sDef.CORE_COUNT) {
+    io.core(i).haltreq := haltreq(i)
+  }
 
   val done = WireInit(false.B)
   switch(state) {
@@ -180,7 +223,6 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
           when(curReq.isRead) {
             val resp = WireInit(0.U.asTypeOf(new DMControl))
             resp.hartreset := hartreset
-            resp.hasel := hasel
             val hartselExtended = Wire(UInt(20.W))
             hartselExtended := hartsel
             resp.hartsello := hartselExtended(9, 0)
@@ -194,8 +236,10 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
             req := curReq.data.asTypeOf(req)
 
             hartreset := req.hartreset
-            hasel := req.hasel
-            hartsel := Cat(req.hartselhi, req.hartsello)
+            val newHartsel = Wire(UInt(log2Ceil(sDef.CORE_COUNT).W))
+            newHartsel := Cat(req.hartselhi, req.hartsello)
+            hartsel := newHartsel
+            haltreq(newHartsel) := req.haltreq
             ndmreset := req.ndmreset
             dmactive := req.dmactive
           }
@@ -206,7 +250,15 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
           // dmstatus
           when(curReq.isRead) {
             val resp = WireInit(0.U.asTypeOf(new DMStatus))
-            resp.anynonexistent := hartsel >= sDef.CORE_COUNT.U
+            // halted == in debug mode
+            val halted = WireInit(io.core(hartsel).halted)
+            resp.allhalted := halted
+            resp.anyhalted := halted
+            resp.allrunning := ~halted
+            resp.anyrunning := ~halted
+            val nonexistent = WireInit(hartsel >= sDef.CORE_COUNT.U)
+            resp.allnonexistent := nonexistent
+            resp.anynonexistent := nonexistent
             resp.authenticated := true.B // always authenticated
             resp.version := 3.U // debug 1.0
 
@@ -282,6 +334,23 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
       io.dmi.resp.valid := true.B
       when(io.dmi.resp.fire) {
         state := DebugModuleState.idle
+      }
+    }
+  }
+
+  // MMIO access
+  io.toL2.req.ready := true.B
+  io.toL2.resp.valid := io.toL2.req.fire
+  io.toL2.resp.bits := 0.U
+
+  when(io.toL2.req.fire) {
+    when(0.U <= io.toL2.req.bits.addr && io.toL2.req.bits.addr < 48.U) {
+      // data0-12
+      val idx = io.toL2.req.bits.addr >> 2
+      when(io.toL2.req.bits.op === MMIOReqOp.read) {
+        io.toL2.resp.bits := absData(idx)
+      }.otherwise {
+        absData(idx) := io.toL2.req.bits.wdata
       }
     }
   }

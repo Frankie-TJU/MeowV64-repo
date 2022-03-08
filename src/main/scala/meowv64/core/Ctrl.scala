@@ -4,6 +4,7 @@ import chisel3._
 import chisel3.experimental.ChiselEnum
 import chisel3.util._
 import meowv64.exec.ExceptionResult
+import meowv64.debug.DebugModule
 
 class StageCtrl extends Bundle {
   val stall = Input(Bool())
@@ -142,11 +143,15 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
     /** Update vstate
       */
     val updateVState = Flipped(Valid(new VState))
-  });
+  })
+
+  val dm = IO(new CoreToDebugModule)
+  val debugMode = RegInit(false.B)
+  dm.halted := debugMode
 
   // Privilege level
-  val priv = RegInit(PrivLevel.M);
-  toExec.priv := priv;
+  val priv = RegInit(PrivLevel.M)
+  toExec.priv := priv
 
   toIF.ctrl.flush := false.B
   toExec.ctrl.flush := false.B
@@ -398,13 +403,18 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
     priv < PrivLevel.S || status.sie,
     priv < PrivLevel.M || status.mie
   )
+  // priority: halt > int
   val intFired = intEnabled && intMask.asUInt().orR()
-  toExec.int := intFired
+  val haltFired = dm.haltreq && ~debugMode // debug halt is a special interrupt
+  toExec.int := intFired || haltFired
 
   // Exceptions + Interrupts
-  val ex = (br.req.ex === ExReq.ex) || (toExec.intAck && intFired)
+  val ex =
+    (br.req.ex === ExReq.ex) || (toExec.intAck && (intFired || haltFired))
   val cause = Wire(UInt(coredef.XLEN.W))
-  when(intFired) {
+  when(haltFired) {
+    cause := 3.U // The debugger requested entry to Debug Mode using haltreq
+  }.elsewhen(intFired) {
     cause := (true.B << (coredef.XLEN - 1)) | intCause
   }.otherwise {
     cause := (false.B << (coredef.XLEN - 1)) | br.req.exType.asUInt()
@@ -426,7 +436,9 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
   val tvecBase = Mux(delegs, stvec, mtvec)
   val tvec = Wire(UInt(coredef.XLEN.W))
   tvec := tvecBase(coredef.XLEN - 1, 2) ## 0.U(2.W)
-  when(intFired && tvecBase(1, 0) === 1.U) {
+  when(haltFired) {
+    tvec := DebugModule.DM_CODE_REGION_START.U
+  }.elsewhen(intFired && tvecBase(1, 0) === 1.U) {
     // Vectored trap
     tvec := (tvecBase(coredef.XLEN - 1, 2) + intCause) ## 0.U(2.W)
   }
@@ -438,26 +450,31 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
     branch := true.B
     baddr := tvec
 
-    when(delegs) {
-      sepc := nepc
-      scause := cause
-      stval := br.tval
+    when(haltFired) {
+      // enter debug mode
+      debugMode := true.B
+    }.otherwise {
+      when(delegs) {
+        sepc := nepc
+        scause := cause
+        stval := br.tval
 
-      status.spie := status.sie
-      status.sie := false.B
-      status.spp := priv =/= PrivLevel.U
+        status.spie := status.sie
+        status.sie := false.B
+        status.spp := priv =/= PrivLevel.U
 
-      priv := PrivLevel.S
-    } otherwise {
-      mepc := nepc
-      mcause := cause
-      mtval := br.tval
+        priv := PrivLevel.S
+      } otherwise {
+        mepc := nepc
+        mcause := cause
+        mtval := br.tval
 
-      status.mpie := status.mie
-      status.mie := false.B
-      status.mpp := priv.asUInt()
+        status.mpie := status.mie
+        status.mie := false.B
+        status.mpp := priv.asUInt()
 
-      priv := PrivLevel.M
+        priv := PrivLevel.M
+      }
     }
   }.elsewhen(br.req.ex === ExReq.mret) {
     branch := true.B

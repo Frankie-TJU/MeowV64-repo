@@ -62,8 +62,14 @@ class RiscVSystem(implicit val sDef: SystemDef = new DefaultSystemDef)
   // TAG TAPs used as a DTM must have an IR of at least 5 bits.
   val jtagTap = Module(new JtagTap(5))
   io.jtag <> jtagTap.io.jtag
+
+  // Debug Module
   val dm = Module(new DebugModule)
   dm.io.dmi <> jtagTap.io.dmi
+  for (idx <- (0 until sDef.CORE_COUNT)) {
+    cores(idx).io.dm <> dm.io.core(idx)
+  }
+  l2.mmio(2) <> dm.io.toL2
 
   io.debug := cores.map(_.io.debug)
 }
