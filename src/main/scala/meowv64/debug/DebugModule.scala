@@ -9,6 +9,8 @@ import meowv64.interrupt.MMIODef
 import meowv64.interrupt.MMIOMapping
 import meowv64.interrupt.MMIOAccess
 import meowv64.interrupt.MMIOReqOp
+import meowv64.cache.L1ICPort
+import meowv64.core.CoreDef
 
 class DebugModuleReq extends Bundle {
   val address = UInt(7.W)
@@ -148,6 +150,8 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
     val dmi = new DebugModuleInterface()
     val core = Vec(sDef.CORE_COUNT, Flipped(new CoreToDebugModule))
 
+    // cached code access
+    val toL1I = Flipped(new L1ICPort(CoreDef.default(0, 0, sDef.L2_LINE_BYTES).L1I))
     // uncached data access
     val toL2 = new MMIOAccess(DebugModuleMMIODef)
   })
@@ -337,6 +341,8 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
       }
     }
   }
+
+  // code access
 
   // MMIO access
   io.toL2.req.ready := true.B

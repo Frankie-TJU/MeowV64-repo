@@ -11,6 +11,7 @@ import meowv64.debug.Jtag
 import meowv64.debug.JtagTap
 import meowv64.interrupt.CLINT
 import meowv64.interrupt.PLIC
+import chisel3.util.RRArbiter
 
 class RiscVSystem(implicit val sDef: SystemDef = new DefaultSystemDef)
     extends Module {
@@ -70,6 +71,17 @@ class RiscVSystem(implicit val sDef: SystemDef = new DefaultSystemDef)
     cores(idx).io.dm <> dm.io.core(idx)
   }
   l2.mmio(2) <> dm.io.toL2
+  val arbiter = Module(new RRArbiter(UInt(sDef.PADDR_WIDTH.W), sDef.CORE_COUNT))
+  for (idx <- (0 until sDef.CORE_COUNT)) {
+    cores(idx).io.dmCode.stall := ~arbiter.io.in(idx).ready
+    arbiter.io.in(idx).valid := cores(idx).io.dmCode.read.valid
+    arbiter.io.in(idx).bits := cores(idx).io.dmCode.read.bits
+
+    cores(idx).io.dmCode.data := dm.io.toL1I.data
+  }
+  dm.io.toL1I.read.valid := arbiter.io.out.valid
+  dm.io.toL1I.read.bits := arbiter.io.out.bits
+  arbiter.io.out.ready := true.B
 
   io.debug := cores.map(_.io.debug)
 }

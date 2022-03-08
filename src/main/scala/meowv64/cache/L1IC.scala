@@ -35,6 +35,7 @@ object ILine {
 class L1IC(opts: L1Opts) extends Module {
   val toCPU = IO(new CoreICPort(opts))
   val toL2 = IO(new L1ICPort(opts))
+  val toDM = IO(new L1ICPort(opts))
 
   toCPU.data := DontCare
   toL2.read.bits := DontCare

@@ -51,6 +51,8 @@ class Core(implicit val coredef: CoreDef) extends Module {
     val time = Input(UInt(64.W))
 
     val dm = new CoreToDebugModule
+    // access code in debug module
+    val dmCode = Flipped(new L1ICPort(coredef.L1I))
 
     // Debug
     val debug = Output(new CoreDebug)
@@ -69,6 +71,7 @@ class Core(implicit val coredef: CoreDef) extends Module {
   val l1d = Module(new L1DC(coredef.L1D))
 
   l1i.toL2 <> io.frontend.ic
+  l1i.toDM <> io.dmCode
   l1d.toL2 <> io.frontend.dc
 
   // TODO: attach DTLB
