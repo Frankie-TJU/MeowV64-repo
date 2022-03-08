@@ -483,9 +483,9 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
       debugMode := true.B
       dpc := nepc
       dcsr.cause := cause
+      dcsr.prv := priv.asUInt
     }.elsewhen(debugMode) {
       // exception in debug mode
-      // go to park loop
       dcsr.cause := cause
     }.otherwise {
       when(delegs) {
@@ -532,6 +532,8 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
     branch := true.B
     baddr := dpc
     debugMode := false.B
+
+    priv := dcsr.prv.asTypeOf(PrivLevel.Type())
   }
 
   // Avoid Vivado naming collision. Com'on, Xilinx, write *CORRECT* code plz

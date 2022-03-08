@@ -114,6 +114,7 @@ object CSR {
     0x003 -> (("fcsr", true)),
 
     // Debug
+    0x7b0 -> (("dcsr", true)),
     0x7b1 -> (("dpc", true)),
     0x7b2 -> (("dscratch0", true)),
     0x7b3 -> (("dscratch1", true)),
