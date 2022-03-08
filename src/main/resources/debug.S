@@ -124,10 +124,10 @@ memory_postincrement:
 	lw a1, 0x10(a0)
 	beq a1, zero, memory_done
 
-	// arg1 += (8 << aamsize)
+	// arg1 += (1 << aamsize)
 	// read aamsize
 	lw a1, 0xc(a0)
-	li a0, 8
+	li a0, 1
 	sll a0, a0, a1
 
 	// read arg1 & update
