@@ -108,6 +108,18 @@ class AccessRegisterCmd extends Bundle {
   val regno = UInt(16.W)
 }
 
+/** Access Memory Command (cmdtype = 0)
+  */
+class AccessMemoryCmd extends Bundle {
+  val aamvirtual = Bool()
+  val aamsize = UInt(3.W)
+  val aampostincrement = Bool()
+  val zero1 = UInt(2.W)
+  val write = Bool()
+  val unused = UInt(2.W)
+  val zero2 = UInt(14.W)
+}
+
 class SystemBusCS extends Bundle {
   val sbversion = UInt(3.W)
   val zero = UInt(6.W)
@@ -156,7 +168,7 @@ object DebugModuleMapping
     with MMIOMapping
 
 object AbstractState extends ChiselEnum {
-  val idle, action, resume = Value
+  val idle, action, resume, memory = Value
 }
 
 /** Debug module
@@ -194,6 +206,7 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
 
   // abstractcs registers
   val absState = RegInit(AbstractState.idle)
+  val absCommand = RegInit(0.U(32.W))
   val cmderr = RegInit(0.U(3.W))
 
   // dmcontrol registers
@@ -406,6 +419,7 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
                   cmderr := 2.U // not supported by default
                 }.otherwise {
                   absState := AbstractState.action
+                  absCommand := curReq.data
                 }
 
                 when(req.cmdtype === 0.U) {
@@ -519,6 +533,10 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
                       }
                     }
                   }
+                }.elsewhen(req.cmdtype === 2.U) {
+                  // Access Memory
+                  absState := AbstractState.memory
+                  absCommand := curReq.data
                 }
               }
             }
@@ -573,6 +591,7 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
   io.toL2.resp.valid := io.toL2.req.fire
   io.toL2.resp.bits := 0.U
 
+  val accessMemoryCmd = absCommand.asTypeOf(new AccessMemoryCmd)
   when(io.toL2.req.fire) {
     when(0.U <= io.toL2.req.bits.addr && io.toL2.req.bits.addr < 48.U) {
       // data0-12
@@ -599,6 +618,15 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
       when(io.toL2.req.bits.op === MMIOReqOp.write) {
         absState := AbstractState.idle
       }
+    }.elsewhen(io.toL2.req.bits.addr === 0x1008.U) {
+      // read accessMemoryCmd.write
+      io.toL2.resp.bits := accessMemoryCmd.write.asUInt
+    }.elsewhen(io.toL2.req.bits.addr === 0x100c.U) {
+      // read accessMemoryCmd.aamsize
+      io.toL2.resp.bits := accessMemoryCmd.aamsize
+    }.elsewhen(io.toL2.req.bits.addr === 0x1010.U) {
+      // read accessMemoryCmd.aampostincrement
+      io.toL2.resp.bits := accessMemoryCmd.aampostincrement
     }
   }
 }
