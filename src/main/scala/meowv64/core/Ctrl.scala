@@ -140,6 +140,7 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
     val vtype = new CSRPort(coredef.XLEN)
     val vlenb = new CSRPort(coredef.XLEN)
 
+    val dcsr = new CSRPort(coredef.XLEN)
     val dpc = new CSRPort(coredef.XLEN)
     val dscratch0 = new CSRPort(coredef.XLEN)
     val dscratch1 = new CSRPort(coredef.XLEN)
@@ -401,6 +402,15 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
     vstate := csr.updateVState.bits
   }
 
+  val dcsr = RegInit(DCSR.init)
+  csr.dcsr.rdata := (
+    4.U(4.W) ## 0.U(19.W) ## dcsr.cause ## 0.U(4.W) ## dcsr.prv
+  )
+  when(csr.dcsr.write) {
+    dcsr.cause := csr.dcsr.wdata(8, 6)
+    dcsr.prv := csr.dcsr.wdata(1, 0)
+  }
+
   val dscratch0 = RegInit(0.U(coredef.XLEN.W))
   val dscratch1 = RegInit(0.U(coredef.XLEN.W))
   csr.dpc <> CSRPort.fromReg(coredef.XLEN, dpc)
@@ -427,6 +437,9 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
   val cause = Wire(UInt(coredef.XLEN.W))
   when(haltFired) {
     cause := 3.U // The debugger requested entry to Debug Mode using haltreq
+  }.elsewhen(debugMode && br.req.ex === ExReq.ex && br.req.exType === ExType.BREAKPOINT) {
+    // ebreak in debug mode
+    cause := 1.U // An ebreak instruction was executed
   }.elsewhen(intFired) {
     cause := (true.B << (coredef.XLEN - 1)) | intCause
   }.otherwise {
@@ -451,7 +464,8 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
   tvec := tvecBase(coredef.XLEN - 1, 2) ## 0.U(2.W)
   when(haltFired || debugMode) {
     // halt -> debug vector
-    tvec := DebugModule.DM_CODE_REGION_START.U
+    // vector = start + 4 * cause
+    tvec := DebugModule.DM_CODE_REGION_START.U + (cause << 2)
   }.elsewhen(intFired && tvecBase(1, 0) === 1.U) {
     // Vectored trap
     tvec := (tvecBase(coredef.XLEN - 1, 2) + intCause) ## 0.U(2.W)
@@ -468,9 +482,11 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
       // enter debug mode
       debugMode := true.B
       dpc := nepc
+      dcsr.cause := cause
     }.elsewhen(debugMode) {
       // exception in debug mode
       // go to park loop
+      dcsr.cause := cause
     }.otherwise {
       when(delegs) {
         sepc := nepc

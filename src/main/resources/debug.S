@@ -1,9 +1,19 @@
 	.text
-entry:
+	// exception vectors
+	.org 0x4
+ebreak_trap:
+	j park_loop
+
+	.org 0xc
+haltreq_trap:
+	j handle_haltreq
+
+handle_haltreq:
 	// save a0 & a1
 	csrw dscratch0, a0
 	csrw dscratch1, a1
 
+park_loop:
 	// read command from dm
 	li a0, 0x1000
 loop:

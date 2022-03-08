@@ -436,3 +436,17 @@ object Satp {
     ret
   }
 }
+
+class DCSR extends Bundle {
+  val cause = UInt(3.W)
+  val prv = UInt(2.W)
+}
+
+object DCSR {
+  def init = {
+    val ret = Wire(new DCSR)
+    ret.cause := 0.U
+    ret.prv := 3.U
+    ret
+  }
+}
