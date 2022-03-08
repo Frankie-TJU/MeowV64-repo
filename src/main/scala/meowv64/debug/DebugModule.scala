@@ -462,9 +462,9 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
                       // read
                       when(csr) {
                         // read csr
-                        // csrrw a1, csrIdx, zero
-                        // csr=csrIdx rs1=zero 001 rd=a1 1110011
-                        ramInsts(0) := (csrIdx << 20) | (1.U << 12) |
+                        // csrrs a1, csrIdx, zero
+                        // csr=csrIdx rs1=zero 010 rd=a1 1110011
+                        ramInsts(0) := (csrIdx << 20) | (2.U << 12) |
                           (a1 << 7) | (0x73.U)
                         when(cmd.aarsize === 3.U) {
                           // 64 bits
@@ -495,9 +495,9 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
                           when(gprIdx === a0 || gprIdx === a1) {
                             val scratchIdx =
                               Mux(gprIdx === a0, 0x7b2.U, 0x7b3.U)
-                            // csrrw a1, scratchIdx, zero
-                            // csr=scratcIdx rs1=zero 001 rd=a1 1110011
-                            ramInsts(0) := (scratchIdx << 20) | (1.U << 12) |
+                            // csrrs a1, scratchIdx, zero
+                            // csr=scratcIdx rs1=zero 010 rd=a1 1110011
+                            ramInsts(0) := (scratchIdx << 20) | (2.U << 12) |
                               (a1 << 7) | (0x73.U)
                           }.otherwise {
                             // addi a1, reg, 0
