@@ -10,6 +10,13 @@ loop:
 	ld a1, 0(a0)
 	beq a1, zero, loop
 
+	# received abstract action
+	# clear icache
+	fence.i
+	# jump to 0x20000
+	li a0, 0x200000
+	j 0(a0)
+
 exit:
 	csrr a0, dscratch0
 	csrr a1, dscratch1

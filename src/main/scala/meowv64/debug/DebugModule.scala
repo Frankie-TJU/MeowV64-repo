@@ -96,6 +96,17 @@ class AbstractCmd extends Bundle {
   val control = UInt(24.W)
 }
 
+/** Access Register Command (cmdtype = 0)
+  */
+class AccessRegisterCmd extends Bundle {
+  val aarsize = UInt(3.W)
+  val aarpostincrement = Bool()
+  val postexec = Bool()
+  val transfer = Bool()
+  val write = Bool()
+  val regno = UInt(16.W)
+}
+
 class SystemBusCS extends Bundle {
   val sbversion = UInt(3.W)
   val zero = UInt(6.W)
@@ -120,8 +131,13 @@ object DebugModule {
   val DM_DATA_ADDR_WIDTH = log2Ceil(DM_DATA_REGION_SIZE)
 
   val DM_CODE_REGION_START = BigInt("00010000", 16)
-  val DM_CODE_REGION_SIZE = 0x10000
+  val DM_CODE_REGION_SIZE = 0x20000
   val DM_CODE_ADDR_WIDTH = log2Ceil(DM_CODE_REGION_SIZE)
+
+  val DM_CODE_ROM_REGION_START = BigInt("00010000", 16)
+  val DM_CODE_ROM_REGION_SIZE = 0x10000
+  val DM_CODE_RAM_REGION_START = BigInt("00020000", 16)
+  val DM_CODE_RAM_REGION_SIZE = 0x10000
 }
 
 object DebugModuleMMIODef
@@ -138,12 +154,15 @@ object DebugModuleMapping
     }
     with MMIOMapping
 
-/**
-  * Debug module
+/** Debug module
   *
   * Maps to memory region:
-  * [0x0, 0xFFFF]: maps data0-12 & some internal registers
-  * [0x10000, 0x1FFFF]: maps debug module internal program buffer
+  *
+  * [0x0, 0xFFFF]: maps data0-12 & some internal registers.
+  *
+  * [0x10000, 0x1FFFF]: maps rom internal program buffer
+  *
+  * [0x20000, 0x2FFFF]: maps ram internal program buffer
   */
 class DebugModule(implicit sDef: SystemDef) extends Module {
   val io = IO(new Bundle {
@@ -151,7 +170,8 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
     val core = Vec(sDef.CORE_COUNT, Flipped(new CoreToDebugModule))
 
     // cached code access
-    val toL1I = Flipped(new L1ICPort(CoreDef.default(0, 0, sDef.L2_LINE_BYTES).L1I))
+    val toL1I =
+      Flipped(new L1ICPort(CoreDef.default(0, 0, sDef.L2_LINE_BYTES).L1I))
     // uncached data access
     val toL2 = new MMIOAccess(DebugModuleMMIODef)
   })
@@ -169,17 +189,60 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
 
   // abstractcs registers
   val absBusy = RegInit(false.B)
-  val relaxedpriv = RegInit(false.B)
   val cmderr = RegInit(0.U(3.W))
 
   // dmcontrol registers
   val hartreset = RegInit(false.B)
-  val hartsel = RegInit(0.U(log2Ceil(sDef.CORE_COUNT))) // only one hart at a time
+  val hartsel = RegInit(
+    0.U(log2Ceil(sDef.CORE_COUNT))
+  ) // only one hart at a time
   val ndmreset = RegInit(false.B)
   val dmactive = RegInit(false.B)
   val haltreq = RegInit(VecInit.fill(sDef.CORE_COUNT)(false.B))
   for (i <- 0 until sDef.CORE_COUNT) {
     io.core(i).haltreq := haltreq(i)
+  }
+
+  // rom region
+  val TO_L2_TRANSFER_WIDTH = io.toL1I.data.getWidth
+  val debugCodeBytes = getClass.getResourceAsStream("/debug.bin").readAllBytes()
+  val byteChunk = TO_L2_TRANSFER_WIDTH / 8
+  val len = debugCodeBytes.length
+  val chunks = (len + byteChunk - 1) / byteChunk
+  val paddedLen = chunks * byteChunk
+  val padded =
+    debugCodeBytes ++ Array.fill(paddedLen - len)(0.asInstanceOf[Byte])
+  val initValues = for (i <- 0 until chunks) yield {
+    var value = BigInt(0)
+    for (j <- 0 until byteChunk) {
+      var unsigned = BigInt(padded(i * byteChunk + j))
+      if (unsigned < 0) {
+        unsigned += 256
+      }
+      value |= unsigned << (j * 8)
+    }
+
+    value.U(TO_L2_TRANSFER_WIDTH.W)
+  }
+  val codeMem = RegInit(VecInit(initValues))
+
+  // ram region
+  val ramInstCount = 6
+  val ramInsts = RegInit(VecInit.fill(ramInstCount)(0.U(32.W)))
+  val instChunkSize = byteChunk / 4
+  val instChunks = (ramInstCount + instChunkSize - 1) / instChunkSize
+  val ramView = Wire(Vec(instChunks, UInt(TO_L2_TRANSFER_WIDTH.W)))
+  for (i <- 0 until instChunks) {
+    val signal = Wire(UInt(TO_L2_TRANSFER_WIDTH.W))
+    signal := Cat((for (j <- 0 until instChunkSize) yield {
+      val idx = i * instChunkSize + j
+      if (idx < ramInstCount) {
+        ramInsts(idx)
+      } else {
+        0.U(32.W)
+      }
+    }).reverse)
+    ramView(i) := signal
   }
 
   val done = WireInit(false.B)
@@ -286,7 +349,6 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
           when(curReq.isRead) {
             val resp = WireInit(0.U.asTypeOf(new AbstractCS))
             resp.busy := absBusy
-            resp.relaxedpriv := relaxedpriv
             resp.cmderr := cmderr
             resp.datacount := 12.U
 
@@ -295,7 +357,6 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
             val req = Wire(new AbstractCS)
             req := curReq.data.asTypeOf(req)
 
-            relaxedpriv := req.relaxedpriv
             when(req.cmderr =/= 0.U) {
               cmderr := 0.U
             }
@@ -310,6 +371,77 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
           }.otherwise {
             val req = Wire(new AbstractCmd)
             req := curReq.data.asTypeOf(req)
+            when(cmderr === 0.U) {
+              when(absBusy) {
+                cmderr := 1.U
+              }.otherwise {
+                // execute
+                val supported = WireInit(false.B)
+                when(~supported) {
+                  cmderr := 2.U // not supported by default
+                }.otherwise {
+                  absBusy := true.B
+                }
+
+                when(req.cmdtype === 0.U) {
+                  // access register
+                  val cmd = Wire(new AccessRegisterCmd)
+                  cmd := req.control.asTypeOf(cmd)
+
+                  val csr = cmd.regno < 0x1000.U
+                  val csrIdx = cmd.regno & 0xfff.U
+                  val gpr = 0x1000.U <= cmd.regno && cmd.regno < 0x101f.U
+                  val gprIdx = cmd.regno & 0x1f.U
+                  val fpr = 0x1020.U <= cmd.regno && cmd.regno < 0x103f.U
+                  val fprIdx = cmd.regno & 0x1f.U
+
+                  val a0 = 10.U
+                  val a1 = 11.U
+
+                  val ebreak = WireInit(((1 << 20) | (0x73)).U)
+                  // sw zero, 4(a0)
+                  // rs2=zero rs1=a0 imm=4
+                  val finish = WireInit((a1 << 15) | (2.U << 12) | (4.U << 7) | (0x23.U))
+
+                  // set ram inst
+                  // instructions:
+                  // load to register
+                  // read/write data
+                  // ebreak
+                  when(cmd.transfer) {
+                    when(cmd.write) {
+                      // write
+                    }.otherwise {
+                      // read
+                      when(csr) {
+                        // read csr
+                        // csrrw a1, csrIdx, a1
+                        // csr=csrIdx rs1=zero 001 rd=a1 1110011
+                        ramInsts(0) := (csr << 20) | (1.U << 12) |
+                          (a1 << 7) | (0x73.U)
+                        when(cmd.aarsize === 3.U) {
+                          // 64 bits
+                          // sw a1, 0(zero)
+                          // rs2=a1 rs1=zero imm=0
+                          ramInsts(1) := (a1 << 20) | (2.U << 12) | (0.U << 7) | (0x23.U)
+                          // srli a1, a1, 32
+                          // shamt=32 rs1=a1 rd=a1
+                          ramInsts(2) := (32.U << 20) | (a1 << 15) | (5.U << 12) | (a1 << 7) | (0x13.U)
+                          // sw a1, 4(zero)
+                          // rs2=a1 rs1=zero imm=4
+                          ramInsts(3) := (a1 << 20) | (2.U << 12) | (4.U << 7) | (0x23.U)
+                          // finish
+                          ramInsts(4) := finish
+                          // ebreak
+                          ramInsts(5) := ebreak
+                          supported := true.B
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
           curResp.fail := false.B
           done := true.B
@@ -343,26 +475,17 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
   }
 
   // code access
-  val debugCodeBytes = getClass.getResourceAsStream("/debug.bin").readAllBytes()
-  val byteChunk = io.toL1I.getWidth / 8
-  val len = debugCodeBytes.length
-  val chunks = (len + byteChunk - 1) / byteChunk
-  val paddedLen = chunks * byteChunk
-  val padded = debugCodeBytes ++ Array.fill(paddedLen - len)(0.asInstanceOf[Byte])
-  val initValues = for(i <- 0 until chunks) yield {
-    var value = BigInt(0)
-    for (j <- 0 until byteChunk) {
-      var unsigned = BigInt(padded(i * byteChunk + j))
-      if (unsigned < 0) {
-        unsigned += 256
-      }
-      value |= unsigned << (j * 8)
-    }
-
-    value.U(io.toL1I.getWidth.W)
+  // to l1 icache
+  val offset = io.toL1I.read.bits >> log2Ceil(byteChunk)
+  when(
+    DebugModule.DM_CODE_ROM_REGION_START.U <= io.toL1I.read.bits && io.toL1I.read.bits < (DebugModule.DM_CODE_ROM_REGION_START + DebugModule.DM_CODE_ROM_REGION_SIZE).U
+  ) {
+    // rom region
+    io.toL1I.data := codeMem(offset)
+  }.otherwise {
+    // ram region
+    io.toL1I.data := ramView(offset)
   }
-  val codeMem = RegInit(VecInit(initValues))
-  io.toL1I.data := codeMem(io.toL1I.read.bits)
   io.toL1I.stall := false.B
 
   // MMIO access
@@ -378,6 +501,16 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
         io.toL2.resp.bits := absData(idx)
       }.otherwise {
         absData(idx) := io.toL2.req.bits.wdata
+      }
+    }.elsewhen(io.toL2.req.bits.addr === 0x1000.U) {
+      // read current action
+      when(io.toL2.req.bits.op === MMIOReqOp.read) {
+        io.toL2.resp.bits := absBusy
+      }
+    }.elsewhen(io.toL2.req.bits.addr === 0x1004.U) {
+      // current abstract command is done
+      when(io.toL2.req.bits.op === MMIOReqOp.write) {
+        absBusy := false.B
       }
     }
   }

@@ -453,6 +453,9 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
     when(haltFired) {
       // enter debug mode
       debugMode := true.B
+    }.elsewhen(debugMode) {
+      // exception in debug mode
+      // go to park loop
     }.otherwise {
       when(delegs) {
         sepc := nepc
