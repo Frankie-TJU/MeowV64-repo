@@ -536,7 +536,7 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
                 }.elsewhen(req.cmdtype === 2.U) {
                   // Access Memory
                   absState := AbstractState.memory
-                  absCommand := curReq.data
+                  supported := true.B
                 }
               }
             }

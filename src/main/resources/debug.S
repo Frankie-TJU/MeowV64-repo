@@ -45,7 +45,7 @@ check_memory:
 	// memory access if a1 == 3
 	// read write
 	li a0, 0x1000
-	ld a1, 8(a0)
+	lw a1, 8(a0)
 	// extract write bit
 	bne a1, zero, memory_write
 
@@ -53,7 +53,7 @@ check_memory:
 memory_read:
 	// arg0 = mem[arg1]
 	// read aamsize
-	ld a1, 0xc(a0)
+	lw a1, 0xc(a0)
 	li a0, 0
 	beq a1, a0, memory_read_b
 	li a0, 1
@@ -87,7 +87,7 @@ memory_read_d:
 memory_write:
 	// mem[arg1] = arg0
 	// read aamsize
-	ld a1, 0xc(a0)
+	lw a1, 0xc(a0)
 	li a0, 0
 	beq a1, a0, memory_write_b
 	li a0, 1
@@ -121,12 +121,12 @@ memory_write_d:
 memory_postincrement:
 	// read aampostincrement
 	li a0, 0x1000
-	ld a1, 0x10(a0)
+	lw a1, 0x10(a0)
 	beq a1, zero, memory_done
 
 	// arg1 += (8 << aamsize)
 	// read aamsize
-	ld a1, 0xc(a0)
+	lw a1, 0xc(a0)
 	li a0, 8
 	sll a0, a0, a1
 
