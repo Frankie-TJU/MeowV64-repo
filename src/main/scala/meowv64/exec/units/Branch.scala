@@ -103,7 +103,7 @@ class Branch(override implicit val coredef: CoreDef)
             ext.exType := ExType.BREAKPOINT
           }
 
-          is(Decoder.PRIV_RS2("RET")) {
+          is(Decoder.PRIV_RS2("RET"), Decoder.PRIV_RS2("DRET")) {
             val t = MuxLookup(
               pipe.instr.instr.funct7,
               ExReq.ex,

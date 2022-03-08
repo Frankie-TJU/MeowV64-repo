@@ -505,6 +505,7 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
   }.elsewhen(br.req.ex === ExReq.dret) {
     branch := true.B
     baddr := dpc
+    debugMode := false.B
   }
 
   // Avoid Vivado naming collision. Com'on, Xilinx, write *CORRECT* code plz

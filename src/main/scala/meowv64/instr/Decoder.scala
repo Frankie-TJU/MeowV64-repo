@@ -130,6 +130,7 @@ object Decoder {
     "ECALL" -> "00000",
     "EBREAK" -> "00001",
     "RET" -> "00010",
+    "DRET" -> "10010",
     "WFI" -> "00101"
   ).mapValues(Integer.parseInt(_, 2).U(5.W))
 

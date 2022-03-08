@@ -206,8 +206,13 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
   for (i <- 0 until sDef.CORE_COUNT) {
     io.core(i).haltreq := haltreq(i)
   }
-  val resumereq = RegInit(VecInit.fill(sDef.CORE_COUNT)(false.B))
+
+  // handle resumeack
   val resumeack = RegInit(VecInit.fill(sDef.CORE_COUNT)(false.B))
+  when(~resumeack(hartsel) && ~io.core(hartsel).halted && RegNext(io.core(hartsel).halted)) {
+    // resumed
+    resumeack(hartsel) := true.B
+  }
 
   // rom region
   val TO_L2_TRANSFER_WIDTH = io.toL1I.data.getWidth
@@ -315,8 +320,10 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
 
             haltreq(newHartsel) := req.haltreq
             when(req.resumereq) {
-              resumereq(newHartsel) := true.B
               resumeack(newHartsel) := false.B
+
+              assert(absState === AbstractState.idle)
+              absState := AbstractState.resume
             }
             ndmreset := req.ndmreset
             dmactive := req.dmactive
@@ -439,19 +446,16 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
                           // 64 bits
                           // sw a1, 0(zero)
                           // rs2=a1 rs1=zero imm=0
-                          ramInsts(
-                            1
-                          ) := (a1 << 20) | (2.U << 12) | (0.U << 7) | (0x23.U)
+                          ramInsts(1) := (a1 << 20) | (2.U << 12) |
+                            (0.U << 7) | (0x23.U)
                           // srli a1, a1, 32
                           // shamt=32 rs1=a1 rd=a1
-                          ramInsts(
-                            2
-                          ) := (32.U << 20) | (a1 << 15) | (5.U << 12) | (a1 << 7) | (0x13.U)
+                          ramInsts(2) := (32.U << 20) | (a1 << 15) |
+                            (5.U << 12) | (a1 << 7) | (0x13.U)
                           // sw a1, 4(zero)
                           // rs2=a1 rs1=zero imm=4
-                          ramInsts(
-                            3
-                          ) := (a1 << 20) | (2.U << 12) | (4.U << 7) | (0x23.U)
+                          ramInsts(3) := (a1 << 20) | (2.U << 12) |
+                            (4.U << 7) | (0x23.U)
                           // finish
                           ramInsts(4) := finish
                           // ebreak
