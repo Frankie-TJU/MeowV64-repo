@@ -173,6 +173,10 @@ class Core(implicit val coredef: CoreDef) extends Module {
   csr.attach("vtype").connect(ctrl.csr.vtype)
   csr.attach("vlenb").connect(ctrl.csr.vlenb)
 
+  csr.attach("dpc").connect(ctrl.csr.dpc)
+  csr.attach("dscratch0").connect(ctrl.csr.dscratch0)
+  csr.attach("dscratch1").connect(ctrl.csr.dscratch1)
+
   // allow CSR unit to read/write current VState
   csrWriter.currentVState.vl := ctrl.csr.vl.rdata
   csrWriter.currentVState.vtype := ctrl.csr.vtype.rdata.asTypeOf(new VType)

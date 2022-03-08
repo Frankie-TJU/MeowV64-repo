@@ -209,7 +209,11 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
 
   // handle resumeack
   val resumeack = RegInit(VecInit.fill(sDef.CORE_COUNT)(false.B))
-  when(~resumeack(hartsel) && ~io.core(hartsel).halted && RegNext(io.core(hartsel).halted)) {
+  when(
+    ~resumeack(hartsel) && ~io.core(hartsel).halted && RegNext(
+      io.core(hartsel).halted
+    )
+  ) {
     // resumed
     resumeack(hartsel) := true.B
   }
@@ -478,21 +482,21 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
                         // read gpr
                         when(cmd.aarsize === 3.U) {
                           // 64 bits
+                          // special case: reg == a0 or a1
+                          // read from dscratch0/1 register to a1 first
+
                           // sw reg, 0(zero)
                           // rs2=reg rs1=zero imm=0
-                          ramInsts(
-                            0
-                          ) := (gprIdx << 20) | (2.U << 12) | (0.U << 7) | (0x23.U)
+                          ramInsts(0) := (gprIdx << 20) | (2.U << 12) |
+                            (0.U << 7) | (0x23.U)
                           // srli a1, reg, 32
                           // shamt=32 rs1=a1 rd=reg
-                          ramInsts(
-                            1
-                          ) := (32.U << 20) | (a1 << 15) | (5.U << 12) | (gprIdx << 7) | (0x13.U)
+                          ramInsts(1) := (32.U << 20) | (gprIdx << 15) |
+                            (5.U << 12) | (a1 << 7) | (0x13.U)
                           // sw a1, 4(zero)
                           // rs2=a1 rs1=zero imm=4
-                          ramInsts(
-                            2
-                          ) := (a1 << 20) | (2.U << 12) | (4.U << 7) | (0x23.U)
+                          ramInsts(2) := (a1 << 20) | (2.U << 12) |
+                            (4.U << 7) | (0x23.U)
                           // finish
                           ramInsts(3) := finish
                           // ebreak

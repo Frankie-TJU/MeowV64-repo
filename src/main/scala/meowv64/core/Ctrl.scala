@@ -140,6 +140,10 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
     val vtype = new CSRPort(coredef.XLEN)
     val vlenb = new CSRPort(coredef.XLEN)
 
+    val dpc = new CSRPort(coredef.XLEN)
+    val dscratch0 = new CSRPort(coredef.XLEN)
+    val dscratch1 = new CSRPort(coredef.XLEN)
+
     /** Update vstate
       */
     val updateVState = Flipped(Valid(new VState))
@@ -396,6 +400,12 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
   when(csr.updateVState.valid) {
     vstate := csr.updateVState.bits
   }
+
+  val dscratch0 = RegInit(0.U(coredef.XLEN.W))
+  val dscratch1 = RegInit(0.U(coredef.XLEN.W))
+  csr.dpc <> CSRPort.fromReg(coredef.XLEN, dpc)
+  csr.dscratch0 <> CSRPort.fromReg(coredef.XLEN, dscratch0)
+  csr.dscratch1 <> CSRPort.fromReg(coredef.XLEN, dscratch1)
 
   // Interrupts
   val intMask: UInt = (ie.asUInt & ip.asUInt())
