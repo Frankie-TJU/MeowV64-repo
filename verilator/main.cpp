@@ -26,6 +26,7 @@ vluint64_t main_time = 0;
 double sc_time_stamp() { return main_time; }
 
 bool finished = false;
+bool jtag = false;
 int res = 0;
 
 const uint64_t AXI_DATA_WIDTH = 128;
@@ -205,11 +206,15 @@ void step() {
         } else if (data == 1) {
           // pass
           fprintf(stderr, "> ISA testsuite pass\n");
-          finished = true;
+          if (!jtag) {
+            finished = true;
+          }
         } else if ((data & 1) == 1) {
           uint32_t c = data >> 1;
           fprintf(stderr, "> ISA testsuite failed case %d\n", c);
-          finished = true;
+          if (!jtag) {
+            finished = true;
+          }
           res = 1;
         } else {
           fprintf(stderr, "> Unhandled tohost: %x\n", input);
@@ -392,7 +397,6 @@ int main(int argc, char **argv) {
   int opt;
   bool trace = false;
   bool progress = false;
-  bool jtag = false;
   while ((opt = getopt(argc, argv, "tpj")) != -1) {
     switch (opt) {
     case 't':
@@ -489,7 +493,9 @@ int main(int argc, char **argv) {
 
       // return address for meow testcases
       if (top->io_debug_0_pc == 0x100000) {
-        finished = true;
+        if (!jtag) {
+          finished = true;
+        }
       }
 
       // log per 10000 mcycle
