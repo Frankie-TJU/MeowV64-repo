@@ -35,10 +35,10 @@ object ExType extends ChiselEnum {
   val STORE_PAGE_FAULT = Value(15.U)
 }
 
-/** Exception request: None, Exception, MRET/SRET
+/** Exception request: None, Exception, MRET/SRET/DRET
   */
 object ExReq extends ChiselEnum {
-  val none, ex, mret, sret = Value
+  val none, ex, mret, sret, dret = Value
 }
 
 object PrivLevel extends ChiselEnum {
@@ -167,6 +167,7 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
   // xEPC in the front!
   val mepc = RegInit(0.U(coredef.XLEN.W))
   val sepc = RegInit(0.U(coredef.XLEN.W))
+  val dpc = RegInit(0.U(coredef.XLEN.W))
 
   // Next retired instruction
   val nepc = Wire(UInt(coredef.XLEN.W))
@@ -174,6 +175,8 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
     nepc := mepc
   }.elsewhen(br.req.ex === ExReq.sret) {
     nepc := sepc
+  }.elsewhen(br.req.ex === ExReq.dret) {
+    nepc := dpc
   }.otherwise {
     nepc := toExec.nepc
   }
@@ -454,6 +457,7 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
     when(haltFired) {
       // enter debug mode
       debugMode := true.B
+      dpc := nepc
     }.elsewhen(debugMode) {
       // exception in debug mode
       // go to park loop
@@ -498,6 +502,9 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
     status.spp := PrivLevel.U.asUInt()
 
     priv := status.spp.asTypeOf(PrivLevel.Type())
+  }.elsewhen(br.req.ex === ExReq.dret) {
+    branch := true.B
+    baddr := dpc
   }
 
   // Avoid Vivado naming collision. Com'on, Xilinx, write *CORRECT* code plz

@@ -109,7 +109,8 @@ class Branch(override implicit val coredef: CoreDef)
               ExReq.ex,
               Seq(
                 Integer.parseInt("0011000", 2).U -> ExReq.mret,
-                Integer.parseInt("0001000", 2).U -> ExReq.sret
+                Integer.parseInt("0001000", 2).U -> ExReq.sret,
+                Integer.parseInt("0111101", 2).U -> ExReq.dret
               )
             )
 

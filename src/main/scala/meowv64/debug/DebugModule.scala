@@ -154,6 +154,10 @@ object DebugModuleMapping
     }
     with MMIOMapping
 
+object AbstractState extends ChiselEnum {
+  val idle, action, resume = Value
+}
+
 /** Debug module
   *
   * Maps to memory region:
@@ -188,7 +192,7 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
   val absData = RegInit(VecInit.fill(12)(0.U(32.W)))
 
   // abstractcs registers
-  val absBusy = RegInit(false.B)
+  val absState = RegInit(AbstractState.idle)
   val cmderr = RegInit(0.U(3.W))
 
   // dmcontrol registers
@@ -202,6 +206,8 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
   for (i <- 0 until sDef.CORE_COUNT) {
     io.core(i).haltreq := haltreq(i)
   }
+  val resumereq = RegInit(VecInit.fill(sDef.CORE_COUNT)(false.B))
+  val resumeack = RegInit(VecInit.fill(sDef.CORE_COUNT)(false.B))
 
   // rom region
   val TO_L2_TRANSFER_WIDTH = io.toL1I.data.getWidth
@@ -306,7 +312,12 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
             val newHartsel = Wire(UInt(log2Ceil(sDef.CORE_COUNT).W))
             newHartsel := Cat(req.hartselhi, req.hartsello)
             hartsel := newHartsel
+
             haltreq(newHartsel) := req.haltreq
+            when(req.resumereq) {
+              resumereq(newHartsel) := true.B
+              resumeack(newHartsel) := false.B
+            }
             ndmreset := req.ndmreset
             dmactive := req.dmactive
           }
@@ -323,6 +334,8 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
             resp.anyhalted := halted
             resp.allrunning := ~halted
             resp.anyrunning := ~halted
+            resp.allresumeack := resumeack(hartsel)
+            resp.anyresumeack := resumeack(hartsel)
             val nonexistent = WireInit(hartsel >= sDef.CORE_COUNT.U)
             resp.allnonexistent := nonexistent
             resp.anynonexistent := nonexistent
@@ -348,7 +361,7 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
           // abstractcs
           when(curReq.isRead) {
             val resp = WireInit(0.U.asTypeOf(new AbstractCS))
-            resp.busy := absBusy
+            resp.busy := absState =/= AbstractState.idle
             resp.cmderr := cmderr
             resp.datacount := 12.U
 
@@ -372,7 +385,7 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
             val req = Wire(new AbstractCmd)
             req := curReq.data.asTypeOf(req)
             when(cmderr === 0.U) {
-              when(absBusy) {
+              when(absState =/= AbstractState.idle) {
                 cmderr := 1.U
               }.otherwise {
                 // execute
@@ -380,7 +393,7 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
                 when(~supported) {
                   cmderr := 2.U // not supported by default
                 }.otherwise {
-                  absBusy := true.B
+                  absState := AbstractState.action
                 }
 
                 when(req.cmdtype === 0.U) {
@@ -403,7 +416,8 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
                   val ebreak = WireInit(((1 << 20) | (0x73)).U)
                   // sw zero, 4(a0)
                   // rs2=zero rs1=a0 imm=4
-                  val finish = WireInit((a0 << 15) | (2.U << 12) | (4.U << 7) | (0x23.U))
+                  val finish =
+                    WireInit((a0 << 15) | (2.U << 12) | (4.U << 7) | (0x23.U))
 
                   // set ram inst
                   // instructions:
@@ -425,13 +439,19 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
                           // 64 bits
                           // sw a1, 0(zero)
                           // rs2=a1 rs1=zero imm=0
-                          ramInsts(1) := (a1 << 20) | (2.U << 12) | (0.U << 7) | (0x23.U)
+                          ramInsts(
+                            1
+                          ) := (a1 << 20) | (2.U << 12) | (0.U << 7) | (0x23.U)
                           // srli a1, a1, 32
                           // shamt=32 rs1=a1 rd=a1
-                          ramInsts(2) := (32.U << 20) | (a1 << 15) | (5.U << 12) | (a1 << 7) | (0x13.U)
+                          ramInsts(
+                            2
+                          ) := (32.U << 20) | (a1 << 15) | (5.U << 12) | (a1 << 7) | (0x13.U)
                           // sw a1, 4(zero)
                           // rs2=a1 rs1=zero imm=4
-                          ramInsts(3) := (a1 << 20) | (2.U << 12) | (4.U << 7) | (0x23.U)
+                          ramInsts(
+                            3
+                          ) := (a1 << 20) | (2.U << 12) | (4.U << 7) | (0x23.U)
                           // finish
                           ramInsts(4) := finish
                           // ebreak
@@ -441,7 +461,9 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
                           // 32 bits
                           // sw a1, 0(zero)
                           // rs2=a1 rs1=zero imm=0
-                          ramInsts(1) := (a1 << 20) | (2.U << 12) | (0.U << 7) | (0x23.U)
+                          ramInsts(
+                            1
+                          ) := (a1 << 20) | (2.U << 12) | (0.U << 7) | (0x23.U)
                           // finish
                           ramInsts(2) := finish
                           // ebreak
@@ -454,13 +476,19 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
                           // 64 bits
                           // sw reg, 0(zero)
                           // rs2=reg rs1=zero imm=0
-                          ramInsts(0) := (gprIdx << 20) | (2.U << 12) | (0.U << 7) | (0x23.U)
+                          ramInsts(
+                            0
+                          ) := (gprIdx << 20) | (2.U << 12) | (0.U << 7) | (0x23.U)
                           // srli a1, reg, 32
                           // shamt=32 rs1=a1 rd=reg
-                          ramInsts(1) := (32.U << 20) | (a1 << 15) | (5.U << 12) | (gprIdx << 7) | (0x13.U)
+                          ramInsts(
+                            1
+                          ) := (32.U << 20) | (a1 << 15) | (5.U << 12) | (gprIdx << 7) | (0x13.U)
                           // sw a1, 4(zero)
                           // rs2=a1 rs1=zero imm=4
-                          ramInsts(2) := (a1 << 20) | (2.U << 12) | (4.U << 7) | (0x23.U)
+                          ramInsts(
+                            2
+                          ) := (a1 << 20) | (2.U << 12) | (4.U << 7) | (0x23.U)
                           // finish
                           ramInsts(3) := finish
                           // ebreak
@@ -536,12 +564,12 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
     }.elsewhen(io.toL2.req.bits.addr === 0x1000.U) {
       // read current action
       when(io.toL2.req.bits.op === MMIOReqOp.read) {
-        io.toL2.resp.bits := absBusy
+        io.toL2.resp.bits := absState.asUInt
       }
     }.elsewhen(io.toL2.req.bits.addr === 0x1004.U) {
       // current abstract command is done
       when(io.toL2.req.bits.op === MMIOReqOp.write) {
-        absBusy := false.B
+        absState := AbstractState.idle
       }
     }
   }

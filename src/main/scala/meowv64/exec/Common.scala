@@ -106,7 +106,7 @@ class ExceptionResult(implicit val coredef: CoreDef) extends Bundle {
     exType := et
   }
 
-  /** MRET/SRET
+  /** MRET/SRET/DRET
     */
   def ret(req: ExReq.Type) {
     valid := false.B

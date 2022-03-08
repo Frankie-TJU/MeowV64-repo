@@ -251,6 +251,7 @@ object DecodeInfo {
       URET -> List(Y, N, XX, N, XX, N, XX, N, XX, branch),
       SRET -> List(Y, N, XX, N, XX, N, XX, N, XX, branch),
       MRET -> List(Y, N, XX, N, XX, N, XX, N, XX, branch),
+      DRET -> List(Y, N, XX, N, XX, N, XX, N, XX, branch),
 
       // Interrupt-Management Instructions
       WFI -> List(Y, N, XX, N, XX, N, XX, N, XX, branch),
@@ -519,6 +520,7 @@ object Instructions {
   val URET = BitPat("b00000000001000000000000001110011")
   val SRET = BitPat("b00010000001000000000000001110011")
   val MRET = BitPat("b00110000001000000000000001110011")
+  val DRET = BitPat("b01111011001000000000000001110011")
 
   // Interrupt-Management Instructions
   val WFI = BitPat("b00010000010100000000000001110011")
