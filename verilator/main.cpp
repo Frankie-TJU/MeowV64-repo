@@ -500,7 +500,8 @@ int main(int argc, char **argv) {
         fprintf(stderr, "> pc: %lx\n", top->io_debug_0_pc);
       }
 
-      if (top->io_debug_0_mcycle > 1000000) {
+      if (top->io_debug_0_mcycle > 1000000 && !jtag) {
+        // do not timeout in jtag mode
         fprintf(stderr, "> Timed out\n");
         finished = true;
         res = 1;

@@ -482,25 +482,40 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
                         // read gpr
                         when(cmd.aarsize === 3.U) {
                           // 64 bits
+                          // step 1:
+                          // mv a1, reg
                           // special case: reg == a0 or a1
                           // read from dscratch0/1 register to a1 first
+                          when(gprIdx === a0 || gprIdx === a1) {
+                            val scratchIdx =
+                              Mux(gprIdx === a0, 0x7b2.U, 0x7b3.U)
+                            // csrrw a1, scratchIdx, zero
+                            // csr=scratcIdx rs1=zero 001 rd=a1 1110011
+                            ramInsts(0) := (scratchIdx << 20) | (1.U << 12) |
+                              (a1 << 7) | (0x73.U)
+                          }.otherwise {
+                            // addi a1, reg, 0
+                            // rs1=reg rd=a1 imm=0
+                            ramInsts(0) := (gprIdx << 15) | (0.U << 12) |
+                              (a1 << 7) | (0x13.U)
+                          }
 
-                          // sw reg, 0(zero)
+                          // sw a1, 0(zero)
                           // rs2=reg rs1=zero imm=0
-                          ramInsts(0) := (gprIdx << 20) | (2.U << 12) |
+                          ramInsts(1) := (a1 << 20) | (2.U << 12) |
                             (0.U << 7) | (0x23.U)
-                          // srli a1, reg, 32
+                          // srli a1, a1, 32
                           // shamt=32 rs1=a1 rd=reg
-                          ramInsts(1) := (32.U << 20) | (gprIdx << 15) |
+                          ramInsts(2) := (32.U << 20) | (a1 << 15) |
                             (5.U << 12) | (a1 << 7) | (0x13.U)
                           // sw a1, 4(zero)
                           // rs2=a1 rs1=zero imm=4
-                          ramInsts(2) := (a1 << 20) | (2.U << 12) |
+                          ramInsts(3) := (a1 << 20) | (2.U << 12) |
                             (4.U << 7) | (0x23.U)
                           // finish
-                          ramInsts(3) := finish
+                          ramInsts(4) := finish
                           // ebreak
-                          ramInsts(4) := ebreak
+                          ramInsts(5) := ebreak
                           supported := true.B
                         }
                       }
