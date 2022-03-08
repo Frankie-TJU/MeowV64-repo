@@ -3,6 +3,7 @@ package meowv64.interrupt
 import chisel3._
 import chisel3.experimental._
 import chisel3.util._
+import meowv64.cache.DCWriteLen
 
 abstract class MMIODef {
   val ADDR_WIDTH: Int
@@ -20,6 +21,7 @@ object MMIOReqOp extends ChiselEnum {
 
 class MMIOReq(val mmiodef: MMIODef) extends Bundle {
   val addr = UInt(mmiodef.ADDR_WIDTH.W)
+  val len = DCWriteLen()
   val wdata = UInt(mmiodef.XLEN.W)
   val op = MMIOReqOp()
 }

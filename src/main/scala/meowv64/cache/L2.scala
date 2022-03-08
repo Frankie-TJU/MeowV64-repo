@@ -1212,6 +1212,7 @@ class L2Cache(val opts: L2Opts) extends Module {
           val req = Wire(new MMIOReq(GeneralMMIODef))
           req.op := Mux(pipeMMIOWrite, MMIOReqOp.write, MMIOReqOp.read)
           req.addr := pipeUCAddr
+          req.len := pipeUCLen
           req.wdata := pipeUCData // TODO: wstrb
           for ((m, e) <- mmio.zip(pipeMMIOMap.asBools())) {
             when(e) {

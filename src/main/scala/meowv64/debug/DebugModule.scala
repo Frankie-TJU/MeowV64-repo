@@ -11,6 +11,7 @@ import meowv64.interrupt.MMIOAccess
 import meowv64.interrupt.MMIOReqOp
 import meowv64.cache.L1ICPort
 import meowv64.core.CoreDef
+import meowv64.cache.DCWriteLen
 
 class DebugModuleReq extends Bundle {
   val address = UInt(7.W)
@@ -438,6 +439,25 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
                   when(cmd.transfer) {
                     when(cmd.write) {
                       // write
+                      when(csr) {
+                        // write csr
+                        when(cmd.aarsize === 3.U) {
+                          // 64 bits
+                          // ld a1, 0(zero)
+                          // rd=a1 rs1=zero imm=0
+                          ramInsts(0) := (2.U << 12) |
+                            (a1 << 7) | (0x03.U)
+                          // csrrw zero, csrIdx, a1
+                          // csr=csrIdx rs1=a1 001 rd=zero 1110011
+                          ramInsts(1) := (csrIdx << 20) | (a1 << 15) |
+                            (1.U << 12) | (0x73.U)
+                          // finish
+                          ramInsts(2) := finish
+                          // ebreak
+                          ramInsts(3) := ebreak
+                          supported := true.B
+                        }
+                      }
                     }.otherwise {
                       // read
                       when(csr) {
@@ -448,36 +468,22 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
                           (a1 << 7) | (0x73.U)
                         when(cmd.aarsize === 3.U) {
                           // 64 bits
-                          // sw a1, 0(zero)
+                          // sd a1, 0(zero)
                           // rs2=a1 rs1=zero imm=0
-                          ramInsts(1) := (a1 << 20) | (2.U << 12) |
+                          ramInsts(1) := (a1 << 20) | (3.U << 12) |
                             (0.U << 7) | (0x23.U)
-                          // srli a1, a1, 32
-                          // shamt=32 rs1=a1 rd=a1
-                          ramInsts(2) := (32.U << 20) | (a1 << 15) |
-                            (5.U << 12) | (a1 << 7) | (0x13.U)
-                          // sw a1, 4(zero)
-                          // rs2=a1 rs1=zero imm=4
-                          ramInsts(3) := (a1 << 20) | (2.U << 12) |
-                            (4.U << 7) | (0x23.U)
-                          // finish
-                          ramInsts(4) := finish
-                          // ebreak
-                          ramInsts(5) := ebreak
-                          supported := true.B
                         }.elsewhen(cmd.aarsize === 2.U) {
                           // 32 bits
                           // sw a1, 0(zero)
                           // rs2=a1 rs1=zero imm=0
-                          ramInsts(
-                            1
-                          ) := (a1 << 20) | (2.U << 12) | (0.U << 7) | (0x23.U)
-                          // finish
-                          ramInsts(2) := finish
-                          // ebreak
-                          ramInsts(3) := ebreak
-                          supported := true.B
+                          ramInsts(1) := (a1 << 20) | (2.U << 12) |
+                            (0.U << 7) | (0x23.U)
                         }
+                        // finish
+                        ramInsts(2) := finish
+                        // ebreak
+                        ramInsts(3) := ebreak
+                        supported := true.B
                       }.elsewhen(gpr) {
                         // read gpr
                         when(cmd.aarsize === 3.U) {
@@ -500,22 +506,14 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
                               (a1 << 7) | (0x13.U)
                           }
 
-                          // sw a1, 0(zero)
-                          // rs2=reg rs1=zero imm=0
-                          ramInsts(1) := (a1 << 20) | (2.U << 12) |
+                          // sd a1, 0(zero)
+                          // rs2=a1 rs1=zero imm=0
+                          ramInsts(1) := (a1 << 20) | (3.U << 12) |
                             (0.U << 7) | (0x23.U)
-                          // srli a1, a1, 32
-                          // shamt=32 rs1=a1 rd=reg
-                          ramInsts(2) := (32.U << 20) | (a1 << 15) |
-                            (5.U << 12) | (a1 << 7) | (0x13.U)
-                          // sw a1, 4(zero)
-                          // rs2=a1 rs1=zero imm=4
-                          ramInsts(3) := (a1 << 20) | (2.U << 12) |
-                            (4.U << 7) | (0x23.U)
                           // finish
-                          ramInsts(4) := finish
+                          ramInsts(2) := finish
                           // ebreak
-                          ramInsts(5) := ebreak
+                          ramInsts(3) := ebreak
                           supported := true.B
                         }
                       }
@@ -580,9 +578,16 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
       // data0-12
       val idx = io.toL2.req.bits.addr >> 2
       when(io.toL2.req.bits.op === MMIOReqOp.read) {
-        io.toL2.resp.bits := absData(idx)
+        // read two 32-bits at most
+        io.toL2.resp.bits := absData(idx + 1.U) ## absData(idx)
       }.otherwise {
-        absData(idx) := io.toL2.req.bits.wdata
+        when(io.toL2.req.bits.len === DCWriteLen.D) {
+          // write two 32-bits
+          absData(idx) := io.toL2.req.bits.wdata
+          absData(idx + 1.U) := io.toL2.req.bits.wdata >> 32
+        }.otherwise {
+          absData(idx) := io.toL2.req.bits.wdata
+        }
       }
     }.elsewhen(io.toL2.req.bits.addr === 0x1000.U) {
       // read current action
