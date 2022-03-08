@@ -414,9 +414,9 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
 
                   val csr = cmd.regno < 0x1000.U
                   val csrIdx = cmd.regno & 0xfff.U
-                  val gpr = 0x1000.U <= cmd.regno && cmd.regno < 0x101f.U
+                  val gpr = 0x1000.U <= cmd.regno && cmd.regno <= 0x101f.U
                   val gprIdx = cmd.regno & 0x1f.U
-                  val fpr = 0x1020.U <= cmd.regno && cmd.regno < 0x103f.U
+                  val fpr = 0x1020.U <= cmd.regno && cmd.regno <= 0x103f.U
                   val fprIdx = cmd.regno & 0x1f.U
 
                   // a0 = 0x1000
