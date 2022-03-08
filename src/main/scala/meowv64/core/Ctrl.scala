@@ -436,7 +436,8 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
   val tvecBase = Mux(delegs, stvec, mtvec)
   val tvec = Wire(UInt(coredef.XLEN.W))
   tvec := tvecBase(coredef.XLEN - 1, 2) ## 0.U(2.W)
-  when(haltFired) {
+  when(haltFired || debugMode) {
+    // halt -> debug vector
     tvec := DebugModule.DM_CODE_REGION_START.U
   }.elsewhen(intFired && tvecBase(1, 0) === 1.U) {
     // Vectored trap
