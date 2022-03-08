@@ -395,13 +395,15 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
                   val fpr = 0x1020.U <= cmd.regno && cmd.regno < 0x103f.U
                   val fprIdx = cmd.regno & 0x1f.U
 
+                  // a0 = 0x1000
                   val a0 = 10.U
+                  // a1 is temporary
                   val a1 = 11.U
 
                   val ebreak = WireInit(((1 << 20) | (0x73)).U)
                   // sw zero, 4(a0)
                   // rs2=zero rs1=a0 imm=4
-                  val finish = WireInit((a1 << 15) | (2.U << 12) | (4.U << 7) | (0x23.U))
+                  val finish = WireInit((a0 << 15) | (2.U << 12) | (4.U << 7) | (0x23.U))
 
                   // set ram inst
                   // instructions:
@@ -434,6 +436,35 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
                           ramInsts(4) := finish
                           // ebreak
                           ramInsts(5) := ebreak
+                          supported := true.B
+                        }.elsewhen(cmd.aarsize === 2.U) {
+                          // 32 bits
+                          // sw a1, 0(zero)
+                          // rs2=a1 rs1=zero imm=0
+                          ramInsts(1) := (a1 << 20) | (2.U << 12) | (0.U << 7) | (0x23.U)
+                          // finish
+                          ramInsts(2) := finish
+                          // ebreak
+                          ramInsts(3) := ebreak
+                          supported := true.B
+                        }
+                      }.elsewhen(gpr) {
+                        // read gpr
+                        when(cmd.aarsize === 3.U) {
+                          // 64 bits
+                          // sw reg, 0(zero)
+                          // rs2=reg rs1=zero imm=0
+                          ramInsts(0) := (gprIdx << 20) | (2.U << 12) | (0.U << 7) | (0x23.U)
+                          // srli a1, reg, 32
+                          // shamt=32 rs1=a1 rd=reg
+                          ramInsts(1) := (32.U << 20) | (a1 << 15) | (5.U << 12) | (gprIdx << 7) | (0x13.U)
+                          // sw a1, 4(zero)
+                          // rs2=a1 rs1=zero imm=4
+                          ramInsts(2) := (a1 << 20) | (2.U << 12) | (4.U << 7) | (0x23.U)
+                          // finish
+                          ramInsts(3) := finish
+                          // ebreak
+                          ramInsts(4) := ebreak
                           supported := true.B
                         }
                       }

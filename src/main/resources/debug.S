@@ -14,8 +14,8 @@ loop:
 	# clear icache
 	fence.i
 	# jump to 0x20000
-	li a0, 0x200000
-	j 0(a0)
+	li a1, 0x20000
+	jr 0(a1)
 
 exit:
 	csrr a0, dscratch0
