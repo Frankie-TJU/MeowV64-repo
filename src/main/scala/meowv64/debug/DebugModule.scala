@@ -343,6 +343,27 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
   }
 
   // code access
+  val debugCodeBytes = getClass.getResourceAsStream("/debug.bin").readAllBytes()
+  val byteChunk = io.toL1I.getWidth / 8
+  val len = debugCodeBytes.length
+  val chunks = (len + byteChunk - 1) / byteChunk
+  val paddedLen = chunks * byteChunk
+  val padded = debugCodeBytes ++ Array.fill(paddedLen - len)(0.asInstanceOf[Byte])
+  val initValues = for(i <- 0 until chunks) yield {
+    var value = BigInt(0)
+    for (j <- 0 until byteChunk) {
+      var unsigned = BigInt(padded(i * byteChunk + j))
+      if (unsigned < 0) {
+        unsigned += 256
+      }
+      value |= unsigned << (j * 8)
+    }
+
+    value.U(io.toL1I.getWidth.W)
+  }
+  val codeMem = RegInit(VecInit(initValues))
+  io.toL1I.data := codeMem(io.toL1I.read.bits)
+  io.toL1I.stall := false.B
 
   // MMIO access
   io.toL2.req.ready := true.B

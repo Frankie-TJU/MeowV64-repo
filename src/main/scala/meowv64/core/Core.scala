@@ -52,7 +52,7 @@ class Core(implicit val coredef: CoreDef) extends Module {
 
     val dm = new CoreToDebugModule
     // access code in debug module
-    val dmCode = Flipped(new L1ICPort(coredef.L1I))
+    val dmCode = new L1ICPort(coredef.L1I)
 
     // Debug
     val debug = Output(new CoreDebug)

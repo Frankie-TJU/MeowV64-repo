@@ -81,7 +81,7 @@ class RiscVSystem(implicit val sDef: SystemDef = new DefaultSystemDef)
   }
   dm.io.toL1I.read.valid := arbiter.io.out.valid
   dm.io.toL1I.read.bits := arbiter.io.out.bits
-  arbiter.io.out.ready := true.B
+  arbiter.io.out.ready := ~dm.io.toL1I.stall
 
   io.debug := cores.map(_.io.debug)
 }
