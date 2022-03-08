@@ -1,4 +1,4 @@
-  li sp, 0x10000
+  li sp, 0x88000000
   li ra, 0x100000
   li s0, 0x02004000
   li s1, 0x0200BFF8

@@ -2,7 +2,7 @@
   csrr a0, mhartid
   bnez a0, end
 
-  li sp, 0x10000
+  li sp, 0x88000000
   li ra, 0x100000
   j _start
 print:
