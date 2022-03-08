@@ -417,9 +417,9 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
                       // read
                       when(csr) {
                         // read csr
-                        // csrrw a1, csrIdx, a1
+                        // csrrw a1, csrIdx, zero
                         // csr=csrIdx rs1=zero 001 rd=a1 1110011
-                        ramInsts(0) := (csr << 20) | (1.U << 12) |
+                        ramInsts(0) := (csrIdx << 20) | (1.U << 12) |
                           (a1 << 7) | (0x73.U)
                         when(cmd.aarsize === 3.U) {
                           // 64 bits
