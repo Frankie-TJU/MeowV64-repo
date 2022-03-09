@@ -459,7 +459,7 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
                           // 64 bits
                           // ld a1, 0(zero)
                           // rd=a1 rs1=zero imm=0
-                          ramInsts(0) := (2.U << 12) |
+                          ramInsts(0) := (3.U << 12) |
                             (a1 << 7) | (0x03.U)
                           // csrrw zero, csrIdx, a1
                           // csr=csrIdx rs1=a1 001 rd=zero 1110011
