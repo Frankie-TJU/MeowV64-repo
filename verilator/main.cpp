@@ -536,9 +536,9 @@ int main(int argc, char **argv) {
     top->eval();
     if (tfp)
       tfp->dump(main_time);
-    main_time++;
+    main_time += 5;
 
-    if (jtag && (main_time % 50) == 0) {
+    if (jtag && (main_time % 10) == 0) {
       // jtag tick
       if (client_fd >= 0) {
         static char read_buffer[128];
