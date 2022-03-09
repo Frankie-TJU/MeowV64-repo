@@ -550,6 +550,11 @@ int main(int argc, char **argv) {
           if (num_read > 0) {
             read_buffer_count = num_read;
             read_buffer_offset = 0;
+          } else if (num_read == 0) {
+            // remote socket closed
+            fprintf(stderr, "> JTAG debugger detached\n");
+            close(client_fd);
+            client_fd = -1;
           }
         }
 
