@@ -660,6 +660,10 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
     }.elsewhen(io.toL2.req.bits.addr === 0x1004.U) {
       // current abstract command is done
       when(io.toL2.req.bits.op === MMIOReqOp.write) {
+        when(io.toL2.req.bits.wdata.orR) {
+          // exception occurred in debug mode
+          cmderr := 3.U
+        }
         absState := AbstractState.idle
       }
     }.elsewhen(io.toL2.req.bits.addr === 0x1008.U) {

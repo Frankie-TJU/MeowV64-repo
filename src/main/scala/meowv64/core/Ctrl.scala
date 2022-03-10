@@ -447,6 +447,9 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
   toExec.int := intFired || haltFired
   // from non-debug to debug
   val enterDebugMode = WireInit(haltFired || toExec.stepAck)
+  when(enterDebugMode) {
+    assert(~debugMode)
+  }
 
   // Exceptions + Interrupts
   val ex =
@@ -454,23 +457,23 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
   val cause = Wire(UInt(coredef.XLEN.W))
   when(
     br.req.ex === ExReq.ex && br.req.exType === ExType.BREAKPOINT &&
-      (debugMode || (priv === PrivLevel.M && dcsr.ebreakm)
+      ~debugMode && ((priv === PrivLevel.M && dcsr.ebreakm)
         || (priv === PrivLevel.S && dcsr.ebreaks)
         || (priv === PrivLevel.U && dcsr.ebreaku))
   ) {
     // ebreak, priority 3
-    // ebreak in debug mode or ebreakm/s/u
+    // ebreak in non-debug mode and ebreakm/s/u=1
     cause := 1.U // An ebreak instruction was executed
-    when(!debugMode) {
-      // ebreak into debug mode
-      enterDebugMode := true.B
-    }
+    // ebreak into debug mode
+    enterDebugMode := true.B
   }.elsewhen(haltFired) {
     // priority 1
     cause := 3.U // The debugger requested entry to Debug Mode using haltreq
+    assert(enterDebugMode)
   }.elsewhen(toExec.stepAck) {
     // priroity 0
     cause := 4.U // The hart single stepped because step was set.
+    assert(enterDebugMode)
   }.elsewhen(intFired) {
     cause := (true.B << (coredef.XLEN - 1)) | intCause
   }.otherwise {
@@ -493,10 +496,21 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
   val tvecBase = Mux(delegs, stvec, mtvec)
   val tvec = Wire(UInt(coredef.XLEN.W))
   tvec := tvecBase(coredef.XLEN - 1, 2) ## 0.U(2.W)
-  when(enterDebugMode || debugMode) {
-    // halt -> debug vector
-    // vector = start + 4 * cause
-    tvec := DebugModule.DM_CODE_REGION_START.U + (cause << 2)
+  when(enterDebugMode) {
+    // enter debug mode:
+    // vector = start
+    tvec := DebugModule.DM_CODE_REGION_START.U
+  }.elsewhen(debugMode) {
+    // exception in debug mode
+    when(br.req.ex === ExReq.ex && br.req.exType === ExType.BREAKPOINT) {
+      // if ebreak in debug mode
+      // vector = start + 0x4
+      tvec := (DebugModule.DM_CODE_REGION_START + 0x4).U
+    }.otherwise {
+      // other exceptions in debug mode
+      // vector = start + 0x8
+      tvec := (DebugModule.DM_CODE_REGION_START + 0x8).U
+    }
   }.elsewhen(intFired && tvecBase(1, 0) === 1.U) {
     // Vectored trap
     tvec := (tvecBase(coredef.XLEN - 1, 2) + intCause) ## 0.U(2.W)
@@ -518,7 +532,8 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
       dcsr.prv := priv.asUInt
     }.elsewhen(debugMode) {
       // exception in debug mode
-      dcsr.cause := cause
+      // do not set cause:
+      // cause explains why debug mode was entered
     }.otherwise {
       when(delegs) {
         sepc := nepc

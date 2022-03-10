@@ -1,16 +1,27 @@
 	.text
 	// exception vectors
+	.org 0x0
+	// from non-debug mode to debug mode
+enter_debug_mode_trap:
+	j enter_debug
+	
 	.org 0x4
+	// ebreak in debug mode
 ebreak_trap:
 	j park_loop
+	
+	.org 0x8
+	// unexpected exception in debug mode
+exception_trap:
+	j handle_exception
 
-	.org 0xc
-haltreq_trap:
-	j enter_debug
-
-	.org 0x10
-step_trap:
-	j enter_debug
+handle_exception:
+	// write 1 to 0x1004
+	// signals exception in abstract command
+	li a0, 0x1000
+	li a1, 1
+	sw a1, 4(a0)
+	j park_loop
 
 enter_debug:
 	// enter debug mode
