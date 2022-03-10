@@ -5,6 +5,7 @@
 #include <gmpxx.h>
 #include <iostream>
 #include <map>
+#include <netinet/tcp.h>
 #include <signal.h>
 #include <string>
 #include <sys/time.h>
@@ -593,6 +594,13 @@ int main(int argc, char **argv) {
         client_fd = accept(listen_fd, NULL, NULL);
         if (client_fd > 0) {
           fcntl(client_fd, F_SETFL, O_NONBLOCK);
+
+          // set nodelay
+          int flags = 1;
+          if (setsockopt(client_fd, IPPROTO_TCP, TCP_NODELAY, (void *)&flags,
+                         sizeof(flags)) < 0) {
+            perror("setsockopt");
+          }
           fprintf(stderr, "> JTAG debugger attached\n");
         }
       }
