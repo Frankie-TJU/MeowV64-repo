@@ -136,6 +136,9 @@ class Core(implicit val coredef: CoreDef) extends Module {
   ctrl.toExec.priv <> exec.toCtrl.priv
   ctrl.toExec.status <> exec.toCtrl.status
   ctrl.toExec.fflags <> exec.toCtrl.fflags
+  ctrl.toExec.debugMode <> exec.toCtrl.debugMode
+  ctrl.toExec.step <> exec.toCtrl.step
+  ctrl.toExec.stepAck := exec.toCtrl.stepAck
 
   ctrl.int := io.int
 

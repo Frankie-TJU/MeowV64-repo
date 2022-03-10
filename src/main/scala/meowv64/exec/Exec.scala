@@ -41,6 +41,10 @@ class Exec(implicit val coredef: CoreDef) extends Module {
 
     val priv = Input(PrivLevel())
     val status = Input(new Status)
+    val debugMode = Input(Bool())
+
+    val step = Input(Bool()) // single stepping in dcsr
+    val stepAck = Output(Bool())
 
     val tlbRst = Input(Bool())
 
@@ -468,6 +472,17 @@ class Exec(implicit val coredef: CoreDef) extends Module {
   toCtrl.fflags.valid := false.B
   toCtrl.fflags.bits := 0.U
 
+  // single stepping counter
+  val singleStepCounter = RegInit(0.U(1.W))
+  val checkStep = WireInit(toCtrl.step && ~toCtrl.debugMode)
+  when(checkStep) {
+    assert(singleStepCounter + retireNum <= 1.U)
+    singleStepCounter := singleStepCounter + retireNum
+  }.elsewhen(toCtrl.debugMode) {
+    singleStepCounter := 0.U
+  }
+  toCtrl.stepAck := false.B
+
   val retireNext = rob(retirePtr)
 
   when(!retireNext.valid) {
@@ -480,6 +495,21 @@ class Exec(implicit val coredef: CoreDef) extends Module {
         rwp.data := 0.U
       }
     }
+    toCtrl.branch := ExceptionResult.empty
+  }.elsewhen(checkStep && singleStepCounter === 1.U) {
+    // Not in debug mode, step=1
+    // One instruction has been retired
+    // Retires nothing
+    toCtrl.stepAck := true.B
+    retireNum := 0.U
+    for (i <- 0 until coredef.REGISTER_TYPES.length) {
+      for (rwp <- toRF.ports(i).rw) {
+        rwp.valid := false.B
+        rwp.addr := 0.U
+        rwp.data := 0.U
+      }
+    }
+
     toCtrl.branch := ExceptionResult.empty
   }.elsewhen(retireNext.hasMem) {
     // Is memory operation, wait for memAccSucc
@@ -570,7 +600,10 @@ class Exec(implicit val coredef: CoreDef) extends Module {
         blocked(idx) := !info.valid
       } else {
         // Only allow mem ops in the first retire slot
-        blocked(idx) := !info.valid || isBranch(idx - 1) || info.hasMem
+        // Stall second retire slot when step=1
+        blocked(idx) := !info.valid || isBranch(
+          idx - 1
+        ) || info.hasMem || checkStep
       }
 
       when(idx.U < retireNum) {

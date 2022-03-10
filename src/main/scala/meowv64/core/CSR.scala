@@ -440,6 +440,7 @@ object Satp {
 
 class DCSR extends Bundle {
   val cause = UInt(3.W)
+  val step = Bool()
   val prv = UInt(2.W)
 }
 
@@ -447,6 +448,7 @@ object DCSR {
   def init = {
     val ret = Wire(new DCSR)
     ret.cause := 0.U
+    ret.step := false.B
     ret.prv := 3.U
     ret
   }

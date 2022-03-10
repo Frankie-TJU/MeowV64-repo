@@ -6,9 +6,14 @@ ebreak_trap:
 
 	.org 0xc
 haltreq_trap:
-	j handle_haltreq
+	j enter_debug
 
-handle_haltreq:
+	.org 0x10
+step_trap:
+	j enter_debug
+
+enter_debug:
+	// enter debug mode
 	// save a0 & a1
 	csrw dscratch0, a0
 	csrw dscratch1, a1

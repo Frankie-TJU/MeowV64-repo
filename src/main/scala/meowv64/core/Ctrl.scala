@@ -97,6 +97,10 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
 
     val priv = Output(PrivLevel())
     val status = Output(new Status)
+    val debugMode = Output(Bool())
+
+    val step = Output(Bool())
+    val stepAck = Input(Bool())
 
     val tlbRst = Output(Bool())
 
@@ -153,6 +157,7 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
   val dm = IO(new CoreToDebugModule)
   val debugMode = RegInit(false.B)
   dm.halted := debugMode
+  toExec.debugMode := debugMode
 
   // Privilege level
   val priv = RegInit(PrivLevel.M)
@@ -404,12 +409,17 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
 
   val dcsr = RegInit(DCSR.init)
   csr.dcsr.rdata := (
-    4.U(4.W) ## 0.U(19.W) ## dcsr.cause ## 0.U(4.W) ## dcsr.prv
+    // debugver=4 mprven=1
+    4.U(4.W) ## 0.U(19.W) ## dcsr.cause ##
+      0.U(1.W) ## 1.U(1.W) ## 0.U(1.W) ## dcsr.step ## dcsr.prv
   )
   when(csr.dcsr.write) {
     dcsr.cause := csr.dcsr.wdata(8, 6)
+    dcsr.step := csr.dcsr.wdata(2)
     dcsr.prv := csr.dcsr.wdata(1, 0)
   }
+  // pass to exec stage
+  toExec.step := dcsr.step
 
   val dscratch0 = RegInit(0.U(coredef.XLEN.W))
   val dscratch1 = RegInit(0.U(coredef.XLEN.W))
@@ -433,13 +443,19 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
 
   // Exceptions + Interrupts
   val ex =
-    (br.req.ex === ExReq.ex) || (toExec.intAck && (intFired || haltFired))
+    (br.req.ex === ExReq.ex) || (toExec.intAck && (intFired || haltFired)) || toExec.stepAck
   val cause = Wire(UInt(coredef.XLEN.W))
-  when(haltFired) {
-    cause := 3.U // The debugger requested entry to Debug Mode using haltreq
-  }.elsewhen(debugMode && br.req.ex === ExReq.ex && br.req.exType === ExType.BREAKPOINT) {
-    // ebreak in debug mode
+  when(
+    debugMode && br.req.ex === ExReq.ex && br.req.exType === ExType.BREAKPOINT
+  ) {
+    // ebreak in debug mode, priority 3
     cause := 1.U // An ebreak instruction was executed
+  }.elsewhen(haltFired) {
+    // priority 1
+    cause := 3.U // The debugger requested entry to Debug Mode using haltreq
+  }.elsewhen(toExec.stepAck) {
+    // priroity 0
+    cause := 4.U // The hart single stepped because step was set.
   }.elsewhen(intFired) {
     cause := (true.B << (coredef.XLEN - 1)) | intCause
   }.otherwise {
@@ -462,7 +478,7 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
   val tvecBase = Mux(delegs, stvec, mtvec)
   val tvec = Wire(UInt(coredef.XLEN.W))
   tvec := tvecBase(coredef.XLEN - 1, 2) ## 0.U(2.W)
-  when(haltFired || debugMode) {
+  when(haltFired || toExec.stepAck || debugMode) {
     // halt -> debug vector
     // vector = start + 4 * cause
     tvec := DebugModule.DM_CODE_REGION_START.U + (cause << 2)
@@ -478,7 +494,7 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
     branch := true.B
     baddr := tvec
 
-    when(haltFired) {
+    when(haltFired || toExec.stepAck) {
       // enter debug mode
       debugMode := true.B
       dpc := nepc
