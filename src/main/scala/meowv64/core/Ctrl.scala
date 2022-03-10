@@ -442,7 +442,10 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
     priv < PrivLevel.M || status.mie
   )
   // priority: halt > int
-  val intFired = intEnabled && intMask.asUInt().orR()
+  val intFired =
+    intEnabled && intMask
+      .asUInt()
+      .orR() && ~debugMode // interrupts are masked in debug mode
   val haltFired = dm.haltreq && ~debugMode // debug halt is a special interrupt
   toExec.int := intFired || haltFired
   // from non-debug to debug
@@ -530,6 +533,7 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
       dpc := nepc
       dcsr.cause := cause
       dcsr.prv := priv.asUInt
+      priv := PrivLevel.M
     }.elsewhen(debugMode) {
       // exception in debug mode
       // do not set cause:
