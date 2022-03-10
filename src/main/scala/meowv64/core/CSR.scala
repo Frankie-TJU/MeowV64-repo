@@ -439,6 +439,9 @@ object Satp {
 }
 
 class DCSR extends Bundle {
+  val ebreakm = Bool()
+  val ebreaks = Bool()
+  val ebreaku = Bool()
   val cause = UInt(3.W)
   val step = Bool()
   val prv = UInt(2.W)
@@ -447,6 +450,9 @@ class DCSR extends Bundle {
 object DCSR {
   def init = {
     val ret = Wire(new DCSR)
+    ret.ebreakm := false.B
+    ret.ebreaks := false.B
+    ret.ebreaku := false.B
     ret.cause := 0.U
     ret.step := false.B
     ret.prv := 3.U

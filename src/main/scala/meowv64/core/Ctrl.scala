@@ -410,10 +410,15 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
   val dcsr = RegInit(DCSR.init)
   csr.dcsr.rdata := (
     // debugver=4 mprven=1
-    4.U(4.W) ## 0.U(19.W) ## dcsr.cause ##
-      0.U(1.W) ## 1.U(1.W) ## 0.U(1.W) ## dcsr.step ## dcsr.prv
+    4.U(4.W) ## 0.U(12.W) ## dcsr.ebreakm ## 0.U(1.W) ##
+      dcsr.ebreaks ## dcsr.ebreaku ## 0.U(3.U) ##
+      dcsr.cause ## 0.U(1.W) ## 1.U(1.W) ## 0.U(1.W) ##
+      dcsr.step ## dcsr.prv
   )
   when(csr.dcsr.write) {
+    dcsr.ebreakm := csr.dcsr.wdata(15)
+    dcsr.ebreaks := csr.dcsr.wdata(13)
+    dcsr.ebreaku := csr.dcsr.wdata(12)
     dcsr.cause := csr.dcsr.wdata(8, 6)
     dcsr.step := csr.dcsr.wdata(2)
     dcsr.prv := csr.dcsr.wdata(1, 0)
@@ -440,16 +445,26 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
   val intFired = intEnabled && intMask.asUInt().orR()
   val haltFired = dm.haltreq && ~debugMode // debug halt is a special interrupt
   toExec.int := intFired || haltFired
+  // from non-debug to debug
+  val enterDebugMode = WireInit(haltFired || toExec.stepAck)
 
   // Exceptions + Interrupts
   val ex =
     (br.req.ex === ExReq.ex) || (toExec.intAck && (intFired || haltFired)) || toExec.stepAck
   val cause = Wire(UInt(coredef.XLEN.W))
   when(
-    debugMode && br.req.ex === ExReq.ex && br.req.exType === ExType.BREAKPOINT
+    br.req.ex === ExReq.ex && br.req.exType === ExType.BREAKPOINT &&
+      (debugMode || (priv === PrivLevel.M && dcsr.ebreakm)
+        || (priv === PrivLevel.S && dcsr.ebreaks)
+        || (priv === PrivLevel.U && dcsr.ebreaku))
   ) {
-    // ebreak in debug mode, priority 3
+    // ebreak, priority 3
+    // ebreak in debug mode or ebreakm/s/u
     cause := 1.U // An ebreak instruction was executed
+    when(!debugMode) {
+      // ebreak into debug mode
+      enterDebugMode := true.B
+    }
   }.elsewhen(haltFired) {
     // priority 1
     cause := 3.U // The debugger requested entry to Debug Mode using haltreq
@@ -478,7 +493,7 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
   val tvecBase = Mux(delegs, stvec, mtvec)
   val tvec = Wire(UInt(coredef.XLEN.W))
   tvec := tvecBase(coredef.XLEN - 1, 2) ## 0.U(2.W)
-  when(haltFired || toExec.stepAck || debugMode) {
+  when(enterDebugMode || debugMode) {
     // halt -> debug vector
     // vector = start + 4 * cause
     tvec := DebugModule.DM_CODE_REGION_START.U + (cause << 2)
@@ -494,7 +509,8 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
     branch := true.B
     baddr := tvec
 
-    when(haltFired || toExec.stepAck) {
+    when(enterDebugMode) {
+      assert(!debugMode)
       // enter debug mode
       debugMode := true.B
       dpc := nepc
