@@ -455,11 +455,11 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
                       // write
                       when(csr) {
                         // write csr
-                        when(cmd.aarsize === 3.U) {
-                          // 64 bits
-                          // ld a1, 0(zero)
+                        when(cmd.aarsize === 3.U || cmd.aarsize === 2.U) {
+                          // 32/64 bits
+                          // lw/ld a1, 0(zero)
                           // rd=a1 rs1=zero imm=0
-                          ramInsts(0) := (3.U << 12) |
+                          ramInsts(0) := (cmd.aarsize << 12) |
                             (a1 << 7) | (0x03.U)
                           // csrrw zero, csrIdx, a1
                           // csr=csrIdx rs1=a1 001 rd=zero 1110011
@@ -512,28 +512,22 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
                       // read
                       when(csr) {
                         // read csr
-                        // csrrs a1, csrIdx, zero
-                        // csr=csrIdx rs1=zero 010 rd=a1 1110011
-                        ramInsts(0) := (csrIdx << 20) | (2.U << 12) |
-                          (a1 << 7) | (0x73.U)
-                        when(cmd.aarsize === 3.U) {
-                          // 64 bits
-                          // sd a1, 0(zero)
+                        when(cmd.aarsize === 3.U || cmd.aarsize === 2.U) {
+                          // 32/64 bits
+                          // csrrs a1, csrIdx, zero
+                          // csr=csrIdx rs1=zero 010 rd=a1 1110011
+                          ramInsts(0) := (csrIdx << 20) | (2.U << 12) |
+                            (a1 << 7) | (0x73.U)
+                          // sw/sd a1, 0(zero)
                           // rs2=a1 rs1=zero imm=0
-                          ramInsts(1) := (a1 << 20) | (3.U << 12) |
+                          ramInsts(1) := (a1 << 20) | (cmd.aarsize << 12) |
                             (0.U << 7) | (0x23.U)
-                        }.elsewhen(cmd.aarsize === 2.U) {
-                          // 32 bits
-                          // sw a1, 0(zero)
-                          // rs2=a1 rs1=zero imm=0
-                          ramInsts(1) := (a1 << 20) | (2.U << 12) |
-                            (0.U << 7) | (0x23.U)
+                          // finish
+                          ramInsts(2) := finish
+                          // ebreak
+                          ramInsts(3) := ebreak
+                          supported := true.B
                         }
-                        // finish
-                        ramInsts(2) := finish
-                        // ebreak
-                        ramInsts(3) := ebreak
-                        supported := true.B
                       }.elsewhen(gpr) {
                         // read gpr
                         when(cmd.aarsize === 3.U) {
@@ -564,6 +558,20 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
                           ramInsts(2) := finish
                           // ebreak
                           ramInsts(3) := ebreak
+                          supported := true.B
+                        }
+                      }.elsewhen(fpr) {
+                        // read fpr
+                        when(cmd.aarsize === 3.U || cmd.aarsize === 2.U) {
+                          // 32/64 bits
+                          // fsw/fsd fpr, 0(zero)
+                          // rs2=fpr rs1=zero imm=0
+                          ramInsts(0) := (fprIdx << 20) | (cmd.aarsize << 12) |
+                            (0.U << 7) | (0x27.U)
+                          // finish
+                          ramInsts(1) := finish
+                          // ebreak
+                          ramInsts(2) := ebreak
                           supported := true.B
                         }
                       }
