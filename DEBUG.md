@@ -29,10 +29,10 @@ cd testcases/riscv-tests/debug
 ./gdbserver.py ./targets/Meow/MeowV64.py XXXXXX
 ```
 
-Read gdb output:
+Read gdb & openocd output:
 
 ```shell
-tail -f /tmp/gdb@*.log
+tail -f /tmp/gdb@*.log /tmp/openocd*.log
 ```
 
 Tests:
@@ -51,3 +51,13 @@ Tests:
 - MemTest32: 11s
 - MemTest64: 11s
 - MemTest8: 10s
+- Registers: 303s
+- SimpleF18Test: 70s
+- SimpleS0Test: 41s
+- SimpleS1Test: 41s
+- SimpleT0Test: 40s
+- SimpleT1Test: 41s
+- StepTest: 207s
+- Sv32Test: 254s
+- WriteCsrs: 143s
+- WriteGprs: 176s

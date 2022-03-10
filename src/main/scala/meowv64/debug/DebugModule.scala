@@ -507,6 +507,22 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
 
                           supported := true.B
                         }
+                      }.elsewhen(gpr) {
+                        // write fpr
+
+                        when(cmd.aarsize === 3.U || cmd.aarsize === 2.U) {
+                          // 32/64 bits
+                          // flw/fld gpr, 0(zero)
+                          // rd=fprIdx rs1=zero imm=0
+                          ramInsts(0) := (cmd.aarsize << 12) |
+                            (fprIdx << 7) | (0x07.U)
+                          // finish
+                          ramInsts(1) := finish
+                          // ebreak
+                          ramInsts(2) := ebreak
+
+                          supported := true.B
+                        }
                       }
                     }.otherwise {
                       // read
