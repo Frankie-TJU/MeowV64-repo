@@ -37,35 +37,56 @@ tail -f /tmp/gdb@*.log /tmp/openocd*.log
 
 Tests:
 
-- CheckMisa: 7s
-- CustomRegisterTest: not applicable
-- DebugBreakpoint: fail
-- DebugChangeString: 237s
-- DebugCompareSections: 289s
-- DebugExit: 216s
-- DebugSymbols: 227s
-- DebugTurbostep: fail
+- CheckMisa: 4s
+- DebugBreakpoint: 114s
+- DebugChangeString: 99s
+- DebugCompareSections: 108s
+- DebugExit: 83s
+- DebugFunctionCall: fail
+- DebugSymbols: 86s
+- DebugTurbostep: 118s
 - DisconnectTest: fail
 - DownloadTest: fail
 - InfoTest: fail
-- InstantChangePc: 39s
-- InstantHaltTest: 55s
-- MemTest16: 10s
-- MemTest32: 11s
-- MemTest64: 11s
-- MemTest8: 10s
-- MemTestBlock0: 78s
-- MemTestBlock1: 78s
-- MemTestBlock2: 78s
-- PrivChange: 119s
-- Registers: 303s
-- Semihosting: 233s
-- SimpleF18Test: 70s
-- SimpleS0Test: 41s
-- SimpleS1Test: 41s
-- SimpleT0Test: 40s
-- SimpleT1Test: 41s
-- StepTest: 207s
-- Sv32Test: 254s
-- WriteCsrs: 143s
-- WriteGprs: 176s
+- InstantChangePc: 15s
+- InstantHaltTest: fail
+- InterruptTest: fail
+- MemTest16: 5s
+- MemTest32: 5s
+- MemTest64: 5s
+- MemTest8: 5s
+- MemTestBlock0: 30s
+- MemTestBlock1: 30s
+- MemTestBlock2: 33s
+- MemTestReadInvalid: fail
+- MemorySampleMixed: fail
+- MemorySampleSingle: fail
+- PrivChange: 45s
+- PrivRw: fail
+- ProgramHwWatchpoint: fail
+- ProgramSwWatchpoint: 399s
+- Registers: 109s
+- RepeatReadTest: fail
+- Semihosting: fail
+- SimpleF18Test: fail
+- SimpleNoExistTest: fail
+- SimpleS0Test: 16s
+- SimpleS1Test: 16s
+- SimpleT0Test: 17s
+- SimpleT1Test: 16s
+- SimpleV13Test: 6s
+- StepTest: 77s
+- Sv39Test: 101s
+- Sv48Test: 104s
+- TooManyHwbp: 98s
+- TriggerExecuteInstant: fail
+- TriggerLoadAccessInstant: fail
+- TriggerStoreAccessInstant: fail
+- UserInterrupt: 93s
+- WriteCsrs: 53s
+- WriteGprs: 69s
+
+ran 62 tests in 3335s
+30 tests returned pass
+14 tests returned not_applicable
+14 tests returned exception
