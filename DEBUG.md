@@ -35,10 +35,19 @@ Read gdb output:
 tail -f /tmp/gdb@*.log
 ```
 
-Passing tests:
+Tests:
 
 - CheckMisa: 7s
+- CustomRegisterTest: not applicable
+- DebugBreakpoint: fail
 - DebugChangeString: 237s
 - DebugCompareSections: 289s
 - DebugExit: 216s
 - DebugSymbols: 227s
+- DebugTurbostep: fail
+- DisconnectTest: fail
+- InfoTest: fail
+- MemTest16: 10s
+- MemTest32: 11s
+- MemTest64: 11s
+- MemTest8: 10s
