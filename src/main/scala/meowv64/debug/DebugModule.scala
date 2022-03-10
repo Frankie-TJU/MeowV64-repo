@@ -471,6 +471,42 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
                           ramInsts(3) := ebreak
                           supported := true.B
                         }
+                      }.elsewhen(gpr) {
+                        // write gpr
+                        when(cmd.aarsize === 3.U) {
+                          // 64 bits
+                          // special case: reg == a0 or a1
+                          when(gprIdx === a0 || gprIdx === a1) {
+                            // read to a1 first
+                            // ld a1, 0(zero)
+                            // rd=a1 rs1=zero imm=0
+                            ramInsts(0) := (3.U << 12) |
+                              (a1 << 7) | (0x03.U)
+
+                            // then write to dscratch0/1 register
+                            val scratchIdx =
+                              Mux(gprIdx === a0, 0x7b2.U, 0x7b3.U)
+                            // csrrw zero, scratchIdx, a1
+                            // csr=scratchIdx rs1=a1 001 rd=zero 1110011
+                            ramInsts(1) := (scratchIdx << 20) | (a1 << 15) |
+                              (1.U << 12) | (0x73.U)
+                            // finish
+                            ramInsts(2) := finish
+                            // ebreak
+                            ramInsts(3) := ebreak
+                          }.otherwise {
+                            // ld gpr, 0(zero)
+                            // rd=gprIdx rs1=zero imm=0
+                            ramInsts(0) := (3.U << 12) |
+                              (gprIdx << 7) | (0x03.U)
+                            // finish
+                            ramInsts(2) := finish
+                            // ebreak
+                            ramInsts(3) := ebreak
+                          }
+
+                          supported := true.B
+                        }
                       }
                     }.otherwise {
                       // read
