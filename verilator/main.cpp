@@ -858,12 +858,8 @@ int main(int argc, char **argv) {
       top->clock = 0;
       step();
     }
-    top->eval();
-    if (tfp)
-      tfp->dump(main_time);
-    main_time += 5;
 
-    if (jtag && (main_time % 10) == 0) {
+    if (jtag) {
       // jtag tick
       if (jtag_rbb) {
         jtag_rbb_tick();
@@ -872,6 +868,11 @@ int main(int argc, char **argv) {
         jtag_vpi_tick();
       }
     }
+
+    top->eval();
+    if (tfp)
+      tfp->dump(main_time);
+    main_time += 5;
   }
   uint64_t elapsed_us = get_time_us() - begin;
   fprintf(stderr, "> Simulation finished\n");
