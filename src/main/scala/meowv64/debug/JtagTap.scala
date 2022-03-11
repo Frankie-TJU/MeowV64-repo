@@ -348,7 +348,7 @@ class JtagDTM extends Module {
   }
 }
 
-class JtagTapInstructionRead(val signalWidth: Int) extends Module {
+class JtagTapInstructionSample(val signalWidth: Int) extends Module {
   val ctrl = IO(Flipped(new JtagTapInstructionCtrl()))
   val signal = IO(Input(UInt(signalWidth.W)))
   val shifter = RegInit(0.U(signalWidth.W))
@@ -359,21 +359,77 @@ class JtagTapInstructionRead(val signalWidth: Int) extends Module {
     }
     when(ctrl.capture) {
       // read
-      // use synchronizer for clock crossing
-      shifter := SynchronizerShiftReg(signal)
+      shifter := signal
     }
   }
 
   ctrl.tdo := shifter(0)
 }
 
-class JtagBScanTap(instWidth: Int) extends JtagTap(instWidth, 0x11234001L) {
-  val logic = WireInit(0x12345.U(32.W))
+class JtagTapInstructionExtest(val signalWidth: Int) extends Module {
+  val ctrl = IO(Flipped(new JtagTapInstructionCtrl()))
+  val signal = IO(new Bundle {
+    val in = Input(UInt(signalWidth.W))
+    val out = Output(Valid(UInt(signalWidth.W)))
+  })
+  val shifter = RegInit(0.U(signalWidth.W))
+
+  signal.out.bits := 0.U
+  signal.out.valid := false.B
+
+  when(ctrl.enable) {
+    when(ctrl.shift) {
+      shifter := Cat(ctrl.tdi, shifter) >> 1
+    }
+    when(ctrl.update) {
+      signal.out.valid := true.B
+      signal.out.bits := shifter
+    }
+    when(ctrl.capture) {
+      // read
+      shifter := signal.in
+    }
+  }
+
+  ctrl.tdo := shifter(0)
+}
+
+class JtagBScanTap(instWidth: Int, signalWidth: Int)
+    extends JtagTap(instWidth, 0x11234001L) {
+  val signal = IO(new Bundle {
+    val in = Input(UInt(signalWidth.W))
+    val out = Output(Valid(UInt(signalWidth.W)))
+  })
+
+  val outQueue = Module(new AsyncQueue(UInt(signalWidth.W)))
+  outQueue.io.enq_clock := jtagClock
+  outQueue.io.enq_reset := jtagReset
+  outQueue.io.deq_clock := clock
+  outQueue.io.deq_reset := reset
+
+  // always ready
+  outQueue.io.deq.ready := true.B
+  signal.out.valid := outQueue.io.deq.valid
+  signal.out.bits := outQueue.io.deq.bits
 
   // custom bscan
   withClockAndReset(jtagClock, jtagReset) {
-    val bscan = Module(new JtagTapInstructionRead(logic.getWidth))
-    bscan.signal := logic
-    map(bscan.ctrl, 0x10)
+    // use synchronizer for clock crossing
+    val in = SynchronizerShiftReg(signal.in)
+
+    // SAMPLE @ 0x2
+    val sample = Module(new JtagTapInstructionSample(signalWidth))
+    sample.signal := in
+    map(sample.ctrl, 2)
+
+    // EXTEST @ 0x3
+    val extest = Module(new JtagTapInstructionExtest(signalWidth))
+    extest.signal.in := in
+
+    // ignore ready
+    // it might miss some signals if jtag clock is faster than core clock
+    outQueue.io.enq.valid := extest.signal.out.valid
+    outQueue.io.enq.bits := extest.signal.out.bits
+    map(extest.ctrl, 3)
   }
 }

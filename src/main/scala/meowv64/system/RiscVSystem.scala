@@ -63,7 +63,7 @@ class RiscVSystem(implicit val sDef: SystemDef = new DefaultSystemDef)
 
   // TAPs used as a DTM must have an IR of at least 5 bits.
   val jtagRiscvTap = Module(new JtagRiscvTap(5))
-  val jtagBScanTap = Module(new JtagBScanTap(5))
+  val jtagBScanTap = Module(new JtagBScanTap(5, 32))
   jtagRiscvTap.io.jtag.tck := io.jtag.tck
   jtagRiscvTap.io.jtag.tms := io.jtag.tms
   jtagRiscvTap.io.jtag.trstn := io.jtag.trstn
@@ -75,6 +75,9 @@ class RiscVSystem(implicit val sDef: SystemDef = new DefaultSystemDef)
   jtagRiscvTap.io.jtag.tdi := io.jtag.tdi
   jtagBScanTap.io.jtag.tdi := jtagRiscvTap.io.jtag.tdo
   io.jtag.tdo := jtagBScanTap.io.jtag.tdo
+
+  // probe pc
+  jtagBScanTap.signal.in := cores(0).io.debug.pc
 
   // Debug Module
   val dm = Module(new DebugModule)
