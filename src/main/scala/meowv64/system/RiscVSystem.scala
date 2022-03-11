@@ -9,9 +9,10 @@ import meowv64.core.CoreDef
 import meowv64.data._
 import meowv64.debug.DebugModule
 import meowv64.debug.Jtag
-import meowv64.debug.JtagTap
+import meowv64.debug.JtagRiscvTap
 import meowv64.interrupt.CLINT
 import meowv64.interrupt.PLIC
+import meowv64.debug.JtagBScanTap
 
 class RiscVSystem(implicit val sDef: SystemDef = new DefaultSystemDef)
     extends Module {
@@ -60,13 +61,24 @@ class RiscVSystem(implicit val sDef: SystemDef = new DefaultSystemDef)
     cores(idx).io.int.seip := plic.eints(idx * 2 + 1)
   }
 
-  // TAG TAPs used as a DTM must have an IR of at least 5 bits.
-  val jtagTap = Module(new JtagTap(5))
-  io.jtag <> jtagTap.io.jtag
+  // TAPs used as a DTM must have an IR of at least 5 bits.
+  val jtagRiscvTap = Module(new JtagRiscvTap(5))
+  val jtagBScanTap = Module(new JtagBScanTap(5))
+  jtagRiscvTap.io.jtag.tck := io.jtag.tck
+  jtagRiscvTap.io.jtag.tms := io.jtag.tms
+  jtagRiscvTap.io.jtag.trstn := io.jtag.trstn
+  jtagBScanTap.io.jtag.tck := io.jtag.tck
+  jtagBScanTap.io.jtag.tms := io.jtag.tms
+  jtagBScanTap.io.jtag.trstn := io.jtag.trstn
+
+  // daisy chain
+  jtagRiscvTap.io.jtag.tdi := io.jtag.tdi
+  jtagBScanTap.io.jtag.tdi := jtagRiscvTap.io.jtag.tdo
+  io.jtag.tdo := jtagBScanTap.io.jtag.tdo
 
   // Debug Module
   val dm = Module(new DebugModule)
-  dm.io.dmi <> jtagTap.io.dmi
+  dm.io.dmi <> jtagRiscvTap.dmi
   for (idx <- (0 until sDef.CORE_COUNT)) {
     cores(idx).io.dm <> dm.io.core(idx)
   }

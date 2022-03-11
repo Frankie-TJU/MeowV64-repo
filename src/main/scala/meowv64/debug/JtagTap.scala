@@ -4,6 +4,7 @@ import chisel3._
 import chisel3.experimental._
 import chisel3.util._
 import freechips.rocketchip.util.AsyncQueue
+import freechips.rocketchip.util.SynchronizerShiftReg
 
 // Follows the implementation of SpinalHDL JtagTap
 // See JtagTap.scala and JtagTapinstructions.scala from SpinalHDL
@@ -24,33 +25,33 @@ object JtagState extends ChiselEnum {
     Value
 }
 
-class JtagTap(val instWidth: Int) extends Module {
+abstract class JtagTap(val instWidth: Int, val idCode: BigInt) extends Module {
   val io = IO(new Bundle {
     val jtag = new Jtag
-    val dmi = Flipped(new DebugModuleInterface)
   })
 
   val jtagClock = io.jtag.tck.asClock
   val jtagReset = ~io.jtag.trstn
 
-  // req queue
-  val reqQueue = Module(new AsyncQueue(new DebugModuleReq))
-  reqQueue.io.enq_clock := jtagClock
-  reqQueue.io.enq_reset := jtagReset
-  reqQueue.io.deq_clock := clock
-  reqQueue.io.deq_reset := reset
-  reqQueue.io.deq <> io.dmi.req
+  // dirty way
 
-  // resp queue
-  val respQueue = Module(new AsyncQueue(new DebugModuleResp))
-  respQueue.io.enq_clock := clock
-  respQueue.io.enq_reset := reset
-  respQueue.io.deq_clock := jtagClock
-  respQueue.io.deq_reset := jtagReset
-  respQueue.io.enq <> io.dmi.resp
+  var inst: UInt = null
+  var state: JtagState.Type = null
+  var tdoDr: UInt = null
+  def map(ctrl: JtagTapInstructionCtrl, instId: Int) = {
+    ctrl.tdi := io.jtag.tdi
+    ctrl.enable := inst === instId.U
+    ctrl.capture := state === JtagState.dr_capture
+    ctrl.shift := state === JtagState.dr_shift
+    ctrl.update := state === JtagState.dr_update
+    ctrl.reset := state === JtagState.reset
+    when(ctrl.enable) {
+      tdoDr := ctrl.tdo
+    }
+  }
 
   withClockAndReset(jtagClock, jtagReset) {
-    val state = RegInit(JtagState.reset)
+    state = RegInit(JtagState.reset)
     val nextState = WireInit(state)
 
     switch(state) {
@@ -105,11 +106,11 @@ class JtagTap(val instWidth: Int) extends Module {
     }
     state := nextState
 
-    val inst = RegInit(0.U(instWidth.W))
+    inst = RegInit(0.U(instWidth.W))
     val instShift = RegInit(0.U(instWidth.W))
     val bypass = RegNext(io.jtag.tdi)
     val tdoUnbuffered = WireInit(bypass)
-    val tdoDr = WireInit(false.B)
+    tdoDr = WireInit(false.B)
     val tdoIr = instShift(0)
     // bypass: all zeros, all ones
     val isBypass = inst.andR || (~inst.orR)
@@ -140,36 +141,45 @@ class JtagTap(val instWidth: Int) extends Module {
       }
     }
 
-    def map(ctrl: JtagTapInstructionCtrl, instId: Int) = {
-      ctrl.tdi := io.jtag.tdi
-      ctrl.enable := inst === instId.U
-      ctrl.capture := state === JtagState.dr_capture
-      ctrl.shift := state === JtagState.dr_shift
-      ctrl.update := state === JtagState.dr_update
-      ctrl.reset := state === JtagState.reset
-      when(ctrl.enable) {
-        tdoDr := ctrl.tdo
-      }
-    }
-
     // idcode
     val idcodeId = 1
-    val idcode = Module(new JtagTapInstructionIdcode(0x12222001L))
+    val idcode = Module(new JtagTapInstructionIdcode(idCode))
     map(idcode.ctrl, idcodeId)
-
-    // dtmcs & dmi
-    val dtm = Module(new JtagDTM())
-    dtm.toDM.req <> reqQueue.io.enq
-    dtm.toDM.resp <> respQueue.io.deq
-    map(dtm.ctrlDTMCS, 0x10)
-    map(dtm.ctrlDMI, 0x11)
 
     // default inst: idcode
     when(state === JtagState.reset) {
       inst := idcodeId.U
     }
   }
+}
 
+class JtagRiscvTap(instWidth: Int) extends JtagTap(instWidth, 0x12222001L) {
+  val dmi = IO(Flipped(new DebugModuleInterface))
+
+  // req queue
+  val reqQueue = Module(new AsyncQueue(new DebugModuleReq))
+  reqQueue.io.enq_clock := jtagClock
+  reqQueue.io.enq_reset := jtagReset
+  reqQueue.io.deq_clock := clock
+  reqQueue.io.deq_reset := reset
+  reqQueue.io.deq <> dmi.req
+
+  // resp queue
+  val respQueue = Module(new AsyncQueue(new DebugModuleResp))
+  respQueue.io.enq_clock := clock
+  respQueue.io.enq_reset := reset
+  respQueue.io.deq_clock := jtagClock
+  respQueue.io.deq_reset := jtagReset
+  respQueue.io.enq <> dmi.resp
+
+  withClockAndReset(jtagClock, jtagReset) {
+    // dtmcs & dmi
+    val dtm = Module(new JtagDTM())
+    dtm.toDM.req <> reqQueue.io.enq
+    dtm.toDM.resp <> respQueue.io.deq
+    map(dtm.ctrlDTMCS, 0x10)
+    map(dtm.ctrlDMI, 0x11)
+  }
 }
 
 class JtagTapInstructionCtrl extends Bundle {
@@ -335,5 +345,35 @@ class JtagDTM extends Module {
         state := JtagDTMState.idle
       }
     }
+  }
+}
+
+class JtagTapInstructionRead(val signalWidth: Int) extends Module {
+  val ctrl = IO(Flipped(new JtagTapInstructionCtrl()))
+  val signal = IO(Input(UInt(signalWidth.W)))
+  val shifter = RegInit(0.U(signalWidth.W))
+
+  when(ctrl.enable) {
+    when(ctrl.shift) {
+      shifter := Cat(ctrl.tdi, shifter) >> 1
+    }
+    when(ctrl.capture) {
+      // read
+      // use synchronizer for clock crossing
+      shifter := SynchronizerShiftReg(signal)
+    }
+  }
+
+  ctrl.tdo := shifter(0)
+}
+
+class JtagBScanTap(instWidth: Int) extends JtagTap(instWidth, 0x11234001L) {
+  val logic = WireInit(0x12345.U(32.W))
+
+  // custom bscan
+  withClockAndReset(jtagClock, jtagReset) {
+    val bscan = Module(new JtagTapInstructionRead(logic.getWidth))
+    bscan.signal := logic
+    map(bscan.ctrl, 0x10)
   }
 }
