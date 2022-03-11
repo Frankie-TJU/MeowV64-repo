@@ -1,10 +1,10 @@
 package meowv64.system
 
 import meowv64.cache.L2Opts
+import meowv64.debug.DebugModuleMapping
 import meowv64.interrupt.CLINTMapping
 import meowv64.interrupt.PLICDef
 import meowv64.interrupt.PLICMapping
-import meowv64.debug.DebugModuleMapping
 
 abstract class SystemDef(val coreCount: Int) {
   outer =>

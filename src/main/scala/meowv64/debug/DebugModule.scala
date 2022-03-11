@@ -3,15 +3,15 @@ package meowv64.debug
 import chisel3._
 import chisel3.experimental.ChiselEnum
 import chisel3.util._
-import meowv64.system.SystemDef
-import meowv64.core.CoreToDebugModule
-import meowv64.interrupt.MMIODef
-import meowv64.interrupt.MMIOMapping
-import meowv64.interrupt.MMIOAccess
-import meowv64.interrupt.MMIOReqOp
+import meowv64.cache.DCWriteLen
 import meowv64.cache.L1ICPort
 import meowv64.core.CoreDef
-import meowv64.cache.DCWriteLen
+import meowv64.core.CoreToDebugModule
+import meowv64.interrupt.MMIOAccess
+import meowv64.interrupt.MMIODef
+import meowv64.interrupt.MMIOMapping
+import meowv64.interrupt.MMIOReqOp
+import meowv64.system.SystemDef
 
 class DebugModuleReq extends Bundle {
   val address = UInt(7.W)
@@ -323,10 +323,16 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
         ) {
           // data0~data11
           val idx = curReq.address - 0x04.U
-          when(curReq.isRead) {
-            curResp.data := absData(idx)
-          }.otherwise {
-            absData(idx) := curReq.data
+          // Accessing these registers while an abstract command is executing causes cmderr to be set to 1 (busy) if it is 0.
+          // Attempts to write them while busy is set does not change their value.
+          when(absState === AbstractState.idle) {
+            when(curReq.isRead) {
+              curResp.data := absData(idx)
+            }.otherwise {
+              absData(idx) := curReq.data
+            }
+          }.elsewhen(cmderr === 0.U) {
+            cmderr := 1.U
           }
 
           // auto run abstract command
@@ -478,10 +484,19 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
         ) {
           // progbuf0~progbuf15
           val idx = curReq.address - 0x20.U + progBufferOffset.U
-          when(curReq.isRead) {
-            curResp.data := ramInsts(idx)
-          }.otherwise {
-            ramInsts(idx) := curReq.data
+
+          // Accessing these registers while an abstract command is executing causes cmderr to be set to 1
+          // (busy) if it is 0.
+          // Attempts to write them while busy is set does not change their value.
+
+          when(absState === AbstractState.idle) {
+            when(curReq.isRead) {
+              curResp.data := ramInsts(idx)
+            }.otherwise {
+              ramInsts(idx) := curReq.data
+            }
+          }.elsewhen(cmderr === 0.U) {
+            cmderr := 1.U
           }
 
           // auto run abstract command

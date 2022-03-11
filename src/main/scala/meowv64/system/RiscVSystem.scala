@@ -1,6 +1,7 @@
 package meowv64.system
 
 import chisel3._
+import chisel3.util.RRArbiter
 import meowv64.cache.L2Cache
 import meowv64.core.Core
 import meowv64.core.CoreDebug
@@ -11,7 +12,6 @@ import meowv64.debug.Jtag
 import meowv64.debug.JtagTap
 import meowv64.interrupt.CLINT
 import meowv64.interrupt.PLIC
-import chisel3.util.RRArbiter
 
 class RiscVSystem(implicit val sDef: SystemDef = new DefaultSystemDef)
     extends Module {
