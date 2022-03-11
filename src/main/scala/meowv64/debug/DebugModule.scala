@@ -269,6 +269,7 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
   val progBufferOffset = 4
   val progBufferSize = ramInstCount - progBufferOffset
 
+  val ramInstDirty = RegInit(false.B)
   val ramInsts = RegInit(VecInit.fill(ramInstCount)(0.U(32.W)))
   val instChunkSize = byteChunk / 4
   val instChunks = (ramInstCount + instChunkSize - 1) / instChunkSize
@@ -495,6 +496,7 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
               curResp.data := ramInsts(ramIdx)
             }.otherwise {
               ramInsts(ramIdx) := curReq.data
+              ramInstDirty := true.B
             }
           }.elsewhen(cmderr === 0.U) {
             cmderr := 1.U
@@ -562,6 +564,9 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
           // save command for later use
           when(!isAutoAbstractCmd) {
             absCommand := curReq.data
+
+            // ram insts are changed
+            ramInstDirty := true.B
           }
         }
 
@@ -791,6 +796,7 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
           // exception occurred in debug mode
           cmderr := 3.U
         }
+        ramInstDirty := false.B
         absState := AbstractState.idle
       }
     }.elsewhen(io.toL2.req.bits.addr === 0x108.U) {
@@ -802,6 +808,13 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
     }.elsewhen(io.toL2.req.bits.addr === 0x110.U) {
       // read accessMemoryCmd.aampostincrement
       io.toL2.resp.bits := accessMemoryCmd.aampostincrement
+    }.elsewhen(io.toL2.req.bits.addr === 0x114.U) {
+      // read ramInstDirty
+      io.toL2.resp.bits := ramInstDirty
+      when(io.toL2.req.bits.op === MMIOReqOp.write) {
+        // clear ramInstDirty if fence.i is executed
+        ramInstDirty := false.B
+      }
     }
   }
 }

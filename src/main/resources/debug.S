@@ -39,11 +39,19 @@ check_action:
 	blt a0, a1, check_resume
 	// if a1 == 1
 	// received abstract action
+
+	// check program ram dirty
+	ld a1, 0x114(zero)
+	beqz a1, skip_clear_icache
+	
 	// clear icache
 	fence.i
+	// no more dirty
+	sd zero, 0x114(zero)
+
+skip_clear_icache:
 	// jump to 0x20000
-	li a0, 0x20000
-	jr 0(a0)
+	j 0x20000
 
 check_resume:
 	li a0, 2
