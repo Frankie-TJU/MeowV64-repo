@@ -120,6 +120,12 @@ class AccessMemoryCmd extends Bundle {
   val zero2 = UInt(14.W)
 }
 
+class AbstractAuto extends Bundle {
+  val autoexecprogbuf = UInt(16.W)
+  val zero = UInt(4.W)
+  val autoexecdata = UInt(12.W)
+}
+
 class SystemBusCS extends Bundle {
   val sbversion = UInt(3.W)
   val zero = UInt(6.W)
@@ -202,7 +208,8 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
   io.dmi.resp.bits := curResp
 
   // abstract data
-  val absData = RegInit(VecInit.fill(12)(0.U(32.W)))
+  val dataCount = 12
+  val absData = RegInit(VecInit.fill(dataCount)(0.U(32.W)))
 
   // abstractcs registers
   val absState = RegInit(AbstractState.idle)
@@ -278,6 +285,10 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
     }).reverse)
     ramView(i) := signal
   }
+
+  // abstractauto
+  val autoexecdata = RegInit(0.U(dataCount.W))
+  val autoexecprogbuf = RegInit(0.U(progBufferSize.W))
 
   val done = WireInit(false.B)
   switch(state) {
@@ -394,7 +405,7 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
             resp.progbufsize := progBufferSize.U
             resp.busy := absState =/= AbstractState.idle
             resp.cmderr := cmderr
-            resp.datacount := 12.U
+            resp.datacount := dataCount.U
 
             curResp.data := resp.asUInt
           }.otherwise {
@@ -450,7 +461,7 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
                   // rs1=a0, rd=zero
                   val jumpToProgBuffer = WireInit(
                     (((progBufferOffset * 4).U << 20) |
-                      (a0 << 15) | 0x63.U)
+                      (a0 << 15) | 0x67.U)
                   )
                   // postexec=0, finish by ebreak
                   // postexec=1, jump to prog buffer instead
@@ -606,6 +617,26 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
           curResp.fail := false.B
           done := true.B
         }
+        is(0x18.U) {
+          // abstractauto
+          when(curReq.isRead) {
+            // read
+            val resp = WireInit(0.U.asTypeOf(new AbstractAuto))
+            resp.autoexecdata := autoexecdata
+            resp.autoexecprogbuf := autoexecprogbuf
+
+            curResp.data := resp.asUInt
+          }.otherwise {
+            // write
+            val req = Wire(new AbstractAuto)
+            req := curReq.data.asTypeOf(req)
+
+            autoexecdata := req.autoexecdata
+            autoexecprogbuf := req.autoexecprogbuf
+          }
+          curResp.fail := false.B
+          done := true.B
+        }
         is(
           0x20.U,
           0x21.U,
@@ -684,7 +715,9 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
 
   val accessMemoryCmd = absCommand.asTypeOf(new AccessMemoryCmd)
   when(io.toL2.req.fire) {
-    when(0.U <= io.toL2.req.bits.addr && io.toL2.req.bits.addr < 48.U) {
+    when(
+      0.U <= io.toL2.req.bits.addr && io.toL2.req.bits.addr < (dataCount * 4).U
+    ) {
       // data0-12
       val idx = io.toL2.req.bits.addr >> 2
       when(io.toL2.req.bits.op === MMIOReqOp.read) {
