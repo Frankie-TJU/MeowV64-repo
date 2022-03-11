@@ -483,7 +483,8 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
           0x2f.U
         ) {
           // progbuf0~progbuf15
-          val idx = curReq.address - 0x20.U + progBufferOffset.U
+          val idx = curReq.address - 0x20.U
+          val ramIdx = idx + progBufferOffset.U
 
           // Accessing these registers while an abstract command is executing causes cmderr to be set to 1
           // (busy) if it is 0.
@@ -491,9 +492,9 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
 
           when(absState === AbstractState.idle) {
             when(curReq.isRead) {
-              curResp.data := ramInsts(idx)
+              curResp.data := ramInsts(ramIdx)
             }.otherwise {
-              ramInsts(idx) := curReq.data
+              ramInsts(ramIdx) := curReq.data
             }
           }.elsewhen(cmderr === 0.U) {
             cmderr := 1.U
