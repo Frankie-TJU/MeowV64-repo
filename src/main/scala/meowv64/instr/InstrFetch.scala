@@ -658,7 +658,8 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
 
   // Flush on IC stall tick
   when(pendingFlush) {
-    toIC.rst := pendingIRst
+    // it might assert iRst when pendingFlush is true
+    toIC.rst := toCtrl.iRst | pendingIRst
     // it might assert tlbRst when pendingFlush is true
     tlb.flush := toCtrl.tlbRst | pendingTLBRst
     ICQueue.io.enq.noenq()

@@ -289,6 +289,8 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
   // abstractauto
   val autoexecdata = RegInit(0.U(dataCount.W))
   val autoexecprogbuf = RegInit(0.U(progBufferSize.W))
+  val doAbstractCmd = WireInit(false.B)
+  val isAutoAbstractCmd = WireInit(false.B)
 
   val done = WireInit(false.B)
   switch(state) {
@@ -325,6 +327,12 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
             curResp.data := absData(idx)
           }.otherwise {
             absData(idx) := curReq.data
+          }
+
+          // auto run abstract command
+          when(autoexecdata(idx)) {
+            doAbstractCmd := true.B
+            isAutoAbstractCmd := true.B
           }
 
           curResp.fail := false.B
@@ -424,195 +432,8 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
           when(curReq.isRead) {
             curResp.data := 0.U
           }.otherwise {
-            val req = Wire(new AbstractCmd)
-            req := curReq.data.asTypeOf(req)
-            when(cmderr === 0.U) {
-              when(absState =/= AbstractState.idle) {
-                cmderr := 1.U
-              }.otherwise {
-                // execute
-                val supported = WireInit(false.B)
-                when(~supported) {
-                  cmderr := 2.U // not supported by default
-                }.otherwise {
-                  absState := AbstractState.action
-                  absCommand := curReq.data
-                }
-
-                when(req.cmdtype === 0.U) {
-                  // access register
-                  val cmd = Wire(new AccessRegisterCmd)
-                  cmd := req.control.asTypeOf(cmd)
-
-                  val csr = cmd.regno < 0x1000.U
-                  val csrIdx = cmd.regno & 0xfff.U
-                  val gpr = 0x1000.U <= cmd.regno && cmd.regno <= 0x101f.U
-                  val gprIdx = cmd.regno & 0x1f.U
-                  val fpr = 0x1020.U <= cmd.regno && cmd.regno <= 0x103f.U
-                  val fprIdx = cmd.regno & 0x1f.U
-
-                  // a0 = 0x20000
-                  val a0 = 10.U
-                  // a1 is temporary
-                  val a1 = 11.U
-
-                  val ebreak = WireInit(((1 << 20) | (0x73)).U)
-                  // jr 0x10(a0)
-                  // rs1=a0, rd=zero
-                  val jumpToProgBuffer = WireInit(
-                    (((progBufferOffset * 4).U << 20) |
-                      (a0 << 15) | 0x67.U)
-                  )
-                  // postexec=0, finish by ebreak
-                  // postexec=1, jump to prog buffer instead
-                  val finish = Mux(cmd.postexec, jumpToProgBuffer, ebreak)
-
-                  // set ram inst
-                  // instructions:
-                  // load to register
-                  // read/write data
-                  // ebreak
-                  when(cmd.transfer) {
-                    when(cmd.write) {
-                      // write
-                      when(csr) {
-                        // write csr
-                        when(cmd.aarsize === 3.U || cmd.aarsize === 2.U) {
-                          // 32/64 bits
-                          // lw/ld a1, 0(zero)
-                          // rd=a1 rs1=zero imm=0
-                          ramInsts(0) := (cmd.aarsize << 12) |
-                            (a1 << 7) | (0x03.U)
-                          // csrrw zero, csrIdx, a1
-                          // csr=csrIdx rs1=a1 001 rd=zero 1110011
-                          ramInsts(1) := (csrIdx << 20) | (a1 << 15) |
-                            (1.U << 12) | (0x73.U)
-                          // finish
-                          ramInsts(2) := finish
-                          supported := true.B
-                        }
-                      }.elsewhen(gpr) {
-                        // write gpr
-                        when(cmd.aarsize === 3.U) {
-                          // 64 bits
-                          // special case: reg == a0 or a1
-                          when(gprIdx === a0 || gprIdx === a1) {
-                            // read to a1 first
-                            // ld a1, 0(zero)
-                            // rd=a1 rs1=zero imm=0
-                            ramInsts(0) := (3.U << 12) |
-                              (a1 << 7) | (0x03.U)
-
-                            // then write to dscratch0/1 register
-                            val scratchIdx =
-                              Mux(gprIdx === a0, 0x7b2.U, 0x7b3.U)
-                            // csrrw zero, scratchIdx, a1
-                            // csr=scratchIdx rs1=a1 001 rd=zero 1110011
-                            ramInsts(1) := (scratchIdx << 20) | (a1 << 15) |
-                              (1.U << 12) | (0x73.U)
-                            // finish
-                            ramInsts(2) := finish
-                          }.otherwise {
-                            // ld gpr, 0(zero)
-                            // rd=gprIdx rs1=zero imm=0
-                            ramInsts(0) := (3.U << 12) |
-                              (gprIdx << 7) | (0x03.U)
-                            // finish
-                            ramInsts(1) := finish
-                          }
-
-                          supported := true.B
-                        }
-                      }.elsewhen(gpr) {
-                        // write fpr
-
-                        when(cmd.aarsize === 3.U || cmd.aarsize === 2.U) {
-                          // 32/64 bits
-                          // flw/fld gpr, 0(zero)
-                          // rd=fprIdx rs1=zero imm=0
-                          ramInsts(0) := (cmd.aarsize << 12) |
-                            (fprIdx << 7) | (0x07.U)
-                          // finish
-                          ramInsts(1) := finish
-
-                          supported := true.B
-                        }
-                      }
-                    }.otherwise {
-                      // read
-                      when(csr) {
-                        // read csr
-                        when(cmd.aarsize === 3.U || cmd.aarsize === 2.U) {
-                          // 32/64 bits
-                          // csrrs a1, csrIdx, zero
-                          // csr=csrIdx rs1=zero 010 rd=a1 1110011
-                          ramInsts(0) := (csrIdx << 20) | (2.U << 12) |
-                            (a1 << 7) | (0x73.U)
-                          // sw/sd a1, 0(zero)
-                          // rs2=a1 rs1=zero imm=0
-                          ramInsts(1) := (a1 << 20) | (cmd.aarsize << 12) |
-                            (0.U << 7) | (0x23.U)
-                          // finish
-                          ramInsts(2) := finish
-                          supported := true.B
-                        }
-                      }.elsewhen(gpr) {
-                        // read gpr
-                        when(cmd.aarsize === 3.U) {
-                          // 64 bits
-                          // step 1:
-                          // mv a1, reg
-                          // special case: reg == a0 or a1
-                          // read from dscratch0/1 register to a1 first
-                          when(gprIdx === a0 || gprIdx === a1) {
-                            val scratchIdx =
-                              Mux(gprIdx === a0, 0x7b2.U, 0x7b3.U)
-                            // csrrs a1, scratchIdx, zero
-                            // csr=scratcIdx rs1=zero 010 rd=a1 1110011
-                            ramInsts(0) := (scratchIdx << 20) | (2.U << 12) |
-                              (a1 << 7) | (0x73.U)
-                          }.otherwise {
-                            // addi a1, reg, 0
-                            // rs1=reg rd=a1 imm=0
-                            ramInsts(0) := (gprIdx << 15) | (0.U << 12) |
-                              (a1 << 7) | (0x13.U)
-                          }
-
-                          // sd a1, 0(zero)
-                          // rs2=a1 rs1=zero imm=0
-                          ramInsts(1) := (a1 << 20) | (3.U << 12) |
-                            (0.U << 7) | (0x23.U)
-                          // finish
-                          ramInsts(2) := finish
-                          supported := true.B
-                        }
-                      }.elsewhen(fpr) {
-                        // read fpr
-                        when(cmd.aarsize === 3.U || cmd.aarsize === 2.U) {
-                          // 32/64 bits
-                          // fsw/fsd fpr, 0(zero)
-                          // rs2=fpr rs1=zero imm=0
-                          ramInsts(0) := (fprIdx << 20) | (cmd.aarsize << 12) |
-                            (0.U << 7) | (0x27.U)
-                          // finish
-                          ramInsts(1) := finish
-                          supported := true.B
-                        }
-                      }
-                    }
-                  }.otherwise {
-                    // no transfer
-                    // might run progbuf
-                    ramInsts(0) := finish
-                    supported := true.B
-                  }
-                }.elsewhen(req.cmdtype === 2.U) {
-                  // Access Memory
-                  absState := AbstractState.memory
-                  supported := true.B
-                }
-              }
-            }
+            doAbstractCmd := true.B
+            isAutoAbstractCmd := false.B
           }
           curResp.fail := false.B
           done := true.B
@@ -663,6 +484,12 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
             ramInsts(idx) := curReq.data
           }
 
+          // auto run abstract command
+          when(autoexecprogbuf(idx)) {
+            doAbstractCmd := true.B
+            isAutoAbstractCmd := true.B
+          }
+
           curResp.fail := false.B
           done := true.B
         }
@@ -690,6 +517,210 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
       io.dmi.resp.valid := true.B
       when(io.dmi.resp.fire) {
         state := DebugModuleState.idle
+      }
+    }
+  }
+
+  // execute abstract command
+
+  when(doAbstractCmd) {
+    val req = Wire(new AbstractCmd)
+    when(isAutoAbstractCmd) {
+      // read saved command
+      req := absCommand.asTypeOf(req)
+    }.otherwise {
+      req := curReq.data.asTypeOf(req)
+    }
+
+    when(cmderr === 0.U) {
+      when(absState =/= AbstractState.idle) {
+        cmderr := 1.U
+      }.otherwise {
+        // execute
+        val supported = WireInit(false.B)
+        when(~supported) {
+          cmderr := 2.U // not supported by default
+        }.otherwise {
+          absState := AbstractState.action
+
+          // save command for later use
+          when(!isAutoAbstractCmd) {
+            absCommand := curReq.data
+          }
+        }
+
+        when(req.cmdtype === 0.U) {
+          // access register
+          val cmd = Wire(new AccessRegisterCmd)
+          cmd := req.control.asTypeOf(cmd)
+
+          val csr = cmd.regno < 0x1000.U
+          val csrIdx = cmd.regno & 0xfff.U
+          val gpr = 0x1000.U <= cmd.regno && cmd.regno <= 0x101f.U
+          val gprIdx = cmd.regno & 0x1f.U
+          val fpr = 0x1020.U <= cmd.regno && cmd.regno <= 0x103f.U
+          val fprIdx = cmd.regno & 0x1f.U
+
+          // a0 = 0x20000
+          val a0 = 10.U
+          // a1 is temporary
+          val a1 = 11.U
+
+          val ebreak = WireInit(((1 << 20) | (0x73)).U)
+          // jr 0x10(a0)
+          // rs1=a0, rd=zero
+          val jumpToProgBuffer = WireInit(
+            (((progBufferOffset * 4).U << 20) |
+              (a0 << 15) | 0x67.U)
+          )
+          // postexec=0, finish by ebreak
+          // postexec=1, jump to prog buffer instead
+          val finish = Mux(cmd.postexec, jumpToProgBuffer, ebreak)
+
+          // set ram inst
+          // instructions:
+          // load to register
+          // read/write data
+          // ebreak
+          when(cmd.transfer) {
+            when(cmd.write) {
+              // write
+              when(csr) {
+                // write csr
+                when(cmd.aarsize === 3.U || cmd.aarsize === 2.U) {
+                  // 32/64 bits
+                  // lw/ld a1, 0(zero)
+                  // rd=a1 rs1=zero imm=0
+                  ramInsts(0) := (cmd.aarsize << 12) |
+                    (a1 << 7) | (0x03.U)
+                  // csrrw zero, csrIdx, a1
+                  // csr=csrIdx rs1=a1 001 rd=zero 1110011
+                  ramInsts(1) := (csrIdx << 20) | (a1 << 15) |
+                    (1.U << 12) | (0x73.U)
+                  // finish
+                  ramInsts(2) := finish
+                  supported := true.B
+                }
+              }.elsewhen(gpr) {
+                // write gpr
+                when(cmd.aarsize === 3.U) {
+                  // 64 bits
+                  // special case: reg == a0 or a1
+                  when(gprIdx === a0 || gprIdx === a1) {
+                    // read to a1 first
+                    // ld a1, 0(zero)
+                    // rd=a1 rs1=zero imm=0
+                    ramInsts(0) := (3.U << 12) |
+                      (a1 << 7) | (0x03.U)
+
+                    // then write to dscratch0/1 register
+                    val scratchIdx =
+                      Mux(gprIdx === a0, 0x7b2.U, 0x7b3.U)
+                    // csrrw zero, scratchIdx, a1
+                    // csr=scratchIdx rs1=a1 001 rd=zero 1110011
+                    ramInsts(1) := (scratchIdx << 20) | (a1 << 15) |
+                      (1.U << 12) | (0x73.U)
+                    // finish
+                    ramInsts(2) := finish
+                  }.otherwise {
+                    // ld gpr, 0(zero)
+                    // rd=gprIdx rs1=zero imm=0
+                    ramInsts(0) := (3.U << 12) |
+                      (gprIdx << 7) | (0x03.U)
+                    // finish
+                    ramInsts(1) := finish
+                  }
+
+                  supported := true.B
+                }
+              }.elsewhen(gpr) {
+                // write fpr
+
+                when(cmd.aarsize === 3.U || cmd.aarsize === 2.U) {
+                  // 32/64 bits
+                  // flw/fld gpr, 0(zero)
+                  // rd=fprIdx rs1=zero imm=0
+                  ramInsts(0) := (cmd.aarsize << 12) |
+                    (fprIdx << 7) | (0x07.U)
+                  // finish
+                  ramInsts(1) := finish
+
+                  supported := true.B
+                }
+              }
+            }.otherwise {
+              // read
+              when(csr) {
+                // read csr
+                when(cmd.aarsize === 3.U || cmd.aarsize === 2.U) {
+                  // 32/64 bits
+                  // csrrs a1, csrIdx, zero
+                  // csr=csrIdx rs1=zero 010 rd=a1 1110011
+                  ramInsts(0) := (csrIdx << 20) | (2.U << 12) |
+                    (a1 << 7) | (0x73.U)
+                  // sw/sd a1, 0(zero)
+                  // rs2=a1 rs1=zero imm=0
+                  ramInsts(1) := (a1 << 20) | (cmd.aarsize << 12) |
+                    (0.U << 7) | (0x23.U)
+                  // finish
+                  ramInsts(2) := finish
+                  supported := true.B
+                }
+              }.elsewhen(gpr) {
+                // read gpr
+                when(cmd.aarsize === 3.U) {
+                  // 64 bits
+                  // step 1:
+                  // mv a1, reg
+                  // special case: reg == a0 or a1
+                  // read from dscratch0/1 register to a1 first
+                  when(gprIdx === a0 || gprIdx === a1) {
+                    val scratchIdx =
+                      Mux(gprIdx === a0, 0x7b2.U, 0x7b3.U)
+                    // csrrs a1, scratchIdx, zero
+                    // csr=scratcIdx rs1=zero 010 rd=a1 1110011
+                    ramInsts(0) := (scratchIdx << 20) | (2.U << 12) |
+                      (a1 << 7) | (0x73.U)
+                  }.otherwise {
+                    // addi a1, reg, 0
+                    // rs1=reg rd=a1 imm=0
+                    ramInsts(0) := (gprIdx << 15) | (0.U << 12) |
+                      (a1 << 7) | (0x13.U)
+                  }
+
+                  // sd a1, 0(zero)
+                  // rs2=a1 rs1=zero imm=0
+                  ramInsts(1) := (a1 << 20) | (3.U << 12) |
+                    (0.U << 7) | (0x23.U)
+                  // finish
+                  ramInsts(2) := finish
+                  supported := true.B
+                }
+              }.elsewhen(fpr) {
+                // read fpr
+                when(cmd.aarsize === 3.U || cmd.aarsize === 2.U) {
+                  // 32/64 bits
+                  // fsw/fsd fpr, 0(zero)
+                  // rs2=fpr rs1=zero imm=0
+                  ramInsts(0) := (fprIdx << 20) | (cmd.aarsize << 12) |
+                    (0.U << 7) | (0x27.U)
+                  // finish
+                  ramInsts(1) := finish
+                  supported := true.B
+                }
+              }
+            }
+          }.otherwise {
+            // no transfer
+            // might run progbuf
+            ramInsts(0) := finish
+            supported := true.B
+          }
+        }.elsewhen(req.cmdtype === 2.U) {
+          // Access Memory
+          absState := AbstractState.memory
+          supported := true.B
+        }
       }
     }
   }
