@@ -51,6 +51,8 @@ check_action:
 
 skip_clear_icache:
 	// jump to 0x20000
+	// register a0 will be used in ram insts
+	li a0, 0x20000
 	j 0x20000
 
 check_resume:
