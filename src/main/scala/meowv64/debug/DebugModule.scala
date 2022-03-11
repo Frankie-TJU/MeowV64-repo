@@ -779,12 +779,12 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
           absData(idx) := io.toL2.req.bits.wdata
         }
       }
-    }.elsewhen(io.toL2.req.bits.addr === 0x1000.U) {
+    }.elsewhen(io.toL2.req.bits.addr === 0x100.U) {
       // read current action
       when(io.toL2.req.bits.op === MMIOReqOp.read) {
         io.toL2.resp.bits := absState.asUInt
       }
-    }.elsewhen(io.toL2.req.bits.addr === 0x1004.U) {
+    }.elsewhen(io.toL2.req.bits.addr === 0x104.U) {
       // current abstract command is done
       when(io.toL2.req.bits.op === MMIOReqOp.write) {
         when(io.toL2.req.bits.wdata.orR) {
@@ -793,13 +793,13 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
         }
         absState := AbstractState.idle
       }
-    }.elsewhen(io.toL2.req.bits.addr === 0x1008.U) {
+    }.elsewhen(io.toL2.req.bits.addr === 0x108.U) {
       // read accessMemoryCmd.write
       io.toL2.resp.bits := accessMemoryCmd.write.asUInt
-    }.elsewhen(io.toL2.req.bits.addr === 0x100c.U) {
+    }.elsewhen(io.toL2.req.bits.addr === 0x10c.U) {
       // read accessMemoryCmd.aamsize
       io.toL2.resp.bits := accessMemoryCmd.aamsize
-    }.elsewhen(io.toL2.req.bits.addr === 0x1010.U) {
+    }.elsewhen(io.toL2.req.bits.addr === 0x110.U) {
       // read accessMemoryCmd.aampostincrement
       io.toL2.resp.bits := accessMemoryCmd.aampostincrement
     }

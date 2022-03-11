@@ -16,11 +16,10 @@ exception_trap:
 	j handle_exception
 
 handle_exception:
-	// write 1 to 0x1004
+	// write 1 to 0x104
 	// signals exception in abstract command
-	li a0, 0x1000
 	li a1, 1
-	sw a1, 4(a0)
+	sw a1, 0x104(zero)
 	j park_loop
 
 enter_debug:
@@ -31,9 +30,8 @@ enter_debug:
 
 park_loop:
 	// read command from dm
-	li a0, 0x1000
 loop:
-	ld a1, 0(a0)
+	ld a1, 0x100(zero)
 	beq a1, zero, loop
 
 check_action:
@@ -52,15 +50,13 @@ check_resume:
 	blt a0, a1, check_memory
 	// resume if a1 == 2
 	// finish & exit
-	li a0, 0x1000
-	sw zero, 4(a0)
+	sw zero, 0x104(zero)
 	j exit
 
 check_memory:
 	// memory access if a1 == 3
 	// read write
-	li a0, 0x1000
-	lw a1, 8(a0)
+	lw a1, 0x108(zero)
 	// extract write bit
 	bne a1, zero, memory_write
 
@@ -68,7 +64,7 @@ check_memory:
 memory_read:
 	// arg0 = mem[arg1]
 	// read aamsize
-	lw a1, 0xc(a0)
+	lw a1, 0x10c(zero)
 	li a0, 0
 	beq a1, a0, memory_read_b
 	li a0, 1
@@ -102,7 +98,7 @@ memory_read_d:
 memory_write:
 	// mem[arg1] = arg0
 	// read aamsize
-	lw a1, 0xc(a0)
+	lw a1, 0x10c(zero)
 	li a0, 0
 	beq a1, a0, memory_write_b
 	li a0, 1
@@ -135,13 +131,12 @@ memory_write_d:
 
 memory_postincrement:
 	// read aampostincrement
-	li a0, 0x1000
-	lw a1, 0x10(a0)
+	lw a1, 0x110(zero)
 	beq a1, zero, memory_done
 
 	// arg1 += (1 << aamsize)
 	// read aamsize
-	lw a1, 0xc(a0)
+	lw a1, 0x10c(zero)
 	li a0, 1
 	sll a0, a0, a1
 
@@ -156,8 +151,7 @@ memory_done:
 
 success:
 	// signal command complete
-	li a0, 0x1000
-	sw zero, 4(a0)
+	sw zero, 0x104(zero)
 	j park_loop
 
 exit:
