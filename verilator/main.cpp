@@ -568,11 +568,11 @@ int jtag_vpi_init() {
 }
 
 bool write_socket_full(int fd, uint8_t *data, size_t count) {
-  size_t sent = 0;
-  while (sent < count) {
-    ssize_t count = write(fd, &data[sent], count - sent);
-    if (count > 0) {
-      sent += count;
+  size_t num_sent = 0;
+  while (num_sent < count) {
+    ssize_t res = write(fd, &data[num_sent], count - num_sent);
+    if (res > 0) {
+      num_sent += res;
     } else if (count < 0) {
       return false;
     }
@@ -618,10 +618,12 @@ void jtag_vpi_tick() {
           jtag_vpi_state = DO_TMS_SEQ;
           break;
         case CMD_SCAN_CHAIN:
+          memset(cmd->buffer_in, 0, sizeof(cmd->buffer_in));
           jtag_vpi_state = SCAN_CHAIN;
           jtag_vpi_tms_flip = false;
           break;
         case CMD_SCAN_CHAIN_FLIP_TMS:
+          memset(cmd->buffer_in, 0, sizeof(cmd->buffer_in));
           jtag_vpi_state = SCAN_CHAIN;
           jtag_vpi_tms_flip = true;
           break;
@@ -647,16 +649,18 @@ void jtag_vpi_tick() {
     static int reset_counter = 0;
     if (tck_counter % 2 == 0) {
       // tck fall
-      top->io_jtag_tms = 1;
-      tck_en = true;
-    } else if (tck_en) {
-      // tck rise
-      reset_counter++;
       if (reset_counter >= 5) {
+        top->io_jtag_tms = 0;
         reset_counter = 0;
         tck_en = false;
         jtag_vpi_state = JtagVpiState::GOTO_IDLE;
+      } else {
+        top->io_jtag_tms = 1;
+        tck_en = true;
       }
+    } else if (tck_en) {
+      // tck rise
+      reset_counter++;
     }
   } else if (jtag_vpi_state == JtagVpiState::GOTO_IDLE) {
     // tap go to idle
@@ -664,11 +668,70 @@ void jtag_vpi_tick() {
     if (tck_counter % 2 == 0) {
       // tck fall
       top->io_jtag_tms = 0;
-      tck_en = true;
+      if (!tck_en) {
+        tck_en = true;
+      } else {
+        tck_en = false;
+        jtag_vpi_state = JtagVpiState::CHECK_CMD;
+      }
     } else if (tck_en) {
       // tck rise
-      tck_en = false;
-      jtag_vpi_state = JtagVpiState::CHECK_CMD;
+    }
+  } else if (jtag_vpi_state == JtagVpiState::DO_TMS_SEQ) {
+    // send tms
+    static size_t progress = 0;
+
+    if (tck_counter % 2 == 0) {
+      // tck fall
+      size_t byte_offset = progress / 8;
+      size_t bit_offset = progress % 8;
+      if (progress == cmd->nb_bits) {
+        top->io_jtag_tms = 0;
+        progress = 0;
+        tck_en = false;
+        jtag_vpi_state = JtagVpiState::CHECK_CMD;
+      } else {
+        top->io_jtag_tms = (cmd->buffer_out[byte_offset] >> bit_offset) & 1;
+        tck_en = true;
+      }
+    } else if (tck_en) {
+      // tck rise
+      progress++;
+    }
+  } else if (jtag_vpi_state == JtagVpiState::SCAN_CHAIN) {
+    // send tdi
+    static size_t progress = 0;
+
+    size_t byte_offset = progress / 8;
+    size_t bit_offset = progress % 8;
+
+    if (tck_counter % 2 == 0) {
+      // tck fall
+      if (progress < cmd->nb_bits) {
+        top->io_jtag_tdi = (cmd->buffer_out[byte_offset] >> bit_offset) & 1;
+
+        if (jtag_vpi_tms_flip && progress == cmd->nb_bits - 1) {
+          // tms on last bit
+          top->io_jtag_tms = 1;
+        }
+        tck_en = true;
+      } else {
+        top->io_jtag_tdi = 0;
+        top->io_jtag_tms = 0;
+        progress = 0;
+
+        tck_en = false;
+        jtag_vpi_state = JtagVpiState::CHECK_CMD;
+        write_socket_full(client_fd, jtag_vpi_buffer,
+                          sizeof(struct jtag_vpi_cmd));
+      }
+    } else if (tck_en) {
+      // tck rise
+      // capture tdo
+      uint8_t bit = top->io_jtag_tdo & 1;
+      cmd->buffer_in[byte_offset] |= bit << bit_offset;
+
+      progress++;
     }
   }
 }
@@ -720,8 +783,8 @@ int main(int argc, char **argv) {
 
     // init
     top->io_jtag_tck = 0;
-    top->io_jtag_tms = 1;
-    top->io_jtag_tdi = 1;
+    top->io_jtag_tms = 0;
+    top->io_jtag_tdi = 0;
     top->io_jtag_trstn = 1;
   }
 
