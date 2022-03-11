@@ -40,3 +40,19 @@ Read gdb & openocd output:
 ```shell
 tail -f /tmp/gdb@*.log /tmp/openocd*.log
 ```
+
+Failing tests:
+
+- DisconnectTest: stopcount/stoptime not implemented
+- InfoTest: not allowing floating point read when mstatus.FS=0 in debug mode
+- InstantHaltTest: halt on reset not implemented
+- InterruptTest: not investigated
+- MemTestReadInvalid: not giving bad_address
+- MemorySampleMixed: gdb command not exists
+- MemorySampleSingle: gdb command not exists
+- ProgramHwWatchpoint: trigger not implemented
+- RepeatReadTest: gdb command not exists
+- SimpleNoExistTest: not throwing exception when reading nonexisting csr
+- TriggerExecuteInstant: trigger not implemented
+- TriggerLoadAddressInstant: trigger not implemented
+- TriggerStoreAddressInstant: trigger not implemented
