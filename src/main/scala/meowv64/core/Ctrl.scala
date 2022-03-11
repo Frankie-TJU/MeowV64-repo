@@ -421,7 +421,12 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
     dcsr.ebreaku := csr.dcsr.wdata(12)
     dcsr.cause := csr.dcsr.wdata(8, 6)
     dcsr.step := csr.dcsr.wdata(2)
-    dcsr.prv := csr.dcsr.wdata(1, 0)
+
+    // do not update prv when new prv=H(2)
+    val new_prv = csr.dcsr.wdata(1, 0)
+    when(new_prv =/= 2.U) {
+      dcsr.prv := new_prv
+    }
   }
   // pass to exec stage
   toExec.step := dcsr.step
