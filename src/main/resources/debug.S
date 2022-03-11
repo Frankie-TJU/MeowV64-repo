@@ -31,7 +31,7 @@ enter_debug:
 park_loop:
 	// read command from dm
 loop:
-	ld a1, 0x100(zero)
+	lw a1, 0x100(zero)
 	beq a1, zero, loop
 
 check_action:
@@ -41,13 +41,13 @@ check_action:
 	// received abstract action
 
 	// check program ram dirty
-	ld a1, 0x114(zero)
+	lw a1, 0x114(zero)
 	beqz a1, skip_clear_icache
-	
+
 	// clear icache
 	fence.i
 	// no more dirty
-	sd zero, 0x114(zero)
+	sw zero, 0x114(zero)
 
 skip_clear_icache:
 	// jump to 0x20000
