@@ -256,7 +256,12 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
   val codeMem = RegInit(VecInit(initValues))
 
   // ram region
-  val ramInstCount = 6
+  val ramInstCount = 8
+  // first four instructions are reserved for internal use
+  // others are for program buffer
+  val progBufferOffset = 4
+  val progBufferSize = ramInstCount - progBufferOffset
+
   val ramInsts = RegInit(VecInit.fill(ramInstCount)(0.U(32.W)))
   val instChunkSize = byteChunk / 4
   val instChunks = (ramInstCount + instChunkSize - 1) / instChunkSize
@@ -386,6 +391,7 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
           // abstractcs
           when(curReq.isRead) {
             val resp = WireInit(0.U.asTypeOf(new AbstractCS))
+            resp.progbufsize := progBufferSize.U
             resp.busy := absState =/= AbstractState.idle
             resp.cmderr := cmderr
             resp.datacount := 12.U
@@ -434,16 +440,21 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
                   val fpr = 0x1020.U <= cmd.regno && cmd.regno <= 0x103f.U
                   val fprIdx = cmd.regno & 0x1f.U
 
-                  // a0 = 0x1000
+                  // a0 = 0x20000
                   val a0 = 10.U
                   // a1 is temporary
                   val a1 = 11.U
 
                   val ebreak = WireInit(((1 << 20) | (0x73)).U)
-                  // sw zero, 4(a0)
-                  // rs2=zero rs1=a0 imm=4
-                  val finish =
-                    WireInit((a0 << 15) | (2.U << 12) | (4.U << 7) | (0x23.U))
+                  // jr 0x10(a0)
+                  // rs1=a0, rd=zero
+                  val jumpToProgBuffer = WireInit(
+                    (((progBufferOffset * 4).U << 20) |
+                      (a0 << 15) | 0x63.U)
+                  )
+                  // postexec=0, finish by ebreak
+                  // postexec=1, jump to prog buffer instead
+                  val finish = Mux(cmd.postexec, jumpToProgBuffer, ebreak)
 
                   // set ram inst
                   // instructions:
@@ -467,8 +478,6 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
                             (1.U << 12) | (0x73.U)
                           // finish
                           ramInsts(2) := finish
-                          // ebreak
-                          ramInsts(3) := ebreak
                           supported := true.B
                         }
                       }.elsewhen(gpr) {
@@ -492,17 +501,13 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
                               (1.U << 12) | (0x73.U)
                             // finish
                             ramInsts(2) := finish
-                            // ebreak
-                            ramInsts(3) := ebreak
                           }.otherwise {
                             // ld gpr, 0(zero)
                             // rd=gprIdx rs1=zero imm=0
                             ramInsts(0) := (3.U << 12) |
                               (gprIdx << 7) | (0x03.U)
                             // finish
-                            ramInsts(2) := finish
-                            // ebreak
-                            ramInsts(3) := ebreak
+                            ramInsts(1) := finish
                           }
 
                           supported := true.B
@@ -518,8 +523,6 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
                             (fprIdx << 7) | (0x07.U)
                           // finish
                           ramInsts(1) := finish
-                          // ebreak
-                          ramInsts(2) := ebreak
 
                           supported := true.B
                         }
@@ -540,8 +543,6 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
                             (0.U << 7) | (0x23.U)
                           // finish
                           ramInsts(2) := finish
-                          // ebreak
-                          ramInsts(3) := ebreak
                           supported := true.B
                         }
                       }.elsewhen(gpr) {
@@ -572,8 +573,6 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
                             (0.U << 7) | (0x23.U)
                           // finish
                           ramInsts(2) := finish
-                          // ebreak
-                          ramInsts(3) := ebreak
                           supported := true.B
                         }
                       }.elsewhen(fpr) {
@@ -586,12 +585,15 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
                             (0.U << 7) | (0x27.U)
                           // finish
                           ramInsts(1) := finish
-                          // ebreak
-                          ramInsts(2) := ebreak
                           supported := true.B
                         }
                       }
                     }
+                  }.otherwise {
+                    // no transfer
+                    // might run progbuf
+                    ramInsts(0) := finish
+                    supported := true.B
                   }
                 }.elsewhen(req.cmdtype === 2.U) {
                   // Access Memory
@@ -601,6 +603,35 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
               }
             }
           }
+          curResp.fail := false.B
+          done := true.B
+        }
+        is(
+          0x20.U,
+          0x21.U,
+          0x22.U,
+          0x23.U,
+          0x24.U,
+          0x25.U,
+          0x26.U,
+          0x27.U,
+          0x28.U,
+          0x29.U,
+          0x2a.U,
+          0x2b.U,
+          0x2c.U,
+          0x2d.U,
+          0x2e.U,
+          0x2f.U
+        ) {
+          // progbuf0~progbuf15
+          val idx = curReq.address - 0x20.U + progBufferOffset.U
+          when(curReq.isRead) {
+            curResp.data := ramInsts(idx)
+          }.otherwise {
+            ramInsts(idx) := curReq.data
+          }
+
           curResp.fail := false.B
           done := true.B
         }

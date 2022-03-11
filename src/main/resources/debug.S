@@ -8,7 +8,7 @@ enter_debug_mode_trap:
 	.org 0x4
 	// ebreak in debug mode
 ebreak_trap:
-	j park_loop
+	j success
 	
 	.org 0x8
 	// unexpected exception in debug mode
@@ -44,9 +44,8 @@ check_action:
 	// clear icache
 	fence.i
 	// jump to 0x20000
-	li a0, 0x1000
-	li a1, 0x20000
-	jr 0(a1)
+	li a0, 0x20000
+	jr 0(a0)
 
 check_resume:
 	li a0, 2
@@ -153,9 +152,13 @@ memory_postincrement:
 
 memory_done:
 	// complete
+	ebreak
+
+success:
+	// signal command complete
 	li a0, 0x1000
 	sw zero, 4(a0)
-	ebreak
+	j park_loop
 
 exit:
 	csrr a0, dscratch0
