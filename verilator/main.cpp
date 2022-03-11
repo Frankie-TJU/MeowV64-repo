@@ -28,6 +28,10 @@ double sc_time_stamp() { return main_time; }
 
 bool finished = false;
 bool jtag = false;
+// use remote bitbang protocol
+bool jtag_rbb = false;
+// use jtag_vpi protocol
+bool jtag_vpi = false;
 int res = 0;
 
 const uint64_t AXI_DATA_WIDTH = 128;
@@ -389,6 +393,113 @@ uint64_t get_time_us() {
   return tv.tv_sec * 1000000 + tv.tv_usec;
 }
 
+int listen_fd = -1;
+int client_fd = -1;
+
+int jtag_rbb_init() {
+  // ref rocket chip remote_bitbang.cc
+  listen_fd = socket(AF_INET, SOCK_STREAM, 0);
+  if (listen_fd < 0) {
+    perror("socket");
+    return -1;
+  }
+
+  // set non blocking
+  fcntl(listen_fd, F_SETFL, O_NONBLOCK);
+
+  int reuseaddr = 1;
+  if (setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, &reuseaddr, sizeof(int)) <
+      0) {
+    perror("setsockopt");
+    return -1;
+  }
+
+  int port = 12345;
+  struct sockaddr_in addr = {};
+  addr.sin_family = AF_INET;
+  addr.sin_addr.s_addr = INADDR_ANY;
+  addr.sin_port = htons(port);
+
+  if (bind(listen_fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+    perror("bind");
+    return -1;
+  }
+
+  if (listen(listen_fd, 1) == -1) {
+    perror("listen");
+    return -1;
+  }
+  fprintf(stderr, "> Remote bitbang server listening at :12345\n");
+
+  return 0;
+}
+
+void jtag_rbb_tick(VRiscVSystem *top) {
+  if (client_fd >= 0) {
+    static char read_buffer[128];
+    static size_t read_buffer_count = 0;
+    static size_t read_buffer_offset = 0;
+
+    if (read_buffer_offset == read_buffer_count) {
+      ssize_t num_read = read(client_fd, read_buffer, sizeof(read_buffer));
+      if (num_read > 0) {
+        read_buffer_count = num_read;
+        read_buffer_offset = 0;
+      } else if (num_read == 0) {
+        // remote socket closed
+        fprintf(stderr, "> JTAG debugger detached\n");
+        close(client_fd);
+        client_fd = -1;
+      }
+    }
+
+    if (read_buffer_offset < read_buffer_count) {
+      char command = read_buffer[read_buffer_offset++];
+      if ('0' <= command && command <= '7') {
+        // set
+        char offset = command - '0';
+        top->io_jtag_tck = (offset >> 2) & 1;
+        top->io_jtag_tms = (offset >> 1) & 1;
+        top->io_jtag_tdi = (offset >> 0) & 1;
+      } else if (command == 'R') {
+        // read
+        char send = top->io_jtag_tdo ? '1' : '0';
+
+        while (1) {
+          ssize_t sent = write(client_fd, &send, sizeof(send));
+          if (sent > 0) {
+            break;
+          } else if (send < 0) {
+            close(client_fd);
+            client_fd = -1;
+            break;
+          }
+        }
+      } else if (command == 'r' || command == 's') {
+        // trst = 0;
+        top->io_jtag_trstn = 1;
+      } else if (command == 't' || command == 'u') {
+        // trst = 1;
+        top->io_jtag_trstn = 0;
+      }
+    }
+  } else {
+    // accept connection
+    client_fd = accept(listen_fd, NULL, NULL);
+    if (client_fd > 0) {
+      fcntl(client_fd, F_SETFL, O_NONBLOCK);
+
+      // set nodelay
+      int flags = 1;
+      if (setsockopt(client_fd, IPPROTO_TCP, TCP_NODELAY, (void *)&flags,
+                     sizeof(flags)) < 0) {
+        perror("setsockopt");
+      }
+      fprintf(stderr, "> JTAG debugger attached\n");
+    }
+  }
+}
+
 int main(int argc, char **argv) {
   Verilated::commandArgs(argc, argv);
 
@@ -398,7 +509,7 @@ int main(int argc, char **argv) {
   int opt;
   bool trace = false;
   bool progress = false;
-  while ((opt = getopt(argc, argv, "tpj")) != -1) {
+  while ((opt = getopt(argc, argv, "tpjv")) != -1) {
     switch (opt) {
     case 't':
       trace = true;
@@ -408,9 +519,14 @@ int main(int argc, char **argv) {
       break;
     case 'j':
       jtag = true;
+      jtag_rbb = true;
+      break;
+    case 'v':
+      jtag = true;
+      jtag_vpi = true;
       break;
     default: /* '?' */
-      fprintf(stderr, "Usage: %s [-t] [-p] [-j] name\n", argv[0]);
+      fprintf(stderr, "Usage: %s [-t] [-p] [-j] [-v] name\n", argv[0]);
       return 1;
     }
   }
@@ -421,39 +537,8 @@ int main(int argc, char **argv) {
 
   top = new VRiscVSystem;
 
-  int listen_fd = -1;
-  int client_fd = -1;
   if (jtag) {
-    // ref rocket chip remote_bitbang.cc
-    listen_fd = socket(AF_INET, SOCK_STREAM, 0);
-    if (listen_fd < 0) {
-      perror("socket");
-      return -1;
-    }
-
-    // set non blocking
-    fcntl(listen_fd, F_SETFL, O_NONBLOCK);
-
-    int reuseaddr = 1;
-    if (setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, &reuseaddr,
-                   sizeof(int)) < 0) {
-      perror("setsockopt");
-      return -1;
-    }
-
-    int port = 12345;
-    struct sockaddr_in addr = {};
-    addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = INADDR_ANY;
-    addr.sin_port = htons(port);
-
-    if (bind(listen_fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-      perror("bind");
-      return -1;
-    }
-
-    if (listen(listen_fd, 1) == -1) {
-      perror("listen");
+    if (jtag_rbb && jtag_rbb_init() < 0) {
       return -1;
     }
 
@@ -541,68 +626,8 @@ int main(int argc, char **argv) {
 
     if (jtag && (main_time % 10) == 0) {
       // jtag tick
-      if (client_fd >= 0) {
-        static char read_buffer[128];
-        static size_t read_buffer_count = 0;
-        static size_t read_buffer_offset = 0;
-
-        if (read_buffer_offset == read_buffer_count) {
-          ssize_t num_read = read(client_fd, read_buffer, sizeof(read_buffer));
-          if (num_read > 0) {
-            read_buffer_count = num_read;
-            read_buffer_offset = 0;
-          } else if (num_read == 0) {
-            // remote socket closed
-            fprintf(stderr, "> JTAG debugger detached\n");
-            close(client_fd);
-            client_fd = -1;
-          }
-        }
-
-        if (read_buffer_offset < read_buffer_count) {
-          char command = read_buffer[read_buffer_offset++];
-          if ('0' <= command && command <= '7') {
-            // set
-            char offset = command - '0';
-            top->io_jtag_tck = (offset >> 2) & 1;
-            top->io_jtag_tms = (offset >> 1) & 1;
-            top->io_jtag_tdi = (offset >> 0) & 1;
-          } else if (command == 'R') {
-            // read
-            char send = top->io_jtag_tdo ? '1' : '0';
-
-            while (1) {
-              ssize_t sent = write(client_fd, &send, sizeof(send));
-              if (sent > 0) {
-                break;
-              } else if (send < 0) {
-                close(client_fd);
-                client_fd = -1;
-                break;
-              }
-            }
-          } else if (command == 'r' || command == 's') {
-            // trst = 0;
-            top->io_jtag_trstn = 1;
-          } else if (command == 't' || command == 'u') {
-            // trst = 1;
-            top->io_jtag_trstn = 0;
-          }
-        }
-      } else {
-        // accept connection
-        client_fd = accept(listen_fd, NULL, NULL);
-        if (client_fd > 0) {
-          fcntl(client_fd, F_SETFL, O_NONBLOCK);
-
-          // set nodelay
-          int flags = 1;
-          if (setsockopt(client_fd, IPPROTO_TCP, TCP_NODELAY, (void *)&flags,
-                         sizeof(flags)) < 0) {
-            perror("setsockopt");
-          }
-          fprintf(stderr, "> JTAG debugger attached\n");
-        }
+      if (jtag_rbb) {
+        jtag_rbb_tick(top);
       }
     }
   }
