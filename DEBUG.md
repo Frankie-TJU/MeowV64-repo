@@ -44,7 +44,7 @@ tail -f /tmp/gdb@*.log /tmp/openocd*.log
 Failing tests:
 
 - DisconnectTest: stopcount/stoptime not implemented
-- InfoTest: not allowing floating point read when mstatus.FS=0 in debug mode
+- InfoTest: gdb command not exists
 - InstantHaltTest: halt on reset not implemented
 - InterruptTest: not investigated
 - MemTestReadInvalid: not giving bad_address

@@ -49,7 +49,7 @@ class DelayedMem(implicit val coredef: CoreDef) extends Bundle {
   val addr = UInt(coredef.XLEN.W)
   val len = DCWriteLen()
   val sext = Bool()
-  val data = UInt(coredef.XLEN.W)
+  val data = UInt(coredef.VLEN.W)
 
   // Written data is shared with wb
 
