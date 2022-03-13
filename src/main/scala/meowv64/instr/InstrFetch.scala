@@ -160,9 +160,21 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
   val readStalled =
     ~toIC.read.ready || (requiresTranslate && !tlb.query.req.ready)
   val readFire = !readStalled && toIC.read.valid
+  val icInflight = RegInit(false.B)
+  when(toIC.read.fire && !toIC.data.valid) {
+    assert(!icInflight)
+    icInflight := true.B
+  }.elsewhen(!toIC.read.fire && toIC.data.valid) {
+    assert(icInflight)
+    icInflight := false.B
+  }
 
   // handle page fault
-  when(requiresTranslate && tlb.query.req.fire && tlb.query.resp.fault) {
+  // corner case:
+  // icache is fetching, and the next fetch block faulted
+  when(
+    !icInflight && requiresTranslate && tlb.query.req.fire && tlb.query.resp.fault
+  ) {
     s2Pc := s1FPc
     s2Fault := true.B
     s2Successive := false.B

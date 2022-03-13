@@ -157,6 +157,8 @@ class L1IC(opts: L1Opts) extends Module {
 
       when(pipeRst) {
         nstate := S2State.rst
+
+        validArray := 0.U
       }.elsewhen(pipeRead) {
         when(pipeHitMap.asUInt().orR) {
           toCPU.data.valid := true.B
