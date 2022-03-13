@@ -11,16 +11,16 @@ import meowv64.core.FloatS
 import meowv64.exec._
 import meowv64.instr.Decoder
 
-class FDivSqrtExt(implicit val coredef: CoreDef) extends Bundle {
+class FloatDivSqrtExt(implicit val coredef: CoreDef) extends Bundle {
   // result
   val res = UInt(coredef.XLEN.W)
   val fflags = UInt(5.W)
 }
 
-class FDivSqrt(override implicit val coredef: CoreDef)
+class FloatDivSqrt(override implicit val coredef: CoreDef)
     extends ExecUnit(
       1,
-      new FDivSqrtExt
+      new FloatDivSqrtExt
     ) {
   override def valueWidth = coredef.XLEN
   override def retireWidth = coredef.XLEN
@@ -69,9 +69,9 @@ class FDivSqrt(override implicit val coredef: CoreDef)
   def map(
       stage: Int,
       pipe: PipeInstr,
-      ext: Option[FDivSqrtExt]
-  ): (FDivSqrtExt, Bool) = {
-    val state = Wire(new FDivSqrtExt)
+      ext: Option[FloatDivSqrtExt]
+  ): (FloatDivSqrtExt, Bool) = {
+    val state = Wire(new FloatDivSqrtExt)
     state := DontCare
 
     // stalls
@@ -135,7 +135,7 @@ class FDivSqrt(override implicit val coredef: CoreDef)
     (state, stall)
   }
 
-  def finalize(pipe: PipeInstr, ext: FDivSqrtExt): RetireInfo = {
+  def finalize(pipe: PipeInstr, ext: FloatDivSqrtExt): RetireInfo = {
     val info = WireDefault(RetireInfo.vacant(retireWidth))
     // result
     info.wb := ext.res.asUInt

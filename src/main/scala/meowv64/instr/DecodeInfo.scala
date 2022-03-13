@@ -9,11 +9,11 @@ import meowv64.reg.RegType
 
 // scalafmt: { align.preset = most }
 object ExecUnitType extends ChiselEnum {
-  val alu, branch, bypass, csr = Value
-  val div, mul                 = Value
-  val fma, floatMisc, fDivSqrt = Value
-  val vectorAlu, vectorMisc    = Value
-  val lsu                      = Value
+  val alu, branch, bypass, csr     = Value
+  val div, mul                     = Value
+  val fma, floatMisc, floatDivSqrt = Value
+  val vectorAlu, vectorMisc        = Value
+  val lsu                          = Value
 
   implicit def bitpat(op: ExecUnitType.Type): BitPat =
     BitPat(op.litValue.U(getWidth.W))
@@ -190,8 +190,8 @@ object DecodeInfo {
       FADD_S    -> List(Y, N, Y, float, Y, float, Y, float, N, XX, fma),
       FSUB_S    -> List(Y, N, Y, float, Y, float, Y, float, N, XX, fma),
       FMUL_S    -> List(Y, N, Y, float, Y, float, Y, float, N, XX, fma),
-      FDIV_S    -> List(Y, N, Y, float, Y, float, Y, float, N, XX, fDivSqrt),
-      FSQRT_S   -> List(Y, N, Y, float, Y, float, N, XX, N, XX, fDivSqrt),
+      FDIV_S    -> List(Y, N, Y, float, Y, float, Y, float, N, XX, floatDivSqrt),
+      FSQRT_S   -> List(Y, N, Y, float, Y, float, N, XX, N, XX, floatDivSqrt),
       FSGNJ_S   -> List(Y, N, Y, float, Y, float, Y, float, N, XX, floatMisc),
       FSGNJN_S  -> List(Y, N, Y, float, Y, float, Y, float, N, XX, floatMisc),
       FSGNJX_S  -> List(Y, N, Y, float, Y, float, Y, float, N, XX, floatMisc),
@@ -224,8 +224,8 @@ object DecodeInfo {
       FADD_D    -> List(Y, N, Y, float, Y, float, Y, float, N, XX, fma),
       FSUB_D    -> List(Y, N, Y, float, Y, float, Y, float, N, XX, fma),
       FMUL_D    -> List(Y, N, Y, float, Y, float, Y, float, N, XX, fma),
-      FDIV_D    -> List(Y, N, Y, float, Y, float, Y, float, N, XX, fDivSqrt),
-      FSQRT_D   -> List(Y, N, Y, float, Y, float, N, XX, N, XX, fDivSqrt),
+      FDIV_D    -> List(Y, N, Y, float, Y, float, Y, float, N, XX, floatDivSqrt),
+      FSQRT_D   -> List(Y, N, Y, float, Y, float, N, XX, N, XX, floatDivSqrt),
       FSGNJ_D   -> List(Y, N, Y, float, Y, float, Y, float, N, XX, floatMisc),
       FSGNJN_D  -> List(Y, N, Y, float, Y, float, Y, float, N, XX, floatMisc),
       FSGNJX_D  -> List(Y, N, Y, float, Y, float, Y, float, N, XX, floatMisc),

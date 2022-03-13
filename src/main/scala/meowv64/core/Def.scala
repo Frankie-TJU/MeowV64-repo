@@ -48,11 +48,11 @@ abstract class CoreDef {
       ExecUnitType.mul,
       ExecUnitType.div
     ),
-    // port 3: FMA + FloatMisc + FDivSqrt
+    // port 3: FMA + FloatMisc + FloatDivSqrt
     Seq(
       ExecUnitType.fma,
       ExecUnitType.floatMisc,
-      ExecUnitType.fDivSqrt
+      ExecUnitType.floatDivSqrt
     ),
     // port 4: VectorALU + VectorMisc
     Seq(
