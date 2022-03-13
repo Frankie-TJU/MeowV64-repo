@@ -54,9 +54,10 @@ abstract class CoreDef {
       ExecUnitType.floatMisc,
       ExecUnitType.fDivSqrt
     ),
-    // port 4: VALU
+    // port 4: VectorALU + VectorMisc
     Seq(
-      ExecUnitType.vAlu
+      ExecUnitType.vectorAlu,
+      ExecUnitType.vectorMisc
     ),
     // port 5: LSU
     Seq(ExecUnitType.lsu)

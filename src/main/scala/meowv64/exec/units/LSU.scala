@@ -46,10 +46,20 @@ class DelayedMem(implicit val coredef: CoreDef) extends Bundle {
   self =>
   val op = DelayedMemOp()
   val wop = DCWriteOp()
+
+  /** Physical address
+    */
   val addr = UInt(coredef.XLEN.W)
   val len = DCWriteLen()
+
+  /** Result should be sign extended
+    */
   val sext = Bool()
   val data = UInt(coredef.VLEN.W)
+
+  /** This is vse.v
+    */
+  val isVectorStore = Bool()
 
   // Written data is shared with wb
 
@@ -254,6 +264,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
     rawAddr := (next.rs1val.asSInt + next.instr.instr.imm).asUInt // We have imm = 0 for R-type instructions
   }
   tlb.query.req.bits.vpn := rawAddr(47, 12)
+  // physical address
   val addr = WireDefault(rawAddr)
   when(requiresTranslate) {
     addr := tlb.query.resp.ppn ## rawAddr(11, 0)
@@ -595,6 +606,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   assert(pendings.io.enq.ready)
 
   // Delayed memory ops
+  // Pop memory op from pendings, set release.valid to signal completion
   val pendingHead = pendings.io.deq.bits
   toMem.writer.req.bits.wdata := pendingHead.data
   toMem.uncached.wdata := pendingHead.data
@@ -656,5 +668,11 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
     pendings.io.deq.deq()
   } otherwise {
     pendings.io.deq.nodeq()
+  }
+
+  // check:
+  // release.ready remains high until release.fire
+  when(RegNext(release.ready && !release.valid, false.B)) {
+    assert(release.ready)
   }
 }

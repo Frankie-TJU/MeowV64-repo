@@ -12,7 +12,7 @@ object ExecUnitType extends ChiselEnum {
   val alu, branch, bypass, csr = Value
   val div, mul                 = Value
   val fma, floatMisc, fDivSqrt = Value
-  val vAlu                     = Value
+  val vectorAlu, vectorMisc    = Value
   val lsu                      = Value
 
   implicit def bitpat(op: ExecUnitType.Type): BitPat =
@@ -272,18 +272,78 @@ object DecodeInfo {
       VSE64_V -> List(Y, Y, N, XX, Y, integer, N, XX, N, XX, lsu),
 
       // Vector Integer
-      VADD_VV  -> List(Y, N, Y, vector, Y, vector, N, XX, N, XX, vAlu),
-      VADD_VI  -> List(Y, N, Y, vector, N, XX, N, XX, N, XX, vAlu),
-      VADD_VX  -> List(Y, N, Y, vector, Y, integer, N, XX, N, XX, vAlu),
-      VFMV_F_S -> List(Y, N, Y, float, N, XX, Y, vector, N, XX, vAlu),
-      VMV_X_S  -> List(Y, N, Y, integer, N, XX, Y, vector, N, XX, vAlu),
-      VFMV_S_F -> List(Y, N, Y, vector, Y, float, N, XX, N, XX, vAlu),
-      VMV_S_X  -> List(Y, N, Y, vector, Y, integer, N, XX, N, XX, vAlu),
-      VMV_V_V  -> List(Y, N, Y, vector, Y, vector, N, XX, N, XX, vAlu),
-      VMV_V_I  -> List(Y, N, Y, vector, N, XX, N, XX, N, XX, vAlu),
-      VMV_V_X  -> List(Y, N, Y, vector, Y, integer, N, XX, N, XX, vAlu),
-      VFMV_V_F -> List(Y, N, Y, vector, Y, float, N, XX, N, XX, vAlu)
+      VADD_VV  -> List(Y, N, Y, vector, Y, vector, Y, vector, N, XX, vectorAlu),
+      VADD_VI  -> List(Y, N, Y, vector, Y, vector, N, XX, N, XX, vectorAlu),
+      VADD_VX  -> List(Y, N, Y, vector, Y, vector, Y, integer, N, XX, vectorAlu),
+      VFMV_F_S -> List(Y, N, Y, float, N, XX, Y, vector, N, XX, vectorMisc),
+      VMV_X_S  -> List(Y, N, Y, integer, N, XX, Y, vector, N, XX, vectorMisc),
+      VFMV_S_F -> List(Y, N, Y, vector, Y, float, N, XX, N, XX, vectorMisc),
+      VMV_S_X  -> List(Y, N, Y, vector, Y, integer, N, XX, N, XX, vectorMisc),
+      VMV_V_V  -> List(Y, N, Y, vector, Y, vector, N, XX, N, XX, vectorMisc),
+      VMV_V_I  -> List(Y, N, Y, vector, N, XX, N, XX, N, XX, vectorMisc),
+      VMV_V_X  -> List(Y, N, Y, vector, Y, integer, N, XX, N, XX, vectorMisc),
+      VFMV_V_F -> List(Y, N, Y, vector, Y, float, N, XX, N, XX, vectorMisc)
     )
+
+  for (execUnitType <- ExecUnitType.all) {
+    val tableFilter = table.filter(_._2(10).value == execUnitType.value)
+    if (!tableFilter.isEmpty) {
+      val readRd  = tableFilter.map(_._2(1).value).reduce(_ | _)
+      val writeRd = tableFilter.map(_._2(2).value).reduce(_ | _)
+      val rdType  =
+        tableFilter.filter(_._2(3).mask != 0).map(_._2(3).value).distinct
+      val readRs1 = tableFilter.map(_._2(4).value).reduce(_ | _)
+      val rs1Type =
+        tableFilter.filter(_._2(5).mask != 0).map(_._2(5).value).distinct
+      val readRs2 = tableFilter.map(_._2(6).value).reduce(_ | _)
+      val rs2Type =
+        tableFilter.filter(_._2(7).mask != 0).map(_._2(7).value).distinct
+      val readRs3 = tableFilter.map(_._2(8).value).reduce(_ | _)
+      val rs3Type =
+        tableFilter.filter(_._2(9).mask != 0).map(_._2(9).value).distinct
+
+      def printType(n: Array[BigInt]) {
+        if (n.contains(RegType.float.value)) {
+          print("F")
+        }
+        if (n.contains(RegType.integer.value)) {
+          print("I")
+        }
+        if (n.contains(RegType.vector.value)) {
+          print("V")
+        }
+      }
+
+      def printReg(
+          name: String,
+          read: BigInt,
+          write: BigInt,
+          types: Array[BigInt]
+      ) {
+        if (read == 0 && write == 0) {
+          return
+        }
+
+        print(s" ${name}(")
+        if (read != 0) {
+          print("R")
+        }
+        if (write != 0) {
+          print("W")
+        }
+        print(")[")
+        printType(types)
+        print("]")
+      }
+
+      print(s"Type ${execUnitType}:")
+      printReg("rd", readRd, writeRd, rdType)
+      printReg("rs1", readRs1, 0, rs1Type)
+      printReg("rs2", readRs2, 0, rs2Type)
+      printReg("rs3", readRs3, 0, rs3Type)
+      println()
+    }
+  }
 
   def assign(inst: BitPat) = {
     val res   = Wire(new DecodeInfo)

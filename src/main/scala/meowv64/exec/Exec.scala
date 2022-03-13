@@ -154,8 +154,10 @@ class Exec(implicit val coredef: CoreDef) extends Module {
                 Module(new FloatMisc).suggestName("FloatMisc")
               case ExecUnitType.fDivSqrt =>
                 Module(new FDivSqrt).suggestName("FDivSqrt")
-              case ExecUnitType.vAlu =>
-                Module(new VALU).suggestName("VALU")
+              case ExecUnitType.vectorAlu =>
+                Module(new VectorALU).suggestName("VectorALU")
+              case ExecUnitType.vectorMisc =>
+                Module(new VectorMisc).suggestName("VectorMisc")
             }
           },
           instr => {
