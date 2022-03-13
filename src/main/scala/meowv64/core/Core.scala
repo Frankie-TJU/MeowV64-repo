@@ -82,19 +82,20 @@ class Core(implicit val coredef: CoreDef) extends Module {
   val bpu = Module(new MicroBTB)
   val ras = Module(new RAS)
   val exec = Module(new Exec)
-  val regFiles = for ((ty, width) <- coredef.REGISTER_TYPES) yield {
-    val reg = Module(
-      new RegFile(
-        width,
-        32,
-        coredef.ISSUE_NUM * 3, // rs1-3
-        coredef.RETIRE_NUM,
-        // hardwire x0 to zero
-        FIXED_ZERO = (ty == RegType.integer)
+  val regFiles =
+    for ((ty, width, maxOperands) <- coredef.REGISTER_TYPES) yield {
+      val reg = Module(
+        new RegFile(
+          width,
+          32,
+          coredef.ISSUE_NUM * maxOperands, // rs1-3, vd, vm
+          coredef.RETIRE_NUM,
+          // hardwire x0 to zero
+          FIXED_ZERO = (ty == RegType.integer)
+        )
       )
-    )
-    reg.suggestName(s"reg_${ty}")
-  }
+      reg.suggestName(s"reg_${ty}")
+    }
 
   val (csrWriter, csr) = CSR.gen(coredef.XLEN, coredef.HART_ID)
 

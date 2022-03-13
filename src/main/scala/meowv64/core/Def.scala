@@ -80,10 +80,16 @@ abstract class CoreDef {
     */
   val RAS_SIZE: Int = 8
 
-  /** List of (register type, width)
+  /** List of (register type, width, max operands)
+    *
+    * integer: rs1 rs2. float: rs1 rs2 rs3. vector: vs1 vs2 vs3(vd) vm.
     */
-  def REGISTER_TYPES: Seq[(RegType.Type, Int)] =
-    Seq((RegType.integer, XLEN), (RegType.float, XLEN), (RegType.vector, VLEN));
+  def REGISTER_TYPES: Seq[(RegType.Type, Int, Int)] =
+    Seq(
+      (RegType.integer, XLEN, 2),
+      (RegType.float, XLEN, 3),
+      (RegType.vector, VLEN, 4)
+    );
 
   /** List of supported float types
     */

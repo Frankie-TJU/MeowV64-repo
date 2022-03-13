@@ -246,9 +246,13 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
     )
   )
 
-  // FIXME: This is incorrect for vle8.v
+  // FIXME: This is incorrect for vle8.v/vse8.v
   val nextInstrIsVLE = WireInit(
     next.instr.instr.op === Decoder.Op("LOAD-FP").ident && next.instr.instr
+      .funct3(2)
+  )
+  val nextInstrIsVSE = WireInit(
+    next.instr.instr.op === Decoder.Op("STORE-FP").ident && next.instr.instr
       .funct3(2)
   )
 
@@ -260,6 +264,10 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
     // VLE.V instructions have no imm
     // Compute address from readIndex instead
     rawAddr := next.rs1val + (vectorReadReqIndex << log2Ceil(coredef.XLEN / 8))
+  }.elsewhen(nextInstrIsVSE) {
+    // VSE.V instructions have no imm
+    // TODO: handle across page exception
+    rawAddr := next.rs1val
   }.otherwise {
     rawAddr := (next.rs1val.asSInt + next.instr.instr.imm).asUInt // We have imm = 0 for R-type instructions
   }

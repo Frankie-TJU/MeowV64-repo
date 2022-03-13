@@ -82,12 +82,15 @@ class Exec(implicit val coredef: CoreDef) extends Module {
   // for each register type
   val toRF = IO(new Bundle {
     val ports =
-      MixedVec(for ((ty, width) <- coredef.REGISTER_TYPES) yield new Bundle {
-        // three read ports per issued instruction
-        val rr = Vec(coredef.ISSUE_NUM * 3, new RegReader(width))
-        // one write port per retired instruction
-        val rw = Vec(coredef.RETIRE_NUM, new RegWriter(width))
-      })
+      MixedVec(
+        for ((ty, width, maxOperands) <- coredef.REGISTER_TYPES)
+          yield new Bundle {
+            // `maxOperands` read ports per issued instruction
+            val rr = Vec(coredef.ISSUE_NUM * maxOperands, new RegReader(width))
+            // one write port per retired instruction
+            val rw = Vec(coredef.RETIRE_NUM, new RegWriter(width))
+          }
+      )
   })
 
   val toIF = IO(new MultiQueueIO(new InstrExt, coredef.ISSUE_NUM))
@@ -103,10 +106,11 @@ class Exec(implicit val coredef: CoreDef) extends Module {
 
   val renamer = Module(new Renamer)
   for (idx <- 0 until coredef.REGISTER_TYPES.length) {
+    val maxOperands = coredef.REGISTER_TYPES(idx)._3
     for (i <- (0 until coredef.ISSUE_NUM)) {
-      renamer.ports(idx).rr(i)(0) <> toRF.ports(idx).rr(i * 3)
-      renamer.ports(idx).rr(i)(1) <> toRF.ports(idx).rr(i * 3 + 1)
-      renamer.ports(idx).rr(i)(2) <> toRF.ports(idx).rr(i * 3 + 2)
+      for (j <- (0 until maxOperands)) {
+        renamer.ports(idx).rr(i)(j) <> toRF.ports(idx).rr(i * maxOperands + j)
+      }
     }
     renamer.ports(idx).rw <> toRF.ports(idx).rw
   }
@@ -539,7 +543,7 @@ class Exec(implicit val coredef: CoreDef) extends Module {
         cdb.entries(coredef.UNIT_COUNT).data := memResult.data
         cdb.entries(coredef.UNIT_COUNT).valid := true.B
 
-        for (((ty, _), i) <- coredef.REGISTER_TYPES.zipWithIndex) {
+        for (((ty, _, _), i) <- coredef.REGISTER_TYPES.zipWithIndex) {
           val rw = toRF.ports(i).rw
 
           when(inflights.reader.view(0).erd.ty === ty) {
@@ -609,7 +613,7 @@ class Exec(implicit val coredef: CoreDef) extends Module {
       }
 
       when(idx.U < retireNum) {
-        for (((ty, _), i) <- coredef.REGISTER_TYPES.zipWithIndex) {
+        for (((ty, _, _), i) <- coredef.REGISTER_TYPES.zipWithIndex) {
           val rw = toRF.ports(i).rw
           when(inflight.erd.ty === ty) {
             rw(idx).valid := true.B

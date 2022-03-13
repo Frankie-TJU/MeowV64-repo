@@ -20,14 +20,20 @@ class Renamer(implicit coredef: CoreDef) extends Module {
   val cdb = IO(Input(new CDB))
 
   val ports =
-    IO(MixedVec(for ((ty, width) <- coredef.REGISTER_TYPES) yield new Bundle {
-      // each instruction read at most three registers
-      val rr = Vec(coredef.ISSUE_NUM, Vec(3, new RegReader(width)))
-      // each instruction write to one register
-      val rw = Vec(coredef.ISSUE_NUM, new RegWriter(width))
-      rr.suggestName(s"rr_${ty}")
-      rw.suggestName(s"rw_${ty}")
-    }))
+    IO(
+      MixedVec(
+        for ((ty, width, maxOperands) <- coredef.REGISTER_TYPES)
+          yield new Bundle {
+            // each instruction read at most `maxOperands` registers
+            val rr =
+              Vec(coredef.ISSUE_NUM, Vec(maxOperands, new RegReader(width)))
+            // each instruction write to one register
+            val rw = Vec(coredef.ISSUE_NUM, new RegWriter(width))
+            rr.suggestName(s"rr_${ty}")
+            rw.suggestName(s"rw_${ty}")
+          }
+      )
+    )
 
   val toExec = IO(new Bundle {
     val input = Input(Vec(coredef.ISSUE_NUM, new InstrExt))
@@ -47,14 +53,15 @@ class Renamer(implicit coredef: CoreDef) extends Module {
   val NAME_LENGTH = log2Ceil(coredef.INFLIGHT_INSTR_LIMIT)
   val REG_ADDR_LENGTH = log2Ceil(REG_NUM)
 
-  val banks = for ((ty, width) <- coredef.REGISTER_TYPES) yield new {
-    // Register <-> name mapping
-    // If a register is unmapped, it implies that at least INFLIGHT_INSTR_LIMIT instruction
-    // has been retired after the instruction which wrote to the register.
-    // So it's value must have been stored into the regfile
-    val reg2name = RegInit(VecInit(Seq.fill(REG_NUM)(0.U(NAME_LENGTH.W))))
-    val regMapped = RegInit(VecInit(Seq.fill(REG_NUM)(false.B)))
-  }
+  val banks =
+    for ((ty, width, maxOperands) <- coredef.REGISTER_TYPES) yield new {
+      // Register <-> name mapping
+      // If a register is unmapped, it implies that at least INFLIGHT_INSTR_LIMIT instruction
+      // has been retired after the instruction which wrote to the register.
+      // So it's value must have been stored into the regfile
+      val reg2name = RegInit(VecInit(Seq.fill(REG_NUM)(0.U(NAME_LENGTH.W))))
+      val regMapped = RegInit(VecInit(Seq.fill(REG_NUM)(false.B)))
+    }
 
   // Is the value for a specific name already broadcasted on the CDB?
   val nameReady = RegInit(
@@ -156,7 +163,7 @@ class Renamer(implicit coredef: CoreDef) extends Module {
   for ((release, idx) <- toExec.releases.zipWithIndex) {
     val data = store(release.name)
     when(idx.U < toExec.retire) {
-      for ((bank, (ty, _)) <- banks.zip(coredef.REGISTER_TYPES)) {
+      for ((bank, (ty, _, maxOperands)) <- banks.zip(coredef.REGISTER_TYPES)) {
         val reg2name = bank.reg2name
         val regMapped = bank.regMapped
         when(release.reg.ty === ty) {
@@ -166,8 +173,7 @@ class Renamer(implicit coredef: CoreDef) extends Module {
         }
       }
 
-      // TODO: check register type
-      for (((ty, _), i) <- coredef.REGISTER_TYPES.zipWithIndex) {
+      for (((ty, _, _), i) <- coredef.REGISTER_TYPES.zipWithIndex) {
         val rw = ports(i).rw
         rw(idx).valid := false.B
         rw(idx).addr := 0.U
@@ -201,11 +207,13 @@ class Renamer(implicit coredef: CoreDef) extends Module {
     toExec.output(idx).rs3ready := false.B
     toExec.output(idx).rs3val := 0.U
 
-    for (((ty, _), bankIdx) <- coredef.REGISTER_TYPES.zipWithIndex) {
+    for (
+      ((ty, _, maxOperands), bankIdx) <- coredef.REGISTER_TYPES.zipWithIndex
+    ) {
       val rr = ports(bankIdx).rr
-      rr(idx)(0).addr := 0.U
-      rr(idx)(1).addr := 0.U
-      rr(idx)(2).addr := 0.U
+      for (i <- 0 until maxOperands) {
+        rr(idx)(i).addr := 0.U
+      }
 
       when(instr.instr.getRs1Type === ty) {
         val (rs1name, rs1ready, rs1val) =
@@ -233,17 +241,23 @@ class Renamer(implicit coredef: CoreDef) extends Module {
         toExec.output(idx).rs2val := rs2val
       }
 
-      when(instr.instr.getRs3Type === ty) {
-        val (rs3name, rs3ready, rs3val) =
-          readRegs(
-            rr(idx)(2),
-            instr.instr.getRs3Index,
-            bankIdx,
-            instr.instr.info.readRs3
-          )
-        toExec.output(idx).rs3name := rs3name
-        toExec.output(idx).rs3ready := rs3ready
-        toExec.output(idx).rs3val := rs3val
+      if (maxOperands >= 3) {
+        when(instr.instr.getRs3Type === ty) {
+          val (rs3name, rs3ready, rs3val) =
+            readRegs(
+              rr(idx)(2),
+              instr.instr.getRs3Index,
+              bankIdx,
+              instr.instr.info.readRs3
+            )
+          toExec.output(idx).rs3name := rs3name
+          toExec.output(idx).rs3ready := rs3ready
+          toExec.output(idx).rs3val := rs3val
+        }
+      } else {
+        toExec.output(idx).rs3name := 0.U
+        toExec.output(idx).rs3ready := true.B
+        toExec.output(idx).rs3val := 0.U
       }
     }
 
@@ -252,7 +266,7 @@ class Renamer(implicit coredef: CoreDef) extends Module {
     toExec.output(idx).tag := tags(idx)
 
     when(idx.U < toExec.commit) {
-      for (((ty, _), bank) <- coredef.REGISTER_TYPES.zip(banks)) {
+      for (((ty, _, _), bank) <- coredef.REGISTER_TYPES.zip(banks)) {
         when(instr.instr.getRdType() === ty && instr.instr.info.writeRd) {
           bank.reg2name(instr.instr.getRdIndex) := tags(idx)
           bank.regMapped(instr.instr.getRdIndex) := true.B
