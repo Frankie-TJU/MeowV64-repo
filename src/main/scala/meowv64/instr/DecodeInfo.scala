@@ -268,8 +268,9 @@ object DecodeInfo {
       VSETVL   -> List(Y, N, Y, integer, Y, integer, Y, integer, N, XX, csr),
 
       // Vector Load/Store
-      VLE64_V -> List(Y, N, Y, vector, Y, integer, N, XX, N, XX, lsu),
-      VSE64_V -> List(Y, Y, N, XX, Y, integer, N, XX, Y, vector, lsu),
+      VLE64_V    -> List(Y, N, Y, vector, Y, integer, N, XX, N, XX, lsu),
+      VLUXEI64_V -> List(Y, N, Y, vector, Y, integer, Y, vector, N, XX, lsu),
+      VSE64_V    -> List(Y, Y, N, XX, Y, integer, N, XX, Y, vector, lsu),
 
       // Vector Integer
       VADD_VV  -> List(Y, N, Y, vector, Y, vector, Y, vector, N, XX, vectorAlu),
@@ -607,9 +608,10 @@ object Instructions {
   val VSETVL   = BitPat("b1000000??????????111?????1010111")
 
   // Vector Load
-  val VLE16_V = BitPat("b000000?00000?????101?????0000111")
-  val VLE32_V = BitPat("b000000?00000?????110?????0000111")
-  val VLE64_V = BitPat("b000000?00000?????111?????0000111")
+  val VLE16_V    = BitPat("b000000?00000?????101?????0000111")
+  val VLE32_V    = BitPat("b000000?00000?????110?????0000111")
+  val VLE64_V    = BitPat("b000000?00000?????111?????0000111")
+  val VLUXEI64_V = BitPat("b000001???????????111?????0000111")
 
   // Vector Store
   val VSE16_V = BitPat("b000000?00000?????101?????0100111")

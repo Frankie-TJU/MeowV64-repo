@@ -249,7 +249,11 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   // FIXME: This is incorrect for vle8.v/vse8.v
   val nextInstrIsVLE = WireInit(
     next.instr.instr.op === Decoder.Op("LOAD-FP").ident && next.instr.instr
-      .funct3(2)
+      .funct3(2) && !next.instr.instr.funct7(1)
+  )
+  val nextInstrIsVLUXEI = WireInit(
+    next.instr.instr.op === Decoder.Op("LOAD-FP").ident && next.instr.instr
+      .funct3(2) && next.instr.instr.funct7(1)
   )
   val nextInstrIsVSE = WireInit(
     next.instr.instr.op === Decoder.Op("STORE-FP").ident && next.instr.instr
