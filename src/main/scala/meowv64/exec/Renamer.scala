@@ -198,13 +198,13 @@ class Renamer(implicit coredef: CoreDef) extends Module {
 
   for ((instr, idx) <- toExec.input.zipWithIndex) {
     toExec.output(idx).rs1name := 0.U
-    toExec.output(idx).rs1ready := false.B
+    toExec.output(idx).rs1ready := true.B
     toExec.output(idx).rs1val := 0.U
     toExec.output(idx).rs2name := 0.U
-    toExec.output(idx).rs2ready := false.B
+    toExec.output(idx).rs2ready := true.B
     toExec.output(idx).rs2val := 0.U
     toExec.output(idx).rs3name := 0.U
-    toExec.output(idx).rs3ready := false.B
+    toExec.output(idx).rs3ready := true.B
     toExec.output(idx).rs3val := 0.U
 
     for (
@@ -241,12 +241,20 @@ class Renamer(implicit coredef: CoreDef) extends Module {
         toExec.output(idx).rs2val := rs2val
       }
 
+      // third operand: rs3/vs3/vd
+      // vector instructions that read from vd
+      // should have rdAsRs3=1
+      // and the value is stored in rs3val
       if (maxOperands >= 3) {
         when(instr.instr.getRs3Type === ty) {
           val (rs3name, rs3ready, rs3val) =
             readRegs(
               rr(idx)(2),
-              instr.instr.getRs3Index,
+              Mux(
+                instr.instr.info.rdAsRs3,
+                instr.instr.rd,
+                instr.instr.getRs3Index
+              ),
               bankIdx,
               instr.instr.info.readRs3
             )
@@ -254,10 +262,6 @@ class Renamer(implicit coredef: CoreDef) extends Module {
           toExec.output(idx).rs3ready := rs3ready
           toExec.output(idx).rs3val := rs3val
         }
-      } else {
-        toExec.output(idx).rs3name := 0.U
-        toExec.output(idx).rs3ready := true.B
-        toExec.output(idx).rs3val := 0.U
       }
     }
 

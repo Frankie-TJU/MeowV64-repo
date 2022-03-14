@@ -382,6 +382,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   val pipeMisaligned = Reg(Bool())
   val pipeRead = Reg(Bool())
   val pipeWrite = Reg(Bool())
+  val pipeIsVSE = Reg(Bool())
 
   l2stall := !toMem.reader.resp.valid && pipeInstr.instr.valid && pipeDCRead
   when(l1pass) {
@@ -394,6 +395,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
     pipeMisaligned := misaligned
     pipeRead := read
     pipeWrite := write
+    pipeIsVSE := nextInstrIsVSE
 
     when(!flush) {
       assert(!l2stall)
@@ -600,7 +602,8 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
     }
 
     retire.info.wb := DontCare
-    mem.data := pipeInstr.rs2val
+    // vse.v writes data stored in vs3
+    mem.data := Mux(pipeIsVSE, pipeInstr.rs3val, pipeInstr.rs2val)
   }.otherwise {
     // Inval instr?
     retire.info.exception.ex(ExType.ILLEGAL_INSTR)

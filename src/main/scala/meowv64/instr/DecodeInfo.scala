@@ -24,8 +24,8 @@ class DecodeInfo extends Bundle {
   val legal = Bool()
 
   // register related
-  // reads from rd
-  val readRd = Bool()
+  // rd is read as rs3
+  val rdAsRs3 = Bool()
   // writes to rd
   val writeRd = Bool()
   // rd register type
@@ -48,7 +48,7 @@ class DecodeInfo extends Bundle {
 
   def signals = Seq(
     legal,
-    readRd,
+    rdAsRs3,
     writeRd,
     rdType,
     readRs1,
@@ -269,7 +269,7 @@ object DecodeInfo {
 
       // Vector Load/Store
       VLE64_V -> List(Y, N, Y, vector, Y, integer, N, XX, N, XX, lsu),
-      VSE64_V -> List(Y, Y, N, XX, Y, integer, N, XX, N, XX, lsu),
+      VSE64_V -> List(Y, Y, N, XX, Y, integer, N, XX, Y, vector, lsu),
 
       // Vector Integer
       VADD_VV  -> List(Y, N, Y, vector, Y, vector, Y, vector, N, XX, vectorAlu),
@@ -288,7 +288,7 @@ object DecodeInfo {
   for (execUnitType <- ExecUnitType.all) {
     val tableFilter = table.filter(_._2(10).value == execUnitType.value)
     if (!tableFilter.isEmpty) {
-      val readRd  = tableFilter.map(_._2(1).value).reduce(_ | _)
+      val rdAsRs3 = tableFilter.map(_._2(1).value).reduce(_ | _)
       val writeRd = tableFilter.map(_._2(2).value).reduce(_ | _)
       val rdType  =
         tableFilter.filter(_._2(3).mask != 0).map(_._2(3).value).distinct
@@ -337,10 +337,13 @@ object DecodeInfo {
       }
 
       print(s"Type ${execUnitType}:")
-      printReg("rd", readRd, writeRd, rdType)
+      printReg("rd", 0, writeRd, rdType)
       printReg("rs1", readRs1, 0, rs1Type)
       printReg("rs2", readRs2, 0, rs2Type)
       printReg("rs3", readRs3, 0, rs3Type)
+      if (rdAsRs3 > 0) {
+        print(" RdAsRs3")
+      }
       println()
     }
   }
