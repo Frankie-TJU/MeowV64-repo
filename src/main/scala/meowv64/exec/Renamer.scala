@@ -124,7 +124,7 @@ class Renamer(implicit coredef: CoreDef) extends Module {
     }
   })
 
-  def readRegs(r: RegReader, reg: UInt, bankIdx: Int, readReg: Bool) = {
+  def readRegs(r: RegReader, reg: UInt, bankIdx: Int) = {
     r.addr := reg
 
     val reg2name = banks(bankIdx).reg2name
@@ -147,9 +147,8 @@ class Renamer(implicit coredef: CoreDef) extends Module {
       value := r.data
     }
 
-    // the instruction does not read this register
-    // or this is x0
-    when(!readReg || (reg === 0.U && (bankIdx == 0).B)) {
+    // check x0
+    when(reg === 0.U && (bankIdx == 0).B) {
       ready := true.B
       value := 0.U
     }
@@ -215,26 +214,24 @@ class Renamer(implicit coredef: CoreDef) extends Module {
         rr(idx)(i).addr := 0.U
       }
 
-      when(instr.instr.getRs1Type === ty) {
+      when(instr.instr.getRs1Type === ty && instr.instr.info.readRs1) {
         val (rs1name, rs1ready, rs1val) =
           readRegs(
             rr(idx)(0),
             instr.instr.getRs1Index,
-            bankIdx,
-            instr.instr.info.readRs1
+            bankIdx
           )
         toExec.output(idx).rs1name := rs1name
         toExec.output(idx).rs1ready := rs1ready
         toExec.output(idx).rs1val := rs1val
       }
 
-      when(instr.instr.getRs2Type === ty) {
+      when(instr.instr.getRs2Type === ty && instr.instr.info.readRs2) {
         val (rs2name, rs2ready, rs2val) =
           readRegs(
             rr(idx)(1),
             instr.instr.getRs2Index,
-            bankIdx,
-            instr.instr.info.readRs2
+            bankIdx
           )
         toExec.output(idx).rs2name := rs2name
         toExec.output(idx).rs2ready := rs2ready
@@ -246,7 +243,7 @@ class Renamer(implicit coredef: CoreDef) extends Module {
       // should have rdAsRs3=1
       // and the value is stored in rs3val
       if (maxOperands >= 3) {
-        when(instr.instr.getRs3Type === ty) {
+        when(instr.instr.getRs3Type === ty && instr.instr.info.readRs3) {
           val (rs3name, rs3ready, rs3val) =
             readRegs(
               rr(idx)(2),
@@ -255,8 +252,7 @@ class Renamer(implicit coredef: CoreDef) extends Module {
                 instr.instr.rd,
                 instr.instr.getRs3Index
               ),
-              bankIdx,
-              instr.instr.info.readRs3
+              bankIdx
             )
           toExec.output(idx).rs3name := rs3name
           toExec.output(idx).rs3ready := rs3ready
