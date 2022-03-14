@@ -260,6 +260,9 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
       .funct3(2)
   )
 
+  val rs2Elements = Wire(Vec(coredef.vectorBankCount, UInt(coredef.XLEN.W)))
+  rs2Elements := next.rs2val.asTypeOf(rs2Elements)
+
   /** Stage 1 state
     */
   assert(coredef.PADDR_WIDTH > coredef.VADDR_WIDTH)
@@ -268,6 +271,10 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
     // VLE.V instructions have no imm
     // Compute address from readIndex instead
     rawAddr := next.rs1val + (vectorReadReqIndex << log2Ceil(coredef.XLEN / 8))
+  }.elsewhen(nextInstrIsVLUXEI) {
+    // VLUXEI.V instructions have no imm
+    // Compute address from rs2[readIndex] instead
+    rawAddr := next.rs1val + rs2Elements(vectorReadReqIndex)
   }.elsewhen(nextInstrIsVSE) {
     // VSE.V instructions have no imm
     // TODO: handle across page exception
@@ -351,7 +358,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   when(canRead && l1pass) {
     switch(state) {
       is(LSUState.idle) {
-        when(nextInstrIsVLE) {
+        when(nextInstrIsVLE || nextInstrIsVLUXEI) {
           state := LSUState.vectorLoad
           vectorReadReqIndex := 1.U
           vectorReadRespIndex := 0.U

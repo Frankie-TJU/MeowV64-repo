@@ -30,7 +30,7 @@ class VectorALU(override implicit val coredef: CoreDef)
     val rs1Elements = Wire(Vec(coredef.vectorBankCount, UInt(coredef.XLEN.W)))
     rs1Elements := pipe.rs1val.asTypeOf(rs1Elements)
     val rs2Elements = Wire(Vec(coredef.vectorBankCount, UInt(coredef.XLEN.W)))
-    rs2Elements := pipe.rs2val.asTypeOf(rs1Elements)
+    rs2Elements := pipe.rs2val.asTypeOf(rs2Elements)
 
     switch(pipe.instr.instr.funct6) {
       is(Decoder.VP_FUNC("VADD")) {
