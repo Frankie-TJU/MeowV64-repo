@@ -107,15 +107,24 @@ class Renamer(implicit coredef: CoreDef) extends Module {
       for (i <- (0 until idx)) {
         when(toExec.input(i).instr.writeRdEffective) {
           val rd = toExec.input(i).instr.getRd
-          when(rs1.ty === rd.ty && rs1.index === rd.index) {
+          when(
+            rs1.ty === rd.ty && rs1.index === rd.index &&
+              toExec.input(idx).instr.info.readRs1
+          ) {
             ret := false.B
           }
 
-          when(rs2.ty === rd.ty && rs2.index === rd.index) {
+          when(
+            rs2.ty === rd.ty && rs2.index === rd.index &&
+              toExec.input(idx).instr.info.readRs2
+          ) {
             ret := false.B
           }
 
-          when(rs3.ty === rd.ty && rs3.index === rd.index) {
+          when(
+            rs3.ty === rd.ty && rs3.index === rd.index &&
+              toExec.input(idx).instr.info.readRs3
+          ) {
             ret := false.B
           }
         }
@@ -218,7 +227,7 @@ class Renamer(implicit coredef: CoreDef) extends Module {
         val (rs1name, rs1ready, rs1val) =
           readRegs(
             rr(idx)(0),
-            instr.instr.getRs1Index,
+            instr.instr.rs1,
             bankIdx
           )
         toExec.output(idx).rs1name := rs1name
@@ -230,7 +239,7 @@ class Renamer(implicit coredef: CoreDef) extends Module {
         val (rs2name, rs2ready, rs2val) =
           readRegs(
             rr(idx)(1),
-            instr.instr.getRs2Index,
+            instr.instr.rs2,
             bankIdx
           )
         toExec.output(idx).rs2name := rs2name
@@ -250,7 +259,7 @@ class Renamer(implicit coredef: CoreDef) extends Module {
               Mux(
                 instr.instr.info.rdAsRs3,
                 instr.instr.rd,
-                instr.instr.getRs3Index
+                instr.instr.rs3
               ),
               bankIdx
             )
