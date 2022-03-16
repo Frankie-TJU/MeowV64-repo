@@ -113,13 +113,13 @@ class DelayedMem(implicit val coredef: CoreDef) extends Bundle {
   }
 }
 
-object LSUState extends ChiselEnum {
+object LSUReadState extends ChiselEnum {
   val idle, vectorLoad = Value
 }
 
 class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   val retireWidth = coredef.VLEN
-  val valueWidth = coredef.XLEN
+  val valueWidth = coredef.VLEN
   val flush = IO(Input(Bool()))
   val rs = IO(Flipped(new ResStationEgress(valueWidth)))
   val retire = IO(Output(new Retirement(valueWidth, retireWidth)))
@@ -132,19 +132,19 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
     VecInit.fill(vectorReadGroupNum)(0.U(coredef.XLEN.W))
   )
   val inflightVectorReadInstr = Reg(new ReservedInstr(valueWidth))
-  val state = RegInit(LSUState.idle)
+  val readState = RegInit(LSUReadState.idle)
 
   def isUncached(addr: UInt) = addr < BigInt("80000000", 16).U
 
   val hasNext = rs.instr.valid // TODO: merge into rs.instr
   val next = WireInit(rs.instr.bits)
-  switch(state) {
-    is(LSUState.idle) {
+  switch(readState) {
+    is(LSUReadState.idle) {
       when(!rs.instr.valid) {
         next.instr.valid := false.B
       }
     }
-    is(LSUState.vectorLoad) {
+    is(LSUReadState.vectorLoad) {
       next := inflightVectorReadInstr
     }
   }
@@ -356,31 +356,31 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   // handle vector load
   // req
   when(canRead && l1pass) {
-    switch(state) {
-      is(LSUState.idle) {
+    switch(readState) {
+      is(LSUReadState.idle) {
         when(nextInstrIsVLE || nextInstrIsVLUXEI) {
-          state := LSUState.vectorLoad
+          readState := LSUReadState.vectorLoad
           vectorReadReqIndex := 1.U
           vectorReadRespIndex := 0.U
           inflightVectorReadInstr := rs.instr.bits
         }
       }
-      is(LSUState.vectorLoad) {
+      is(LSUReadState.vectorLoad) {
         vectorReadReqIndex := vectorReadReqIndex + 1.U
         when(vectorReadReqIndex === (vectorReadGroupNum - 1).U) {
           vectorReadReqIndex := 0.U
-          state := LSUState.idle
+          readState := LSUReadState.idle
         }
       }
     }
   }
   // resp
-  when(state === LSUState.vectorLoad && toMem.reader.resp.valid) {
+  when(readState === LSUReadState.vectorLoad && toMem.reader.resp.valid) {
     vectorReadRespIndex := vectorReadRespIndex + 1.U
     vectorReadRespData(vectorReadRespIndex) := toMem.reader.resp.bits
   }
 
-  rs.instr.ready := l1pass && state === LSUState.idle
+  rs.instr.ready := l1pass && readState === LSUReadState.idle
 
   /** Stage 2 state
     */
@@ -417,7 +417,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
 
   when(flush) {
     pipeInstr.instr.valid := false.B
-    state := LSUState.idle
+    readState := LSUReadState.idle
     vectorReadReqIndex := 0.U
     vectorReadRespIndex := 0.U
   }
@@ -432,7 +432,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   )
 
   retire.instr := pipeInstr
-  when(state === LSUState.vectorLoad) {
+  when(readState === LSUReadState.vectorLoad) {
     retire.instr.instr.valid := false.B
   }
 
