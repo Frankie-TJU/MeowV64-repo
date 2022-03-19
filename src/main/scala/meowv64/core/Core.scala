@@ -112,8 +112,22 @@ class Core(implicit val coredef: CoreDef) extends Module {
 
   exec.toIF <> fetch.toExec
   for (i <- 0 until coredef.REGISTER_TYPES.length) {
-    exec.toRF.ports(i).rr <> regFiles(i).io.reads
-    exec.toRF.ports(i).rw <> regFiles(i).io.writes
+    var readIdx = 0
+    var writeIdx = 0
+    for ((port, idx) <- coredef.PORTS.zipWithIndex) {
+      if (port.regType == coredef.REGISTER_TYPES(i).regType) {
+        for (j <- 0 until port.readPorts) {
+          exec.toRF.ports(idx).rr(j) <> regFiles(i).io.reads(readIdx)
+          readIdx += 1
+        }
+
+        exec.toRF.ports(idx).rw <> regFiles(i).io.writes(writeIdx)
+        writeIdx += 1
+      }
+    }
+    println(
+      s"Register Type ${coredef.REGISTER_TYPES(i).regType}: ${readIdx}R ${writeIdx}W"
+    )
   }
   exec.csrWriter <> csrWriter
 

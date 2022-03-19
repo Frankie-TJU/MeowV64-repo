@@ -8,6 +8,8 @@ import meowv64.core.CoreDef
 import meowv64.core.IssueQueueInfo
 import meowv64.instr.Decoder
 
+/** Issue Queue -> Register Read
+  */
 class IssueQueueEgress()(implicit val coredef: CoreDef) extends Bundle {
   val instr = Decoupled(new IssueQueueInstr())
 }
@@ -153,7 +155,7 @@ class OoOIssueQueue(info: IssueQueueInfo)(implicit
   val empty = WireInit(VecInit(occupied ++ ingress.instr.map(_.valid)))
 
   shift(0) := 0.U
-  for (i <- 0 until DEPTH + ISSUE_NUM) {
+  for (i <- 1 until DEPTH + ISSUE_NUM) {
     when(!empty(i - 1)) {
       // if the previous entry is not empty
       // follow suit

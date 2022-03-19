@@ -182,6 +182,8 @@ abstract class CoreDef {
     RegInfo(RegType.integer, XLEN, 64, 2, true)
   def REGISTER_FLOAT =
     RegInfo(RegType.float, XLEN, 32, 3, false)
+  def REGISTER_VECTOR =
+    RegInfo(RegType.vector, VLEN, 32, 4, false)
 
   /** List of register configurations
     */

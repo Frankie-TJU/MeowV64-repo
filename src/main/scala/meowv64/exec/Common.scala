@@ -359,12 +359,12 @@ trait ExecUnitInt {
   */
 abstract class ExecUnit[T <: Data](
     val DEPTH: Int,
-    val ExtData: T
+    val ExtData: T,
+    val regInfo: RegInfo
 )(implicit
     val coredef: CoreDef
 ) extends Module
     with ExecUnitInt {
-  def regInfo: RegInfo = ???
   val io = IO(new ExecUnitPort(regInfo))
 
   var current = if (DEPTH != 0) {

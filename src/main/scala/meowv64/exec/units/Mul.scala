@@ -17,7 +17,7 @@ class MulExt(implicit val coredef: CoreDef) extends Bundle {
 }
 
 class Mul(override implicit val coredef: CoreDef)
-    extends ExecUnit(2, new MulExt) {
+    extends ExecUnit(2, new MulExt, coredef.REGISTER_INTEGER) {
 
   assert(coredef.XLEN == 64)
 

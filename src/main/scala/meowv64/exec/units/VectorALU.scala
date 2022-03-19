@@ -11,7 +11,7 @@ class VectorALUExt(implicit val coredef: CoreDef) extends Bundle {
 }
 
 class VectorALU(override implicit val coredef: CoreDef)
-    extends ExecUnit(0, new VectorALUExt) {
+    extends ExecUnit(0, new VectorALUExt, coredef.REGISTER_VECTOR) {
   def map(
       stage: Int,
       pipe: PipeInstr,

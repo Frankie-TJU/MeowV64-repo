@@ -57,6 +57,16 @@ class Renamer(implicit coredef: CoreDef) extends Module {
       }
       val freelist = RegInit(init.U(regInfo.physicalRegs.W))
 
+      // masks for updating freelist
+      val setFreeMask = WireInit(0.U(regInfo.physicalRegs.W))
+      val clearFreeMask = WireInit(0.U(regInfo.physicalRegs.W))
+      freelist := freelist & ~clearFreeMask | setFreeMask
+
+      // masks for updating regBusy
+      val setBusyMask = WireInit(0.U(regInfo.physicalRegs.W))
+      val clearBusyMask = WireInit(0.U(regInfo.physicalRegs.W))
+      regBusy := regBusy & ~clearBusyMask | setBusyMask
+
       // save committed state for recovery
       val committedMapping = RegInit(
         VecInit(Seq.fill(REG_NUM)(0.U(log2Ceil(regInfo.physicalRegs).W)))
@@ -75,15 +85,15 @@ class Renamer(implicit coredef: CoreDef) extends Module {
 
   // Update by CDB
   for (bank <- banks) {
-    var currentBusy = WireInit(bank.regBusy)
+    var currentBusy = WireInit(0.U.asTypeOf(bank.clearBusyMask))
     for (ent <- cdb.entries) {
-      val mask = WireInit(-1.S(REG_NUM.W).asUInt)
+      val mask = WireInit(0.U(REG_NUM.W))
       when(ent.valid && bank.regType === ent.regType) {
-        mask := ~(1.U << ent.phys)
+        mask := 1.U << ent.phys
       }
-      currentBusy = WireInit(currentBusy & mask)
+      currentBusy = WireInit(currentBusy | mask)
     }
-    bank.regBusy := currentBusy
+    bank.clearBusyMask := currentBusy
   }
 
   // TODO: asserts that CDB never broadcasts names that are being allocated
@@ -147,14 +157,16 @@ class Renamer(implicit coredef: CoreDef) extends Module {
   toExec.allowBit := VecInit(canRename)
 
   // Release before allocation
-  for ((release, idx) <- toExec.releases.zipWithIndex) {
-    when(idx.U < toExec.retire) {
-      for ((bank, regInfo) <- banks.zip(coredef.REGISTER_TYPES)) {
-        when(release.regType === bank.regType) {
-          bank.freelist := bank.freelist | (1.U << release.stalePhys)
-        }
+  for ((bank, regInfo) <- banks.zip(coredef.REGISTER_TYPES)) {
+    val masks = for ((release, idx) <- toExec.releases.zipWithIndex) yield {
+      val mask = WireInit(0.U(regInfo.physicalRegs.W))
+      when(idx.U < toExec.retire && release.regType === bank.regType) {
+        mask := 1.U << release.stalePhys
       }
+      mask
     }
+
+    bank.setFreeMask := masks.reduce(_ | _)
   }
 
   for ((instr, idx) <- toExec.input.zipWithIndex) {
@@ -214,21 +226,34 @@ class Renamer(implicit coredef: CoreDef) extends Module {
     }
 
     toExec.output(idx).instr := instr
+  }
 
-    when(idx.U < toExec.commit) {
-      for ((regInfo, bank) <- coredef.REGISTER_TYPES.zip(banks)) {
-        when(
-          instr.instr
-            .getRdType() === regInfo.regType && instr.instr.info.writeRd
-        ) {
+  // assign new physical register
+  for ((regInfo, bank) <- coredef.REGISTER_TYPES.zip(banks)) {
+    var clearFreeMask = WireInit(0.U(regInfo.physicalRegs.W))
+
+    for ((instr, idx) <- toExec.input.zipWithIndex) {
+      val phys = PriorityEncoder(bank.freelist & ~clearFreeMask)
+      val curMask = WireInit(0.U(regInfo.physicalRegs.W))
+      when(
+        instr.instr
+          .getRdType() === regInfo.regType && instr.instr.info.writeRd
+      ) {
+        when(idx.U < toExec.commit) {
           // allocate register for rd
-          val reg = bank.freelist
-          bank.mapping(instr.instr.getRdIndex) := reg
-          bank.freelist := bank.freelist & ~(1.U << reg)
-          bank.regBusy := bank.regBusy | (1.U << reg)
+          bank.mapping(instr.instr.getRdIndex) := phys
+          toExec.output(idx).rdPhys := phys
+          curMask := 1.U << phys
+
+          // save stale physical register
+          toExec.output(idx).staleRdPhys := bank.mapping(instr.instr.getRdIndex)
         }
       }
+
+      clearFreeMask = clearFreeMask | curMask
     }
+
+    bank.clearFreeMask := clearFreeMask
   }
 
   // Lastly, handles flush

@@ -120,7 +120,7 @@ object LSUReadState extends ChiselEnum {
 class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   val regInfo = coredef.REGISTER_INTEGER
   val flush = IO(Input(Bool()))
-  val rs = IO(Flipped(new RegisterReadEgress(coredef.REGISTER_INTEGER)))
+  val rs = IO(Flipped(new RegisterReadEgress(regInfo)))
   val retire = IO(Output(new Retirement(regInfo)))
   val extras = new mutable.HashMap[String, Data]()
 
@@ -130,7 +130,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   val vectorReadRespData = RegInit(
     VecInit.fill(vectorReadGroupNum)(0.U(coredef.XLEN.W))
   )
-  val inflightVectorReadInstr = Reg(new IssueQueueInstr())
+  val inflightVectorReadInstr = Reg(new PipeInstr(regInfo))
   val readState = RegInit(LSUReadState.idle)
 
   def isUncached(addr: UInt) = addr < BigInt("80000000", 16).U

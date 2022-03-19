@@ -8,6 +8,8 @@ import meowv64.core.PortInfo
 import meowv64.core.RegInfo
 import meowv64.reg.RegReader
 
+/** Register Read -> Unit Selector
+  */
 class RegisterReadEgress(val regInfo: RegInfo)(implicit val coredef: CoreDef)
     extends Bundle {
   val instr = Decoupled(new PipeInstr(regInfo))
@@ -16,6 +18,7 @@ class RegisterReadEgress(val regInfo: RegInfo)(implicit val coredef: CoreDef)
 class RegisterRead(portInfo: PortInfo)(implicit
     coredef: CoreDef
 ) extends Module {
+  val regInfo = portInfo.regInfo
   val io = IO(new Bundle {
     val toIssueQueue = new Bundle {
       val instr = Flipped(new IssueQueueEgress())
@@ -24,14 +27,12 @@ class RegisterRead(portInfo: PortInfo)(implicit
     val toRegFile = new Bundle {
       val reader = Flipped(
         new RegReader(
-          portInfo.regInfo.width,
-          log2Ceil(portInfo.regInfo.physicalRegs)
+          regInfo.width,
+          log2Ceil(regInfo.physicalRegs)
         )
       )
     }
 
-    val toUnits = new Bundle {
-      val instr = Flipped(new PipeInstr(portInfo.regInfo))
-    }
+    val toUnits = new RegisterReadEgress(regInfo)
   })
 }

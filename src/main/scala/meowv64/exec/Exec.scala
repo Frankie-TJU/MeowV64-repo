@@ -9,6 +9,7 @@ import meowv64.cache.L1UCPort
 import meowv64.core.CSRWriter
 import meowv64.core.CoreDef
 import meowv64.core.ExReq
+import meowv64.core.ExecutionUnitLSU
 import meowv64.core.PrivLevel
 import meowv64.core.Satp
 import meowv64.core.StageCtrl
@@ -144,7 +145,9 @@ class Exec(implicit val coredef: CoreDef) extends Module {
     for (port <- issueQueueInfo.ports) {
       val bypassIdx = port.units.indexOf(ExecUnitType.bypass)
       val regRead = Module(new RegisterRead(port))
-      val unitSel =
+      val unitSel = if (port.units == Seq(new ExecutionUnitLSU())) {
+        lsu
+      } else {
         Module(
           new UnitSel(
             port.regInfo,
@@ -179,6 +182,7 @@ class Exec(implicit val coredef: CoreDef) extends Module {
             hasPipe = false
           )
         )
+      }
       units.append(unitSel)
     }
   }

@@ -15,7 +15,8 @@ class DivExt(implicit val coredef: CoreDef) extends Bundle {
 class Div(val ROUND_PER_STAGE: Int)(override implicit val coredef: CoreDef)
     extends ExecUnit(
       coredef.XLEN / ROUND_PER_STAGE,
-      new DivExt
+      new DivExt,
+      coredef.REGISTER_INTEGER
     ) {
 
   val unroll = 2

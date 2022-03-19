@@ -20,7 +20,8 @@ class FloatDivSqrtExt(implicit val coredef: CoreDef) extends Bundle {
 class FloatDivSqrt(override implicit val coredef: CoreDef)
     extends ExecUnit(
       1,
-      new FloatDivSqrtExt
+      new FloatDivSqrtExt,
+      coredef.REGISTER_FLOAT
     ) {
 
   val idle = RegInit(true.B)

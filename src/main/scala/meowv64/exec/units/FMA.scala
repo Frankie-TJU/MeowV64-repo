@@ -33,7 +33,8 @@ class FMAExt(implicit val coredef: CoreDef) extends Bundle {
 class FMA(override implicit val coredef: CoreDef)
     extends ExecUnit(
       1,
-      new FMAExt
+      new FMAExt,
+      coredef.REGISTER_FLOAT
     ) {
 
   def map(stage: Int, pipe: PipeInstr, ext: Option[FMAExt]): (FMAExt, Bool) = {

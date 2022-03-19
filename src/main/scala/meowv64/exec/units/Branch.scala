@@ -21,10 +21,9 @@ class BranchExt extends Bundle {
 }
 
 class Branch(override implicit val coredef: CoreDef)
-    extends ExecUnit(0, new BranchExt)
+    extends ExecUnit(0, new BranchExt, coredef.REGISTER_INTEGER)
     with WithPrivPort
     with WithStatus {
-  override def regInfo = coredef.REGISTER_INTEGER
   val priv = IO(Input(PrivLevel()))
   val status = IO(Input(new Status))
 
