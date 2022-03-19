@@ -7,6 +7,7 @@ import chisel3.util.log2Ceil
 import meowv64.core.CSRWriter
 import meowv64.core.CoreDef
 import meowv64.core.PrivLevel
+import meowv64.core.RegInfo
 import meowv64.core.Status
 import meowv64.exec.UnitSel.Retirement
 import meowv64.instr.Instr
@@ -15,21 +16,18 @@ import scala.collection.mutable
 
 trait UnitSelIO {
   val flush: Bool
-  val rs: ResStationEgress
+  val rs: RegisterReadEgress
   val retire: Retirement
   val extras: mutable.HashMap[String, Data]
 }
 
-/** Read instructions from reservation stations, and send them into (probably
-  * one of multiple) exec unit
+/** Read instructions from issue queues, and send them into (probably one of
+  * multiple) exec unit
   *
-  * <del> All units are buffered into the same delay cycle count, so that we can
-  * assert only one of them may retire an instr at within one cycle</del>
-  *
-  * That is not true anymore. Now we use a MPSC FIFO to consume outputs of
-  * individual execution units.
+  * We use a MPSC FIFO to consume outputs of individual execution units.
   */
 class UnitSel(
+    regInfo: RegInfo,
     gen: => Seq[ExecUnitInt],
     arbitration: Instr => Seq[Bool],
     bypassIdx: Option[Int] = None,
@@ -43,18 +41,15 @@ class UnitSel(
 
   val flush = IO(Input(Bool()))
 
-  val valueWidth = units.map(_.io.valueWidth).max
-  println(s"Value Width: ${valueWidth} bits")
-  val retireWidth = units.map(_.io.retirement.retireWidth).max
-  println(s"Retire Width: ${retireWidth} bits")
+  println(s"Register Type: ${regInfo.regType}")
 
-  /** Input from reservation station
+  /** Input from register read stage
     */
-  val rs = IO(Flipped(new ResStationEgress(valueWidth)))
+  val rs = IO(Flipped(new RegisterReadEgress(regInfo)))
 
   /** Retired instruction
     */
-  val retire = IO(Output(new Retirement(valueWidth, retireWidth)))
+  val retire = IO(Output(new Retirement(regInfo)))
 
   // Extra ports
   val extras = new mutable.HashMap[String, Data]()
@@ -97,13 +92,14 @@ class UnitSel(
     }
   }
 
+  // pass flush to units
   for (u <- units) {
     u.io.flush := flush
   }
 
   // Arbitration
   for (u <- units) {
-    u.io.next := PipeInstr.empty(valueWidth)
+    u.io.next := PipeInstr.empty(regInfo)
   }
 
   val execMap = Wire(Vec(units.length, Bool()))
@@ -125,7 +121,7 @@ class UnitSel(
   assert(!rs.instr.valid || execMapCheckOneHot)
 
   val pipeExecMap = RegInit(VecInit(Seq.fill(units.length)(false.B)))
-  val pipeInstr = RegInit(ReservedInstr.empty(valueWidth))
+  val pipeInstr = RegInit(IssueQueueInstr.empty())
   val pipeInstrValid = RegInit(false.B)
 
   val pipeInput = Wire(Bool())
@@ -176,30 +172,30 @@ class UnitSel(
 
   if (units.length == 1) {
     println("UnitSel: Single unit")
-    val pipeRetire = RegInit(Retirement.empty(valueWidth, retireWidth))
+    val pipeRetire = RegInit(Retirement.empty(regInfo))
     retire := pipeRetire
     when(units(0).io.stall) {
-      pipeRetire := Retirement.empty(valueWidth, retireWidth)
+      pipeRetire := Retirement.empty(regInfo)
     }.otherwise {
       pipeRetire := Retirement.from(units(0).io)
     }
     when(flush) {
-      pipeRetire := Retirement.empty(valueWidth, retireWidth)
+      pipeRetire := Retirement.empty(regInfo)
     }
   } else if (maxDepth == 0) {
     println("UnitSel: All units have 0 delay")
-    val pipeRetire = RegInit(Retirement.empty(valueWidth, retireWidth))
+    val pipeRetire = RegInit(Retirement.empty(regInfo))
     retire := pipeRetire
     val validMap = units.map(u => !u.io.stall && u.io.retired.instr.valid)
     pipeRetire := Mux1H(validMap.zip(units.map(u => Retirement.from(u.io))))
     when(!VecInit(validMap).asUInt.orR || flush) {
-      pipeRetire := Retirement.empty(valueWidth, retireWidth)
+      pipeRetire := Retirement.empty(regInfo)
     }
   } else {
     println(s"UnitSel: with FIFO depth $fifoDepth")
 
     val retireFifo = RegInit(
-      VecInit(Seq.fill(fifoDepth)(Retirement.empty(valueWidth, retireWidth)))
+      VecInit(Seq.fill(fifoDepth)(Retirement.empty(regInfo)))
     )
     val retireHead = RegInit(0.U(log2Ceil(fifoDepth).W))
     val retireTail = RegInit(0.U(log2Ceil(fifoDepth).W))
@@ -222,7 +218,7 @@ class UnitSel(
     // Output
 
     when(retireTail === retireHead) {
-      retire := Retirement.empty(valueWidth, retireWidth)
+      retire := Retirement.empty(regInfo)
     }.otherwise {
       retire := retireFifo(retireHead)
       retireHead := Mux(
@@ -245,11 +241,11 @@ class UnitSel(
 }
 
 object UnitSel {
-  class Retirement(val valueWidth: Int, val retireWidth: Int)(implicit
+  class Retirement(val regInfo: RegInfo)(implicit
       val coredef: CoreDef
   ) extends Bundle {
-    val instr = new PipeInstr(valueWidth)
-    val info = new RetireInfo(retireWidth)
+    val instr = new PipeInstr(regInfo)
+    val info = new RetireInfo(regInfo)
 
     /** This retirement is valid
       */
@@ -257,18 +253,18 @@ object UnitSel {
   }
 
   object Retirement {
-    def empty(valueWidth: Int, retireWidth: Int)(implicit
+    def empty(regInfo: RegInfo)(implicit
         coredef: CoreDef
     ): Retirement = {
-      val ret = Wire(new Retirement(valueWidth, retireWidth))
-      ret.instr := PipeInstr.empty(valueWidth)
-      ret.info := RetireInfo.vacant(retireWidth)
+      val ret = Wire(new Retirement(regInfo))
+      ret.instr := PipeInstr.empty(regInfo)
+      ret.info := RetireInfo.vacant(regInfo)
 
       ret
     }
 
     def from(port: ExecUnitPort)(implicit coredef: CoreDef): Retirement = {
-      val ret = Wire(new Retirement(port.valueWidth, port.retireWidth))
+      val ret = Wire(new Retirement(port.regInfo))
       ret.instr := port.retired
       ret.info := port.retirement
 

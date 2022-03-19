@@ -118,11 +118,10 @@ object LSUReadState extends ChiselEnum {
 }
 
 class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
-  val retireWidth = coredef.VLEN
-  val valueWidth = coredef.VLEN
+  val regInfo = coredef.REGISTER_INTEGER
   val flush = IO(Input(Bool()))
-  val rs = IO(Flipped(new ResStationEgress(valueWidth)))
-  val retire = IO(Output(new Retirement(valueWidth, retireWidth)))
+  val rs = IO(Flipped(new RegisterReadEgress(coredef.REGISTER_INTEGER)))
+  val retire = IO(Output(new Retirement(regInfo)))
   val extras = new mutable.HashMap[String, Data]()
 
   val vectorReadGroupNum = coredef.VLEN / coredef.XLEN
@@ -131,7 +130,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   val vectorReadRespData = RegInit(
     VecInit.fill(vectorReadGroupNum)(0.U(coredef.XLEN.W))
   )
-  val inflightVectorReadInstr = Reg(new ReservedInstr(valueWidth))
+  val inflightVectorReadInstr = Reg(new IssueQueueInstr())
   val readState = RegInit(LSUReadState.idle)
 
   def isUncached(addr: UInt) = addr < BigInt("80000000", 16).U
@@ -384,7 +383,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
 
   /** Stage 2 state
     */
-  val pipeInstr = RegInit(PipeInstr.empty(valueWidth))
+  val pipeInstr = RegInit(PipeInstr.empty(regInfo))
   val pipeRawAddr = Reg(UInt(coredef.XLEN.W))
   val pipeAddr = Reg(UInt(coredef.XLEN.W))
   val pipeFault = Reg(Bool())
@@ -487,7 +486,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   val mem = Wire(new DelayedMem)
   mem.noop() // By default
 
-  retire.info := RetireInfo.vacant(retireWidth)
+  retire.info := RetireInfo.vacant(regInfo)
   retire.info.branchTaken := false.B // not a branch instruction
   when(pipeFenceLike) {
     retire.info.wb := DontCare

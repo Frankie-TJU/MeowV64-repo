@@ -24,10 +24,9 @@ class CSR(implicit val coredef: CoreDef)
   object CSRState extends ChiselEnum {
     val read, pipe = Value
   }
-  val valueWidth = coredef.XLEN
-  val retireWidth = coredef.XLEN
+  val regInfo = coredef.REGISTER_INTEGER
 
-  val io = IO(new ExecUnitPort(valueWidth, retireWidth))
+  val io = IO(new ExecUnitPort(regInfo))
   val priv = IO(Input(PrivLevel()))
   val status = IO(Input(new Status))
   val writer = IO(new CSRWriter())
@@ -182,7 +181,7 @@ class CSR(implicit val coredef: CoreDef)
     }
   }
 
-  val info = WireDefault(RetireInfo.vacant(retireWidth))
+  val info = WireDefault(RetireInfo.vacant(regInfo))
 
   when(fault) {
     info.exception.ex(ExType.ILLEGAL_INSTR)

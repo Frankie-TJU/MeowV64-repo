@@ -9,10 +9,10 @@ import meowv64.core.CoreDef
 import meowv64.data._
 import meowv64.debug.DebugModule
 import meowv64.debug.Jtag
+import meowv64.debug.JtagBScanTap
 import meowv64.debug.JtagRiscvTap
 import meowv64.interrupt.CLINT
 import meowv64.interrupt.PLIC
-import meowv64.debug.JtagBScanTap
 
 class RiscVSystem(implicit val sDef: SystemDef = new DefaultSystemDef)
     extends Module {

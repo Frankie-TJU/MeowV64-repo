@@ -16,6 +16,8 @@ object FetchEx extends ChiselEnum {
   val none, invalAddr, pageFault = Value
 }
 
+/** Extended instruction info
+  */
 class InstrExt(implicit val coredef: CoreDef) extends Bundle {
   val addr = UInt(coredef.XLEN.W)
   val instr = new Instr
@@ -23,6 +25,9 @@ class InstrExt(implicit val coredef: CoreDef) extends Bundle {
   /** Valid instruction, possibly legal or illegal
     */
   val valid = Bool()
+
+  /** Exception occurred in fetch stage
+    */
   val fetchEx = FetchEx()
 
   /** Exception happens on the second half of this instruction

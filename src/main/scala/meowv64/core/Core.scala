@@ -27,8 +27,8 @@ class CoreDebug(implicit val coredef: CoreDef) extends Bundle {
   val mcycle = UInt(coredef.XLEN.W)
 
   // exec
-  val rsEmptyMask = UInt(coredef.UNIT_COUNT.W)
-  val rsFullMask = UInt(coredef.UNIT_COUNT.W)
+  val rsEmptyMask = UInt(coredef.ISSUE_QUEUES.length.W)
+  val rsFullMask = UInt(coredef.ISSUE_QUEUES.length.W)
   val issueNumBoundedByROBSize = Output(Bool())
 }
 
@@ -83,18 +83,18 @@ class Core(implicit val coredef: CoreDef) extends Module {
   val ras = Module(new RAS)
   val exec = Module(new Exec)
   val regFiles =
-    for ((ty, width, maxOperands) <- coredef.REGISTER_TYPES) yield {
+    for (regInfo <- coredef.REGISTER_TYPES) yield {
       val reg = Module(
         new RegFile(
-          width,
-          32,
-          coredef.ISSUE_NUM * maxOperands, // rs1-3, vd, vm
-          coredef.RETIRE_NUM,
+          regInfo.width,
+          regInfo.physicalRegs,
+          coredef.REGISTER_READ_PORTS(regInfo.regType),
+          coredef.REGISTER_WRITE_PORTS(regInfo.regType),
           // hardwire x0 to zero
-          FIXED_ZERO = (ty == RegType.integer)
+          FIXED_ZERO = regInfo.fixedZero
         )
       )
-      reg.suggestName(s"reg_${ty}")
+      reg.suggestName(s"reg_${regInfo.regType}")
     }
 
   val (csrWriter, csr) = CSR.gen(coredef.XLEN, coredef.HART_ID)

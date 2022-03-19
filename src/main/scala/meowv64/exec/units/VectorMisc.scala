@@ -12,8 +12,6 @@ class VectorMiscExt(implicit val coredef: CoreDef) extends Bundle {
 
 class VectorMisc(override implicit val coredef: CoreDef)
     extends ExecUnit(0, new VectorMiscExt) {
-  override def valueWidth = coredef.VLEN
-  override def retireWidth = coredef.VLEN
   def map(
       stage: Int,
       pipe: PipeInstr,
@@ -72,7 +70,7 @@ class VectorMisc(override implicit val coredef: CoreDef)
   }
 
   def finalize(pipe: PipeInstr, ext: VectorMiscExt): RetireInfo = {
-    val info = WireDefault(RetireInfo.vacant(retireWidth))
+    val info = WireDefault(RetireInfo.vacant(regInfo))
     info.wb := Cat(ext.res.reverse)
 
     info

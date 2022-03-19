@@ -1,4 +1,5 @@
 package meowv64.exec
+
 import chisel3._
 import chisel3.util._
 import meowv64.cache.CoreDCReader
@@ -18,6 +19,8 @@ import meowv64.instr._
 import meowv64.paging.TLBExt
 import meowv64.reg._
 import meowv64.util._
+
+import scala.collection.mutable.ArrayBuffer
 
 /** Out-of-order execution (Tomasulo's algorithm)
   *
@@ -68,8 +71,8 @@ class Exec(implicit val coredef: CoreDef) extends Module {
     val ptw = new TLBExt
 
     // debug
-    val rsEmptyMask = Output(UInt(coredef.UNIT_COUNT.W))
-    val rsFullMask = Output(UInt(coredef.UNIT_COUNT.W))
+    val rsEmptyMask = Output(UInt(coredef.ISSUE_QUEUES.length.W))
+    val rsFullMask = Output(UInt(coredef.ISSUE_QUEUES.length.W))
     val issueNumBoundedByROBSize = Output(Bool())
   })
 
@@ -79,16 +82,20 @@ class Exec(implicit val coredef: CoreDef) extends Module {
   toCtrl.ctrl.stall := false.B
 
   // Register file read/write port
-  // for each register type
+  // for each port
   val toRF = IO(new Bundle {
     val ports =
       MixedVec(
-        for ((ty, width, maxOperands) <- coredef.REGISTER_TYPES)
+        for (port <- coredef.PORTS)
           yield new Bundle {
-            // `maxOperands` read ports per issued instruction
-            val rr = Vec(coredef.ISSUE_NUM * maxOperands, new RegReader(width))
-            // one write port per retired instruction
-            val rw = Vec(coredef.RETIRE_NUM, new RegWriter(width))
+            // `readPorts` read ports
+            val rr = Vec(
+              port.readPorts,
+              new RegReader(port.regType.width, port.regInfo.physicalRegs)
+            )
+            // one write port
+            val rw =
+              new RegWriter(port.regType.width, port.regInfo.physicalRegs)
           }
       )
   })
@@ -105,15 +112,6 @@ class Exec(implicit val coredef: CoreDef) extends Module {
   val cdb = Wire(new CDB)
 
   val renamer = Module(new Renamer)
-  for (idx <- 0 until coredef.REGISTER_TYPES.length) {
-    val maxOperands = coredef.REGISTER_TYPES(idx)._3
-    for (i <- (0 until coredef.ISSUE_NUM)) {
-      for (j <- (0 until maxOperands)) {
-        renamer.ports(idx).rr(i)(j) <> toRF.ports(idx).rr(i * maxOperands + j)
-      }
-    }
-    renamer.ports(idx).rw <> toRF.ports(idx).rw
-  }
   renamer.cdb := cdb
   renamer.toExec.flush := toCtrl.ctrl.flush
 
@@ -133,47 +131,55 @@ class Exec(implicit val coredef: CoreDef) extends Module {
   releaseMem.nodeq()
 
   // Units
-  val lsu = Module(new LSU).suggestName("LSU");
+  val lsu = Module(new LSU).suggestName("LSU")
 
   // collect execution units dynamically
-  val units = for (seq <- coredef.EXECUTION_UNITS) yield {
-    if (seq == Seq(ExecUnitType.lsu)) {
-      lsu
-    } else {
-      val bypassIdx = seq.indexOf(ExecUnitType.bypass)
-      Module(
-        new UnitSel(
-          for (ty <- seq) yield {
-            ty match {
-              case ExecUnitType.alu => Module(new ALU).suggestName("ALU")
-              case ExecUnitType.branch =>
-                Module(new Branch).suggestName("Branch")
-              case ExecUnitType.csr => Module(new CSR).suggestName("CSR")
-              case ExecUnitType.bypass =>
-                Module(new Bypass).suggestName("Bypass")
-              case ExecUnitType.mul => Module(new Mul).suggestName("Mul")
-              case ExecUnitType.div => Module(new Div(16)).suggestName("Div")
-              case ExecUnitType.fma => Module(new FMA).suggestName("FMA")
-              case ExecUnitType.floatMisc =>
-                Module(new FloatMisc).suggestName("FloatMisc")
-              case ExecUnitType.floatDivSqrt =>
-                Module(new FloatDivSqrt).suggestName("FloatDivSqrt")
-              case ExecUnitType.vectorAlu =>
-                Module(new VectorALU).suggestName("VectorALU")
-              case ExecUnitType.vectorMisc =>
-                Module(new VectorMisc).suggestName("VectorMisc")
-            }
-          },
-          instr => {
-            seq.map({ ty =>
-              instr.info.execUnit === ty
-            })
-          },
-          bypassIdx = if (bypassIdx == -1) { None }
-          else { Option(bypassIdx) },
-          hasPipe = false
+  // Issue Queue -> Port -> Execution Unit
+  val units = ArrayBuffer[UnitSelIO]()
+  val issueQueues = ArrayBuffer[IssueQueue]()
+  for ((issueQueueInfo, idx) <- coredef.ISSUE_QUEUES.zipWithIndex) {
+    val issueQueue = Module(new OoOIssueQueue(issueQueueInfo))
+    issueQueues.append(issueQueue)
+
+    for (port <- issueQueueInfo.ports) {
+      val bypassIdx = port.units.indexOf(ExecUnitType.bypass)
+      val regRead = Module(new RegisterRead(port))
+      val unitSel =
+        Module(
+          new UnitSel(
+            port.regInfo,
+            for (unit <- port.units) yield {
+              unit.execUnitType match {
+                case ExecUnitType.alu => Module(new ALU).suggestName("ALU")
+                case ExecUnitType.branch =>
+                  Module(new Branch).suggestName("Branch")
+                case ExecUnitType.csr => Module(new CSR).suggestName("CSR")
+                case ExecUnitType.bypass =>
+                  Module(new Bypass).suggestName("Bypass")
+                case ExecUnitType.mul => Module(new Mul).suggestName("Mul")
+                case ExecUnitType.div => Module(new Div(16)).suggestName("Div")
+                case ExecUnitType.fma => Module(new FMA).suggestName("FMA")
+                case ExecUnitType.floatMisc =>
+                  Module(new FloatMisc).suggestName("FloatMisc")
+                case ExecUnitType.floatDivSqrt =>
+                  Module(new FloatDivSqrt).suggestName("FloatDivSqrt")
+                case ExecUnitType.vectorAlu =>
+                  Module(new VectorALU).suggestName("VectorALU")
+                case ExecUnitType.vectorMisc =>
+                  Module(new VectorMisc).suggestName("VectorMisc")
+              }
+            },
+            instr => {
+              port.units.map({ unit =>
+                instr.info.execUnit === unit.execUnitType
+              })
+            },
+            bypassIdx = if (bypassIdx == -1) { None }
+            else { Option(bypassIdx) },
+            hasPipe = false
+          )
         )
-      ),
+      units.append(unitSel)
     }
   }
 
@@ -193,9 +199,10 @@ class Exec(implicit val coredef: CoreDef) extends Module {
   units(0).extras("priv") := toCtrl.priv
   units(0).extras("status") := toCtrl.status
 
-  assume(units.length == coredef.UNIT_COUNT)
+  assume(units.length == coredef.PORTS.length)
   // TODO: asserts Bypass is in unit 0
 
+  /*
   val stations = units.zipWithIndex.map({
     case (u, idx) => {
       val valueWidth = u.rs.valueWidth
@@ -214,18 +221,21 @@ class Exec(implicit val coredef: CoreDef) extends Module {
       rs
     }
   })
+   */
 
   // collect rs free mask to find bottleneck
-  toCore.rsEmptyMask := Cat(stations.map(_.ingress.empty).reverse)
-  toCore.rsFullMask := Cat(stations.map(!_.ingress.free).reverse)
+  toCore.rsEmptyMask := Cat(issueQueues.map(_.ingress.empty).reverse)
+  toCore.rsFullMask := Cat(issueQueues.map(_.ingress.full).reverse)
 
-  for (s <- stations) {
-    s.cdb := cdb
-    s.ctrl.flush := toCtrl.ctrl.flush
+  for (iq <- issueQueues) {
+    iq.cdb := cdb
+    iq.ctrl.flush := toCtrl.ctrl.flush
 
     // By default: nothing pushes
-    s.ingress := DontCare
-    s.ingress.push := false.B
+    iq.ingress := DontCare
+    for (i <- 0 until coredef.ISSUE_NUM) {
+      iq.ingress.instr(i).valid := false.B
+    }
   }
 
   for (u <- units) {
@@ -251,7 +261,6 @@ class Exec(implicit val coredef: CoreDef) extends Module {
   toIF.accept := issueNum
   renamer.toExec.commit := issueNum
   renamer.toExec.input := toIF.view
-  renamer.toExec.ntag := issuePtr
 
   issuePtr := issuePtr + issueNum
   retirePtr := retirePtr + retireNum
@@ -266,16 +275,15 @@ class Exec(implicit val coredef: CoreDef) extends Module {
 
   val wasGFence = RegInit(false.B)
   val canIssue = Wire(Vec(coredef.ISSUE_NUM, Bool()))
-  // this station is taken by previous instructions
-  var taken = 0.U(coredef.UNIT_COUNT.W)
   issueNum := 0.U
 
   for (idx <- (0 until coredef.ISSUE_NUM)) {
     // whether this instruction can issue without considering previous instructions
     val selfCanIssue = Wire(Bool()).suggestName(s"selfCanIssue_$idx")
-    // sending to which station
-    val sending = Wire(UInt(coredef.UNIT_COUNT.W)).suggestName(s"sending_$idx")
-    val instr = Wire(new ReservedInstr(coredef.XLEN))
+    // sending to which issue queue
+    val sending =
+      Wire(UInt(coredef.ISSUE_QUEUES.length.W)).suggestName(s"sending_$idx")
+    val instr = Wire(new IssueQueueInstr)
 
     // Is global fence? (FENCE.I, CSR)
     val isGFence = (
@@ -300,8 +308,8 @@ class Exec(implicit val coredef: CoreDef) extends Module {
       // Route to applicable stations
       val applicable = Exec.route(toIF.view(idx).instr)
       applicable.suggestName(s"applicable_$idx")
-      // Find available stations
-      val avails = VecInit(stations.map(_.ingress.free)).asUInt()
+      // Find available issue queue
+      val avails = VecInit(issueQueues.map(_.ingress.instr(idx).ready)).asUInt()
       avails.suggestName(s"avails_$idx")
 
       sending := 0.U
@@ -311,48 +319,23 @@ class Exec(implicit val coredef: CoreDef) extends Module {
           || !applicable.orR()
       ) {
         // Is an illegal instruction
-        // Forward to bypass unit
-        selfCanIssue := stations(0).ingress.free && !taken(0)
+        // Forward to bypass unit in integer issue queue
+        selfCanIssue := issueQueues(0).ingress.instr(idx).ready
         sending := 1.U
         // Run immediately
-        instr.rs1ready := true.B
-        instr.rs2ready := true.B
-        instr.rs3ready := true.B
+        instr.rs1Ready := true.B
+        instr.rs2Ready := true.B
+        instr.rs3Ready := true.B
       }.elsewhen(wasGFence && issuePtr =/= retirePtr) {
         // GFence in-flight
         sending := DontCare
         selfCanIssue := false.B
         // TODO: only apply to first instr to optimize timing?
       }.otherwise {
-        val mask = applicable & avails & ~taken
+        val mask = applicable & avails
         mask.suggestName(s"mask_$idx")
 
-        // Find lowest/highest set randomly
-        // To load balance instruction that can fire to multiple stations
-        // e.g. ALU
-        val lowSending = MuxCase(
-          0.U,
-          (0 until coredef.UNIT_COUNT).map(idx =>
-            (
-              mask(idx),
-              (1 << idx).U
-            )
-          )
-        )
-
-        val highSending = MuxCase(
-          0.U,
-          (0 until coredef.UNIT_COUNT).reverse.map(idx =>
-            (
-              mask(idx),
-              (1 << idx).U
-            )
-          )
-        )
-
-        val seed = RegInit(false.B)
-        seed := ~seed
-        sending := Mux(seed, lowSending, highSending)
+        sending := OHToUInt(mask)
 
         selfCanIssue := mask.orR()
 
@@ -376,10 +359,10 @@ class Exec(implicit val coredef: CoreDef) extends Module {
     when(canIssue(idx)) {
       issueNum := (idx + 1).U
 
-      for ((s, en) <- stations.zip(sending.asBools)) {
+      for ((s, en) <- issueQueues.zip(sending.asBools)) {
         when(en) {
-          s.ingress.push := true.B
-          s.ingress.instr := instr
+          s.ingress.instr(idx).valid := true.B
+          s.ingress.instr(idx).bits := instr
         }
       }
 
@@ -387,8 +370,6 @@ class Exec(implicit val coredef: CoreDef) extends Module {
         wasGFence := isGFence
       }
     }
-
-    taken = taken | sending
   }
 
   inflights.writer.cnt := issueNum
@@ -428,11 +409,11 @@ class Exec(implicit val coredef: CoreDef) extends Module {
   // Filling ROB & CDB broadcast
   for (((u, ent), idx) <- units.zip(cdb.entries).zipWithIndex) {
     ent.valid := false.B
-    ent.name := 0.U // Helps to debug, because we are asserting store(0) === 0
+    ent.phys := 0.U // Helps to debug, because we are asserting store(0) === 0
     ent.data := u.retire.info.wb
 
     // TODO: maybe pipeline here?
-    val dist = u.retire.instr.tag -% retirePtr
+    val dist = u.retire.instr.robIndex -% retirePtr
     val oh = UIntToOH(dist)
     val branchResult = u.retire.info.exception
     val canBr = u.retire.instr.instr.valid && branchResult.fire()
@@ -443,16 +424,16 @@ class Exec(implicit val coredef: CoreDef) extends Module {
 
     when(u.retire.instr.instr.valid) {
       when(!u.retire.info.hasMem) {
-        ent.name := u.retire.instr.rdname
+        ent.phys := u.retire.instr.rdPhys
         ent.valid := true.B
       }
 
-      rob(u.retire.instr.tag).hasMem := u.retire.info.hasMem
-      rob(u.retire.instr.tag).valid := true.B
+      rob(u.retire.instr.robIndex).hasMem := u.retire.info.hasMem
+      rob(u.retire.instr.robIndex).valid := true.B
       // for BRANCH instructions, this means taken before normalization
-      rob(u.retire.instr.tag).taken := u.retire.info.branchTaken
-      rob(u.retire.instr.tag).updateFFlags := u.retire.info.updateFFlags
-      rob(u.retire.instr.tag).fflags := u.retire.info.fflags
+      rob(u.retire.instr.robIndex).taken := u.retire.info.branchTaken
+      rob(u.retire.instr.robIndex).updateFFlags := u.retire.info.updateFFlags
+      rob(u.retire.instr.robIndex).fflags := u.retire.info.fflags
     }
   }
 
@@ -471,8 +452,8 @@ class Exec(implicit val coredef: CoreDef) extends Module {
   toCtrl.tval := DontCare
   toCtrl.nepc := inflights.reader.view(0).addr
 
-  cdb.entries(coredef.UNIT_COUNT) := DontCare
-  cdb.entries(coredef.UNIT_COUNT).valid := false.B
+  //cdb.entries(coredef.UNIT_COUNT) := DontCare
+  //cdb.entries(coredef.UNIT_COUNT).valid := false.B
 
   // do not update fflags by default
   toCtrl.fflags.valid := false.B
@@ -494,13 +475,6 @@ class Exec(implicit val coredef: CoreDef) extends Module {
   when(!retireNext.valid) {
     // First one invalid, cannot retire anything
     retireNum := 0.U
-    for (i <- 0 until coredef.REGISTER_TYPES.length) {
-      for (rwp <- toRF.ports(i).rw) {
-        rwp.valid := false.B
-        rwp.addr := 0.U
-        rwp.data := 0.U
-      }
-    }
     toCtrl.branch := ExceptionResult.empty
   }.elsewhen(checkStep && singleStepCounter === 1.U) {
     // Not in debug mode, step=1
@@ -508,24 +482,10 @@ class Exec(implicit val coredef: CoreDef) extends Module {
     // Retires nothing
     toCtrl.stepAck := true.B
     retireNum := 0.U
-    for (i <- 0 until coredef.REGISTER_TYPES.length) {
-      for (rwp <- toRF.ports(i).rw) {
-        rwp.valid := false.B
-        rwp.addr := 0.U
-        rwp.data := 0.U
-      }
-    }
 
     toCtrl.branch := ExceptionResult.empty
   }.elsewhen(retireNext.hasMem) {
     // Is memory operation, wait for memAccSucc
-    for (i <- 0 until coredef.REGISTER_TYPES.length) {
-      for (rwp <- toRF.ports(i).rw) {
-        rwp.valid := false.B
-        rwp.addr := 0.U
-        rwp.data := 0.U
-      }
-    }
 
     // NOTE: previously, for some reason,
     // a one tick delay is added here
@@ -539,19 +499,7 @@ class Exec(implicit val coredef: CoreDef) extends Module {
       rob(retirePtr).valid := false.B
       retirePtr := retirePtr +% 1.U
       when(memResult.hasWB) {
-        cdb.entries(coredef.UNIT_COUNT).name := retirePtr // tag === rdname
-        cdb.entries(coredef.UNIT_COUNT).data := memResult.data
-        cdb.entries(coredef.UNIT_COUNT).valid := true.B
-
-        for (((ty, _, _), i) <- coredef.REGISTER_TYPES.zipWithIndex) {
-          val rw = toRF.ports(i).rw
-
-          when(inflights.reader.view(0).erd.ty === ty) {
-            rw(0).valid := true.B
-            rw(0).addr := inflights.reader.view(0).erd.index
-            rw(0).data := memResult.data
-          }
-        }
+        // TODO
       }
 
       when(pendingBr && pendingBrTag === retirePtr) {
@@ -563,13 +511,6 @@ class Exec(implicit val coredef: CoreDef) extends Module {
   }.elsewhen(toCtrl.int && toCtrl.intAck) {
     // Interrupts inbound, retires nothing
     retireNum := 0.U
-    for (i <- 0 until coredef.REGISTER_TYPES.length) {
-      for (rwp <- toRF.ports(i).rw) {
-        rwp.valid := false.B
-        rwp.addr := 0.U
-        rwp.data := 0.U
-      }
-    }
 
     toCtrl.branch := ExceptionResult.empty
   }.otherwise {
@@ -613,14 +554,7 @@ class Exec(implicit val coredef: CoreDef) extends Module {
       }
 
       when(idx.U < retireNum) {
-        for (((ty, _, _), i) <- coredef.REGISTER_TYPES.zipWithIndex) {
-          val rw = toRF.ports(i).rw
-          when(inflight.erd.ty === ty) {
-            rw(idx).valid := true.B
-            rw(idx).addr := inflight.erd.index
-            rw(idx).data := renamer.toExec.releases(idx).value
-          }
-        }
+        // TODO
 
         // update fflags
         when(info.updateFFlags) {
@@ -646,12 +580,6 @@ class Exec(implicit val coredef: CoreDef) extends Module {
           pendingBr && pendingBrTag === tag && pendingBrResult.ex =/= ExReq.none
         ) {
           // Don't write-back exceptioned instr
-          for (i <- 0 until coredef.REGISTER_TYPES.length) {
-            val rw = toRF.ports(i).rw
-            rw(idx).valid := false.B
-            rw(idx).addr := 0.U
-            rw(idx).data := 0.U
-          }
         }
 
         when(
@@ -662,14 +590,7 @@ class Exec(implicit val coredef: CoreDef) extends Module {
         }
 
         info.valid := false.B
-      }.otherwise {
-        for (i <- 0 until coredef.REGISTER_TYPES.length) {
-          val rw = toRF.ports(i).rw
-          rw(idx).valid := false.B
-          rw(idx).addr := 0.U
-          rw(idx).data := 0.U
-        }
-      }
+      }.otherwise {}
     }
 
     toCtrl.branch := ExceptionResult.empty
@@ -680,9 +601,10 @@ class Exec(implicit val coredef: CoreDef) extends Module {
 
   // Renamer release
   for (i <- (0 until coredef.RETIRE_NUM)) {
+    // TODO
     // renamer.toExec.releases(i).name := rob(retirePtr +% i.U).retirement.instr.rdname
-    renamer.toExec.releases(i).name := retirePtr + i.U
-    renamer.toExec.releases(i).reg := inflights.reader.view(i).erd
+    //renamer.toExec.releases(i).phys := retirePtr + i.U
+    //renamer.toExec.releases(i).reg := inflights.reader.view(i).erd
   }
 
   renamer.toExec.retire := retireNum
@@ -742,21 +664,16 @@ object Exec {
   }
 
   def route(instr: Instr)(implicit coredef: CoreDef): UInt = {
-    val ret = Wire(UInt(coredef.UNIT_COUNT.W))
+    val ret = Wire(UInt(coredef.ISSUE_QUEUES.length.W))
     ret := 0.U
 
     // compute bitset from unit configuration
-    for (ty <- ExecUnitType.all) {
-      when(instr.info.execUnit === ty) {
+    for ((info, idx) <- coredef.ISSUE_QUEUES.zipWithIndex) {
+      when(instr.info.issueQueue === info.issueQueueType) {
         // compute bit mask
-        var mask = 0
-        for ((seq, idx) <- coredef.EXECUTION_UNITS.zipWithIndex) {
-          if (seq.contains(ty)) {
-            mask |= 1 << idx
-          }
-        }
+        val mask = 1 << idx
 
-        ret := mask.U(coredef.UNIT_COUNT.W)
+        ret := mask.U
       }
     }
 

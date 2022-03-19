@@ -12,33 +12,33 @@ object RegType extends ChiselEnum {
     BitPat(op.litValue.U(getWidth.W))
 }
 
-class RegReader(val WIDTH: Int = 64, val COUNT: Int = 32) extends Bundle {
-  val addr = Output(UInt(log2Ceil(COUNT).W))
+class RegReader(val WIDTH: Int, val DEPTH: Int) extends Bundle {
+  val addr = Output(UInt(log2Ceil(DEPTH).W))
   val data = Input(UInt(WIDTH.W))
 }
 
-class RegWriter(val WIDTH: Int = 64, val COUNT: Int = 32) extends Bundle {
+class RegWriter(val WIDTH: Int, val DEPTH: Int) extends Bundle {
   // this is required since float register 0 is not wired to zero
   val valid = Output(Bool())
-  val addr = Output(UInt(log2Ceil(COUNT).W))
+  val addr = Output(UInt(log2Ceil(DEPTH).W))
   val data = Output(UInt(WIDTH.W))
 }
 
 // Standard Registers
 // TODO: support multi port
 class RegFile(
-    WIDTH: Int = 64,
-    COUNT: Int = 32,
-    READ_COUNT: Int = 2,
-    WRITE_COUNT: Int = 1,
+    WIDTH: Int,
+    DEPTH: Int,
+    READ_COUNT: Int,
+    WRITE_COUNT: Int,
     FIXED_ZERO: Boolean = true
 ) extends Module {
   val io = IO(new Bundle {
-    val reads = Vec(READ_COUNT, Flipped(new RegReader(WIDTH, COUNT)))
-    val writes = Flipped(Vec(WRITE_COUNT, new RegWriter(WIDTH, COUNT)))
+    val reads = Vec(READ_COUNT, Flipped(new RegReader(WIDTH, DEPTH)))
+    val writes = Flipped(Vec(WRITE_COUNT, new RegWriter(WIDTH, DEPTH)))
   })
 
-  val regs = RegInit(VecInit(List.fill(COUNT)(0).map(_.U(WIDTH.W))))
+  val regs = RegInit(VecInit(List.fill(DEPTH)(0).map(_.U(WIDTH.W))))
 
   for (read <- io.reads) {
     when(read.addr === 0.U && FIXED_ZERO.B) {

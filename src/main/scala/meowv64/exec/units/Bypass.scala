@@ -16,8 +16,6 @@ class BypassExt(implicit val coredef: CoreDef) extends Bundle {
 
 class Bypass(override implicit val coredef: CoreDef)
     extends ExecUnit(0, new BypassExt) {
-  override def valueWidth = coredef.XLEN
-  override def retireWidth = coredef.XLEN
 
   def map(
       stage: Int,
@@ -46,7 +44,7 @@ class Bypass(override implicit val coredef: CoreDef)
     (ext, false.B)
   }
   def finalize(pipe: PipeInstr, ext: BypassExt): RetireInfo = {
-    val info = WireDefault(RetireInfo.vacant(retireWidth))
+    val info = WireDefault(RetireInfo.vacant(regInfo))
 
     val ifAddr = WireDefault(pipe.instr.addr)
     when(pipe.instr.acrossPageEx) {

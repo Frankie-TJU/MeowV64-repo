@@ -9,12 +9,14 @@ import meowv64.core.CoreDef
 import meowv64.core.ExReq
 import meowv64.core.ExType
 import meowv64.core.PrivLevel
+import meowv64.core.RegInfo
 import meowv64.core.Status
 import meowv64.instr.BPUResult
 import meowv64.instr.BranchPrediction
 import meowv64.instr.Decoder.InstrType
 import meowv64.instr.InstrExt
 import meowv64.instr.RegIndex
+import meowv64.reg.RegType
 
 /** Exception result
   *
@@ -49,7 +51,12 @@ class ExceptionResult(implicit val coredef: CoreDef) extends Bundle {
     */
   val target = UInt(coredef.XLEN.W)
 
+  /** Exception request
+    */
   val ex = ExReq()
+
+  /** Exception type
+    */
   val exType = ExType()
 
   def nofire = {
@@ -94,7 +101,7 @@ class ExceptionResult(implicit val coredef: CoreDef) extends Bundle {
     exType := DontCare
   }
 
-  /** RISC-V Exception
+  /** Standard RISC-V Exception
     */
   def ex(et: ExType.Type) {
     valid := false.B
@@ -135,12 +142,12 @@ object ExceptionResult {
   *
   * @param coredef
   */
-class RetireInfo(val retireWidth: Int)(implicit val coredef: CoreDef)
+class RetireInfo(val regInfo: RegInfo)(implicit val coredef: CoreDef)
     extends Bundle {
 
   /** Writeback data or trap value(mtval, stval)
     */
-  val wb = UInt(retireWidth.W)
+  val wb = UInt(regInfo.width.W)
 
   /** Update fflags for floating point operations
     */
@@ -161,8 +168,8 @@ class RetireInfo(val retireWidth: Int)(implicit val coredef: CoreDef)
 }
 
 object RetireInfo {
-  def vacant(dataWidth: Int)(implicit coredef: CoreDef): RetireInfo = {
-    val info = Wire(new RetireInfo(dataWidth))
+  def vacant(regInfo: RegInfo)(implicit coredef: CoreDef): RetireInfo = {
+    val info = Wire(new RetireInfo(regInfo))
 
     info.exception.nofire
     info.wb := 0.U
@@ -175,60 +182,66 @@ object RetireInfo {
   }
 }
 
-/** Instruction in execution pipeline, after both operands are ready
+/** Instruction in execution pipeline, after all operands are ready
   *
   * Besides the instruction from decoding, we have the following additional
   * fields
   *   - rs1val: value of the rs1 operand
   *   - rs2val: value of the rs2 operand
   *   - rs3val: value of the rs3 operand
-  *   - rdname: Name of the rd register. This comes from renaming
-  *   - tag: tag of this instruction. Tags are self-incrementing based on issue
-  *     order, and wraps around at length(rob) = 2^length(name) =
-  *     MAX_INFLIGHT_INSTR. When its execution finishes, this instruction is
-  *     always put into rob[tag]
   *
   * @param coredef
   */
-class PipeInstr(val valueWidth: Int)(implicit val coredef: CoreDef)
-    extends Bundle {
-  val instr = new InstrExt
-
-  val rs1val = UInt(valueWidth.W)
-  val rs2val = UInt(valueWidth.W)
-  val rs3val = UInt(valueWidth.W)
-
-  val rdname = UInt(log2Ceil(coredef.INFLIGHT_INSTR_LIMIT).W)
-  val tag = UInt(log2Ceil(coredef.INFLIGHT_INSTR_LIMIT).W)
+class PipeInstr(val regInfo: RegInfo)(implicit override val coredef: CoreDef)
+    extends IssueQueueInstr() {
+  val rs1val = UInt(regInfo.width.W)
+  val rs2val = UInt(regInfo.width.W)
+  val rs3val = UInt(regInfo.width.W)
 }
 
-/** Instruction in reservation station
+/** Instruction in issue queue
   *
-  * Besides the fields in PipeStr, we have the following additional fields
-  *   - rs1name: name of the rs1 operand
-  *   - rs2name: name of the rs2 operand
-  *   - rs3name: name of the rs3 operand
-  *   - rs1ready: is rs1 ready?
-  *   - rs2ready: is rs2 ready?
-  *   - rs3ready: is rs3 ready?
+  * Besides the fields in InstrExt, we have the following additional fields
+  *   - rs1Phys: physical register of the rs1 operand
+  *   - rs2Phys: physical register of the rs2 operand
+  *   - rs3Phys: physical register of the rs3 operand
+  *   - rs1Ready: is rs1 ready?
+  *   - rs2Ready: is rs2 ready?
+  *   - rs3Ready: is rs3 ready?
+  *   - rdPhys: physical register of rd
+  *   - robIndex: index of this instruction in rob
   *
   * @param coredef
   */
-class ReservedInstr(override val valueWidth: Int)(
-    override implicit val coredef: CoreDef
-) extends PipeInstr(valueWidth) {
-  val rs1name = UInt(log2Ceil(coredef.INFLIGHT_INSTR_LIMIT).W)
-  val rs2name = UInt(log2Ceil(coredef.INFLIGHT_INSTR_LIMIT).W)
-  val rs3name = UInt(log2Ceil(coredef.INFLIGHT_INSTR_LIMIT).W)
-  val rs1ready = Bool()
-  val rs2ready = Bool()
-  val rs3ready = Bool()
+class IssueQueueInstr()(implicit
+    val coredef: CoreDef
+) extends Bundle {
+  val instr = new InstrExt
+
+  val rs1Phys = UInt(log2Ceil(coredef.MAX_PHYSICAL_REGISTERS).W)
+  val rs2Phys = UInt(log2Ceil(coredef.MAX_PHYSICAL_REGISTERS).W)
+  val rs3Phys = UInt(log2Ceil(coredef.MAX_PHYSICAL_REGISTERS).W)
+  val rs1Ready = Bool()
+  val rs2Ready = Bool()
+  val rs3Ready = Bool()
+
+  /** Physical register of rd
+    */
+  val rdPhys = UInt(log2Ceil(coredef.MAX_PHYSICAL_REGISTERS).W)
+
+  /** Physical register of rd previously
+    */
+  val staleRdPhys = UInt(log2Ceil(coredef.MAX_PHYSICAL_REGISTERS).W)
+
+  /** Rob index
+    */
+  val robIndex = UInt(log2Ceil(coredef.INFLIGHT_INSTR_LIMIT).W)
 
   /** Illegal instruction
     */
   def illegal = instr.illegal
 
-  def ready = (illegal || (rs1ready && rs2ready && rs3ready))
+  def ready = (illegal || (rs1Ready && rs2Ready && rs3Ready))
 }
 
 /** Instruction pushed by issuer, and reused by rob
@@ -267,22 +280,20 @@ object InflightInstr {
 }
 
 object PipeInstr {
-  def empty(valueWidth: Int)(implicit coredef: CoreDef): PipeInstr = {
-    val ret = Wire(new PipeInstr(valueWidth))
+  def empty(regInfo: RegInfo)(implicit coredef: CoreDef): PipeInstr = {
+    val ret = Wire(new PipeInstr(regInfo))
     ret.instr := InstrExt.empty
     ret.rs1val := DontCare
     ret.rs2val := DontCare
     ret.rs3val := DontCare
-    ret.rdname := DontCare
-    ret.tag := DontCare
 
     ret
   }
 }
 
-object ReservedInstr {
-  def empty(valueWidth: Int)(implicit coredef: CoreDef): ReservedInstr = {
-    val ret = Wire(new ReservedInstr(valueWidth))
+object IssueQueueInstr {
+  def empty()(implicit coredef: CoreDef): IssueQueueInstr = {
+    val ret = Wire(new IssueQueueInstr())
     ret := DontCare
     ret.instr := InstrExt.empty
 
@@ -300,21 +311,21 @@ object ReservedInstr {
   *
   * @param coredef
   */
-class ExecUnitPort(val valueWidth: Int, val retireWidth: Int)(implicit
+class ExecUnitPort(val regInfo: RegInfo)(implicit
     val coredef: CoreDef
 ) extends Bundle {
-  val next = Input(new PipeInstr(valueWidth))
+  val next = Input(new PipeInstr(regInfo))
 
   val stall = Output(Bool())
   val flush = Input(Bool())
 
   /** The instruction that just finished execution
     */
-  val retirement = Output(new RetireInfo(retireWidth))
+  val retirement = Output(new RetireInfo(regInfo))
 
   /** Result of execution
     */
-  val retired = Output(new PipeInstr(valueWidth))
+  val retired = Output(new PipeInstr(regInfo))
 }
 
 /** Trait representing an execution unit
@@ -344,7 +355,7 @@ trait ExecUnitInt {
   * @param ExtData:
   *   extra data's type
   * @param coredef:
-  *   core defination
+  *   core definition
   */
 abstract class ExecUnit[T <: Data](
     val DEPTH: Int,
@@ -353,16 +364,15 @@ abstract class ExecUnit[T <: Data](
     val coredef: CoreDef
 ) extends Module
     with ExecUnitInt {
-  def valueWidth: Int = ???
-  def retireWidth: Int = ???
-  val io = IO(new ExecUnitPort(valueWidth, retireWidth))
+  def regInfo: RegInfo = ???
+  val io = IO(new ExecUnitPort(regInfo))
 
   var current = if (DEPTH != 0) {
     val storeInit = Wire(
       Vec(
         DEPTH,
         new Bundle {
-          val pipe = new PipeInstr(valueWidth)
+          val pipe = new PipeInstr(regInfo)
           val ext = ExtData.cloneType
         }
       )
@@ -419,14 +429,14 @@ abstract class ExecUnit[T <: Data](
 
       when(io.flush) { // Override current
         for (c <- current) {
-          c.pipe := PipeInstr.empty(valueWidth)
+          c.pipe := PipeInstr.empty(regInfo)
           c.ext := DontCare
         }
       }
 
       io.retired := current(DEPTH - 1).pipe
       when(!io.retired.instr.valid) {
-        io.retirement := RetireInfo.vacant(retireWidth)
+        io.retirement := RetireInfo.vacant(regInfo)
       }.otherwise {
         io.retirement := finalize(current(DEPTH - 1).pipe, nExt)
       }
@@ -436,7 +446,7 @@ abstract class ExecUnit[T <: Data](
       // Use chisel's unconnected wire check to enforce that no ext is exported from this exec unit
       io.retired := io.next
       when(!io.retired.instr.valid) {
-        io.retirement := RetireInfo.vacant(retireWidth)
+        io.retirement := RetireInfo.vacant(regInfo)
       }.otherwise {
         io.retirement := finalize(io.next, nExt)
       }
@@ -470,16 +480,18 @@ abstract class ExecUnit[T <: Data](
 /** Entry of common data bus
   *
   *   - valid: does this entry have any data in it?
-  *   - name: name of the broadcasted virtual register
+  *   - phys: index of the broadcasted physical register
   *   - data: value to be broadcasted
   *
   * @param coredef
   *   core definition
   */
-class CDBEntry(implicit val coredef: CoreDef) extends Bundle {
+class CDBEntry(val regInfo: RegInfo)(implicit val coredef: CoreDef)
+    extends Bundle {
   val valid = Bool()
-  val name = UInt(log2Ceil(coredef.INFLIGHT_INSTR_LIMIT).W)
-  val data = UInt(coredef.VLEN.W)
+  val phys = UInt(log2Ceil(regInfo.physicalRegs).W)
+  val regType = RegType()
+  val data = UInt(regInfo.width.W)
 }
 
 /** Common data bus
@@ -488,7 +500,12 @@ class CDBEntry(implicit val coredef: CoreDef) extends Bundle {
   *   core definition
   */
 class CDB(implicit val coredef: CoreDef) extends Bundle {
-  val entries = Vec(coredef.UNIT_COUNT + 1, new CDBEntry)
+  // each port has a corresponding cdb entry
+  val entries = MixedVec(
+    coredef.PORTS.map(port =>
+      new CDBEntry(coredef.REGISTER_MAPPING(port.regType))
+    )
+  )
 }
 
 /** Additional ports

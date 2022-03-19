@@ -35,8 +35,6 @@ class FMA(override implicit val coredef: CoreDef)
       1,
       new FMAExt
     ) {
-  override def valueWidth = coredef.XLEN
-  override def retireWidth = coredef.XLEN
 
   def map(stage: Int, pipe: PipeInstr, ext: Option[FMAExt]): (FMAExt, Bool) = {
     val state = Wire(new FMAExt)
@@ -172,7 +170,7 @@ class FMA(override implicit val coredef: CoreDef)
   }
 
   def finalize(pipe: PipeInstr, ext: FMAExt): RetireInfo = {
-    val info = WireDefault(RetireInfo.vacant(retireWidth))
+    val info = WireDefault(RetireInfo.vacant(regInfo))
     // result
     info.wb := ext.res.asUInt
 

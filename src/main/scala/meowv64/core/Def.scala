@@ -3,7 +3,79 @@ package meowv64.core
 import chisel3.util.log2Ceil
 import meowv64.cache._
 import meowv64.instr.ExecUnitType
+import meowv64.instr.IssueQueueType
 import meowv64.reg.RegType
+
+/** Info about register
+  *
+  * @param regType
+  *   Register type
+  * @param width
+  *   Register width
+  * @param physicalRegs
+  *   Number of physical registers
+  * @param maxOperandNum
+  *   Maximum number of operands
+  * @param fixedZero
+  *   Zero register is fixed to zero
+  */
+case class RegInfo(
+    regType: RegType.Type,
+    width: Int,
+    physicalRegs: Int,
+    maxOperandNum: Int,
+    fixedZero: Boolean
+)
+
+case class IssueQueueInfo(
+    issueQueueType: IssueQueueType.Type,
+    depth: Int,
+    ports: Seq[PortInfo]
+)
+
+/** Info about execution unit
+  *
+  * @param execUnitType
+  *   Execution unit type enum
+  * @param maxOperandNum
+  *   Maximum operand count
+  * @param regType
+  *   Operand register type
+  */
+case class ExecutionUnitInfo(
+    execUnitType: ExecUnitType.Type,
+    maxOperandNum: Int,
+    regType: RegType.Type
+)
+
+class ExecutionUnitALU
+    extends ExecutionUnitInfo(ExecUnitType.alu, 2, RegType.integer)
+class ExecutionUnitBranch
+    extends ExecutionUnitInfo(ExecUnitType.branch, 2, RegType.integer)
+class ExecutionUnitCSR
+    extends ExecutionUnitInfo(ExecUnitType.csr, 2, RegType.integer)
+class ExecutionUnitBypass
+    extends ExecutionUnitInfo(ExecUnitType.bypass, 0, RegType.integer)
+class ExecutionUnitMul
+    extends ExecutionUnitInfo(ExecUnitType.mul, 2, RegType.integer)
+class ExecutionUnitDiv
+    extends ExecutionUnitInfo(ExecUnitType.div, 2, RegType.integer)
+class ExecutionUnitFMA
+    extends ExecutionUnitInfo(ExecUnitType.fma, 3, RegType.float)
+class ExecutionUnitFloatMisc
+    extends ExecutionUnitInfo(ExecUnitType.floatMisc, 2, RegType.float)
+class ExecutionUnitFloatDivSqrt
+    extends ExecutionUnitInfo(ExecUnitType.floatDivSqrt, 2, RegType.float)
+class ExecutionUnitLSU
+    extends ExecutionUnitInfo(ExecUnitType.lsu, 2, RegType.integer)
+
+case class PortInfo(
+    regType: RegType.Type,
+    units: Seq[ExecutionUnitInfo],
+    readPorts: Int
+)(implicit coredef: CoreDef) {
+  def regInfo = coredef.REGISTER_MAPPING(regType)
+}
 
 abstract class CoreDef {
   outer =>
@@ -27,50 +99,76 @@ abstract class CoreDef {
 
   val HART_ID: Int
 
-  /** This is one larger than the actual maximum number, because we are
-    * reserving name 0 for reg 0
+  /** Inflight instruction limit, also rob size
     */
   val INFLIGHT_INSTR_LIMIT = 32
 
-  /** Execution units
-    */
-  val EXECUTION_UNITS: Seq[Seq[ExecUnitType.Type]] = Seq(
-    // port 1: ALU + Branch + CSR + Bypass
-    Seq(
-      ExecUnitType.alu,
-      ExecUnitType.branch,
-      ExecUnitType.csr,
-      ExecUnitType.bypass
+  val ISSUE_QUEUES: Seq[IssueQueueInfo] = Seq(
+    // Integer issue queue
+    IssueQueueInfo(
+      IssueQueueType.int,
+      16,
+      ports = Seq(
+        // port 1: ALU + Branch + CSR + Bypass
+        PortInfo(
+          RegType.integer,
+          Seq(
+            new ExecutionUnitALU(),
+            new ExecutionUnitBranch(),
+            new ExecutionUnitCSR(),
+            new ExecutionUnitBypass()
+          ),
+          2
+        )(this),
+        // port 2: ALU + Mul + Div
+        PortInfo(
+          RegType.integer,
+          Seq(
+            new ExecutionUnitALU(),
+            new ExecutionUnitMul(),
+            new ExecutionUnitDiv()
+          ),
+          2
+        )(this)
+      )
     ),
-    // port 2: ALU + Mul + Div
-    Seq(
-      ExecUnitType.alu,
-      ExecUnitType.mul,
-      ExecUnitType.div
+    // Float issue queue
+    IssueQueueInfo(
+      IssueQueueType.fp,
+      16,
+      ports = Seq(
+        // port 3: FMA + FloatMisc + FloatDivSqrt
+        PortInfo(
+          RegType.float,
+          Seq(
+            new ExecutionUnitFMA(),
+            new ExecutionUnitFloatMisc(),
+            new ExecutionUnitFloatDivSqrt()
+          ),
+          3
+        )(this)
+      )
     ),
-    // port 3: FMA + FloatMisc + FloatDivSqrt
-    Seq(
-      ExecUnitType.fma,
-      ExecUnitType.floatMisc,
-      ExecUnitType.floatDivSqrt
-    ),
-    // port 4: VectorALU + VectorMisc
-    Seq(
-      ExecUnitType.vectorAlu,
-      ExecUnitType.vectorMisc
-    ),
-    // port 5: LSU
-    Seq(ExecUnitType.lsu)
+    // Memory issue queue
+    IssueQueueInfo(
+      IssueQueueType.mem,
+      16,
+      ports = Seq(
+        // port 5: LSU
+        PortInfo(
+          RegType.integer,
+          Seq(
+            new ExecutionUnitLSU()
+          ),
+          2
+        )(this)
+      )
+    )
   )
 
-  val UNIT_COUNT: Int = EXECUTION_UNITS.length
-  val RESERVATION_STATION_DEPTHS = Seq(
-    8,
-    4,
-    4,
-    4,
-    16
-  )
+  /** Ports
+    */
+  val PORTS: Seq[PortInfo] = ISSUE_QUEUES.flatMap(_.ports)
 
   /** L1 line width in bytes
     */
@@ -80,16 +178,55 @@ abstract class CoreDef {
     */
   val RAS_SIZE: Int = 8
 
-  /** List of (register type, width, max operands)
-    *
-    * integer: rs1 rs2. float: rs1 rs2 rs3. vector: vs1 vs2 vs3(vd) vm.
+  def REGISTER_INTEGER =
+    RegInfo(RegType.integer, XLEN, 64, 2, true)
+  def REGISTER_FLOAT =
+    RegInfo(RegType.float, XLEN, 32, 3, false)
+
+  /** List of register configurations
     */
-  def REGISTER_TYPES: Seq[(RegType.Type, Int, Int)] =
+  def REGISTER_TYPES: Seq[RegInfo] =
     Seq(
-      (RegType.integer, XLEN, 2),
-      (RegType.float, XLEN, 3),
-      (RegType.vector, VLEN, 4)
-    );
+      REGISTER_INTEGER,
+      REGISTER_FLOAT
+    )
+
+  def REGISTER_TYPE_COUNT: Int = REGISTER_TYPES.length
+
+  def REGISTER_MAPPING: Map[RegType.Type, RegInfo] =
+    Map((RegType.integer, REGISTER_INTEGER), (RegType.float, REGISTER_FLOAT))
+
+  /** Maximum physical register count across different types
+    */
+  def MAX_PHYSICAL_REGISTERS: Int = REGISTER_TYPES.map(_.physicalRegs).max
+
+  /** Compute register read ports
+    */
+  def REGISTER_READ_PORTS: Map[RegType.Type, Int] = {
+    for (regInfo <- REGISTER_TYPES) yield {
+      // collect all read ports
+      (
+        regInfo.regType,
+        PORTS
+          .filter(_.regType == regInfo.regType)
+          .map(_.readPorts)
+          .sum
+      )
+    }
+  }.toMap
+
+  /** Compute register write ports
+    */
+  def REGISTER_WRITE_PORTS: Map[RegType.Type, Int] = {
+    for (regInfo <- REGISTER_TYPES) yield {
+      // collect all write ports
+      (
+        regInfo.regType,
+        PORTS
+          .count(_.regType == regInfo.regType)
+      )
+    }
+  }.toMap
 
   /** List of supported float types
     */

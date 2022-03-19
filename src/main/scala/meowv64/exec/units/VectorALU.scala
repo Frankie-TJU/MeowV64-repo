@@ -12,8 +12,6 @@ class VectorALUExt(implicit val coredef: CoreDef) extends Bundle {
 
 class VectorALU(override implicit val coredef: CoreDef)
     extends ExecUnit(0, new VectorALUExt) {
-  override def valueWidth = coredef.VLEN
-  override def retireWidth = coredef.VLEN
   def map(
       stage: Int,
       pipe: PipeInstr,
@@ -61,7 +59,7 @@ class VectorALU(override implicit val coredef: CoreDef)
   }
 
   def finalize(pipe: PipeInstr, ext: VectorALUExt): RetireInfo = {
-    val info = WireDefault(RetireInfo.vacant(retireWidth))
+    val info = WireDefault(RetireInfo.vacant(regInfo))
     info.wb := Cat(ext.res.reverse)
 
     info

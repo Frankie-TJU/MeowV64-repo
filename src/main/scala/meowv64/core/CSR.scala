@@ -56,8 +56,8 @@ object CSRPort {
 
 /** All CSR, mutable or immutable
   *
-  * We are not declaring it as a bundle, because we are not passing it around
-  * as a whole, and it's not an individual module as well
+  * We are not declaring it as a bundle, because we are not passing it around as
+  * a whole, and it's not an individual module as well
   */
 class CSR(val XLEN: Int) {
   val readers = CSR.addrMap.values

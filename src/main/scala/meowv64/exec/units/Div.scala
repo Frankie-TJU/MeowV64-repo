@@ -17,8 +17,6 @@ class Div(val ROUND_PER_STAGE: Int)(override implicit val coredef: CoreDef)
       coredef.XLEN / ROUND_PER_STAGE,
       new DivExt
     ) {
-  override def valueWidth = coredef.XLEN
-  override def retireWidth = coredef.XLEN
 
   val unroll = 2
   val round = RegInit(0.U(log2Ceil(ROUND_PER_STAGE / unroll).W))
@@ -208,7 +206,7 @@ class Div(val ROUND_PER_STAGE: Int)(override implicit val coredef: CoreDef)
     }
      */
 
-    val info = WireDefault(RetireInfo.vacant(retireWidth))
+    val info = WireDefault(RetireInfo.vacant(regInfo))
 
     val extended = Wire(SInt(coredef.XLEN.W))
     info.wb := extended.asUInt()
