@@ -38,20 +38,30 @@ class RegFile(
     val writes = Flipped(Vec(WRITE_COUNT, new RegWriter(WIDTH, DEPTH)))
   })
 
-  val regs = RegInit(VecInit(List.fill(DEPTH)(0).map(_.U(WIDTH.W))))
+  val regs = SyncReadMem(DEPTH, UInt(WIDTH.W))
+  val lastWrites = RegNext(io.writes)
 
+  // read has one cycle delay
   for (read <- io.reads) {
-    when(read.addr === 0.U && FIXED_ZERO.B) {
+    val addr = RegNext(read.addr)
+    val readData = regs.read(read.addr)
+    when(addr === 0.U && FIXED_ZERO.B) {
       // x0 is hard wired to zero
       read.data := 0.U
     }.otherwise {
-      read.data := regs(read.addr)
+      // bypass read & write in one cycle
+      read.data := readData
+      for (writes <- lastWrites) {
+        when(writes.valid && writes.addr === addr) {
+          read.data := writes.data
+        }
+      }
     }
   }
 
   for (write <- io.writes) {
     when(write.valid) {
-      regs(write.addr) := write.data
+      regs.write(write.addr, write.data)
     }
   }
 

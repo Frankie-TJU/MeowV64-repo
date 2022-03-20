@@ -204,7 +204,7 @@ abstract class CoreDef {
 
   /** Compute register read ports
     */
-  def NUM_REG_READ_PORT: Map[RegType.Type, Int] = {
+  def REG_READ_PORT_COUNT: Map[RegType.Type, Int] = {
     for (regInfo <- REG_TYPES) yield {
       // collect all read ports
       (
@@ -219,7 +219,7 @@ abstract class CoreDef {
 
   /** Compute register write ports
     */
-  def NUM_REG_WRITE_PORT: Map[RegType.Type, Int] = {
+  def REG_WRITE_PORT_COUNT: Map[RegType.Type, Int] = {
     for (regInfo <- REG_TYPES) yield {
       // collect all write ports
       (

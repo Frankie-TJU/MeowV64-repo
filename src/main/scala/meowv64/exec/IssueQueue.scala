@@ -44,7 +44,7 @@ class OoOIssueQueue(info: IssueQueueInfo)(implicit
 
   val DEPTH = info.depth
   val ISSUE_NUM = coredef.ISSUE_NUM
-  val NUM_PORTS = info.ports.length
+  val PORT_COUNT = info.ports.length
 
   val ingress = IO(new Bundle {
     val instr = Flipped(Vec(coredef.ISSUE_NUM, Decoupled(new IssueQueueInstr)))
@@ -52,7 +52,7 @@ class OoOIssueQueue(info: IssueQueueInfo)(implicit
     val full = Output(Bool())
   })
 
-  val egress = IO(Vec(NUM_PORTS, new IssueQueueEgress()))
+  val egress = IO(Vec(PORT_COUNT, new IssueQueueEgress()))
 
   val cdb = IO(Input(new CDB))
   val ctrl = IO(new Bundle {
@@ -106,20 +106,20 @@ class OoOIssueQueue(info: IssueQueueInfo)(implicit
   }
 
   // default wiring
-  for (i <- 0 until NUM_PORTS) {
+  for (i <- 0 until PORT_COUNT) {
     egress(i).instr.valid := false.B
     egress(i).instr.bits := DontCare
   }
 
   // mutable array of port issued
-  val portIssued = Array.fill(NUM_PORTS)(Bool())
-  for (i <- 0 until NUM_PORTS) {
+  val portIssued = Array.fill(PORT_COUNT)(Bool())
+  for (i <- 0 until PORT_COUNT) {
     portIssued(i) = false.B
   }
 
   for (i <- 0 until DEPTH) {
     var issued = false.B
-    for (j <- 0 until NUM_PORTS) {
+    for (j <- 0 until PORT_COUNT) {
       val portUnits = info.ports(j).units.map(_.execUnitType)
       val allow = portUnits
         .map(_ === nextStore(i).instr.instr.info.execUnit)
@@ -228,8 +228,8 @@ class LSBuf(info: IssueQueueInfo)(implicit val coredef: CoreDef)
 
   val DEPTH = info.depth
   val ISSUE_NUM = coredef.ISSUE_NUM
-  val NUM_PORTS = info.ports.length
-  assert(NUM_PORTS == 1)
+  val PORT_COUNT = info.ports.length
+  assert(PORT_COUNT == 1)
 
   val ingress = IO(new Bundle {
     val instr = Flipped(Vec(coredef.ISSUE_NUM, Decoupled(new IssueQueueInstr)))
@@ -237,7 +237,7 @@ class LSBuf(info: IssueQueueInfo)(implicit val coredef: CoreDef)
     val full = Output(Bool())
   })
 
-  val egress = IO(Vec(NUM_PORTS, new IssueQueueEgress()))
+  val egress = IO(Vec(PORT_COUNT, new IssueQueueEgress()))
 
   val fs = IO(new DCFenceStatus(coredef.L1D))
 

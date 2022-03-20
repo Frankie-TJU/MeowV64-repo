@@ -88,8 +88,8 @@ class Core(implicit val coredef: CoreDef) extends Module {
         new RegFile(
           regInfo.width,
           regInfo.physicalRegs,
-          coredef.NUM_REG_READ_PORT(regInfo.regType),
-          coredef.NUM_REG_WRITE_PORT(regInfo.regType),
+          coredef.REG_READ_PORT_COUNT(regInfo.regType),
+          coredef.REG_WRITE_PORT_COUNT(regInfo.regType),
           // hardwire x0 to zero
           FIXED_ZERO = regInfo.fixedZero
         )

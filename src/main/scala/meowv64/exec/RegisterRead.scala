@@ -36,12 +36,14 @@ class RegisterRead(portInfo: PortInfo)(implicit
     val toUnits = new RegisterReadEgress(regInfo)
   })
 
-  // stage 1: read from register file
-  val s1Instr = Reg(new IssueQueueInstr())
+  // stage 0: read from register file
+  val s0Instr = WireInit(io.toIssueQueue.instr.instr.bits)
+  // stage 1: pass to execution unit
+  val s1Instr = Reg(new PipeInstr(regInfo))
   val s1Valid = RegInit(false.B)
 
   val phys = WireInit(
-    VecInit(s1Instr.rs1Phys, s1Instr.rs2Phys, s1Instr.rs3Phys)
+    VecInit(s0Instr.rs1Phys, s0Instr.rs2Phys, s0Instr.rs3Phys)
   )
   for (i <- 0 until portInfo.readPorts) {
     io.toRegFile.reader(i).addr := phys(i)
@@ -52,39 +54,44 @@ class RegisterRead(portInfo: PortInfo)(implicit
     op(i) := io.toRegFile.reader(i).data
   }
 
-  // stage 2: pass to execution unit
-  val s2Instr = Reg(new PipeInstr(regInfo))
-  val s2Valid = RegInit(false.B)
-  io.toUnits.instr.bits := s2Instr
-  io.toUnits.instr.valid := s2Valid
+  io.toUnits.instr.valid := s1Valid
 
   // pipe logic
-  val s2ToEgress = WireInit(io.toUnits.instr.fire)
-  val s1ToS2 = WireInit(s1Valid && (s2ToEgress || !s2Valid))
-  val ingressToS1 = io.toIssueQueue.instr.instr.valid
-  io.toIssueQueue.instr.instr.ready := s1ToS2 || !s1Valid
+  val s1ToEgress = WireInit(io.toUnits.instr.fire)
+  val ingressToS1 = WireInit(io.toIssueQueue.instr.instr.fire)
+  io.toIssueQueue.instr.instr.ready := s1ToEgress || !s1Valid
 
   when(ingressToS1) {
     s1Valid := true.B
-    s1Instr := io.toIssueQueue.instr.instr.bits
-  }.elsewhen(s1ToS2) {
+
+    s1Instr.instr := s0Instr.instr
+    s1Instr.robIndex := s0Instr.robIndex
+    s1Instr.rdPhys := s0Instr.rdPhys
+
+  }.elsewhen(s1ToEgress) {
     s1Valid := false.B
   }
 
-  when(s1ToS2) {
-    s2Valid := true.B
-    s2Instr.instr := s1Instr.instr
-    s2Instr.robIndex := s1Instr.robIndex
-    s2Instr.rdPhys := s1Instr.rdPhys
-
-    s2Instr.rs1val := op(0)
-    s2Instr.rs2val := op(1)
+  // save op in case of stall
+  when(RegNext(ingressToS1)) {
+    s1Instr.rs1val := op(0)
+    s1Instr.rs2val := op(1)
     if (portInfo.readPorts > 2) {
-      s2Instr.rs3val := op(2)
+      s1Instr.rs3val := op(2)
     } else {
-      s2Instr.rs3val := 0.U
+      s1Instr.rs3val := 0.U
     }
-  }.elsewhen(s2ToEgress) {
-    s2Valid := false.B
+  }
+
+  io.toUnits.instr.bits := s1Instr
+  // bypass register if it flows in one cycle
+  when(RegNext(ingressToS1)) {
+    io.toUnits.instr.bits.rs1val := op(0)
+    io.toUnits.instr.bits.rs2val := op(1)
+    if (portInfo.readPorts > 2) {
+      io.toUnits.instr.bits.rs3val := op(2)
+    } else {
+      io.toUnits.instr.bits.rs3val := 0.U
+    }
   }
 }
