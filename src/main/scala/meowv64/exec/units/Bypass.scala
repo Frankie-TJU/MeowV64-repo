@@ -15,7 +15,7 @@ class BypassExt(implicit val coredef: CoreDef) extends Bundle {
 }
 
 class Bypass(override implicit val coredef: CoreDef)
-    extends ExecUnit(0, new BypassExt, coredef.REGISTER_INTEGER) {
+    extends ExecUnit(0, new BypassExt, coredef.REG_INT) {
 
   def map(
       stage: Int,

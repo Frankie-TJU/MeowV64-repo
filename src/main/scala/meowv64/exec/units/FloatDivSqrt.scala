@@ -21,7 +21,7 @@ class FloatDivSqrt(override implicit val coredef: CoreDef)
     extends ExecUnit(
       1,
       new FloatDivSqrtExt,
-      coredef.REGISTER_FLOAT
+      coredef.REG_FLOAT
     ) {
 
   val idle = RegInit(true.B)

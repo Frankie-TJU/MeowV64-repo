@@ -83,13 +83,13 @@ class Core(implicit val coredef: CoreDef) extends Module {
   val ras = Module(new RAS)
   val exec = Module(new Exec)
   val regFiles =
-    for (regInfo <- coredef.REGISTER_TYPES) yield {
+    for (regInfo <- coredef.REG_TYPES) yield {
       val reg = Module(
         new RegFile(
           regInfo.width,
           regInfo.physicalRegs,
-          coredef.REGISTER_READ_PORTS(regInfo.regType),
-          coredef.REGISTER_WRITE_PORTS(regInfo.regType),
+          coredef.NUM_REG_READ_PORT(regInfo.regType),
+          coredef.NUM_REG_WRITE_PORT(regInfo.regType),
           // hardwire x0 to zero
           FIXED_ZERO = regInfo.fixedZero
         )
@@ -111,11 +111,11 @@ class Core(implicit val coredef: CoreDef) extends Module {
   ras.toExec.realign.valid := false.B
 
   exec.toIF <> fetch.toExec
-  for (i <- 0 until coredef.REGISTER_TYPES.length) {
+  for (i <- 0 until coredef.REG_TYPES.length) {
     var readIdx = 0
     var writeIdx = 0
     for ((port, idx) <- coredef.PORTS.zipWithIndex) {
-      if (port.regType == coredef.REGISTER_TYPES(i).regType) {
+      if (port.regType == coredef.REG_TYPES(i).regType) {
         for (j <- 0 until port.readPorts) {
           exec.toRF.ports(idx).rr(j) <> regFiles(i).io.reads(readIdx)
           readIdx += 1
@@ -126,7 +126,7 @@ class Core(implicit val coredef: CoreDef) extends Module {
       }
     }
     println(
-      s"Register Type ${coredef.REGISTER_TYPES(i).regType}: ${readIdx}R ${writeIdx}W"
+      s"Register Type ${coredef.REG_TYPES(i).regType}: ${readIdx}R ${writeIdx}W"
     )
   }
   exec.csrWriter <> csrWriter

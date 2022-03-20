@@ -11,7 +11,7 @@ class ALUExt(implicit val coredef: CoreDef) extends Bundle {
 }
 
 class ALU(override implicit val coredef: CoreDef)
-    extends ExecUnit(0, new ALUExt, coredef.REGISTER_INTEGER) {
+    extends ExecUnit(0, new ALUExt, coredef.REG_INT) {
 
   def map(stage: Int, pipe: PipeInstr, ext: Option[ALUExt]): (ALUExt, Bool) = {
     val ext = Wire(new ALUExt)

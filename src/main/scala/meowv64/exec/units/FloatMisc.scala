@@ -23,7 +23,7 @@ class IntFloatExt(implicit val coredef: CoreDef) extends Bundle {
 /** Handles instructions: FMV.X.D, FMV.D.X, FCLASS.D, FEQ.D, FLT.D, FLE.D
   */
 class FloatMisc(override implicit val coredef: CoreDef)
-    extends ExecUnit(0, new IntFloatExt, coredef.REGISTER_FLOAT) {
+    extends ExecUnit(0, new IntFloatExt, coredef.REG_FLOAT) {
 
   def map(
       stage: Int,

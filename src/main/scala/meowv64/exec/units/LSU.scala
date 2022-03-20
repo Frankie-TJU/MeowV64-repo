@@ -118,7 +118,7 @@ object LSUReadState extends ChiselEnum {
 }
 
 class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
-  val regInfo = coredef.REGISTER_INTEGER
+  val regInfo = coredef.REG_INT
   val flush = IO(Input(Bool()))
   val rs = IO(Flipped(new RegisterReadEgress(regInfo)))
   val retire = IO(Output(new Retirement(regInfo)))

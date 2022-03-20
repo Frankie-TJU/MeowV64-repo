@@ -43,7 +43,7 @@ class Renamer(implicit coredef: CoreDef) extends Module {
 
   // each register type has: mapping table, busy table and free list
   val banks =
-    for (regInfo <- coredef.REGISTER_TYPES) yield new {
+    for (regInfo <- coredef.REG_TYPES) yield new {
       // Map logical -> physical
       val regType = regInfo.regType
       val mapping = RegInit(
@@ -161,7 +161,7 @@ class Renamer(implicit coredef: CoreDef) extends Module {
   toExec.allowBit := VecInit(canRename)
 
   // Release before allocation
-  for ((bank, regInfo) <- banks.zip(coredef.REGISTER_TYPES)) {
+  for ((bank, regInfo) <- banks.zip(coredef.REG_TYPES)) {
     val masks = for ((release, idx) <- toExec.releases.zipWithIndex) yield {
       val mask = WireInit(0.U(regInfo.physicalRegs.W))
       when(
@@ -186,7 +186,7 @@ class Renamer(implicit coredef: CoreDef) extends Module {
     toExec.output(idx).rdPhys := 0.U
     toExec.output(idx).robIndex := toExec.nextRobIndex +% idx.U
 
-    for ((regInfo, bankIdx) <- coredef.REGISTER_TYPES.zipWithIndex) {
+    for ((regInfo, bankIdx) <- coredef.REG_TYPES.zipWithIndex) {
       when(
         instr.instr.getRs1Type === regInfo.regType && instr.instr.info.readRs1
       ) {
@@ -238,7 +238,7 @@ class Renamer(implicit coredef: CoreDef) extends Module {
   }
 
   // assign new physical register
-  for ((regInfo, bank) <- coredef.REGISTER_TYPES.zip(banks)) {
+  for ((regInfo, bank) <- coredef.REG_TYPES.zip(banks)) {
     var clearFreeMask = WireInit(0.U(regInfo.physicalRegs.W))
     var setBusyMask = WireInit(0.U(regInfo.physicalRegs.W))
 

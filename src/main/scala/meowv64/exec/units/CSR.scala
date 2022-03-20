@@ -24,7 +24,7 @@ class CSR(implicit val coredef: CoreDef)
   object CSRState extends ChiselEnum {
     val read, pipe = Value
   }
-  val regInfo = coredef.REGISTER_INTEGER
+  val regInfo = coredef.REG_INT
 
   val io = IO(new ExecUnitPort(regInfo))
   val priv = IO(Input(PrivLevel()))

@@ -523,9 +523,7 @@ class CDBEntry(val regInfo: RegInfo)(implicit val coredef: CoreDef)
 class CDB(implicit val coredef: CoreDef) extends Bundle {
   // each port has a corresponding cdb entry
   val entries = MixedVec(
-    coredef.PORTS.map(port =>
-      new CDBEntry(coredef.REGISTER_MAPPING(port.regType))
-    )
+    coredef.PORTS.map(port => new CDBEntry(coredef.REG_MAPPING(port.regType)))
   )
 }
 

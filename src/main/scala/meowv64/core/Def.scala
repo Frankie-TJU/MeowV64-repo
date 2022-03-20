@@ -74,7 +74,7 @@ case class PortInfo(
     units: Seq[ExecutionUnitInfo],
     readPorts: Int
 )(implicit coredef: CoreDef) {
-  def regInfo = coredef.REGISTER_MAPPING(regType)
+  def regInfo = coredef.REG_MAPPING(regType)
 }
 
 abstract class CoreDef {
@@ -178,34 +178,34 @@ abstract class CoreDef {
     */
   val RAS_SIZE: Int = 8
 
-  def REGISTER_INTEGER =
+  def REG_INT =
     RegInfo(RegType.integer, XLEN, 64, 2, true)
-  def REGISTER_FLOAT =
+  def REG_FLOAT =
     RegInfo(RegType.float, XLEN, 32, 3, false)
-  def REGISTER_VECTOR =
+  def REG_VEC =
     RegInfo(RegType.vector, VLEN, 32, 4, false)
 
   /** List of register configurations
     */
-  def REGISTER_TYPES: Seq[RegInfo] =
+  def REG_TYPES: Seq[RegInfo] =
     Seq(
-      REGISTER_INTEGER,
-      REGISTER_FLOAT
+      REG_INT,
+      REG_FLOAT
     )
 
-  def REGISTER_TYPE_COUNT: Int = REGISTER_TYPES.length
+  def REGISTER_TYPE_COUNT: Int = REG_TYPES.length
 
-  def REGISTER_MAPPING: Map[RegType.Type, RegInfo] =
-    Map((RegType.integer, REGISTER_INTEGER), (RegType.float, REGISTER_FLOAT))
+  def REG_MAPPING: Map[RegType.Type, RegInfo] =
+    Map((RegType.integer, REG_INT), (RegType.float, REG_FLOAT))
 
   /** Maximum physical register count across different types
     */
-  def MAX_PHYSICAL_REGISTERS: Int = REGISTER_TYPES.map(_.physicalRegs).max
+  def MAX_PHYSICAL_REGISTERS: Int = REG_TYPES.map(_.physicalRegs).max
 
   /** Compute register read ports
     */
-  def REGISTER_READ_PORTS: Map[RegType.Type, Int] = {
-    for (regInfo <- REGISTER_TYPES) yield {
+  def NUM_REG_READ_PORT: Map[RegType.Type, Int] = {
+    for (regInfo <- REG_TYPES) yield {
       // collect all read ports
       (
         regInfo.regType,
@@ -219,8 +219,8 @@ abstract class CoreDef {
 
   /** Compute register write ports
     */
-  def REGISTER_WRITE_PORTS: Map[RegType.Type, Int] = {
-    for (regInfo <- REGISTER_TYPES) yield {
+  def NUM_REG_WRITE_PORT: Map[RegType.Type, Int] = {
+    for (regInfo <- REG_TYPES) yield {
       // collect all write ports
       (
         regInfo.regType,

@@ -9,7 +9,6 @@ import meowv64.cache.L1UCPort
 import meowv64.core.CSRWriter
 import meowv64.core.CoreDef
 import meowv64.core.ExReq
-import meowv64.core.ExecutionUnitLSU
 import meowv64.core.PrivLevel
 import meowv64.core.Satp
 import meowv64.core.StageCtrl
@@ -139,6 +138,7 @@ class Exec(implicit val coredef: CoreDef) extends Module {
 
   // Units
   val lsu = Module(new LSU).suggestName("LSU")
+  val hasPendingMem = lsu.hasPending
 
   // collect execution units dynamically
   // Issue Queue -> Port -> Execution Unit
@@ -146,7 +146,15 @@ class Exec(implicit val coredef: CoreDef) extends Module {
   val issueQueues = ArrayBuffer[IssueQueue]()
   var portIdx = 0
   for ((issueQueueInfo, i) <- coredef.ISSUE_QUEUES.zipWithIndex) {
-    val issueQueue = Module(new OoOIssueQueue(issueQueueInfo))
+    val isLSU = issueQueueInfo.issueQueueType == IssueQueueType.mem
+    val issueQueue = if (isLSU) {
+      val lsb = Module(new LSBuf(issueQueueInfo)).suggestName(s"LSBuf")
+      lsb.hasPending := hasPendingMem
+      lsb.fs := toDC.fs
+      lsb
+    } else {
+      Module(new OoOIssueQueue(issueQueueInfo))
+    }
     issueQueue.suggestName(s"IssueQueue_${issueQueueInfo.issueQueueType}")
     issueQueue.cdb <> cdb
     issueQueues.append(issueQueue)
@@ -156,7 +164,7 @@ class Exec(implicit val coredef: CoreDef) extends Module {
       val regRead = Module(new RegisterRead(port))
       regRead.suggestName(s"RegisterRead_${portIdx}")
 
-      val unitSel = if (port.units == Seq(new ExecutionUnitLSU())) {
+      val unitSel = if (isLSU) {
         lsu
       } else {
         Module(
@@ -221,7 +229,6 @@ class Exec(implicit val coredef: CoreDef) extends Module {
   lsu.priv := toCtrl.priv
   lsu.tlbRst := toCtrl.tlbRst
   lsu.status := toCtrl.status
-  val hasPendingMem = lsu.hasPending
 
   // Connect extra ports
   units(0).extras("CSR") <> csrWriter

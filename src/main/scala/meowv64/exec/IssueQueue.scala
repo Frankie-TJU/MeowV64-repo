@@ -325,13 +325,14 @@ class LSBuf(info: IssueQueueInfo)(implicit val coredef: CoreDef)
 
   // Ingress part
   ingress.empty := tail === head
+  ingress.full := tail +% 1.U === head
   // simplify: only one instruction ingress at a time
   ingress.instr(0).ready := tail +% 1.U =/= head
   for (i <- 1 until ISSUE_NUM) {
     ingress.instr(i).ready := false.B
   }
   when(ingress.instr(0).fire) {
-    store(tail) := ingress.instr(0)
+    store(tail) := ingress.instr(0).bits
     tail := tail +% 1.U
   }
 

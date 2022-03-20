@@ -11,7 +11,7 @@ class VectorMiscExt(implicit val coredef: CoreDef) extends Bundle {
 }
 
 class VectorMisc(override implicit val coredef: CoreDef)
-    extends ExecUnit(0, new VectorMiscExt, coredef.REGISTER_VECTOR) {
+    extends ExecUnit(0, new VectorMiscExt, coredef.REG_VEC) {
   def map(
       stage: Int,
       pipe: PipeInstr,

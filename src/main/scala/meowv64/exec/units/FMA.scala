@@ -34,7 +34,7 @@ class FMA(override implicit val coredef: CoreDef)
     extends ExecUnit(
       1,
       new FMAExt,
-      coredef.REGISTER_FLOAT
+      coredef.REG_FLOAT
     ) {
 
   def map(stage: Int, pipe: PipeInstr, ext: Option[FMAExt]): (FMAExt, Bool) = {
