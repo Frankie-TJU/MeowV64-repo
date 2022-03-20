@@ -183,6 +183,8 @@ class OoOIssueQueue(info: IssueQueueInfo)(implicit
     // if shift != 0, clear by default
     when(shift(i) =/= 0.U) {
       occupied(i) := false.B
+    }.otherwise {
+      occupied(i) := allOccupied(i)
     }
     // check if new entry shifted to here
     for (j <- 1 to maxShift) {
@@ -197,6 +199,9 @@ class OoOIssueQueue(info: IssueQueueInfo)(implicit
   val push = ingress.instr.map(_.fire.asUInt).reduce(_ +& _)
   val pop = portIssued.map(_.asUInt).reduce(_ +& _)
   emptyEntries := emptyEntries - push + pop
+  val occupiedEntries = occupied.map(_.asUInt).reduce(_ +& _)
+  // emptyEntries + occupiedEntries = depth
+  assert(occupiedEntries + emptyEntries === DEPTH.U)
 
   when(ctrl.flush) {
     // We don't need to reset store
