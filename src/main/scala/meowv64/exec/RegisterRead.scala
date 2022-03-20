@@ -2,7 +2,6 @@ package meowv64.exec
 
 import chisel3._
 import chisel3.util.Decoupled
-import chisel3.util.log2Ceil
 import meowv64.core.CoreDef
 import meowv64.core.PortInfo
 import meowv64.core.RegInfo

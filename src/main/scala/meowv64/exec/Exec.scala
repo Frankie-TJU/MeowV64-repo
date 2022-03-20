@@ -201,7 +201,10 @@ class Exec(implicit val coredef: CoreDef) extends Module {
 
       toRF.ports(portIdx).rw.addr := unitSel.retire.instr.rdPhys
       toRF.ports(portIdx).rw.data := unitSel.retire.info.wb
-      toRF.ports(portIdx).rw.valid := unitSel.retire.valid && unitSel.retire.instr.instr.instr.info.writeRd
+      toRF
+        .ports(portIdx)
+        .rw
+        .valid := unitSel.retire.valid && unitSel.retire.instr.instr.instr.info.writeRd
 
       units.append(unitSel)
 
@@ -287,6 +290,7 @@ class Exec(implicit val coredef: CoreDef) extends Module {
   toIF.accept := issueNum
   renamer.toExec.commit := issueNum
   renamer.toExec.input := toIF.view
+  renamer.toExec.nextRobIndex := issuePtr
 
   issuePtr := issuePtr + issueNum
   retirePtr := retirePtr + retireNum
@@ -400,7 +404,10 @@ class Exec(implicit val coredef: CoreDef) extends Module {
 
   inflights.writer.cnt := issueNum
   assert(inflights.writer.accept >= issueNum)
-  inflights.writer.view := toIF.view.map(InflightInstr.from)
+  // save necessary info in fifo
+  inflights.writer.view := toIF.view
+    .zip(renamer.toExec.output)
+    .map({ case (i, r) => InflightInstr.from(i, r.staleRdPhys) })
 
   val pendingBr = RegInit(false.B)
   val pendingBrTag = RegInit(0.U(log2Ceil(coredef.INFLIGHT_INSTR_LIMIT).W))
@@ -631,7 +638,9 @@ class Exec(implicit val coredef: CoreDef) extends Module {
   for (i <- (0 until coredef.RETIRE_NUM)) {
     // TODO
     // renamer.toExec.releases(i).name := rob(retirePtr +% i.U).retirement.instr.rdname
-    renamer.toExec.releases(i).stalePhys := inflights.reader.view(i).stalePhys
+    renamer.toExec.releases(i).staleRdPhys := inflights.reader
+      .view(i)
+      .staleRdPhys
     renamer.toExec.releases(i).regType := inflights.reader.view(i).rdRegType
     renamer.toExec.releases(i).valid := i.U < retireNum
   }

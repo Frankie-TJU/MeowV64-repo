@@ -268,7 +268,7 @@ class InflightInstr(implicit val coredef: CoreDef) extends Bundle {
 
   /** Release physical register
     */
-  val stalePhys = UInt(log2Ceil(coredef.MAX_PHYSICAL_REGISTERS).W)
+  val staleRdPhys = UInt(log2Ceil(coredef.MAX_PHYSICAL_REGISTERS).W)
   val rdRegType = RegType()
 
   /** Prediction result from BPU
@@ -284,13 +284,13 @@ class InflightInstr(implicit val coredef: CoreDef) extends Bundle {
 }
 
 object InflightInstr {
-  def from(instr: InstrExt)(implicit coredef: CoreDef) = {
+  def from(instr: InstrExt, staleRdPhys: UInt)(implicit coredef: CoreDef) = {
     val ret = Wire(new InflightInstr)
     ret.op := instr.instr.op
     ret.addr := instr.addr
     ret.isC := instr.instr.base === InstrType.C
     ret.rdRegType := instr.instr.getRdType()
-    ret.stalePhys := 0.U // TODO
+    ret.staleRdPhys := staleRdPhys
     ret.pred := instr.pred
     ret.overridePred := instr.overridePred
 
