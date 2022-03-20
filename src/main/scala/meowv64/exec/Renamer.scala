@@ -11,6 +11,7 @@ import meowv64.reg.RegType
 class Release(implicit val coredef: CoreDef) extends Bundle {
   val stalePhys = Input(UInt(log2Ceil(coredef.MAX_PHYSICAL_REGISTERS).W))
   val regType = Input(RegType())
+  val valid = Input(Bool())
 }
 
 class Renamer(implicit coredef: CoreDef) extends Module {
@@ -176,6 +177,9 @@ class Renamer(implicit coredef: CoreDef) extends Module {
     toExec.output(idx).rs2Ready := true.B
     toExec.output(idx).rs3Phys := 0.U
     toExec.output(idx).rs3Ready := true.B
+    toExec.output(idx).staleRdPhys := 0.U
+    toExec.output(idx).rdPhys := 0.U
+    toExec.output(idx).robIndex := 0.U // TODO
 
     for ((regInfo, bankIdx) <- coredef.REGISTER_TYPES.zipWithIndex) {
       when(

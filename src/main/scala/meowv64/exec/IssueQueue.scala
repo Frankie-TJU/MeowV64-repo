@@ -105,6 +105,12 @@ class OoOIssueQueue(info: IssueQueueInfo)(implicit
     }
   }
 
+  // default wiring
+  for (i <- 0 until NUM_PORTS) {
+    egress(i).instr.valid := false.B
+    egress(i).instr.bits := DontCare
+  }
+
   // mutable array of port issued
   val portIssued = Array.fill(NUM_PORTS)(Bool())
   for (i <- 0 until NUM_PORTS) {
@@ -122,14 +128,14 @@ class OoOIssueQueue(info: IssueQueueInfo)(implicit
       when(egMask(j) && !issued && !portIssued(j) && allow) {
         egress(j).instr.valid := true.B
         egress(j).instr.bits := nextStore(j)
-        fire := egress(j).instr.fire
+        fire := egress(j).instr.ready
 
         when(fire) {
           nextOccupied(j) := false.B
         }
       }
       issued = issued || fire
-      portIssued(j) = fire || portIssued(j)
+      portIssued(j) = portIssued(j) || fire
     }
   }
 

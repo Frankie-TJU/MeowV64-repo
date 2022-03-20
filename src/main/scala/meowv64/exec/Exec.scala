@@ -92,11 +92,17 @@ class Exec(implicit val coredef: CoreDef) extends Module {
             // `readPorts` read ports
             val rr = Vec(
               port.readPorts,
-              new RegReader(port.regType.width, port.regInfo.physicalRegs)
+              new RegReader(
+                port.regType.width,
+                log2Ceil(port.regInfo.physicalRegs)
+              )
             )
             // one write port
             val rw =
-              new RegWriter(port.regType.width, port.regInfo.physicalRegs)
+              new RegWriter(
+                port.regType.width,
+                log2Ceil(port.regInfo.physicalRegs)
+              )
           }
       )
   })
@@ -138,11 +144,13 @@ class Exec(implicit val coredef: CoreDef) extends Module {
   // Issue Queue -> Port -> Execution Unit
   val units = ArrayBuffer[UnitSelIO]()
   val issueQueues = ArrayBuffer[IssueQueue]()
-  for ((issueQueueInfo, idx) <- coredef.ISSUE_QUEUES.zipWithIndex) {
+  var portIdx = 0
+  for ((issueQueueInfo, i) <- coredef.ISSUE_QUEUES.zipWithIndex) {
     val issueQueue = Module(new OoOIssueQueue(issueQueueInfo))
+    issueQueue.cdb <> cdb
     issueQueues.append(issueQueue)
 
-    for (port <- issueQueueInfo.ports) {
+    for ((port, j) <- issueQueueInfo.ports.zipWithIndex) {
       val bypassIdx = port.units.indexOf(ExecUnitType.bypass)
       val regRead = Module(new RegisterRead(port))
       val unitSel = if (port.units == Seq(new ExecutionUnitLSU())) {
@@ -183,7 +191,17 @@ class Exec(implicit val coredef: CoreDef) extends Module {
           )
         )
       }
+
+      unitSel.rs <> regRead.io.toUnits
+      regRead.io.toIssueQueue.instr <> issueQueue.egress(j)
+      regRead.io.toRegFile.reader <> toRF.ports(portIdx).rr
+      toRF.ports(portIdx).rw.addr := 0.U // TODO
+      toRF.ports(portIdx).rw.valid := unitSel.retire.valid // TODO
+      toRF.ports(portIdx).rw.data := unitSel.retire.info.wb
+
       units.append(unitSel)
+
+      portIdx += 1
     }
   }
 
@@ -415,6 +433,7 @@ class Exec(implicit val coredef: CoreDef) extends Module {
     ent.valid := false.B
     ent.phys := 0.U // Helps to debug, because we are asserting store(0) === 0
     ent.data := u.retire.info.wb
+    ent.regType := RegType.integer
 
     // TODO: maybe pipeline here?
     val dist = u.retire.instr.robIndex -% retirePtr
@@ -429,6 +448,7 @@ class Exec(implicit val coredef: CoreDef) extends Module {
     when(u.retire.instr.instr.valid) {
       when(!u.retire.info.hasMem) {
         ent.phys := u.retire.instr.rdPhys
+        ent.regType := u.retire.instr.instr.instr.getRdType()
         ent.valid := true.B
       }
 
@@ -607,8 +627,9 @@ class Exec(implicit val coredef: CoreDef) extends Module {
   for (i <- (0 until coredef.RETIRE_NUM)) {
     // TODO
     // renamer.toExec.releases(i).name := rob(retirePtr +% i.U).retirement.instr.rdname
-    //renamer.toExec.releases(i).phys := retirePtr + i.U
-    //renamer.toExec.releases(i).reg := inflights.reader.view(i).erd
+    renamer.toExec.releases(i).stalePhys := inflights.reader.view(i).stalePhys
+    renamer.toExec.releases(i).regType := inflights.reader.view(i).rdRegType
+    renamer.toExec.releases(i).valid := i.U < retireNum
   }
 
   renamer.toExec.retire := retireNum
@@ -638,11 +659,14 @@ class Exec(implicit val coredef: CoreDef) extends Module {
 
 object Exec {
   class ROBEntry(implicit val coredef: CoreDef) extends Bundle {
-    // val info = new RetireInfo
+
+    /** This entry is valid
+      */
+    val valid = Bool()
+
     /** Has memory access
       */
     val hasMem = Bool()
-    val valid = Bool()
 
     /** Branch has taken
       */
