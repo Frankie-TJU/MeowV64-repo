@@ -125,13 +125,13 @@ class OoOIssueQueue(info: IssueQueueInfo)(implicit
         .map(_ === nextStore(i).instr.instr.info.execUnit)
         .reduce(_ | _)
       val fire = WireInit(false.B)
-      when(egMask(j) && !issued && !portIssued(j) && allow) {
+      when(egMask(i) && !issued && !portIssued(j) && allow) {
         egress(j).instr.valid := true.B
-        egress(j).instr.bits := nextStore(j)
+        egress(j).instr.bits := nextStore(i)
         fire := egress(j).instr.ready
 
         when(fire) {
-          nextOccupied(j) := false.B
+          nextOccupied(i) := false.B
         }
       }
       issued = issued || fire
@@ -158,12 +158,12 @@ class OoOIssueQueue(info: IssueQueueInfo)(implicit
   val shift = WireInit(
     VecInit(Seq.fill(DEPTH + ISSUE_NUM)(0.U(log2Ceil(maxShift + 1).W)))
   )
-  val empty = WireInit(VecInit(occupied ++ ingress.instr.map(_.valid)))
+  val curAllOccupied = WireInit(VecInit(occupied ++ ingress.instr.map(_.valid)))
 
   shift(0) := 0.U
   for (i <- 1 until DEPTH + ISSUE_NUM) {
-    when(!empty(i - 1)) {
-      // if the previous entry is not empty
+    when(curAllOccupied(i - 1)) {
+      // if the previous entry is occupied
       // follow suit
       shift(i) := shift(i - 1)
     }.otherwise {
@@ -194,8 +194,8 @@ class OoOIssueQueue(info: IssueQueueInfo)(implicit
   }
 
   // maintain emptyEntries count
-  val push = ingress.instr.map(_.fire.asUInt).reduce(_ + _)
-  val pop = portIssued.map(_.asUInt).reduce(_ + _)
+  val push = ingress.instr.map(_.fire.asUInt).reduce(_ +& _)
+  val pop = portIssued.map(_.asUInt).reduce(_ +& _)
   emptyEntries := emptyEntries - push + pop
 
   when(ctrl.flush) {

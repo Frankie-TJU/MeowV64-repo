@@ -29,7 +29,7 @@ class RegisterRead(portInfo: PortInfo)(implicit
         portInfo.readPorts,
         new RegReader(
           regInfo.width,
-          log2Ceil(regInfo.physicalRegs)
+          regInfo.physicalRegs
         )
       )
     }

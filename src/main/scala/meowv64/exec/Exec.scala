@@ -93,15 +93,15 @@ class Exec(implicit val coredef: CoreDef) extends Module {
             val rr = Vec(
               port.readPorts,
               new RegReader(
-                port.regType.width,
-                log2Ceil(port.regInfo.physicalRegs)
+                port.regInfo.width,
+                port.regInfo.physicalRegs
               )
             )
             // one write port
             val rw =
               new RegWriter(
-                port.regType.width,
-                log2Ceil(port.regInfo.physicalRegs)
+                port.regInfo.width,
+                port.regInfo.physicalRegs
               )
           }
       )
@@ -147,7 +147,7 @@ class Exec(implicit val coredef: CoreDef) extends Module {
   var portIdx = 0
   for ((issueQueueInfo, i) <- coredef.ISSUE_QUEUES.zipWithIndex) {
     val issueQueue = Module(new OoOIssueQueue(issueQueueInfo))
-    issueQueue.suggestName(s"IssueQueue_${issueQueueInfo.issueQueueType.name}")
+    issueQueue.suggestName(s"IssueQueue_${issueQueueInfo.issueQueueType}")
     issueQueue.cdb <> cdb
     issueQueues.append(issueQueue)
 
@@ -198,9 +198,10 @@ class Exec(implicit val coredef: CoreDef) extends Module {
       unitSel.rs <> regRead.io.toUnits
       regRead.io.toIssueQueue.instr <> issueQueue.egress(j)
       regRead.io.toRegFile.reader <> toRF.ports(portIdx).rr
-      toRF.ports(portIdx).rw.addr := 0.U // TODO
-      toRF.ports(portIdx).rw.valid := unitSel.retire.valid // TODO
+
+      toRF.ports(portIdx).rw.addr := unitSel.retire.instr.rdPhys
       toRF.ports(portIdx).rw.data := unitSel.retire.info.wb
+      toRF.ports(portIdx).rw.valid := unitSel.retire.valid && unitSel.retire.instr.instr.instr.info.writeRd
 
       units.append(unitSel)
 
@@ -360,7 +361,7 @@ class Exec(implicit val coredef: CoreDef) extends Module {
         val mask = applicable & avails
         mask.suggestName(s"mask_$idx")
 
-        sending := OHToUInt(mask)
+        sending := mask
 
         selfCanIssue := mask.orR()
 
