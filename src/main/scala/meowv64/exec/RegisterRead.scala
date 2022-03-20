@@ -76,8 +76,7 @@ class RegisterRead(portInfo: PortInfo)(implicit
     s2Valid := true.B
     s2Instr.instr := s1Instr.instr
     s2Instr.robIndex := s1Instr.robIndex
-    s1Instr.rdPhys := s1Instr.rdPhys
-    s1Instr.staleRdPhys := s1Instr.staleRdPhys
+    s2Instr.rdPhys := s1Instr.rdPhys
 
     s2Instr.rs1val := op(0)
     s2Instr.rs2val := op(1)

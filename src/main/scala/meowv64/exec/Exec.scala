@@ -147,12 +147,15 @@ class Exec(implicit val coredef: CoreDef) extends Module {
   var portIdx = 0
   for ((issueQueueInfo, i) <- coredef.ISSUE_QUEUES.zipWithIndex) {
     val issueQueue = Module(new OoOIssueQueue(issueQueueInfo))
+    issueQueue.suggestName(s"IssueQueue_${issueQueueInfo.issueQueueType.name}")
     issueQueue.cdb <> cdb
     issueQueues.append(issueQueue)
 
     for ((port, j) <- issueQueueInfo.ports.zipWithIndex) {
       val bypassIdx = port.units.indexOf(ExecUnitType.bypass)
       val regRead = Module(new RegisterRead(port))
+      regRead.suggestName(s"RegisterRead_${portIdx}")
+
       val unitSel = if (port.units == Seq(new ExecutionUnitLSU())) {
         lsu
       } else {

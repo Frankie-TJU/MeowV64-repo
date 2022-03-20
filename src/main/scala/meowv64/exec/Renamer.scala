@@ -48,20 +48,20 @@ class Renamer(implicit coredef: CoreDef) extends Module {
       )
       val regBusy = RegInit(0.U(REG_NUM.W))
 
-      // 0 means free
+      // 1 means free
       // P0 is hardwired to zero for x0
       // it should never be allocated
       val init = if (regInfo.fixedZero) {
-        1
+        (BigInt(1) << regInfo.physicalRegs) - 2
       } else {
-        0
+        (BigInt(1) << regInfo.physicalRegs) - 1
       }
-      val freelist = RegInit(init.U(regInfo.physicalRegs.W))
+      val freeList = RegInit(init.U(regInfo.physicalRegs.W))
 
-      // masks for updating freelist
+      // masks for updating freeList
       val setFreeMask = WireInit(0.U(regInfo.physicalRegs.W))
       val clearFreeMask = WireInit(0.U(regInfo.physicalRegs.W))
-      freelist := freelist & ~clearFreeMask | setFreeMask
+      freeList := freeList & ~clearFreeMask | setFreeMask
 
       // masks for updating regBusy
       val setBusyMask = WireInit(0.U(regInfo.physicalRegs.W))
@@ -72,13 +72,13 @@ class Renamer(implicit coredef: CoreDef) extends Module {
       val committedMapping = RegInit(
         VecInit(Seq.fill(REG_NUM)(0.U(log2Ceil(regInfo.physicalRegs).W)))
       )
-      val committedFreelist = RegInit(init.U(regInfo.physicalRegs.W))
+      val committedFreeList = RegInit(init.U(regInfo.physicalRegs.W))
     }
 
   def flush() = {
     for (bank <- banks) {
       bank.mapping := bank.committedMapping
-      bank.freelist := bank.committedFreelist
+      bank.freeList := bank.committedFreeList
       // all regs are ready
       bank.regBusy := 0.U
     }
@@ -235,9 +235,10 @@ class Renamer(implicit coredef: CoreDef) extends Module {
   // assign new physical register
   for ((regInfo, bank) <- coredef.REGISTER_TYPES.zip(banks)) {
     var clearFreeMask = WireInit(0.U(regInfo.physicalRegs.W))
+    var setBusyMask = WireInit(0.U(regInfo.physicalRegs.W))
 
     for ((instr, idx) <- toExec.input.zipWithIndex) {
-      val phys = PriorityEncoder(bank.freelist & ~clearFreeMask)
+      val phys = PriorityEncoder(bank.freeList & ~clearFreeMask)
       val curMask = WireInit(0.U(regInfo.physicalRegs.W))
       when(
         instr.instr
@@ -254,10 +255,13 @@ class Renamer(implicit coredef: CoreDef) extends Module {
         }
       }
 
+      // clear bit in free list and set busy bit
       clearFreeMask = clearFreeMask | curMask
+      setBusyMask = setBusyMask | curMask
     }
 
     bank.clearFreeMask := clearFreeMask
+    bank.setBusyMask := setBusyMask
   }
 
   // Lastly, handles flush
