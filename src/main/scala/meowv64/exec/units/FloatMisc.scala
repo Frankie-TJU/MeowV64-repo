@@ -13,7 +13,7 @@ import meowv64.core.FloatS
 import meowv64.exec._
 import meowv64.instr.Decoder
 
-class IntFloatExt(implicit val coredef: CoreDef) extends Bundle {
+class FloatMiscExt(implicit val coredef: CoreDef) extends Bundle {
   val res = UInt(coredef.XLEN.W)
 
   val updateFFlags = Bool()
@@ -23,14 +23,14 @@ class IntFloatExt(implicit val coredef: CoreDef) extends Bundle {
 /** Handles instructions: FMV.X.D, FMV.D.X, FCLASS.D, FEQ.D, FLT.D, FLE.D
   */
 class FloatMisc(override implicit val coredef: CoreDef)
-    extends ExecUnit(0, new IntFloatExt, coredef.REG_FLOAT) {
+    extends ExecUnit(0, new FloatMiscExt, coredef.REG_FLOAT) {
 
   def map(
       stage: Int,
       pipe: PipeInstr,
-      ext: Option[IntFloatExt]
-  ): (IntFloatExt, Bool) = {
-    val ext = Wire(new IntFloatExt)
+      ext: Option[FloatMiscExt]
+  ): (FloatMiscExt, Bool) = {
+    val ext = Wire(new FloatMiscExt)
     ext.res := 0.U
     ext.updateFFlags := false.B
     ext.fflags := 0.U
@@ -416,7 +416,7 @@ class FloatMisc(override implicit val coredef: CoreDef)
     (ext, false.B)
   }
 
-  def finalize(pipe: PipeInstr, ext: IntFloatExt): RetireInfo = {
+  def finalize(pipe: PipeInstr, ext: FloatMiscExt): RetireInfo = {
     val info = WireDefault(RetireInfo.vacant(regInfo))
 
     // result

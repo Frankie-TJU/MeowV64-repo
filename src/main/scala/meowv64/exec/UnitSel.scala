@@ -1,6 +1,8 @@
 package meowv64.exec
 
 import chisel3._
+import chisel3.util.Decoupled
+import chisel3.util.DecoupledIO
 import chisel3.util.Mux1H
 import chisel3.util.PopCount
 import chisel3.util.log2Ceil
@@ -17,7 +19,7 @@ import scala.collection.mutable
 trait UnitSelIO {
   val flush: Bool
   val rs: RegisterReadEgress
-  val retire: Retirement
+  val retire: DecoupledIO[Retirement]
   val extras: mutable.HashMap[String, Data]
 }
 
@@ -49,7 +51,7 @@ class UnitSel(
 
   /** Retired instruction
     */
-  val retire = IO(Output(new Retirement(regInfo)))
+  val retire = IO(Decoupled(new Retirement(regInfo)))
 
   // Extra ports
   val extras = new mutable.HashMap[String, Data]()
@@ -173,7 +175,8 @@ class UnitSel(
   if (units.length == 1) {
     println("UnitSel: Single unit")
     val pipeRetire = RegInit(Retirement.empty(regInfo))
-    retire := pipeRetire
+    retire.bits := pipeRetire
+    retire.valid := true.B
     when(units(0).io.stall) {
       pipeRetire := Retirement.empty(regInfo)
     }.otherwise {
@@ -185,7 +188,8 @@ class UnitSel(
   } else if (maxDepth == 0) {
     println("UnitSel: All units have 0 delay")
     val pipeRetire = RegInit(Retirement.empty(regInfo))
-    retire := pipeRetire
+    retire.bits := pipeRetire
+    retire.valid := true.B
     val validMap = units.map(u => !u.io.stall && u.io.retired.instr.valid)
     pipeRetire := Mux1H(validMap.zip(units.map(u => Retirement.from(u.io))))
     when(!VecInit(validMap).asUInt.orR || flush) {
@@ -218,14 +222,18 @@ class UnitSel(
     // Output
 
     when(retireTail === retireHead) {
-      retire := Retirement.empty(regInfo)
+      retire.bits := Retirement.empty(regInfo)
+      retire.valid := false.B
     }.otherwise {
-      retire := retireFifo(retireHead)
-      retireHead := Mux(
-        retireHead === (fifoDepth - 1).U,
-        0.U,
-        retireHead +% 1.U
-      )
+      retire.bits := retireFifo(retireHead)
+      retire.valid := true.B
+      when(retire.fire) {
+        retireHead := Mux(
+          retireHead === (fifoDepth - 1).U,
+          0.U,
+          retireHead +% 1.U
+        )
+      }
     }
 
     when(flush) {
@@ -244,10 +252,6 @@ class Retirement(val regInfo: RegInfo)(implicit
     val coredef: CoreDef
 ) extends Bundle {
 
-  /** This retirement is valid
-    */
-  val valid = Bool()
-
   /** Instruction info
     */
   val writeRdEff = Bool()
@@ -263,7 +267,6 @@ object Retirement {
       coredef: CoreDef
   ): Retirement = {
     val ret = Wire(new Retirement(regInfo))
-    ret.valid := false.B
     ret.writeRdEff := false.B
     ret.rdPhys := 0.U
     ret.rdType := RegType.integer
@@ -275,7 +278,6 @@ object Retirement {
 
   def from(port: ExecUnitPort)(implicit coredef: CoreDef): Retirement = {
     val ret = Wire(new Retirement(port.regInfo))
-    ret.valid := port.retired.instr.valid
     ret.writeRdEff := port.retired.instr.instr.writeRdEff
     ret.rdType := port.retired.instr.instr.getRdType()
     ret.rdPhys := port.retired.rdPhys

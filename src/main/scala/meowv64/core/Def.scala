@@ -56,12 +56,16 @@ class ExecutionUnitCSR
     extends ExecutionUnitInfo(ExecUnitType.csr, 2, RegType.integer)
 class ExecutionUnitBypass
     extends ExecutionUnitInfo(ExecUnitType.bypass, 0, RegType.integer)
+class ExecutionUnitInt2Float
+    extends ExecutionUnitInfo(ExecUnitType.intToFloat, 1, RegType.integer)
 class ExecutionUnitMul
     extends ExecutionUnitInfo(ExecUnitType.mul, 2, RegType.integer)
 class ExecutionUnitDiv
     extends ExecutionUnitInfo(ExecUnitType.div, 2, RegType.integer)
 class ExecutionUnitFMA
     extends ExecutionUnitInfo(ExecUnitType.fma, 3, RegType.float)
+class ExecutionUnitFloat2Int
+    extends ExecutionUnitInfo(ExecUnitType.floatToInt, 1, RegType.float)
 class ExecutionUnitFloatMisc
     extends ExecutionUnitInfo(ExecUnitType.floatMisc, 2, RegType.float)
 class ExecutionUnitFloatDivSqrt
@@ -69,10 +73,23 @@ class ExecutionUnitFloatDivSqrt
 class ExecutionUnitLSU
     extends ExecutionUnitInfo(ExecUnitType.lsu, 2, RegType.integer)
 
+/** Each port can read from one register file
+  */
 case class PortInfo(
     regType: RegType.Type,
     units: Seq[ExecutionUnitInfo],
     readPorts: Int
+)(implicit coredef: CoreDef) {
+  def regInfo = coredef.REG_MAPPING(regType)
+}
+
+/** Write ports to register file.
+  *
+  * Use arbitration to reduce register write port count.
+  */
+case class RegWritePortInfo(
+    regType: RegType.Type,
+    ports: Seq[Int]
 )(implicit coredef: CoreDef) {
   def regInfo = coredef.REG_MAPPING(regType)
 }
@@ -109,7 +126,7 @@ abstract class CoreDef {
       IssueQueueType.int,
       16,
       ports = Seq(
-        // port 1: ALU + Branch + CSR + Bypass
+        // port 0: ALU + Branch + CSR + Bypass
         PortInfo(
           RegType.integer,
           Seq(
@@ -120,13 +137,14 @@ abstract class CoreDef {
           ),
           2
         )(this),
-        // port 2: ALU + Mul + Div
+        // port 1: ALU + Mul + Div + Int2Float
         PortInfo(
           RegType.integer,
           Seq(
             new ExecutionUnitALU(),
             new ExecutionUnitMul(),
-            new ExecutionUnitDiv()
+            new ExecutionUnitDiv(),
+            new ExecutionUnitInt2Float()
           ),
           2
         )(this)
@@ -137,13 +155,14 @@ abstract class CoreDef {
       IssueQueueType.fp,
       16,
       ports = Seq(
-        // port 3: FMA + FloatMisc + FloatDivSqrt
+        // port 2: FMA + FloatMisc + FloatDivSqrt
         PortInfo(
           RegType.float,
           Seq(
             new ExecutionUnitFMA(),
             new ExecutionUnitFloatMisc(),
-            new ExecutionUnitFloatDivSqrt()
+            new ExecutionUnitFloatDivSqrt(),
+            new ExecutionUnitFloat2Int()
           ),
           3
         )(this)
@@ -154,7 +173,7 @@ abstract class CoreDef {
       IssueQueueType.mem,
       16,
       ports = Seq(
-        // port 5: LSU
+        // port 3: LSU
         PortInfo(
           RegType.integer,
           Seq(
@@ -169,6 +188,16 @@ abstract class CoreDef {
   /** Ports
     */
   val PORTS: Seq[PortInfo] = ISSUE_QUEUES.flatMap(_.ports)
+
+  /** Register write ports
+    */
+  val REG_WRITE_PORTS: Seq[RegWritePortInfo] = Seq(
+    RegWritePortInfo(RegType.integer, Seq(0))(this), // port 0
+    RegWritePortInfo(RegType.integer, Seq(1))(this), // port 1
+    RegWritePortInfo(RegType.integer, Seq(2, 3))(this), // port 2 int2float & 3
+    RegWritePortInfo(RegType.float, Seq(2))(this), // port 2
+    RegWritePortInfo(RegType.float, Seq(1, 3))(this) // port 1 float2int & 3
+  )
 
   /** L1 line width in bytes
     */
@@ -192,8 +221,6 @@ abstract class CoreDef {
       REG_INT,
       REG_FLOAT
     )
-
-  def REGISTER_TYPE_COUNT: Int = REG_TYPES.length
 
   def REG_MAPPING: Map[RegType.Type, RegInfo] =
     Map((RegType.integer, REG_INT), (RegType.float, REG_FLOAT))
@@ -224,8 +251,7 @@ abstract class CoreDef {
       // collect all write ports
       (
         regInfo.regType,
-        PORTS
-          .count(_.regType == regInfo.regType)
+        REG_WRITE_PORTS.count(_.regType == regInfo.regType)
       )
     }
   }.toMap

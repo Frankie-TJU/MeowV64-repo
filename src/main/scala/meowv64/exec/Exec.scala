@@ -83,20 +83,28 @@ class Exec(implicit val coredef: CoreDef) extends Module {
   // Register file read/write port
   // for each port
   val toRF = IO(new Bundle {
-    val ports =
+    // readPorts(i)(j): the j operand of port i
+    val readPorts =
       MixedVec(
         for (port <- coredef.PORTS)
           yield new Bundle {
             // `readPorts` read ports
-            val rr = Vec(
+            val reader = Vec(
               port.readPorts,
               new RegReader(
                 port.regInfo.width,
                 port.regInfo.physRegs
               )
             )
-            // one write port
-            val rw =
+          }
+      )
+
+    // writePorts(i): the i-th write port
+    val writePorts =
+      MixedVec(
+        for (port <- coredef.REG_WRITE_PORTS)
+          yield new Bundle {
+            val writer =
               new RegWriter(
                 port.regInfo.width,
                 port.regInfo.physRegs
@@ -181,11 +189,15 @@ class Exec(implicit val coredef: CoreDef) extends Module {
                   Module(new Bypass).suggestName("Bypass")
                 case ExecUnitType.mul => Module(new Mul).suggestName("Mul")
                 case ExecUnitType.div => Module(new Div(16)).suggestName("Div")
+                case ExecUnitType.intToFloat =>
+                  Module(new IntToFloat).suggestName("IntToFloat")
                 case ExecUnitType.fma => Module(new FMA).suggestName("FMA")
                 case ExecUnitType.floatMisc =>
                   Module(new FloatMisc).suggestName("FloatMisc")
                 case ExecUnitType.floatDivSqrt =>
                   Module(new FloatDivSqrt).suggestName("FloatDivSqrt")
+                case ExecUnitType.floatToInt =>
+                  Module(new FloatToInt).suggestName("FloatToInt")
                 case ExecUnitType.vectorAlu =>
                   Module(new VectorALU).suggestName("VectorALU")
                 case ExecUnitType.vectorMisc =>
@@ -206,18 +218,54 @@ class Exec(implicit val coredef: CoreDef) extends Module {
 
       unitSel.rs <> regRead.io.toUnits
       regRead.io.toIssueQueue.instr <> issueQueue.egress(j)
-      regRead.io.toRegFile.reader <> toRF.ports(portIdx).rr
-
-      toRF.ports(portIdx).rw.addr := unitSel.retire.rdPhys
-      toRF.ports(portIdx).rw.data := unitSel.retire.info.wb
-      // do not write if exception occurred
-      toRF.ports(portIdx).rw.valid := unitSel.retire.valid &&
-        unitSel.retire.writeRdEff &&
-        unitSel.retire.info.exception.ex === ExReq.none
+      regRead.io.toRegFile.reader <> toRF.readPorts(portIdx).reader
 
       units.append(unitSel)
 
       portIdx += 1
+    }
+  }
+
+  // wire register write ports
+  for ((port, i) <- coredef.REG_WRITE_PORTS.zipWithIndex) {
+    if (port.ports.length == 1) {
+      // case 1: only one port
+      // no arbiter required
+      val unitSel = units(port.ports(0))
+      toRF.writePorts(i).writer.addr := unitSel.retire.bits.rdPhys
+      toRF.writePorts(i).writer.data := unitSel.retire.bits.info.wb
+      // do not write if exception occurred
+      toRF.writePorts(i).writer.valid := unitSel.retire.valid &&
+        unitSel.retire.bits.writeRdEff &&
+        unitSel.retire.bits.info.exception.ex === ExReq.none
+      unitSel.retire.ready := true.B
+    } else {
+      // case 2: more than one port
+      val arbiter = Module(
+        new Arbiter(
+          new Bundle {
+            val addr = UInt(log2Ceil(port.regInfo.physRegs).W)
+            val data = UInt(port.regInfo.width.W)
+          },
+          port.ports.length
+        )
+      )
+
+      toRF.writePorts(i).writer.addr := arbiter.io.out.bits.addr
+      toRF.writePorts(i).writer.data := arbiter.io.out.bits.data
+      toRF.writePorts(i).writer.valid := arbiter.io.out.valid
+      arbiter.io.out.ready := true.B
+
+      for ((unitIdx, j) <- port.ports.zipWithIndex) {
+        val unitSel = units(unitIdx)
+        arbiter.io.in(j).bits.addr := unitSel.retire.bits.rdPhys
+        arbiter.io.in(j).bits.data := unitSel.retire.bits.info.wb
+        // do not write if exception occurred
+        arbiter.io.in(j).valid := unitSel.retire.valid &&
+          unitSel.retire.bits.writeRdEff &&
+          unitSel.retire.bits.info.exception.ex === ExReq.none
+        unitSel.retire.ready := arbiter.io.in(j).ready
+      }
     }
   }
 
@@ -436,33 +484,35 @@ class Exec(implicit val coredef: CoreDef) extends Module {
   for (((u, ent), idx) <- units.zip(cdb.entries).zipWithIndex) {
     ent.valid := false.B
     ent.phys := 0.U // Helps to debug, because we are asserting store(0) === 0
-    ent.data := u.retire.info.wb
+    ent.data := u.retire.bits.info.wb
     ent.regType := RegType.integer
 
     // TODO: maybe pipeline here?
-    val dist = u.retire.robIndex -% retirePtr
+    val dist = u.retire.bits.robIndex -% retirePtr
     val oh = UIntToOH(dist)
-    val branchResult = u.retire.info.exception
+    val branchResult = u.retire.bits.info.exception
     val canBr = u.retire.valid && branchResult.fire()
     brMask(idx) := Mux(canBr, oh, 0.U)
     brSeled(idx) := brSel === oh && canBr
     brResults(idx) := branchResult
-    brTvals(idx) := u.retire.info.wb
+    brTvals(idx) := u.retire.bits.info.wb
 
     when(u.retire.valid) {
-      ent.phys := u.retire.rdPhys
-      ent.regType := u.retire.rdType
+      ent.phys := u.retire.bits.rdPhys
+      ent.regType := u.retire.bits.rdType
       ent.valid := true.B
 
-      rob(u.retire.robIndex).hasMem := false.B
-      rob(u.retire.robIndex).valid := true.B
+      rob(u.retire.bits.robIndex).hasMem := false.B
+      rob(u.retire.bits.robIndex).valid := true.B
       // for BRANCH instructions, this means taken before normalization
-      rob(u.retire.robIndex).branchTaken := u.retire.info.branchTaken
-      rob(u.retire.robIndex).updateFFlags := u.retire.info.updateFFlags
-      rob(u.retire.robIndex).fflags := u.retire.info.fflags
+      rob(u.retire.bits.robIndex).branchTaken := u.retire.bits.info.branchTaken
       rob(
-        u.retire.robIndex
-      ).exceptionOccurred := u.retire.info.exception.ex =/= ExReq.none
+        u.retire.bits.robIndex
+      ).updateFFlags := u.retire.bits.info.updateFFlags
+      rob(u.retire.bits.robIndex).fflags := u.retire.bits.info.fflags
+      rob(
+        u.retire.bits.robIndex
+      ).exceptionOccurred := u.retire.bits.info.exception.ex =/= ExReq.none
     }
   }
 

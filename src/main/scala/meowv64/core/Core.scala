@@ -114,14 +114,22 @@ class Core(implicit val coredef: CoreDef) extends Module {
   for (i <- 0 until coredef.REG_TYPES.length) {
     var readIdx = 0
     var writeIdx = 0
+
+    // read ports
     for ((port, idx) <- coredef.PORTS.zipWithIndex) {
       if (port.regType == coredef.REG_TYPES(i).regType) {
         for (j <- 0 until port.readPorts) {
-          exec.toRF.ports(idx).rr(j) <> regFiles(i).io.reads(readIdx)
+          exec.toRF.readPorts(idx).reader(j) <> regFiles(i).io.reads(readIdx)
           readIdx += 1
         }
 
-        exec.toRF.ports(idx).rw <> regFiles(i).io.writes(writeIdx)
+      }
+    }
+
+    // write ports
+    for ((port, idx) <- coredef.REG_WRITE_PORTS.zipWithIndex) {
+      if (port.regType == coredef.REG_TYPES(i).regType) {
+        exec.toRF.writePorts(idx).writer <> regFiles(i).io.writes(writeIdx)
         writeIdx += 1
       }
     }

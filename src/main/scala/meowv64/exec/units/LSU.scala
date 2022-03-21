@@ -130,7 +130,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   val regInfo = coredef.REG_INT
   val flush = IO(Input(Bool()))
   val rs = IO(Flipped(new RegisterReadEgress(regInfo)))
-  val retire = IO(Output(new Retirement(regInfo)))
+  val retire = IO(Decoupled(new Retirement(regInfo)))
   val extras = new mutable.HashMap[String, Data]()
 
   val vectorReadGroupNum = coredef.VLEN / coredef.XLEN
@@ -446,10 +446,10 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   )
 
   retire.valid := pipeInstr.instr.valid
-  retire.writeRdEff := pipeInstr.instr.instr.writeRdEff()
-  retire.rdType := pipeInstr.instr.instr.getRdType()
-  retire.rdPhys := pipeInstr.rdPhys
-  retire.robIndex := pipeInstr.robIndex
+  retire.bits.writeRdEff := pipeInstr.instr.instr.writeRdEff()
+  retire.bits.rdType := pipeInstr.instr.instr.getRdType()
+  retire.bits.rdPhys := pipeInstr.rdPhys
+  retire.bits.robIndex := pipeInstr.robIndex
   when(readState === LSUReadState.vectorLoad) {
     retire.valid := false.B
   }
@@ -509,18 +509,18 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   mem.rdType := pipeInstr.instr.instr.getRdType()
   mem.robIndex := pipeInstr.robIndex
 
-  retire.info := RetireInfo.vacant(regInfo)
-  retire.info.branchTaken := false.B // not a branch instruction
+  retire.bits.info := RetireInfo.vacant(regInfo)
+  retire.bits.info.branchTaken := false.B // not a branch instruction
   when(pipeFenceLike) {
-    retire.info.wb := DontCare
+    retire.bits.info.wb := DontCare
     when(pipeInstr.instr.instr.funct3 === Decoder.MEM_MISC_FUNC("FENCE.I")) {
-      retire.info.exception.ifence(pipeInstr.instr.addr + 4.U)
+      retire.bits.info.exception.ifence(pipeInstr.instr.addr + 4.U)
     }.otherwise {
-      retire.info.exception.nofire
+      retire.bits.info.exception.nofire
     }
   }.elsewhen(pipeInvalAddr) {
-    retire.info.wb := pipeRawAddr
-    retire.info.exception.ex(
+    retire.bits.info.wb := pipeRawAddr
+    retire.bits.info.exception.ex(
       Mux(
         pipeRead,
         ExType.LOAD_ACCESS_FAULT,
@@ -528,8 +528,8 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
       )
     )
   }.elsewhen(pipeFault) {
-    retire.info.wb := pipeRawAddr
-    retire.info.exception.ex(
+    retire.bits.info.wb := pipeRawAddr
+    retire.bits.info.exception.ex(
       Mux(
         pipeRead,
         ExType.LOAD_PAGE_FAULT,
@@ -537,8 +537,8 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
       )
     )
   }.elsewhen(pipeMisaligned) {
-    retire.info.wb := pipeRawAddr
-    retire.info.exception.ex(
+    retire.bits.info.wb := pipeRawAddr
+    retire.bits.info.exception.ex(
       Mux(
         pipeRead,
         ExType.LOAD_ADDR_MISALIGN,
@@ -546,8 +546,8 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
       )
     )
   }.elsewhen(pipeRead && !pipeUncached) {
-    retire.info.exception.nofire
-    retire.info.wb := result
+    retire.bits.info.exception.nofire
+    retire.bits.info.wb := result
     when(pipeAMO) { // Must be LR
       mem.op := DelayedMemOp.s
       mem.wop := DCWriteOp.commitLR
@@ -555,7 +555,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
       mem.data := result
     }
   }.elsewhen(pipeRead) {
-    retire.info.exception.nofire
+    retire.bits.info.exception.nofire
 
     mem.op := DelayedMemOp.ul
     mem.addr := pipeAddr
@@ -592,10 +592,10 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
       }
     }
 
-    retire.info.wb := DontCare
+    retire.bits.info.wb := DontCare
     mem.data := DontCare
   }.elsewhen(pipeWrite) {
-    retire.info.exception.nofire
+    retire.bits.info.exception.nofire
 
     mem.len := DontCare
     switch(pipeInstr.instr.instr.funct3) {
@@ -634,13 +634,13 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
       mem.wop := DCWriteOp.write
     }
 
-    retire.info.wb := DontCare
+    retire.bits.info.wb := DontCare
     // vse.v writes data stored in vs3
     mem.data := Mux(pipeIsVSE, pipeInstr.rs3val, pipeInstr.rs2val)
   }.otherwise {
     // Inval instr?
-    retire.info.exception.ex(ExType.ILLEGAL_INSTR)
-    retire.info.wb := DontCare
+    retire.bits.info.exception.ex(ExType.ILLEGAL_INSTR)
+    retire.bits.info.wb := DontCare
   }
 
   // when pushing to queue
@@ -721,12 +721,12 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   // no read will be issued
   // so we can freely override the write port here
   when(release.fire) {
-    retire.info.wb := release.bits.data
+    retire.bits.info.wb := release.bits.data
     retire.valid := true.B
-    retire.writeRdEff := pendingHead.writeRdEff
-    retire.rdType := pendingHead.rdType
-    retire.rdPhys := pendingHead.rdPhys
-    retire.robIndex := pendingHead.robIndex
+    retire.bits.writeRdEff := pendingHead.writeRdEff
+    retire.bits.rdType := pendingHead.rdType
+    retire.bits.rdPhys := pendingHead.rdPhys
+    retire.bits.robIndex := pendingHead.robIndex
   }
 
   when(release.fire) {
