@@ -160,7 +160,8 @@ class Exec(implicit val coredef: CoreDef) extends Module {
     issueQueues.append(issueQueue)
 
     for ((port, j) <- issueQueueInfo.ports.zipWithIndex) {
-      val bypassIdx = port.units.map(_.execUnitType).indexOf(ExecUnitType.bypass)
+      val bypassIdx =
+        port.units.map(_.execUnitType).indexOf(ExecUnitType.bypass)
       val regRead = Module(new RegisterRead(port))
       regRead.suggestName(s"RegisterRead_${portIdx}")
       regRead.io.flush := toCtrl.ctrl.flush
@@ -210,10 +211,10 @@ class Exec(implicit val coredef: CoreDef) extends Module {
 
       toRF.ports(portIdx).rw.addr := unitSel.retire.rdPhys
       toRF.ports(portIdx).rw.data := unitSel.retire.info.wb
-      toRF
-        .ports(portIdx)
-        .rw
-        .valid := unitSel.retire.valid && unitSel.retire.writeRdEff
+      // do not write if exception occurred
+      toRF.ports(portIdx).rw.valid := unitSel.retire.valid &&
+        unitSel.retire.writeRdEff &&
+        unitSel.retire.info.exception.ex === ExReq.none
 
       units.append(unitSel)
 
@@ -460,6 +461,7 @@ class Exec(implicit val coredef: CoreDef) extends Module {
       rob(u.retire.robIndex).taken := u.retire.info.branchTaken
       rob(u.retire.robIndex).updateFFlags := u.retire.info.updateFFlags
       rob(u.retire.robIndex).fflags := u.retire.info.fflags
+      rob(u.retire.robIndex).exceptionOccurred := u.retire.info.exception.ex =/= ExReq.none
     }
   }
 
@@ -632,7 +634,8 @@ class Exec(implicit val coredef: CoreDef) extends Module {
       .view(i)
       .rdPhys
     renamer.toExec.releases(i).rdIndex := inflights.reader.view(i).rdIndex
-    renamer.toExec.releases(i).valid := i.U < retireNum
+    renamer.toExec.releases(i).valid := i.U < retireNum &&
+      !rob(retirePtr +% i.U).exceptionOccurred
   }
 
   renamer.toExec.retire := retireNum
@@ -667,7 +670,7 @@ object Exec {
       */
     val valid = Bool()
 
-    /** Has memory access
+    /** Has delayed memory access
       */
     val hasMem = Bool()
 
@@ -679,6 +682,10 @@ object Exec {
       */
     val updateFFlags = Bool()
     val fflags = UInt(5.W)
+
+    /** Exception has occurred
+      */
+    val exceptionOccurred = Bool()
   }
 
   object ROBEntry {
@@ -689,6 +696,7 @@ object Exec {
       ret.taken := false.B
       ret.updateFFlags := false.B
       ret.fflags := false.B
+      ret.exceptionOccurred := false.B
 
       ret
     }
