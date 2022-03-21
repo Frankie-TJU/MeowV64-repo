@@ -13,7 +13,6 @@ import meowv64.core.PrivLevel
 import meowv64.core.Satp
 import meowv64.core.StageCtrl
 import meowv64.core.Status
-import meowv64.exec.Exec.ROBEntry
 import meowv64.exec.units._
 import meowv64.instr._
 import meowv64.paging.TLBExt
@@ -458,10 +457,12 @@ class Exec(implicit val coredef: CoreDef) extends Module {
       rob(u.retire.robIndex).hasMem := false.B
       rob(u.retire.robIndex).valid := true.B
       // for BRANCH instructions, this means taken before normalization
-      rob(u.retire.robIndex).taken := u.retire.info.branchTaken
+      rob(u.retire.robIndex).branchTaken := u.retire.info.branchTaken
       rob(u.retire.robIndex).updateFFlags := u.retire.info.updateFFlags
       rob(u.retire.robIndex).fflags := u.retire.info.fflags
-      rob(u.retire.robIndex).exceptionOccurred := u.retire.info.exception.ex =/= ExReq.none
+      rob(
+        u.retire.robIndex
+      ).exceptionOccurred := u.retire.info.exception.ex =/= ExReq.none
     }
   }
 
@@ -517,7 +518,7 @@ class Exec(implicit val coredef: CoreDef) extends Module {
 
     // NOTE: previously, for some reason,
     // a one tick delay is added here
-    val memResult = releaseMem.deq()
+    releaseMem.deq()
 
     // For BPU mis-predict on previous instructions
     toCtrl.branch := ExceptionResult.empty
@@ -590,20 +591,11 @@ class Exec(implicit val coredef: CoreDef) extends Module {
         when(
           inflight.op === Decoder.Op("BRANCH").ident ||
             inflight.op === Decoder.Op("JAL").ident
-          // && info.info.branch.ex === ExReq.none
-          // Update: BRANCH never exceptions
         ) {
           toBPU.valid := true.B
           toBPU.lpc := inflight.npc - 1.U
-          //toBPU.taken := pendingBr && pendingBrTag === tag
-          toBPU.taken := info.taken
+          toBPU.taken := info.branchTaken
           toBPU.hist := inflight.pred
-        }
-
-        when(
-          pendingBr && pendingBrTag === tag && pendingBrResult.ex =/= ExReq.none
-        ) {
-          // Don't write-back exceptioned instr
         }
 
         when(
@@ -663,44 +655,44 @@ class Exec(implicit val coredef: CoreDef) extends Module {
   }
 }
 
+class ROBEntry(implicit val coredef: CoreDef) extends Bundle {
+
+  /** This entry is valid
+    */
+  val valid = Bool()
+
+  /** Has delayed memory access
+    */
+  val hasMem = Bool()
+
+  /** Branch has taken
+    */
+  val branchTaken = Bool()
+
+  /** Update fflags
+    */
+  val updateFFlags = Bool()
+  val fflags = UInt(5.W)
+
+  /** Exception has occurred
+    */
+  val exceptionOccurred = Bool()
+}
+
+object ROBEntry {
+  def empty(implicit coredef: CoreDef) = {
+    val ret = Wire(new ROBEntry)
+    ret.hasMem := DontCare
+    ret.valid := false.B
+    ret.branchTaken := false.B
+    ret.updateFFlags := false.B
+    ret.fflags := false.B
+    ret.exceptionOccurred := false.B
+
+    ret
+  }
+}
 object Exec {
-  class ROBEntry(implicit val coredef: CoreDef) extends Bundle {
-
-    /** This entry is valid
-      */
-    val valid = Bool()
-
-    /** Has delayed memory access
-      */
-    val hasMem = Bool()
-
-    /** Branch has taken
-      */
-    val taken = Bool()
-
-    /** Update fflags
-      */
-    val updateFFlags = Bool()
-    val fflags = UInt(5.W)
-
-    /** Exception has occurred
-      */
-    val exceptionOccurred = Bool()
-  }
-
-  object ROBEntry {
-    def empty(implicit coredef: CoreDef) = {
-      val ret = Wire(new ROBEntry)
-      ret.hasMem := DontCare
-      ret.valid := false.B
-      ret.taken := false.B
-      ret.updateFFlags := false.B
-      ret.fflags := false.B
-      ret.exceptionOccurred := false.B
-
-      ret
-    }
-  }
 
   def route(instr: Instr)(implicit coredef: CoreDef): UInt = {
     val ret = Wire(UInt(coredef.ISSUE_QUEUES.length.W))

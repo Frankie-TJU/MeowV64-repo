@@ -119,9 +119,11 @@ class OoOIssueQueue(info: IssueQueueInfo)(implicit
     var issued = false.B
     for (j <- 0 until PORT_COUNT) {
       val portUnits = info.ports(j).units.map(_.execUnitType)
-      val allow = WireInit(portUnits
-        .map(_ === nextStore(i).instr.instr.info.execUnit)
-        .reduce(_ | _))
+      val allow = WireInit(
+        portUnits
+          .map(_ === nextStore(i).instr.instr.info.execUnit)
+          .reduce(_ | _)
+      )
       // send illegal instructions to first port
       when(nextStore(i).instr.illegal) {
         allow := (j == 0).B
