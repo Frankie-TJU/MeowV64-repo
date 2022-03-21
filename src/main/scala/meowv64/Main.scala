@@ -20,7 +20,7 @@ object Main extends App {
     .newInstance()
     .asInstanceOf[SystemDef]
   (new chisel3.stage.ChiselStage()).execute(
-    Array("-X", "mverilog") ++ rest,
+    Array("-X", "verilog") ++ rest,
     Seq(
       ChiselGeneratorAnnotation(() => new RiscVSystem()(conf)),
       RunFirrtlTransformAnnotation(Dependency(ZeroInit))
