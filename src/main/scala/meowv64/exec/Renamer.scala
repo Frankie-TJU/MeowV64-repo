@@ -77,17 +77,22 @@ class Renamer(implicit coredef: CoreDef) extends Module {
         VecInit(Seq.fill(REG_NUM)(0.U(log2Ceil(regInfo.physRegs).W)))
       )
       val committedFreeList = RegInit(freeMask.U(regInfo.physRegs.W))
+      // when flushing, use the newest mapping & free mask
+      val nextCommittedMapping = WireInit(committedMapping)
+      val nextCommittedFreeList = WireInit(committedFreeList)
+      committedMapping := nextCommittedMapping
+      committedFreeList := nextCommittedFreeList
 
       // masks for updating committedFreeList
       val setCommittedFreeMask = WireInit(0.U(regInfo.physRegs.W))
       val clearCommittedFreeMask = WireInit(0.U(regInfo.physRegs.W))
-      committedFreeList := committedFreeList & ~clearCommittedFreeMask | (setCommittedFreeMask & freeMask.U)
+      nextCommittedFreeList := committedFreeList & ~clearCommittedFreeMask | (setCommittedFreeMask & freeMask.U)
     }
 
   def flush() = {
     for (bank <- banks) {
-      bank.mapping := bank.committedMapping
-      bank.freeList := bank.committedFreeList
+      bank.mapping := bank.nextCommittedMapping
+      bank.freeList := bank.nextCommittedFreeList
       // all regs are ready
       bank.regBusy := 0.U
     }
@@ -185,7 +190,7 @@ class Renamer(implicit coredef: CoreDef) extends Module {
       for ((release, idx) <- toExec.releases.zipWithIndex) yield {
         val mask = WireInit(0.U(regInfo.physRegs.W))
         when(release.rdIndex.ty === bank.regType && release.valid) {
-          bank.committedMapping(release.rdIndex.index) := release.rdPhys
+          bank.nextCommittedMapping(release.rdIndex.index) := release.rdPhys
           mask := 1.U << release.rdPhys
         }
         mask
