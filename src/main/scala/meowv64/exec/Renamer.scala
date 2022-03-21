@@ -5,12 +5,14 @@ import chisel3.util._
 import meowv64.core.CoreDef
 import meowv64.instr.InstrExt
 import meowv64.reg.RegType
+import meowv64.instr.RegIndex
 
-/** Release stale physical register into free list
+/** Release stale physical register into free list and update committed mapping
   */
 class Release(implicit val coredef: CoreDef) extends Bundle {
   val staleRdPhys = Input(UInt(log2Ceil(coredef.MAX_PHYSICAL_REGISTERS).W))
-  val regType = Input(RegType())
+  val rdPhys = Input(UInt(log2Ceil(coredef.MAX_PHYSICAL_REGISTERS).W))
+  val rdIndex = Input(new RegIndex)
   val valid = Input(Bool())
 }
 
@@ -76,6 +78,11 @@ class Renamer(implicit coredef: CoreDef) extends Module {
         VecInit(Seq.fill(REG_NUM)(0.U(log2Ceil(regInfo.physRegs).W)))
       )
       val committedFreeList = RegInit(freeMask.U(regInfo.physRegs.W))
+
+      // masks for updating committedFreeList
+      val setCommittedFreeMask = WireInit(0.U(regInfo.physRegs.W))
+      val clearCommittedFreeMask = WireInit(0.U(regInfo.physRegs.W))
+      committedFreeList := committedFreeList & ~clearCommittedFreeMask | (setCommittedFreeMask & freeMask.U)
     }
 
   def flush() = {
@@ -162,17 +169,29 @@ class Renamer(implicit coredef: CoreDef) extends Module {
 
   // Release before allocation
   for ((bank, regInfo) <- banks.zip(coredef.REG_TYPES)) {
-    val masks = for ((release, idx) <- toExec.releases.zipWithIndex) yield {
+    val setMasks = for ((release, idx) <- toExec.releases.zipWithIndex) yield {
       val mask = WireInit(0.U(regInfo.physRegs.W))
-      when(
-        idx.U < toExec.retire && release.regType === bank.regType && release.valid
-      ) {
+      when(release.rdIndex.ty === bank.regType && release.valid) {
         mask := 1.U << release.staleRdPhys
       }
       mask
     }
 
-    bank.setFreeMask := masks.reduce(_ | _)
+    bank.setFreeMask := setMasks.reduce(_ | _)
+    bank.setCommittedFreeMask := setMasks.reduce(_ | _)
+
+    // update committed state
+    // and remove rd from committed free list
+    val clearMasks =
+      for ((release, idx) <- toExec.releases.zipWithIndex) yield {
+        val mask = WireInit(0.U(regInfo.physRegs.W))
+        when(release.rdIndex.ty === bank.regType && release.valid) {
+          bank.committedMapping(release.rdIndex.index) := release.rdPhys
+          mask := 1.U << release.rdPhys
+        }
+        mask
+      }
+    bank.clearCommittedFreeMask := clearMasks.reduce(_ | _)
   }
 
   for ((instr, idx) <- toExec.input.zipWithIndex) {

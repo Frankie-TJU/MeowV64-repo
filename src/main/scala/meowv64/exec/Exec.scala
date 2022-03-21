@@ -393,7 +393,7 @@ class Exec(implicit val coredef: CoreDef) extends Module {
   // save necessary info in fifo
   inflights.writer.view := toIF.view
     .zip(renamer.toExec.output)
-    .map({ case (i, r) => InflightInstr.from(i, r.staleRdPhys) })
+    .map({ case (i, r) => InflightInstr.from(i, r) })
 
   val pendingBr = RegInit(false.B)
   val pendingBrTag = RegInit(0.U(log2Ceil(coredef.INFLIGHT_INSTR_LIMIT).W))
@@ -627,7 +627,10 @@ class Exec(implicit val coredef: CoreDef) extends Module {
     renamer.toExec.releases(i).staleRdPhys := inflights.reader
       .view(i)
       .staleRdPhys
-    renamer.toExec.releases(i).regType := inflights.reader.view(i).rdRegType
+    renamer.toExec.releases(i).rdPhys := inflights.reader
+      .view(i)
+      .rdPhys
+    renamer.toExec.releases(i).rdIndex := inflights.reader.view(i).rdIndex
     renamer.toExec.releases(i).valid := i.U < retireNum
   }
 
