@@ -50,7 +50,7 @@ class Renamer(implicit coredef: CoreDef) extends Module {
       val mapping = RegInit(
         VecInit(Seq.fill(REG_NUM)(0.U(log2Ceil(regInfo.physRegs).W)))
       )
-      val regBusy = RegInit(0.U(REG_NUM.W))
+      val regBusy = RegInit(0.U(regInfo.physRegs.W))
 
       // 1 means free
       // P0 is hardwired to zero for x0
@@ -99,10 +99,10 @@ class Renamer(implicit coredef: CoreDef) extends Module {
   }
 
   // Update by CDB
-  for (bank <- banks) {
+  for ((bank, regInfo) <- banks.zip(coredef.REG_TYPES)) {
     var currentBusy = WireInit(0.U.asTypeOf(bank.clearBusyMask))
     for (ent <- cdb.entries) {
-      val mask = WireInit(0.U(REG_NUM.W))
+      val mask = WireInit(0.U(regInfo.physRegs.W))
       when(ent.valid && bank.regType === ent.regType) {
         mask := 1.U << ent.phys
       }
