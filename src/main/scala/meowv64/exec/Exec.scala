@@ -212,7 +212,7 @@ class Exec(implicit val coredef: CoreDef) extends Module {
       toRF
         .ports(portIdx)
         .rw
-        .valid := unitSel.retire.valid && unitSel.retire.writeRd
+        .valid := unitSel.retire.valid && unitSel.retire.writeRdEff
 
       units.append(unitSel)
 

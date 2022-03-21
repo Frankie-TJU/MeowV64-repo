@@ -732,7 +732,7 @@ class Instr extends Bundle {
   def getRd() = RegIndex.create(getRdType(), getRdIndex())
 
   /** if writeRd is true and rd is not x0 */
-  def writeRdEffective() =
+  def writeRdEff() =
     info.writeRd && (info.rdType =/= RegType.integer || rd =/= 0.U)
 
   def getRs1Type() = WireInit(this.info.rs1Type)

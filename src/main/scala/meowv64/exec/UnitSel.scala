@@ -250,7 +250,7 @@ class Retirement(val regInfo: RegInfo)(implicit
 
   /** Instruction info
     */
-  val writeRd = Bool()
+  val writeRdEff = Bool()
   val rdPhys = UInt(log2Ceil(regInfo.physRegs).W)
   val rdType = RegType()
   val robIndex = UInt(log2Ceil(coredef.INFLIGHT_INSTR_LIMIT).W)
@@ -264,7 +264,7 @@ object Retirement {
   ): Retirement = {
     val ret = Wire(new Retirement(regInfo))
     ret.valid := false.B
-    ret.writeRd := false.B
+    ret.writeRdEff := false.B
     ret.rdPhys := 0.U
     ret.rdType := RegType.integer
     ret.robIndex := 0.U
@@ -276,7 +276,7 @@ object Retirement {
   def from(port: ExecUnitPort)(implicit coredef: CoreDef): Retirement = {
     val ret = Wire(new Retirement(port.regInfo))
     ret.valid := port.retired.instr.valid
-    ret.writeRd := port.retired.instr.instr.info.writeRd
+    ret.writeRdEff := port.retired.instr.instr.writeRdEff
     ret.rdType := port.retired.instr.instr.getRdType()
     ret.rdPhys := port.retired.rdPhys
     ret.robIndex := port.retired.robIndex

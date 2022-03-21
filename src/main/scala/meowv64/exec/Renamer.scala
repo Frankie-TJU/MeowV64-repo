@@ -4,7 +4,6 @@ import chisel3._
 import chisel3.util._
 import meowv64.core.CoreDef
 import meowv64.instr.InstrExt
-import meowv64.reg.RegType
 import meowv64.instr.RegIndex
 
 /** Release stale physical register into free list and update committed mapping
@@ -120,7 +119,7 @@ class Renamer(implicit coredef: CoreDef) extends Module {
 
       // check if this instruction relies on previous instructions
       for (i <- (0 until idx)) {
-        when(toExec.input(i).instr.writeRdEffective) {
+        when(toExec.input(i).instr.writeRdEff) {
           val rd = toExec.input(i).instr.getRd
           when(
             rs1.ty === rd.ty && rs1.index === rd.index &&
@@ -266,7 +265,7 @@ class Renamer(implicit coredef: CoreDef) extends Module {
       val curMask = WireInit(0.U(regInfo.physRegs.W))
       when(
         instr.instr
-          .getRdType() === regInfo.regType && instr.instr.info.writeRd
+          .getRdType() === regInfo.regType && instr.instr.writeRdEff()
       ) {
         when(idx.U < toExec.commit) {
           // allocate register for rd

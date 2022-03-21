@@ -65,7 +65,7 @@ class DelayedMem(implicit val coredef: CoreDef) extends Bundle {
   /** For retirement
     */
   val regInfo = coredef.REG_INT
-  val writeRd = Bool()
+  val writeRdEff = Bool()
   val rdPhys = UInt(log2Ceil(regInfo.physRegs).W)
   val rdType = RegType()
   val robIndex = UInt(log2Ceil(coredef.INFLIGHT_INSTR_LIMIT).W)
@@ -446,7 +446,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   )
 
   retire.valid := pipeInstr.instr.valid
-  retire.writeRd := pipeInstr.instr.instr.info.writeRd
+  retire.writeRdEff := pipeInstr.instr.instr.writeRdEff()
   retire.rdType := pipeInstr.instr.instr.getRdType()
   retire.rdPhys := pipeInstr.rdPhys
   retire.robIndex := pipeInstr.robIndex
@@ -504,7 +504,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   // Retirement
   val mem = Wire(new DelayedMem)
   mem.noop() // By default
-  mem.writeRd := pipeInstr.instr.instr.info.writeRd
+  mem.writeRdEff := pipeInstr.instr.instr.writeRdEff
   mem.rdPhys := pipeInstr.rdPhys
   mem.rdType := pipeInstr.instr.instr.getRdType()
   mem.robIndex := pipeInstr.robIndex
@@ -723,7 +723,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   when(release.fire) {
     retire.info.wb := release.bits.data
     retire.valid := true.B
-    retire.writeRd := pendingHead.writeRd
+    retire.writeRdEff := pendingHead.writeRdEff
     retire.rdType := pendingHead.rdType
     retire.rdPhys := pendingHead.rdPhys
     retire.robIndex := pendingHead.robIndex

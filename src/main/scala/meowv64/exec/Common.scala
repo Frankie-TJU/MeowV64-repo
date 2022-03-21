@@ -15,8 +15,8 @@ import meowv64.instr.BPUResult
 import meowv64.instr.BranchPrediction
 import meowv64.instr.Decoder.InstrType
 import meowv64.instr.InstrExt
-import meowv64.reg.RegType
 import meowv64.instr.RegIndex
+import meowv64.reg.RegType
 
 /** Exception result
   *
@@ -264,7 +264,7 @@ class InflightInstr(implicit val coredef: CoreDef) extends Bundle {
 
   /** Release physical register
     */
-  val writeRd = Bool()
+  val writeRdEff = Bool()
   val staleRdPhys = UInt(log2Ceil(coredef.MAX_PHYSICAL_REGISTERS).W)
   val rdPhys = UInt(log2Ceil(coredef.MAX_PHYSICAL_REGISTERS).W)
   val rdIndex = new RegIndex()
@@ -290,7 +290,7 @@ object InflightInstr {
     ret.addr := instr.addr
     ret.isC := instr.instr.base === InstrType.C
     ret.rdIndex := instr.instr.getRd()
-    ret.writeRd := instr.instr.info.writeRd
+    ret.writeRdEff := instr.instr.writeRdEff()
     ret.rdPhys := renamed.rdPhys
     ret.staleRdPhys := renamed.staleRdPhys
     ret.pred := instr.pred
