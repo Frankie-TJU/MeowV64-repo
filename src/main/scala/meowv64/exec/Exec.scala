@@ -446,6 +446,12 @@ class Exec(implicit val coredef: CoreDef) extends Module {
     pendingBrTval := Mux1H(brSeled, brTvals)
   }
 
+  // set hasMem when delayed memory op is pushed into queue
+  when(lsu.toExec.valid) {
+    rob(lsu.toExec.robIndex).valid := true.B
+    rob(lsu.toExec.robIndex).hasMem := true.B
+  }
+
   // Filling ROB & CDB broadcast
   for (((u, ent), idx) <- units.zip(cdb.entries).zipWithIndex) {
     ent.valid := false.B
@@ -464,13 +470,11 @@ class Exec(implicit val coredef: CoreDef) extends Module {
     brTvals(idx) := u.retire.info.wb
 
     when(u.retire.valid) {
-      when(!u.retire.info.hasMem) {
-        ent.phys := u.retire.rdPhys
-        ent.regType := u.retire.rdType
-        ent.valid := true.B
-      }
+      ent.phys := u.retire.rdPhys
+      ent.regType := u.retire.rdType
+      ent.valid := true.B
 
-      rob(u.retire.robIndex).hasMem := u.retire.info.hasMem
+      rob(u.retire.robIndex).hasMem := false.B
       rob(u.retire.robIndex).valid := true.B
       // for BRANCH instructions, this means taken before normalization
       rob(u.retire.robIndex).taken := u.retire.info.branchTaken

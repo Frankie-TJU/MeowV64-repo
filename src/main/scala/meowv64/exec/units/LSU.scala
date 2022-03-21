@@ -169,6 +169,12 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   val ptw = IO(new TLBExt)
   val tlbRst = IO(Input(Bool()))
   val priv = IO(Input(PrivLevel()))
+  // set hasMem in rob for delayed memory ops
+  val toExec = IO(new Bundle {
+    val valid = Output(Bool())
+    val hasMem = Output(Bool())
+    val robIndex = Output(UInt(log2Ceil(coredef.INFLIGHT_INSTR_LIMIT).W))
+  })
 
   val tlb = Module(new TLB)
   val requiresTranslate = satp.mode =/= SatpMode.bare && (
@@ -637,8 +643,16 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
     retire.info.wb := DontCare
   }
 
+  // when pushing to queue
+  // set hasMem in rob
   val push = mem.op =/= DelayedMemOp.no && pipeInstr.instr.valid && !l2stall
-  retire.info.hasMem := push
+  toExec.valid := push
+  toExec.hasMem := true.B
+  toExec.robIndex := pipeInstr.robIndex
+  when(push) {
+    retire.valid := false.B
+  }
+
   pendings.io.enq.bits := mem
   pendings.io.enq.valid := push
   assert(pendings.io.enq.ready)
@@ -707,7 +721,6 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   // no read will be issued
   // so we can freely override the write port here
   when(release.fire) {
-    retire.info.hasMem := false.B
     retire.info.wb := release.bits.data
     retire.valid := true.B
     retire.writeRd := pendingHead.writeRd

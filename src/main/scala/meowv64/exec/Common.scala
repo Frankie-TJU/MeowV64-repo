@@ -157,10 +157,6 @@ class RetireInfo(val regInfo: RegInfo)(implicit val coredef: CoreDef)
     */
   val exception = new ExceptionResult
 
-  /** Has delayed memory ops?
-    */
-  val hasMem = Bool()
-
   /** Whether this branch has taken. Used in updating BPU.
     */
   val branchTaken = Bool()
@@ -172,7 +168,6 @@ object RetireInfo {
 
     info.exception.nofire
     info.wb := 0.U
-    info.hasMem := false.B
     info.branchTaken := false.B
     info.updateFFlags := false.B
     info.fflags := 0.U
