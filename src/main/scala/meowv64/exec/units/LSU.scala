@@ -10,10 +10,11 @@ import meowv64.core.PrivLevel
 import meowv64.core.Satp
 import meowv64.core.SatpMode
 import meowv64.core.Status
-import meowv64.exec.UnitSel.Retirement
+import meowv64.exec.Retirement
 import meowv64.exec._
 import meowv64.instr.Decoder
 import meowv64.paging._
+import meowv64.reg.RegType
 import meowv64.util.FlushableQueue
 
 import scala.collection.mutable
@@ -60,6 +61,14 @@ class DelayedMem(implicit val coredef: CoreDef) extends Bundle {
   /** This is vse.v
     */
   val isVectorStore = Bool()
+
+  /** For retirement
+    */
+  val regInfo = coredef.REG_INT
+  val writeRd = Bool()
+  val rdPhys = UInt(log2Ceil(regInfo.physRegs).W)
+  val rdType = RegType()
+  val robIndex = UInt(log2Ceil(coredef.INFLIGHT_INSTR_LIMIT).W)
 
   // Written data is shared with wb
 
@@ -430,9 +439,13 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
       && pipeInstr.instr.valid
   )
 
-  retire.instr := pipeInstr
+  retire.valid := pipeInstr.instr.valid
+  retire.writeRd := pipeInstr.instr.instr.info.writeRd
+  retire.rdType := pipeInstr.instr.instr.getRdType()
+  retire.rdPhys := pipeInstr.rdPhys
+  retire.robIndex := pipeInstr.robIndex
   when(readState === LSUReadState.vectorLoad) {
-    retire.instr.instr.valid := false.B
+    retire.valid := false.B
   }
 
   /*
@@ -443,7 +456,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
    * If we add MSHR, then we need to keep track of flushed requests
    */
   when(l2stall) {
-    retire.instr.instr.valid := false.B
+    retire.valid := false.B
   }
 
   val shifted =
@@ -485,6 +498,10 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   // Retirement
   val mem = Wire(new DelayedMem)
   mem.noop() // By default
+  mem.writeRd := pipeInstr.instr.instr.info.writeRd
+  mem.rdPhys := pipeInstr.rdPhys
+  mem.rdType := pipeInstr.instr.instr.getRdType()
+  mem.robIndex := pipeInstr.robIndex
 
   retire.info := RetireInfo.vacant(regInfo)
   retire.info.branchTaken := false.B // not a branch instruction
@@ -684,6 +701,20 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
       )
   )
   release.valid := finished
+
+  // write to register if WB=1
+  // currently, if a delayed memory op is inflight,
+  // no read will be issued
+  // so we can freely override the write port here
+  when(release.fire) {
+    retire.info.hasMem := false.B
+    retire.info.wb := release.bits.data
+    retire.valid := true.B
+    retire.writeRd := pendingHead.writeRd
+    retire.rdType := pendingHead.rdType
+    retire.rdPhys := pendingHead.rdPhys
+    retire.robIndex := pendingHead.robIndex
+  }
 
   when(release.fire) {
     pendings.io.deq.deq()

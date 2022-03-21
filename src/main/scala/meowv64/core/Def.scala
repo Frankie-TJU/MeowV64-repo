@@ -12,7 +12,7 @@ import meowv64.reg.RegType
   *   Register type
   * @param width
   *   Register width
-  * @param physicalRegs
+  * @param physRegs
   *   Number of physical registers
   * @param maxOperandNum
   *   Maximum number of operands
@@ -22,7 +22,7 @@ import meowv64.reg.RegType
 case class RegInfo(
     regType: RegType.Type,
     width: Int,
-    physicalRegs: Int,
+    physRegs: Int,
     maxOperandNum: Int,
     fixedZero: Boolean
 )
@@ -200,7 +200,7 @@ abstract class CoreDef {
 
   /** Maximum physical register count across different types
     */
-  def MAX_PHYSICAL_REGISTERS: Int = REG_TYPES.map(_.physicalRegs).max
+  def MAX_PHYSICAL_REGISTERS: Int = REG_TYPES.map(_.physRegs).max
 
   /** Compute register read ports
     */

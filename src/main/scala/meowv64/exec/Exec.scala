@@ -93,14 +93,14 @@ class Exec(implicit val coredef: CoreDef) extends Module {
               port.readPorts,
               new RegReader(
                 port.regInfo.width,
-                port.regInfo.physicalRegs
+                port.regInfo.physRegs
               )
             )
             // one write port
             val rw =
               new RegWriter(
                 port.regInfo.width,
-                port.regInfo.physicalRegs
+                port.regInfo.physRegs
               )
           }
       )
@@ -207,12 +207,12 @@ class Exec(implicit val coredef: CoreDef) extends Module {
       regRead.io.toIssueQueue.instr <> issueQueue.egress(j)
       regRead.io.toRegFile.reader <> toRF.ports(portIdx).rr
 
-      toRF.ports(portIdx).rw.addr := unitSel.retire.instr.rdPhys
+      toRF.ports(portIdx).rw.addr := unitSel.retire.rdPhys
       toRF.ports(portIdx).rw.data := unitSel.retire.info.wb
       toRF
         .ports(portIdx)
         .rw
-        .valid := unitSel.retire.valid && unitSel.retire.instr.instr.instr.info.writeRd
+        .valid := unitSel.retire.valid && unitSel.retire.writeRd
 
       units.append(unitSel)
 
@@ -454,28 +454,28 @@ class Exec(implicit val coredef: CoreDef) extends Module {
     ent.regType := RegType.integer
 
     // TODO: maybe pipeline here?
-    val dist = u.retire.instr.robIndex -% retirePtr
+    val dist = u.retire.robIndex -% retirePtr
     val oh = UIntToOH(dist)
     val branchResult = u.retire.info.exception
-    val canBr = u.retire.instr.instr.valid && branchResult.fire()
+    val canBr = u.retire.valid && branchResult.fire()
     brMask(idx) := Mux(canBr, oh, 0.U)
     brSeled(idx) := brSel === oh && canBr
     brResults(idx) := branchResult
     brTvals(idx) := u.retire.info.wb
 
-    when(u.retire.instr.instr.valid) {
+    when(u.retire.valid) {
       when(!u.retire.info.hasMem) {
-        ent.phys := u.retire.instr.rdPhys
-        ent.regType := u.retire.instr.instr.instr.getRdType()
+        ent.phys := u.retire.rdPhys
+        ent.regType := u.retire.rdType
         ent.valid := true.B
       }
 
-      rob(u.retire.instr.robIndex).hasMem := u.retire.info.hasMem
-      rob(u.retire.instr.robIndex).valid := true.B
+      rob(u.retire.robIndex).hasMem := u.retire.info.hasMem
+      rob(u.retire.robIndex).valid := true.B
       // for BRANCH instructions, this means taken before normalization
-      rob(u.retire.instr.robIndex).taken := u.retire.info.branchTaken
-      rob(u.retire.instr.robIndex).updateFFlags := u.retire.info.updateFFlags
-      rob(u.retire.instr.robIndex).fflags := u.retire.info.fflags
+      rob(u.retire.robIndex).taken := u.retire.info.branchTaken
+      rob(u.retire.robIndex).updateFFlags := u.retire.info.updateFFlags
+      rob(u.retire.robIndex).fflags := u.retire.info.fflags
     }
   }
 
@@ -540,10 +540,6 @@ class Exec(implicit val coredef: CoreDef) extends Module {
       retireNum := 1.U
       rob(retirePtr).valid := false.B
       retirePtr := retirePtr +% 1.U
-      when(memResult.hasWB) {
-        // TODO
-      }
-
       when(pendingBr && pendingBrTag === retirePtr) {
         toCtrl.branch := pendingBrResult
       }

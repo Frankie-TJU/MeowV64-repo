@@ -9,8 +9,8 @@ import meowv64.core.CoreDef
 import meowv64.core.PrivLevel
 import meowv64.core.RegInfo
 import meowv64.core.Status
-import meowv64.exec.UnitSel.Retirement
 import meowv64.instr.Instr
+import meowv64.reg.RegType
 
 import scala.collection.mutable
 
@@ -240,35 +240,48 @@ class UnitSel(
   }
 }
 
-object UnitSel {
-  class Retirement(val regInfo: RegInfo)(implicit
-      val coredef: CoreDef
-  ) extends Bundle {
-    val instr = new PipeInstr(regInfo)
-    val info = new RetireInfo(regInfo)
+class Retirement(val regInfo: RegInfo)(implicit
+    val coredef: CoreDef
+) extends Bundle {
 
-    /** This retirement is valid
-      */
-    def valid = instr.instr.valid
+  /** This retirement is valid
+    */
+  val valid = Bool()
+
+  /** Instruction info
+    */
+  val writeRd = Bool()
+  val rdPhys = UInt(log2Ceil(regInfo.physRegs).W)
+  val rdType = RegType()
+  val robIndex = UInt(log2Ceil(coredef.INFLIGHT_INSTR_LIMIT).W)
+
+  val info = new RetireInfo(regInfo)
+}
+
+object Retirement {
+  def empty(regInfo: RegInfo)(implicit
+      coredef: CoreDef
+  ): Retirement = {
+    val ret = Wire(new Retirement(regInfo))
+    ret.valid := false.B
+    ret.writeRd := false.B
+    ret.rdPhys := 0.U
+    ret.rdType := RegType.integer
+    ret.robIndex := 0.U
+    ret.info := RetireInfo.vacant(regInfo)
+
+    ret
   }
 
-  object Retirement {
-    def empty(regInfo: RegInfo)(implicit
-        coredef: CoreDef
-    ): Retirement = {
-      val ret = Wire(new Retirement(regInfo))
-      ret.instr := PipeInstr.empty(regInfo)
-      ret.info := RetireInfo.vacant(regInfo)
+  def from(port: ExecUnitPort)(implicit coredef: CoreDef): Retirement = {
+    val ret = Wire(new Retirement(port.regInfo))
+    ret.valid := port.retired.instr.valid
+    ret.writeRd := port.retired.instr.instr.info.writeRd
+    ret.rdType := port.retired.instr.instr.getRdType()
+    ret.rdPhys := port.retired.rdPhys
+    ret.robIndex := port.retired.robIndex
+    ret.info := port.retirement
 
-      ret
-    }
-
-    def from(port: ExecUnitPort)(implicit coredef: CoreDef): Retirement = {
-      val ret = Wire(new Retirement(port.regInfo))
-      ret.instr := port.retired
-      ret.info := port.retirement
-
-      ret
-    }
+    ret
   }
 }

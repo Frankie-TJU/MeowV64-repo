@@ -47,7 +47,7 @@ class Renamer(implicit coredef: CoreDef) extends Module {
       // Map logical -> physical
       val regType = regInfo.regType
       val mapping = RegInit(
-        VecInit(Seq.fill(REG_NUM)(0.U(log2Ceil(regInfo.physicalRegs).W)))
+        VecInit(Seq.fill(REG_NUM)(0.U(log2Ceil(regInfo.physRegs).W)))
       )
       val regBusy = RegInit(0.U(REG_NUM.W))
 
@@ -55,27 +55,27 @@ class Renamer(implicit coredef: CoreDef) extends Module {
       // P0 is hardwired to zero for x0
       // it should never be allocated
       val freeMask = if (regInfo.fixedZero) {
-        (BigInt(1) << regInfo.physicalRegs) - 2
+        (BigInt(1) << regInfo.physRegs) - 2
       } else {
-        (BigInt(1) << regInfo.physicalRegs) - 1
+        (BigInt(1) << regInfo.physRegs) - 1
       }
-      val freeList = RegInit(freeMask.U(regInfo.physicalRegs.W))
+      val freeList = RegInit(freeMask.U(regInfo.physRegs.W))
 
       // masks for updating freeList
-      val setFreeMask = WireInit(0.U(regInfo.physicalRegs.W))
-      val clearFreeMask = WireInit(0.U(regInfo.physicalRegs.W))
+      val setFreeMask = WireInit(0.U(regInfo.physRegs.W))
+      val clearFreeMask = WireInit(0.U(regInfo.physRegs.W))
       freeList := freeList & ~clearFreeMask | (setFreeMask & freeMask.U)
 
       // masks for updating regBusy
-      val setBusyMask = WireInit(0.U(regInfo.physicalRegs.W))
-      val clearBusyMask = WireInit(0.U(regInfo.physicalRegs.W))
+      val setBusyMask = WireInit(0.U(regInfo.physRegs.W))
+      val clearBusyMask = WireInit(0.U(regInfo.physRegs.W))
       regBusy := regBusy & ~clearBusyMask | setBusyMask
 
       // save committed state for recovery
       val committedMapping = RegInit(
-        VecInit(Seq.fill(REG_NUM)(0.U(log2Ceil(regInfo.physicalRegs).W)))
+        VecInit(Seq.fill(REG_NUM)(0.U(log2Ceil(regInfo.physRegs).W)))
       )
-      val committedFreeList = RegInit(freeMask.U(regInfo.physicalRegs.W))
+      val committedFreeList = RegInit(freeMask.U(regInfo.physRegs.W))
     }
 
   def flush() = {
@@ -163,7 +163,7 @@ class Renamer(implicit coredef: CoreDef) extends Module {
   // Release before allocation
   for ((bank, regInfo) <- banks.zip(coredef.REG_TYPES)) {
     val masks = for ((release, idx) <- toExec.releases.zipWithIndex) yield {
-      val mask = WireInit(0.U(regInfo.physicalRegs.W))
+      val mask = WireInit(0.U(regInfo.physRegs.W))
       when(
         idx.U < toExec.retire && release.regType === bank.regType && release.valid
       ) {
@@ -239,12 +239,12 @@ class Renamer(implicit coredef: CoreDef) extends Module {
 
   // assign new physical register
   for ((regInfo, bank) <- coredef.REG_TYPES.zip(banks)) {
-    var clearFreeMask = WireInit(0.U(regInfo.physicalRegs.W))
-    var setBusyMask = WireInit(0.U(regInfo.physicalRegs.W))
+    var clearFreeMask = WireInit(0.U(regInfo.physRegs.W))
+    var setBusyMask = WireInit(0.U(regInfo.physRegs.W))
 
     for ((instr, idx) <- toExec.input.zipWithIndex) {
       val phys = PriorityEncoder(bank.freeList & ~clearFreeMask)
-      val curMask = WireInit(0.U(regInfo.physicalRegs.W))
+      val curMask = WireInit(0.U(regInfo.physRegs.W))
       when(
         instr.instr
           .getRdType() === regInfo.regType && instr.instr.info.writeRd

@@ -510,7 +510,7 @@ abstract class ExecUnit[T <: Data](
 class CDBEntry(val regInfo: RegInfo)(implicit val coredef: CoreDef)
     extends Bundle {
   val valid = Bool()
-  val phys = UInt(log2Ceil(regInfo.physicalRegs).W)
+  val phys = UInt(log2Ceil(regInfo.physRegs).W)
   val regType = RegType()
   val data = UInt(regInfo.width.W)
 }
