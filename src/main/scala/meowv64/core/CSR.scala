@@ -407,7 +407,7 @@ object SatpMode extends ChiselEnum {
 
 class Satp extends Bundle {
   val mode = SatpMode()
-  val asic = UInt(16.W)
+  val asid = UInt(16.W)
   val ppn = UInt(44.W)
 
   def port = {
@@ -417,7 +417,7 @@ class Satp extends Bundle {
     val modeValid = casted.mode.isValid
 
     when(port.write) {
-      asic := casted.asic
+      asid := casted.asid
       ppn := casted.ppn
       when(modeValid) {
         mode := casted.mode
@@ -431,7 +431,7 @@ class Satp extends Bundle {
 object Satp {
   def empty = {
     val ret = Wire(new Satp)
-    ret.asic := 0.U
+    ret.asid := 0.U
     ret.ppn := 0.U
     ret.mode := SatpMode.bare
     ret
