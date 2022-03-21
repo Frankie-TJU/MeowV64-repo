@@ -23,6 +23,8 @@ class RegisterRead(portInfo: PortInfo)(implicit
       val instr = Flipped(new IssueQueueEgress())
     }
 
+    val flush = Input(Bool())
+
     val toRegFile = new Bundle {
       val reader = Vec(
         portInfo.readPorts,
@@ -54,12 +56,12 @@ class RegisterRead(portInfo: PortInfo)(implicit
     op(i) := io.toRegFile.reader(i).data
   }
 
-  io.toUnits.instr.valid := s1Valid
+  io.toUnits.instr.valid := s1Valid && ~io.flush
 
   // pipe logic
   val s1ToEgress = WireInit(io.toUnits.instr.fire)
   val ingressToS1 = WireInit(io.toIssueQueue.instr.instr.fire)
-  io.toIssueQueue.instr.instr.ready := s1ToEgress || !s1Valid
+  io.toIssueQueue.instr.instr.ready := s1ToEgress || !s1Valid && ~io.flush
 
   when(ingressToS1) {
     s1Valid := true.B
@@ -93,5 +95,9 @@ class RegisterRead(portInfo: PortInfo)(implicit
     } else {
       io.toUnits.instr.bits.rs3val := 0.U
     }
+  }
+
+  when(io.flush) {
+    s1Valid := false.B
   }
 }
