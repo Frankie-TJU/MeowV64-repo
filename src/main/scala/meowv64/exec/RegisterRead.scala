@@ -62,6 +62,7 @@ class RegisterRead(portInfo: PortInfo)(implicit
   val s1ToEgress = WireInit(io.toUnits.instr.fire)
   val ingressToS1 = WireInit(io.toIssueQueue.instr.instr.fire)
   io.toIssueQueue.instr.instr.ready := s1ToEgress || !s1Valid && ~io.flush
+  io.toIssueQueue.instr.hasPending := s1Valid
 
   when(ingressToS1) {
     s1Valid := true.B

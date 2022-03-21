@@ -12,6 +12,8 @@ import meowv64.instr.Decoder
   */
 class IssueQueueEgress()(implicit val coredef: CoreDef) extends Bundle {
   val instr = Decoupled(new IssueQueueInstr())
+  // for LSBuf
+  val hasPending = Input(Bool())
 }
 
 trait IssueQueue {
@@ -289,7 +291,7 @@ class LSBuf(info: IssueQueueInfo)(implicit val coredef: CoreDef)
   // TODO: optimize: allow stores with different address to slip over?
   // FIXME: there is one stage for register read, so hasPending is not new,
   // but this solution is bad
-  val hasPendingFast = hasPending || RegNext(egress(0).instr.fire)
+  val hasPendingFast = hasPending || egress(0).hasPending
   val loadBlocked = hasPendingFast
   val fenceBlocked = hasPendingFast || !fs.wbufClear
   val instrReady = head =/= tail && store(head).ready
