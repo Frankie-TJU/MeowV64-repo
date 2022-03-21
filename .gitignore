@@ -345,7 +345,6 @@ hs_err_pid*
 
 test_run_dir
 
-.vscode
 
 .jvmopts
 .sbtopts
@@ -355,3 +354,5 @@ Multicore.v
 Multicore.anno.json
 
 ucli.key
+.vscode/*
+!.vscode/settings.json
