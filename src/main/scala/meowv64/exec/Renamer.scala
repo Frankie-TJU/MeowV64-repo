@@ -258,6 +258,13 @@ class Renamer(implicit coredef: CoreDef) extends Module {
     }
 
     toExec.output(idx).instr := instr
+
+    // handle illegal instruction
+    when(instr.illegal) {
+      toExec.output(idx).rs1Ready := true.B
+      toExec.output(idx).rs2Ready := true.B
+      toExec.output(idx).rs3Ready := true.B
+    }
   }
 
   // assign new physical register

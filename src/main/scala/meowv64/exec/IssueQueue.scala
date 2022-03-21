@@ -119,9 +119,14 @@ class OoOIssueQueue(info: IssueQueueInfo)(implicit
     var issued = false.B
     for (j <- 0 until PORT_COUNT) {
       val portUnits = info.ports(j).units.map(_.execUnitType)
-      val allow = portUnits
+      val allow = WireInit(portUnits
         .map(_ === nextStore(i).instr.instr.info.execUnit)
-        .reduce(_ | _)
+        .reduce(_ | _))
+      // send illegal instructions to first port
+      when(nextStore(i).instr.illegal) {
+        allow := (j == 0).B
+      }
+
       val fire = WireInit(false.B)
       when(egMask(i) && !issued && !portIssued(j) && allow) {
         egress(j).instr.valid := true.B
