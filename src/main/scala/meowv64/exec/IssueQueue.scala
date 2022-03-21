@@ -90,7 +90,6 @@ class OoOIssueQueue(info: IssueQueueInfo)(implicit
           .getRs2Type() && ent.valid
       ) {
         nextStore(idx).rs2Ready := true.B
-
         egMask(idx) := occupied(idx) && instr.rs1Ready && instr.rs3Ready
       }
 
@@ -99,7 +98,6 @@ class OoOIssueQueue(info: IssueQueueInfo)(implicit
           .getRs3Type() && ent.valid
       ) {
         nextStore(idx).rs3Ready := true.B
-
         egMask(idx) := occupied(idx) && instr.rs1Ready && instr.rs2Ready
       }
     }
@@ -186,6 +184,8 @@ class OoOIssueQueue(info: IssueQueueInfo)(implicit
     }.otherwise {
       occupied(i) := allOccupied(i)
     }
+    // update ready if not shifted
+    store(i) := allInsts(i)
     // check if new entry shifted to here
     for (j <- 1 to maxShift) {
       when(shift(i + j) === j.U) {
