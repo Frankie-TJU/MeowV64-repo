@@ -280,8 +280,11 @@ class LSBuf(info: IssueQueueInfo)(implicit val coredef: CoreDef)
   // FIXME: are there acquire ops dispatched?
 
   // TODO: optimize: allow stores with different address to slip over?
-  val loadBlocked = hasPending
-  val fenceBlocked = hasPending || !fs.wbufClear
+  // FIXME: there is one stage for register read, so hasPending is not new,
+  // but this solution is bad
+  val hasPendingFast = hasPending || RegNext(egress(0).instr.fire)
+  val loadBlocked = hasPendingFast
+  val fenceBlocked = hasPendingFast || !fs.wbufClear
   val instrReady = head =/= tail && store(head).ready
   when(headIsFence) {
     egress(0).instr.valid := instrReady && !fenceBlocked

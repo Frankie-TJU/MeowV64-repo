@@ -238,27 +238,6 @@ class Exec(implicit val coredef: CoreDef) extends Module {
   assume(units.length == coredef.PORTS.length)
   // TODO: asserts Bypass is in unit 0
 
-  /*
-  val stations = units.zipWithIndex.map({
-    case (u, idx) => {
-      val valueWidth = u.rs.valueWidth
-      val rs = if (u.isInstanceOf[LSU]) {
-        val lsb = Module(new LSBuf(valueWidth, idx)).suggestName(s"LSBuf")
-        lsb.hasPending := hasPendingMem
-        lsb.fs := toDC.fs
-        lsb
-      } else {
-        Module(new OoOResStation(valueWidth, idx))
-          .suggestName(s"ResStation_${idx}")
-      }
-      rs.cdb := cdb
-      rs.egress <> u.rs
-
-      rs
-    }
-  })
-   */
-
   // collect rs free mask to find bottleneck
   toCore.rsEmptyMask := Cat(issueQueues.map(_.ingress.empty).reverse)
   toCore.rsFullMask := Cat(issueQueues.map(_.ingress.full).reverse)
