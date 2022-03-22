@@ -221,6 +221,7 @@ class PipeInstr(val regInfo: RegInfo)(implicit val coredef: CoreDef)
   *   - rs3Ready: is rs3 ready?
   *   - rdPhys: physical register of rd
   *   - robIndex: index of this instruction in rob
+  *   - lsqIndex: index of this instruction in load store queue
   *
   * @param coredef
   */
@@ -244,9 +245,13 @@ class IssueQueueInstr()(implicit
     */
   val staleRdPhys = UInt(log2Ceil(coredef.MAX_PHYSICAL_REGISTERS).W)
 
-  /** Rob index
+  /** ROB index
     */
   val robIndex = UInt(log2Ceil(coredef.INFLIGHT_INSTR_LIMIT).W)
+
+  /** LSQ index
+    */
+  val lsqIndex = UInt(log2Ceil(coredef.LSQ_DEPTH).W)
 
   /** Illegal instruction
     */

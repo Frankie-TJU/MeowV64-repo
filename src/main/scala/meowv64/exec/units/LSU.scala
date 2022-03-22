@@ -22,13 +22,13 @@ import scala.collection.mutable
   * and thus needs to be preformed in-order.
   *
   * All possible access types are stated in the DelayedMemOp enum
-  *   - no: No memory access
-  *   - s: store
+  *   - load: cached load
+  *   - s: cached store
   *   - ul: uncached load
   *   - us: uncached store
   */
 object DelayedMemOp extends ChiselEnum {
-  val no, s, ul, us = Value
+  val l, s, ul, us = Value
 }
 
 /** A (maybe-empty) sequential memory access
@@ -44,17 +44,21 @@ object DelayedMemOp extends ChiselEnum {
   */
 class DelayedMem(implicit val coredef: CoreDef) extends Bundle {
   self =>
+  val valid = Bool()
+
   val op = DelayedMemOp()
   val wop = DCWriteOp()
 
   /** Physical address
     */
+  val addrValid = Bool()
   val addr = UInt(coredef.XLEN.W)
   val len = DCWriteLen()
 
   /** Result should be sign extended
     */
   val sext = Bool()
+  val dataValid = Bool()
   val data = UInt(coredef.VLEN.W)
 
   /** This is vse.v
@@ -69,14 +73,16 @@ class DelayedMem(implicit val coredef: CoreDef) extends Bundle {
   val rdType = RegType()
   val robIndex = UInt(log2Ceil(coredef.INFLIGHT_INSTR_LIMIT).W)
 
+  /** Already written back
+    */
+  val writeback = Bool()
+
   // Written data is shared with wb
 
-  def noop() {
+  def empty() {
     self := DontCare
-    op := DelayedMemOp.no
+    valid := false.B
   }
-
-  def isNoop() = op === DelayedMemOp.no
 
   def getLSB(raw: UInt): UInt = {
     val ret = Wire(UInt(coredef.XLEN.W))
@@ -118,6 +124,15 @@ class DelayedMem(implicit val coredef: CoreDef) extends Bundle {
     }
 
     ret
+  }
+}
+
+object DelayedMem {
+  def empty()(implicit coredef: CoreDef): DelayedMem = {
+    val res = Wire(new DelayedMem)
+    res := DontCare
+    res.valid := false.B
+    res
   }
 }
 
@@ -168,12 +183,45 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   val ptw = IO(new TLBExt)
   val tlbRst = IO(Input(Bool()))
   val priv = IO(Input(PrivLevel()))
-  // set hasMem in rob for delayed memory ops
+
+  val DEPTH = coredef.LSQ_DEPTH
+
   val toExec = IO(new Bundle {
+    // set hasMem in rob for delayed memory ops
     val valid = Output(Bool())
     val hasMem = Output(Bool())
     val robIndex = Output(UInt(log2Ceil(coredef.INFLIGHT_INSTR_LIMIT).W))
+
+    // to allocate lsq index
+    val lsqIdxBase = Output(UInt(log2Ceil(DEPTH).W))
+    val lsqAllocCount = Input(UInt(log2Ceil(coredef.ISSUE_NUM + 1).W))
+    val lsqAllocAccept = Output(UInt(log2Ceil(coredef.ISSUE_NUM + 1).W))
   })
+
+  val store = RegInit(
+    VecInit(Seq.fill(DEPTH)(DelayedMem.empty()))
+  )
+
+  val emptyEntries = RegInit(DEPTH.U(log2Ceil(DEPTH + 1).W))
+  val head = RegInit(0.U(log2Ceil(DEPTH).W))
+  val tail = RegInit(0.U(log2Ceil(DEPTH).W))
+  toExec.lsqIdxBase := tail
+
+  // allocation
+  tail := tail +% toExec.lsqAllocCount
+  toExec.lsqAllocAccept := 0.U
+  for (i <- 0 until coredef.ISSUE_NUM) {
+    when(emptyEntries > i.U) {
+      toExec.lsqAllocAccept := (i + 1).U
+    }
+  }
+  assert(toExec.lsqAllocCount <= toExec.lsqAllocAccept)
+
+  // retire
+  val retireNum = WireInit(0.U)
+  head := head +% retireNum
+  emptyEntries := emptyEntries - toExec.lsqAllocCount + retireNum
+  assert(emptyEntries <= DEPTH.U)
 
   val tlb = Module(new TLB)
   val requiresTranslate = satp.mode =/= SatpMode.bare && (
@@ -502,7 +550,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
 
   // Retirement
   val mem = Wire(new DelayedMem)
-  mem.noop() // By default
+  mem.empty() // By default
   mem.writeRdEff := pipeInstr.instr.instr.writeRdEff
   mem.rdPhys := pipeInstr.rdPhys
   mem.rdType := pipeInstr.instr.instr.getRdType()
@@ -644,7 +692,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
 
   // when pushing to queue
   // set hasMem in rob
-  val push = mem.op =/= DelayedMemOp.no && pipeInstr.instr.valid && !l2stall
+  val push = mem.valid && pipeInstr.instr.valid && !l2stall
   toExec.valid := push
   toExec.hasMem := true.B
   toExec.robIndex := pipeInstr.robIndex

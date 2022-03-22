@@ -202,6 +202,8 @@ abstract class CoreDef {
       2
     )(this)
 
+  val LSQ_DEPTH: Int = 16
+
   val ISSUE_QUEUES: Seq[IssueQueueInfo] = Seq(
     // Integer issue queue
     IssueQueueInfo(
@@ -227,7 +229,7 @@ abstract class CoreDef {
             new ExecutionUnitMul(),
             new ExecutionUnitDiv(),
             new ExecutionUnitInt2Float(),
-            new ExecutionUnitBranch(),
+            new ExecutionUnitBranch()
           ),
           2
         )(this)

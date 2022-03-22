@@ -208,6 +208,7 @@ class Renamer(implicit coredef: CoreDef) extends Module {
     toExec.output(idx).staleRdPhys := 0.U
     toExec.output(idx).rdPhys := 0.U
     toExec.output(idx).robIndex := toExec.nextRobIndex +% idx.U
+    toExec.output(idx).lsqIndex := 0.U // this will be filled in exec stage
 
     for ((regInfo, bankIdx) <- coredef.REG_TYPES.zipWithIndex) {
       when(

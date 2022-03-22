@@ -359,6 +359,10 @@ class Exec(implicit val coredef: CoreDef) extends Module {
   val canIssue = Wire(Vec(coredef.ISSUE_NUM, Bool()))
   issueNum := 0.U
 
+  // allocate lsq entry
+  var lsqAllocMask = WireInit(VecInit.fill(coredef.ISSUE_NUM)(false.B))
+  lsu.toExec.lsqAllocCount := lsqAllocMask.map(_.asUInt).reduce(_ +& _)
+
   for (idx <- (0 until coredef.ISSUE_NUM)) {
     // whether this instruction can issue without considering previous instructions
     val selfCanIssue = Wire(Bool()).suggestName(s"selfCanIssue_$idx")
@@ -430,6 +434,20 @@ class Exec(implicit val coredef: CoreDef) extends Module {
           // Block GFence if there is still in-flight instrs
           when(isGFence && retirePtr =/= issuePtr) {
             selfCanIssue := false.B
+          }
+        }
+
+        // check if sending to mem issue queue
+        // allocate lsq index
+        when(toIF.view(idx).instr.info.issueQueue === IssueQueueType.mem) {
+          lsqAllocMask(idx) := true.B
+          if (idx == 0) {
+            instr.lsqIndex := lsu.toExec.lsqIdxBase
+          } else {
+            instr.lsqIndex := lsu.toExec.lsqIdxBase + lsqAllocMask
+              .slice(0, idx)
+              .map(_.asUInt)
+              .reduce(_ +& _)
           }
         }
       }
