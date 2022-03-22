@@ -219,14 +219,15 @@ abstract class CoreDef {
           ),
           2
         )(this),
-        // port 1: ALU + Mul + Div + Int2Float
+        // port 1: ALU + Mul + Div + Int2Float + Branch
         PortInfo(
           RegType.integer,
           Seq(
             new ExecutionUnitALU(),
             new ExecutionUnitMul(),
             new ExecutionUnitDiv(),
-            new ExecutionUnitInt2Float()
+            new ExecutionUnitInt2Float(),
+            new ExecutionUnitBranch(),
           ),
           2
         )(this)

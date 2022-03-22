@@ -292,8 +292,14 @@ class Exec(implicit val coredef: CoreDef) extends Module {
 
   // Connect extra ports
   units(0).extras("CSR") <> csrWriter
-  units(0).extras("priv") := toCtrl.priv
-  units(0).extras("status") := toCtrl.status
+  for (unit <- units) {
+    if (unit.extras.contains("priv")) {
+      unit.extras("priv") := toCtrl.priv
+    }
+    if (unit.extras.contains("status")) {
+      unit.extras("status") := toCtrl.status
+    }
+  }
 
   assume(units.length == coredef.PORTS.length)
   // TODO: asserts Bypass is in unit 0

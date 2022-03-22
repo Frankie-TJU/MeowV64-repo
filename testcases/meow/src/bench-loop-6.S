@@ -3,9 +3,9 @@
     li t0, 0x00001000
 .LC0:
     addi t0, t0, -1
-    ori t1, zero, 0
-    ori t2, zero, 1
-    ori t3, zero, 2
-    ori t4, zero, 3
+    li t1, 0
+    li t2, 1
+    li t3, 2
+    li t4, 3
     bne t0, zero, .LC0
     jr ra
