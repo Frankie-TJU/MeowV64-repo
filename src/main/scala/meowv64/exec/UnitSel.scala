@@ -175,25 +175,32 @@ class UnitSel(
   if (units.length == 1) {
     println("UnitSel: Single unit")
     val pipeRetire = RegInit(Retirement.empty(regInfo))
+    val pipeValid = RegInit(false.B)
     retire.bits := pipeRetire
-    retire.valid := true.B
+    retire.valid := pipeValid
     when(units(0).io.stall) {
       pipeRetire := Retirement.empty(regInfo)
+      pipeValid := false.B
     }.otherwise {
       pipeRetire := Retirement.from(units(0).io)
+      pipeValid := units(0).io.retiredInstr.valid
     }
     when(flush) {
       pipeRetire := Retirement.empty(regInfo)
+      pipeValid := false.B
     }
   } else if (maxDepth == 0) {
     println("UnitSel: All units have 0 delay")
     val pipeRetire = RegInit(Retirement.empty(regInfo))
+    val pipeValid = RegInit(false.B)
     retire.bits := pipeRetire
-    retire.valid := true.B
-    val validMap = units.map(u => !u.io.stall && u.io.retired.instr.valid)
+    retire.valid := pipeValid
+    val validMap = units.map(u => !u.io.stall && u.io.retiredInstr.instr.valid)
     pipeRetire := Mux1H(validMap.zip(units.map(u => Retirement.from(u.io))))
+    pipeValid := Mux1H(validMap.zip(units.map(u => u.io.retiredInstr.valid)))
     when(!VecInit(validMap).asUInt.orR || flush) {
       pipeRetire := Retirement.empty(regInfo)
+      pipeValid := false.B
     }
   } else {
     println(s"UnitSel: with FIFO depth $fifoDepth")
@@ -209,7 +216,7 @@ class UnitSel(
     for (u <- units) {
       val newTail = Wire(UInt(log2Ceil(fifoDepth).W))
       newTail := prevTail
-      when(!u.io.stall && u.io.retired.instr.valid) {
+      when(!u.io.stall && u.io.retiredInstr.valid) {
         retireFifo(prevTail) := Retirement.from(u.io)
         newTail := Mux(prevTail === (fifoDepth - 1).U, 0.U, prevTail +% 1.U)
       }
@@ -278,10 +285,10 @@ object Retirement {
 
   def from(port: ExecUnitPort)(implicit coredef: CoreDef): Retirement = {
     val ret = Wire(new Retirement(port.regInfo))
-    ret.writeRdEff := port.retired.instr.instr.writeRdEff
-    ret.rdType := port.retired.instr.instr.getRdType()
-    ret.rdPhys := port.retired.rdPhys
-    ret.robIndex := port.retired.robIndex
+    ret.writeRdEff := port.retiredInstr.instr.instr.writeRdEff
+    ret.rdType := port.retiredInstr.instr.instr.getRdType()
+    ret.rdPhys := port.retiredInstr.rdPhys
+    ret.robIndex := port.retiredInstr.robIndex
     ret.info := port.retirement
 
     ret

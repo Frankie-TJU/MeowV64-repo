@@ -8,4 +8,5 @@ Naming:
 - memory -> mem
 - integer -> int
 - vector -> vec
+- instruction -> instr
 - number of xxx -> xxx_count

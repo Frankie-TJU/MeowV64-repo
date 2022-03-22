@@ -206,6 +206,7 @@ class PipeInstr(val regInfo: RegInfo)(implicit val coredef: CoreDef)
   /** Illegal instruction
     */
   def illegal = instr.illegal
+  def valid = instr.valid
 }
 
 /** Instruction in issue queue
@@ -329,7 +330,7 @@ object IssueQueueInstr {
   *   - next: next instruction
   *   - stall: unit -> pipeline stall signal
   *   - flush: Flush signal
-  *   - retired: The instruction that just finished executing
+  *   - retiredInstr: The instruction that just finished executing
   *   - retirement: Result of execution
   *
   * @param coredef
@@ -348,7 +349,7 @@ class ExecUnitPort(val regInfo: RegInfo)(implicit
 
   /** Result of execution
     */
-  val retired = Output(new PipeInstr(regInfo))
+  val retiredInstr = Output(new PipeInstr(regInfo))
 }
 
 /** Trait representing an execution unit
@@ -457,8 +458,8 @@ abstract class ExecUnit[T <: Data](
         }
       }
 
-      io.retired := current(DEPTH - 1).pipe
-      when(!io.retired.instr.valid) {
+      io.retiredInstr := current(DEPTH - 1).pipe
+      when(!io.retiredInstr.instr.valid) {
         io.retirement := RetireInfo.vacant(regInfo)
       }.otherwise {
         io.retirement := finalize(current(DEPTH - 1).pipe, nExt)
@@ -467,8 +468,8 @@ abstract class ExecUnit[T <: Data](
     } else {
       val (nExt, sStall) = connectStage(0, io.next, None)
       // Use chisel's unconnected wire check to enforce that no ext is exported from this exec unit
-      io.retired := io.next
-      when(!io.retired.instr.valid) {
+      io.retiredInstr := io.next
+      when(!io.retiredInstr.instr.valid) {
         io.retirement := RetireInfo.vacant(regInfo)
       }.otherwise {
         io.retirement := finalize(io.next, nExt)

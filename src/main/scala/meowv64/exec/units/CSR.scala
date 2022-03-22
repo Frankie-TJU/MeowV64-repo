@@ -195,7 +195,7 @@ class CSR(implicit val coredef: CoreDef)
     info.wb := pipeRdata
   }
 
-  io.retired := io.next
+  io.retiredInstr := io.next
   io.retirement := info
 
   io.stall := nstate === CSRState.pipe
