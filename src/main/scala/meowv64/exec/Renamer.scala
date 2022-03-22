@@ -238,7 +238,7 @@ class Renamer(implicit coredef: CoreDef) extends Module {
       // vector instructions that read from vd
       // should have rdAsRs3=1
       // and the value is stored in rs3val
-      if (regInfo.maxOperandNum >= 3) {
+      if (regInfo.maxOperandCount >= 3) {
         when(
           instr.instr.getRs3Type === regInfo.regType && instr.instr.info.readRs3
         ) {

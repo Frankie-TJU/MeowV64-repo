@@ -4,7 +4,6 @@ import chisel3._
 import chisel3.util._
 import hardfloat.CompareRecFN
 import hardfloat.RecFNToIN
-import hardfloat.recFNFromFN
 import meowv64.core.CoreDef
 import meowv64.exec._
 import meowv64.instr.Decoder
@@ -42,18 +41,6 @@ class FloatToInt(override implicit val coredef: CoreDef)
     val rs2HFValues = coredef.FLOAT_TYPES
       .zip(rs2Values)
       .map({ case (f, v) => f.toHardfloat(v) })
-
-    val expWidth = 11
-    val sigWidth = 53
-    val singleExpWidth = 8
-    val singleSigWidth = 24
-
-    // double
-    val rs1valHF = WireInit(recFNFromFN(expWidth, sigWidth, pipe.rs1val))
-    // single
-    val rs1valSingleHF = WireInit(
-      recFNFromFN(singleExpWidth, singleSigWidth, pipe.rs1val(31, 0))
-    )
 
     when(
       pipe.instr.instr.funct5 === Decoder.FP_FUNC(

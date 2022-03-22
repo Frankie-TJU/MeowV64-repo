@@ -14,7 +14,7 @@ import meowv64.reg.RegType
   *   Register width
   * @param physRegs
   *   Number of physical registers
-  * @param maxOperandNum
+  * @param maxOperandCount
   *   Maximum number of operands
   * @param fixedZero
   *   Zero register is fixed to zero
@@ -23,7 +23,7 @@ case class RegInfo(
     regType: RegType.Type,
     width: Int,
     physRegs: Int,
-    maxOperandNum: Int,
+    maxOperandCount: Int,
     fixedZero: Boolean
 )
 
@@ -37,41 +37,104 @@ case class IssueQueueInfo(
   *
   * @param execUnitType
   *   Execution unit type enum
-  * @param maxOperandNum
+  * @param maxOperandCount
   *   Maximum operand count
   * @param regType
   *   Operand register type
+  * @param writeRegTypes
+  *   Write operand register types
   */
 case class ExecutionUnitInfo(
     execUnitType: ExecUnitType.Type,
-    maxOperandNum: Int,
-    regType: RegType.Type
+    maxOperandCount: Int,
+    regType: RegType.Type,
+    writeRegTypes: Seq[RegType.Type]
 )
 
 class ExecutionUnitALU
-    extends ExecutionUnitInfo(ExecUnitType.alu, 2, RegType.integer)
+    extends ExecutionUnitInfo(
+      ExecUnitType.alu,
+      2,
+      RegType.integer,
+      Seq(RegType.integer)
+    )
 class ExecutionUnitBranch
-    extends ExecutionUnitInfo(ExecUnitType.branch, 2, RegType.integer)
+    extends ExecutionUnitInfo(
+      ExecUnitType.branch,
+      2,
+      RegType.integer,
+      Seq(RegType.integer)
+    )
 class ExecutionUnitCSR
-    extends ExecutionUnitInfo(ExecUnitType.csr, 2, RegType.integer)
+    extends ExecutionUnitInfo(
+      ExecUnitType.csr,
+      2,
+      RegType.integer,
+      Seq(RegType.integer)
+    )
 class ExecutionUnitBypass
-    extends ExecutionUnitInfo(ExecUnitType.bypass, 0, RegType.integer)
+    extends ExecutionUnitInfo(
+      ExecUnitType.bypass,
+      0,
+      RegType.integer,
+      Seq(RegType.integer)
+    )
 class ExecutionUnitInt2Float
-    extends ExecutionUnitInfo(ExecUnitType.intToFloat, 1, RegType.integer)
+    extends ExecutionUnitInfo(
+      ExecUnitType.intToFloat,
+      1,
+      RegType.integer,
+      Seq(RegType.float)
+    )
 class ExecutionUnitMul
-    extends ExecutionUnitInfo(ExecUnitType.mul, 2, RegType.integer)
+    extends ExecutionUnitInfo(
+      ExecUnitType.mul,
+      2,
+      RegType.integer,
+      Seq(RegType.integer)
+    )
 class ExecutionUnitDiv
-    extends ExecutionUnitInfo(ExecUnitType.div, 2, RegType.integer)
+    extends ExecutionUnitInfo(
+      ExecUnitType.div,
+      2,
+      RegType.integer,
+      Seq(RegType.integer)
+    )
 class ExecutionUnitFMA
-    extends ExecutionUnitInfo(ExecUnitType.fma, 3, RegType.float)
+    extends ExecutionUnitInfo(
+      ExecUnitType.fma,
+      3,
+      RegType.float,
+      Seq(RegType.float)
+    )
 class ExecutionUnitFloat2Int
-    extends ExecutionUnitInfo(ExecUnitType.floatToInt, 1, RegType.float)
+    extends ExecutionUnitInfo(
+      ExecUnitType.floatToInt,
+      2,
+      RegType.float,
+      Seq(RegType.integer)
+    )
 class ExecutionUnitFloatMisc
-    extends ExecutionUnitInfo(ExecUnitType.floatMisc, 2, RegType.float)
+    extends ExecutionUnitInfo(
+      ExecUnitType.floatMisc,
+      2,
+      RegType.float,
+      Seq(RegType.float)
+    )
 class ExecutionUnitFloatDivSqrt
-    extends ExecutionUnitInfo(ExecUnitType.floatDivSqrt, 2, RegType.float)
+    extends ExecutionUnitInfo(
+      ExecUnitType.floatDivSqrt,
+      2,
+      RegType.float,
+      Seq(RegType.float)
+    )
 class ExecutionUnitLSU
-    extends ExecutionUnitInfo(ExecUnitType.lsu, 2, RegType.integer)
+    extends ExecutionUnitInfo(
+      ExecUnitType.lsu,
+      2,
+      RegType.integer,
+      Seq(RegType.integer, RegType.float)
+    )
 
 /** Each port can read from one register file
   */

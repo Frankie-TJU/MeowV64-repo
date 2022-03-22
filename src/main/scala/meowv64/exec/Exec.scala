@@ -239,6 +239,9 @@ class Exec(implicit val coredef: CoreDef) extends Module {
         unitSel.retire.bits.writeRdEff &&
         unitSel.retire.bits.info.exception.ex === ExReq.none
       unitSel.retire.ready := true.B
+      when(unitSel.retire.valid) {
+        assert(unitSel.retire.bits.rdType === port.regType)
+      }
     } else {
       // case 2: more than one port
       val arbiter = Module(
@@ -263,7 +266,8 @@ class Exec(implicit val coredef: CoreDef) extends Module {
         // do not write if exception occurred
         arbiter.io.in(j).valid := unitSel.retire.valid &&
           unitSel.retire.bits.writeRdEff &&
-          unitSel.retire.bits.info.exception.ex === ExReq.none
+          unitSel.retire.bits.info.exception.ex === ExReq.none &&
+          unitSel.retire.bits.rdType === port.regType
         unitSel.retire.ready := arbiter.io.in(j).ready
       }
     }
