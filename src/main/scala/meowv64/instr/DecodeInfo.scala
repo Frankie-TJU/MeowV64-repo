@@ -215,15 +215,15 @@ object DecodeInfo {
       FLT_S     -> List(Y, N, Y, integer, Y, float, Y, float, N, XX, floatToInt, float),
       FLE_S     -> List(Y, N, Y, integer, Y, float, Y, float, N, XX, floatToInt, float),
       FCLASS_S  -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, floatToInt, float),
-      FCVT_S_W  -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, intToFloat, float),
-      FCVT_S_WU -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, intToFloat, float),
-      FMV_W_X   -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, intToFloat, float),
+      FCVT_S_W  -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, intToFloat, integer),
+      FCVT_S_WU -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, intToFloat, integer),
+      FMV_W_X   -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, intToFloat, integer),
 
       // RV64F Standard Extension (in addition to RV32F)
       FCVT_L_S  -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, floatToInt, float),
       FCVT_LU_S -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, floatToInt, float),
-      FCVT_S_L  -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, intToFloat, float),
-      FCVT_S_LU -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, intToFloat, float),
+      FCVT_S_L  -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, intToFloat, integer),
+      FCVT_S_LU -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, intToFloat, integer),
 
       // RV32D Standard Extension
       FLD       -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, lsu, mem),
@@ -250,16 +250,16 @@ object DecodeInfo {
       FCLASS_D  -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, floatToInt, float),
       FCVT_W_D  -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, floatToInt, float),
       FCVT_WU_D -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, floatToInt, float),
-      FCVT_D_W  -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, intToFloat, float),
-      FCVT_D_WU -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, intToFloat, float),
+      FCVT_D_W  -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, intToFloat, integer),
+      FCVT_D_WU -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, intToFloat, integer),
 
       // RV64D Standard Extension (in addition to RV32D)
       FCVT_L_D  -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, floatToInt, float),
       FCVT_LU_D -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, floatToInt, float),
       FMV_X_D   -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, floatToInt, float),
-      FCVT_D_L  -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, intToFloat, float),
-      FCVT_D_LU -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, intToFloat, float),
-      FMV_D_X   -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, intToFloat, float),
+      FCVT_D_L  -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, intToFloat, integer),
+      FCVT_D_LU -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, intToFloat, integer),
+      FMV_D_X   -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, intToFloat, integer),
 
       // Trap-Return Instructions
       URET -> List(Y, N, N, XX, N, XX, N, XX, N, XX, branch, int),

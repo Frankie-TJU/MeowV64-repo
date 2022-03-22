@@ -42,7 +42,7 @@ case class IssueQueueInfo(
   * @param regType
   *   Operand register type
   * @param writeRegTypes
-  *   Write operand register types
+  *   Write destination register types
   */
 case class ExecutionUnitInfo(
     execUnitType: ExecUnitType.Type,
@@ -136,7 +136,8 @@ class ExecutionUnitLSU
       Seq(RegType.integer, RegType.float)
     )
 
-/** Each port can read from one register file
+/** Each port can read from one register file, potentially write to one or more
+  * register files
   */
 case class PortInfo(
     regType: RegType.Type,
@@ -144,6 +145,14 @@ case class PortInfo(
     readPorts: Int
 )(implicit coredef: CoreDef) {
   def regInfo = coredef.REG_MAPPING(regType)
+
+  // all units should have the same input register type with the port
+  for (unit <- units) {
+    assert(unit.regType == regType)
+  }
+
+  // writeRegTypes should be the union of writeRegTypes of units
+  def writeRegTypes = units.flatMap(_.writeRegTypes).toSet.toSeq
 }
 
 /** Write ports to register file.
@@ -183,6 +192,16 @@ abstract class CoreDef {
     */
   val INFLIGHT_INSTR_LIMIT = 32
 
+  val LSU_PORT_INFO: PortInfo =
+    // port 3: LSU
+    PortInfo(
+      RegType.integer,
+      Seq(
+        new ExecutionUnitLSU()
+      ),
+      2
+    )(this)
+
   val ISSUE_QUEUES: Seq[IssueQueueInfo] = Seq(
     // Integer issue queue
     IssueQueueInfo(
@@ -218,7 +237,7 @@ abstract class CoreDef {
       IssueQueueType.fp,
       16,
       ports = Seq(
-        // port 2: FMA + FloatMisc + FloatDivSqrt
+        // port 2: FMA + FloatMisc + FloatDivSqrt + FloatToInt
         PortInfo(
           RegType.float,
           Seq(
@@ -237,13 +256,7 @@ abstract class CoreDef {
       16,
       ports = Seq(
         // port 3: LSU
-        PortInfo(
-          RegType.integer,
-          Seq(
-            new ExecutionUnitLSU()
-          ),
-          2
-        )(this)
+        LSU_PORT_INFO
       )
     )
   )

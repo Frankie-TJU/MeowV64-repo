@@ -10,7 +10,6 @@ import meowv64.core.PrivLevel
 import meowv64.core.Satp
 import meowv64.core.SatpMode
 import meowv64.core.Status
-import meowv64.exec.Retirement
 import meowv64.exec._
 import meowv64.instr.Decoder
 import meowv64.paging._
@@ -129,8 +128,8 @@ object LSUReadState extends ChiselEnum {
 class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   val regInfo = coredef.REG_INT
   val flush = IO(Input(Bool()))
-  val rs = IO(Flipped(new RegisterReadEgress(regInfo)))
-  val retire = IO(Decoupled(new Retirement(regInfo)))
+  val issue = IO(Flipped(new RegisterReadEgress(regInfo)))
+  val retire = IO(new RetirementIO(coredef.LSU_PORT_INFO))
   val extras = new mutable.HashMap[String, Data]()
 
   val vectorReadGroupNum = coredef.VLEN / coredef.XLEN
@@ -144,11 +143,11 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
 
   def isUncached(addr: UInt) = addr < BigInt("80000000", 16).U
 
-  val hasNext = rs.instr.valid // TODO: merge into rs.instr
-  val next = WireInit(rs.instr.bits)
+  val hasNext = issue.instr.valid // TODO: merge into rs.instr
+  val next = WireInit(issue.instr.bits)
   switch(readState) {
     is(LSUReadState.idle) {
-      when(!rs.instr.valid) {
+      when(!issue.instr.valid) {
         next.instr.valid := false.B
       }
     }
@@ -376,7 +375,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
           readState := LSUReadState.vectorLoad
           vectorReadReqIndex := 1.U
           vectorReadRespIndex := 0.U
-          inflightVectorReadInstr := rs.instr.bits
+          inflightVectorReadInstr := issue.instr.bits
         }
       }
       is(LSUReadState.vectorLoad) {
@@ -394,7 +393,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
     vectorReadRespData(vectorReadRespIndex) := toMem.reader.resp.bits
   }
 
-  rs.instr.ready := l1pass && readState === LSUReadState.idle
+  issue.instr.ready := l1pass && readState === LSUReadState.idle
 
   /** Stage 2 state
     */

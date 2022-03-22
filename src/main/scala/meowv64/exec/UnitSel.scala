@@ -1,13 +1,12 @@
 package meowv64.exec
 
 import chisel3._
-import chisel3.util.Decoupled
-import chisel3.util.DecoupledIO
 import chisel3.util.Mux1H
 import chisel3.util.PopCount
 import chisel3.util.log2Ceil
 import meowv64.core.CSRWriter
 import meowv64.core.CoreDef
+import meowv64.core.PortInfo
 import meowv64.core.PrivLevel
 import meowv64.core.RegInfo
 import meowv64.core.Status
@@ -18,8 +17,14 @@ import scala.collection.mutable
 
 trait UnitSelIO {
   val flush: Bool
-  val rs: RegisterReadEgress
-  val retire: DecoupledIO[Retirement]
+
+  /** Instruction issued from port
+    */
+  val issue: RegisterReadEgress
+
+  /** Retire port, one for each possible register type
+    */
+  val retire: RetirementIO
   val extras: mutable.HashMap[String, Data]
 }
 
@@ -29,7 +34,7 @@ trait UnitSelIO {
   * We use a MPSC FIFO to consume outputs of individual execution units.
   */
 class UnitSel(
-    regInfo: RegInfo,
+    portInfo: PortInfo,
     gen: => Seq[ExecUnitInt],
     arbitration: Instr => Seq[Bool],
     bypassIdx: Option[Int] = None,
@@ -43,15 +48,16 @@ class UnitSel(
 
   val flush = IO(Input(Bool()))
 
-  println(s"Register Type: ${regInfo.regType}")
+  val regInfo = portInfo.regInfo
+  println(s"Input Register Type: ${regInfo.regType}")
 
   /** Input from register read stage
     */
-  val rs = IO(Flipped(new RegisterReadEgress(regInfo)))
+  val issue = IO(Flipped(new RegisterReadEgress(regInfo)))
 
   /** Retired instruction
     */
-  val retire = IO(Decoupled(new Retirement(regInfo)))
+  val retire = IO(new RetirementIO(portInfo))
 
   // Extra ports
   val extras = new mutable.HashMap[String, Data]()
@@ -106,12 +112,12 @@ class UnitSel(
 
   val execMap = Wire(Vec(units.length, Bool()))
   chisel3.dontTouch(execMap)
-  execMap := arbitration(rs.instr.bits.instr.instr)
+  execMap := arbitration(issue.instr.bits.instr.instr)
 
   // Contains a bypass unit, bypassing all invalid instructions to there
   // e.g. page fault, decoded exec unit might be inaccurate
   if (bypassIdx.isDefined) {
-    when(rs.instr.bits.illegal) {
+    when(issue.instr.bits.illegal) {
       execMap := VecInit(Seq.fill(units.length)(false.B))
       execMap(bypassIdx.get) := true.B
     }
@@ -120,7 +126,7 @@ class UnitSel(
   // Asserts exactly one can exec this instr
   val execMapUInt = execMap.asUInt
   val execMapCheckOneHot = PopCount(execMapUInt) <= 1.U
-  assert(!rs.instr.valid || execMapCheckOneHot)
+  assert(!issue.instr.valid || execMapCheckOneHot)
 
   val pipeExecMap = RegInit(VecInit(Seq.fill(units.length)(false.B)))
   val pipeInstr = RegInit(IssueQueueInstr.empty())
@@ -128,7 +134,7 @@ class UnitSel(
 
   val pipeInput = Wire(Bool())
 
-  rs.instr.ready := false.B
+  issue.instr.ready := false.B
 
   if (hasPipe) {
     when(pipeInstrValid) {
@@ -144,18 +150,18 @@ class UnitSel(
     }
 
     when(pipeInput) {
-      pipeInstr := rs.instr.bits
+      pipeInstr := issue.instr.bits
       pipeExecMap := execMap
-      pipeInstrValid := rs.instr.valid
-      rs.instr.ready := rs.instr.valid
+      pipeInstrValid := issue.instr.valid
+      issue.instr.ready := issue.instr.valid
     }
   } else {
     pipeInput := DontCare
-    when(rs.instr.valid) {
-      rs.instr.ready := !Mux1H(execMap.zip(units.map(_.io.stall)))
+    when(issue.instr.valid) {
+      issue.instr.ready := !Mux1H(execMap.zip(units.map(_.io.stall)))
       for ((u, e) <- units.zip(execMap)) {
         when(e) {
-          u.io.next := rs.instr.bits
+          u.io.next := issue.instr.bits
         }
       }
     }
@@ -262,11 +268,28 @@ class Retirement(val regInfo: RegInfo)(implicit
   /** Instruction info
     */
   val writeRdEff = Bool()
-  val rdPhys = UInt(log2Ceil(regInfo.physRegs).W)
+  val rdPhys = UInt(log2Ceil(coredef.MAX_PHYSICAL_REGISTERS).W)
   val rdType = RegType()
   val robIndex = UInt(log2Ceil(coredef.INFLIGHT_INSTR_LIMIT).W)
 
   val info = new RetireInfo(regInfo)
+}
+
+class RetirementIO(val portInfo: PortInfo)(implicit
+    val coredef: CoreDef
+) extends Bundle {
+  val bits = Output(new Retirement(portInfo.regInfo))
+  val valid = Output(Bool())
+  val ready = Input(Vec(portInfo.writeRegTypes.length, Bool()))
+  def fire = {
+    val effReady = WireInit(false.B)
+    for ((regType, i) <- portInfo.writeRegTypes.zipWithIndex) {
+      when(bits.rdType === regType) {
+        effReady := ready(i)
+      }
+    }
+    valid && effReady
+  }
 }
 
 object Retirement {

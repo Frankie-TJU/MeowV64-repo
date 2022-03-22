@@ -178,7 +178,7 @@ class Exec(implicit val coredef: CoreDef) extends Module {
       } else {
         Module(
           new UnitSel(
-            port.regInfo,
+            port,
             for (unit <- port.units) yield {
               unit.execUnitType match {
                 case ExecUnitType.alu => Module(new ALU).suggestName("ALU")
@@ -216,7 +216,7 @@ class Exec(implicit val coredef: CoreDef) extends Module {
         )
       }
 
-      unitSel.rs <> regRead.io.toUnits
+      unitSel.issue <> regRead.io.toUnits
       regRead.io.toIssueQueue.instr <> issueQueue.egress(j)
       regRead.io.toRegFile.reader <> toRF.readPorts(portIdx).reader
 
@@ -228,20 +228,22 @@ class Exec(implicit val coredef: CoreDef) extends Module {
 
   // wire register write ports
   for ((port, i) <- coredef.REG_WRITE_PORTS.zipWithIndex) {
+    val regType = port.regType
     if (port.ports.length == 1) {
       // case 1: only one port
       // no arbiter required
-      val unitSel = units(port.ports(0))
-      toRF.writePorts(i).writer.addr := unitSel.retire.bits.rdPhys
-      toRF.writePorts(i).writer.data := unitSel.retire.bits.info.wb
+      val unitIdx = port.ports(0)
+      val unitSel = units(unitIdx)
+      val retire = unitSel.retire
+      toRF.writePorts(i).writer.addr := retire.bits.rdPhys
+      toRF.writePorts(i).writer.data := retire.bits.info.wb
       // do not write if exception occurred
-      toRF.writePorts(i).writer.valid := unitSel.retire.valid &&
-        unitSel.retire.bits.writeRdEff &&
-        unitSel.retire.bits.info.exception.ex === ExReq.none
-      unitSel.retire.ready := true.B
-      when(unitSel.retire.valid) {
-        assert(unitSel.retire.bits.rdType === port.regType)
-      }
+      toRF.writePorts(i).writer.valid := retire.valid &&
+        retire.bits.writeRdEff &&
+        retire.bits.info.exception.ex === ExReq.none &&
+        retire.bits.rdType === port.regType
+      val unitConfig = coredef.PORTS(unitIdx)
+      retire.ready(unitConfig.writeRegTypes.indexOf(regType)) := true.B
     } else {
       // case 2: more than one port
       val arbiter = Module(
@@ -253,6 +255,7 @@ class Exec(implicit val coredef: CoreDef) extends Module {
           port.ports.length
         )
       )
+      arbiter.suggestName(s"WritebackArbiter_${i}")
 
       toRF.writePorts(i).writer.addr := arbiter.io.out.bits.addr
       toRF.writePorts(i).writer.data := arbiter.io.out.bits.data
@@ -261,14 +264,18 @@ class Exec(implicit val coredef: CoreDef) extends Module {
 
       for ((unitIdx, j) <- port.ports.zipWithIndex) {
         val unitSel = units(unitIdx)
-        arbiter.io.in(j).bits.addr := unitSel.retire.bits.rdPhys
-        arbiter.io.in(j).bits.data := unitSel.retire.bits.info.wb
+        val retire = unitSel.retire
+        arbiter.io.in(j).bits.addr := retire.bits.rdPhys
+        arbiter.io.in(j).bits.data := retire.bits.info.wb
         // do not write if exception occurred
-        arbiter.io.in(j).valid := unitSel.retire.valid &&
-          unitSel.retire.bits.writeRdEff &&
-          unitSel.retire.bits.info.exception.ex === ExReq.none &&
-          unitSel.retire.bits.rdType === port.regType
-        unitSel.retire.ready := arbiter.io.in(j).ready
+        arbiter.io.in(j).valid := retire.valid &&
+          retire.bits.writeRdEff &&
+          retire.bits.info.exception.ex === ExReq.none &&
+          retire.bits.rdType === port.regType
+        val unitConfig = coredef.PORTS(unitIdx)
+        retire.ready(unitConfig.writeRegTypes.indexOf(regType)) := arbiter.io
+          .in(j)
+          .ready
       }
     }
   }
@@ -291,7 +298,7 @@ class Exec(implicit val coredef: CoreDef) extends Module {
   assume(units.length == coredef.PORTS.length)
   // TODO: asserts Bypass is in unit 0
 
-  // collect rs free mask to find bottleneck
+  // collect issue queue free mask to find bottleneck
   toCore.rsEmptyMask := Cat(issueQueues.map(_.ingress.empty).reverse)
   toCore.rsFullMask := Cat(issueQueues.map(_.ingress.full).reverse)
 

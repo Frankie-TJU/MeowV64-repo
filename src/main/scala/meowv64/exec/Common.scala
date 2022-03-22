@@ -8,6 +8,7 @@ import meowv64.core.CSRWriter
 import meowv64.core.CoreDef
 import meowv64.core.ExReq
 import meowv64.core.ExType
+import meowv64.core.PortInfo
 import meowv64.core.PrivLevel
 import meowv64.core.RegInfo
 import meowv64.core.Status
@@ -510,12 +511,14 @@ abstract class ExecUnit[T <: Data](
   * @param coredef
   *   core definition
   */
-class CDBEntry(val regInfo: RegInfo)(implicit val coredef: CoreDef)
+class CDBEntry(val portInfo: PortInfo)(implicit val coredef: CoreDef)
     extends Bundle {
   val valid = Bool()
-  val phys = UInt(log2Ceil(regInfo.physRegs).W)
+  val phys = UInt(log2Ceil(coredef.MAX_PHYSICAL_REGISTERS).W)
   val regType = RegType()
-  val data = UInt(regInfo.width.W)
+  val data = UInt(
+    portInfo.writeRegTypes.map(coredef.REG_MAPPING(_).width).max.W
+  )
 }
 
 /** Common data bus
@@ -526,7 +529,7 @@ class CDBEntry(val regInfo: RegInfo)(implicit val coredef: CoreDef)
 class CDB(implicit val coredef: CoreDef) extends Bundle {
   // each port has a corresponding cdb entry
   val entries = MixedVec(
-    coredef.PORTS.map(port => new CDBEntry(coredef.REG_MAPPING(port.regType)))
+    coredef.PORTS.map(portInfo => new CDBEntry(portInfo))
   )
 }
 
