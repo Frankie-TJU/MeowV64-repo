@@ -380,7 +380,7 @@ class Exec(implicit val coredef: CoreDef) extends Module {
     )
 
     // At most only one sending except fpMem
-    when(instr.instr.instr.info.issueQueue =/= IssueQueueType.fpMem) {
+    when(instr.instr.instr.info.issueQueue =/= IssueQueueType.floatMem) {
       assert(!(sending & (sending -% 1.U)).orR)
     }
     assert(!selfCanIssue || sending.orR)

@@ -20,12 +20,12 @@ object ExecUnitType extends ChiselEnum {
 }
 
 object IssueQueueType extends ChiselEnum {
-  val invalid = Value(0.U)
-  val int     = Value(1.U)
-  val fp      = Value(2.U)
-  val vec     = Value(4.U)
-  val mem     = Value(8.U)
-  val fpMem   = Value(10.U)
+  val invalid  = Value(0.U)
+  val int      = Value(1.U)
+  val float    = Value(2.U)
+  val vec      = Value(4.U)
+  val mem      = Value(8.U)
+  val floatMem = Value(10.U)
 
   implicit def bitpat(op: IssueQueueType.Type): BitPat =
     BitPat(op.litValue.U(getWidth.W))
@@ -199,70 +199,70 @@ object DecodeInfo {
 
       // RV32F Standard Extension
       FLW       -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, lsu, IQT.mem),
-      FSW       -> List(Y, N, N, XX, Y, integer, Y, float, N, XX, lsu, IQT.fpMem),
-      FMADD_S   -> List(Y, N, Y, float, Y, float, Y, float, Y, float, fma, IQT.fp),
-      FMSUB_S   -> List(Y, N, Y, float, Y, float, Y, float, Y, float, fma, IQT.fp),
-      FNMADD_S  -> List(Y, N, Y, float, Y, float, Y, float, Y, float, fma, IQT.fp),
-      FNMSUB_S  -> List(Y, N, Y, float, Y, float, Y, float, Y, float, fma, IQT.fp),
-      FADD_S    -> List(Y, N, Y, float, Y, float, Y, float, N, XX, fma, IQT.fp),
-      FSUB_S    -> List(Y, N, Y, float, Y, float, Y, float, N, XX, fma, IQT.fp),
-      FMUL_S    -> List(Y, N, Y, float, Y, float, Y, float, N, XX, fma, IQT.fp),
-      FDIV_S    -> List(Y, N, Y, float, Y, float, Y, float, N, XX, floatDivSqrt, IQT.fp),
-      FSQRT_S   -> List(Y, N, Y, float, Y, float, N, XX, N, XX, floatDivSqrt, IQT.fp),
-      FSGNJ_S   -> List(Y, N, Y, float, Y, float, Y, float, N, XX, floatMisc, IQT.fp),
-      FSGNJN_S  -> List(Y, N, Y, float, Y, float, Y, float, N, XX, floatMisc, IQT.fp),
-      FSGNJX_S  -> List(Y, N, Y, float, Y, float, Y, float, N, XX, floatMisc, IQT.fp),
-      FMIN_S    -> List(Y, N, Y, float, Y, float, Y, float, N, XX, floatMisc, IQT.fp),
-      FMAX_S    -> List(Y, N, Y, float, Y, float, Y, float, N, XX, floatMisc, IQT.fp),
-      FCVT_W_S  -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, floatToInt, IQT.fp),
-      FCVT_WU_S -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, floatToInt, IQT.fp),
-      FMV_X_W   -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, floatToInt, IQT.fp),
-      FEQ_S     -> List(Y, N, Y, integer, Y, float, Y, float, N, XX, floatToInt, IQT.fp),
-      FLT_S     -> List(Y, N, Y, integer, Y, float, Y, float, N, XX, floatToInt, IQT.fp),
-      FLE_S     -> List(Y, N, Y, integer, Y, float, Y, float, N, XX, floatToInt, IQT.fp),
-      FCLASS_S  -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, floatToInt, IQT.fp),
+      FSW       -> List(Y, N, N, XX, Y, integer, Y, float, N, XX, lsu, IQT.floatMem),
+      FMADD_S   -> List(Y, N, Y, float, Y, float, Y, float, Y, float, fma, IQT.float),
+      FMSUB_S   -> List(Y, N, Y, float, Y, float, Y, float, Y, float, fma, IQT.float),
+      FNMADD_S  -> List(Y, N, Y, float, Y, float, Y, float, Y, float, fma, IQT.float),
+      FNMSUB_S  -> List(Y, N, Y, float, Y, float, Y, float, Y, float, fma, IQT.float),
+      FADD_S    -> List(Y, N, Y, float, Y, float, Y, float, N, XX, fma, IQT.float),
+      FSUB_S    -> List(Y, N, Y, float, Y, float, Y, float, N, XX, fma, IQT.float),
+      FMUL_S    -> List(Y, N, Y, float, Y, float, Y, float, N, XX, fma, IQT.float),
+      FDIV_S    -> List(Y, N, Y, float, Y, float, Y, float, N, XX, floatDivSqrt, IQT.float),
+      FSQRT_S   -> List(Y, N, Y, float, Y, float, N, XX, N, XX, floatDivSqrt, IQT.float),
+      FSGNJ_S   -> List(Y, N, Y, float, Y, float, Y, float, N, XX, floatMisc, IQT.float),
+      FSGNJN_S  -> List(Y, N, Y, float, Y, float, Y, float, N, XX, floatMisc, IQT.float),
+      FSGNJX_S  -> List(Y, N, Y, float, Y, float, Y, float, N, XX, floatMisc, IQT.float),
+      FMIN_S    -> List(Y, N, Y, float, Y, float, Y, float, N, XX, floatMisc, IQT.float),
+      FMAX_S    -> List(Y, N, Y, float, Y, float, Y, float, N, XX, floatMisc, IQT.float),
+      FCVT_W_S  -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, floatToInt, IQT.float),
+      FCVT_WU_S -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, floatToInt, IQT.float),
+      FMV_X_W   -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, floatToInt, IQT.float),
+      FEQ_S     -> List(Y, N, Y, integer, Y, float, Y, float, N, XX, floatToInt, IQT.float),
+      FLT_S     -> List(Y, N, Y, integer, Y, float, Y, float, N, XX, floatToInt, IQT.float),
+      FLE_S     -> List(Y, N, Y, integer, Y, float, Y, float, N, XX, floatToInt, IQT.float),
+      FCLASS_S  -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, floatToInt, IQT.float),
       FCVT_S_W  -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, intToFloat, IQT.int),
       FCVT_S_WU -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, intToFloat, IQT.int),
       FMV_W_X   -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, intToFloat, IQT.int),
 
       // RV64F Standard Extension (in addition to RV32F)
-      FCVT_L_S  -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, floatToInt, IQT.fp),
-      FCVT_LU_S -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, floatToInt, IQT.fp),
+      FCVT_L_S  -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, floatToInt, IQT.float),
+      FCVT_LU_S -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, floatToInt, IQT.float),
       FCVT_S_L  -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, intToFloat, IQT.int),
       FCVT_S_LU -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, intToFloat, IQT.int),
 
       // RV32D Standard Extension
       FLD       -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, lsu, IQT.mem),
-      FSD       -> List(Y, N, N, XX, Y, integer, Y, float, N, XX, lsu, IQT.fpMem),
-      FMADD_D   -> List(Y, N, Y, float, Y, float, Y, float, Y, float, fma, IQT.fp),
-      FMSUB_D   -> List(Y, N, Y, float, Y, float, Y, float, Y, float, fma, IQT.fp),
-      FNMADD_D  -> List(Y, N, Y, float, Y, float, Y, float, Y, float, fma, IQT.fp),
-      FNMSUB_D  -> List(Y, N, Y, float, Y, float, Y, float, Y, float, fma, IQT.fp),
-      FADD_D    -> List(Y, N, Y, float, Y, float, Y, float, N, XX, fma, IQT.fp),
-      FSUB_D    -> List(Y, N, Y, float, Y, float, Y, float, N, XX, fma, IQT.fp),
-      FMUL_D    -> List(Y, N, Y, float, Y, float, Y, float, N, XX, fma, IQT.fp),
-      FDIV_D    -> List(Y, N, Y, float, Y, float, Y, float, N, XX, floatDivSqrt, IQT.fp),
-      FSQRT_D   -> List(Y, N, Y, float, Y, float, N, XX, N, XX, floatDivSqrt, IQT.fp),
-      FSGNJ_D   -> List(Y, N, Y, float, Y, float, Y, float, N, XX, floatMisc, IQT.fp),
-      FSGNJN_D  -> List(Y, N, Y, float, Y, float, Y, float, N, XX, floatMisc, IQT.fp),
-      FSGNJX_D  -> List(Y, N, Y, float, Y, float, Y, float, N, XX, floatMisc, IQT.fp),
-      FMIN_D    -> List(Y, N, Y, float, Y, float, Y, float, N, XX, floatMisc, IQT.fp),
-      FMAX_D    -> List(Y, N, Y, float, Y, float, Y, float, N, XX, floatMisc, IQT.fp),
-      FCVT_S_D  -> List(Y, N, Y, float, Y, float, N, XX, N, XX, floatMisc, IQT.fp),
-      FCVT_D_S  -> List(Y, N, Y, float, Y, float, N, XX, N, XX, floatMisc, IQT.fp),
-      FEQ_D     -> List(Y, N, Y, integer, Y, float, Y, float, N, XX, floatToInt, IQT.fp),
-      FLT_D     -> List(Y, N, Y, integer, Y, float, Y, float, N, XX, floatToInt, IQT.fp),
-      FLE_D     -> List(Y, N, Y, integer, Y, float, Y, float, N, XX, floatToInt, IQT.fp),
-      FCLASS_D  -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, floatToInt, IQT.fp),
-      FCVT_W_D  -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, floatToInt, IQT.fp),
-      FCVT_WU_D -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, floatToInt, IQT.fp),
+      FSD       -> List(Y, N, N, XX, Y, integer, Y, float, N, XX, lsu, IQT.floatMem),
+      FMADD_D   -> List(Y, N, Y, float, Y, float, Y, float, Y, float, fma, IQT.float),
+      FMSUB_D   -> List(Y, N, Y, float, Y, float, Y, float, Y, float, fma, IQT.float),
+      FNMADD_D  -> List(Y, N, Y, float, Y, float, Y, float, Y, float, fma, IQT.float),
+      FNMSUB_D  -> List(Y, N, Y, float, Y, float, Y, float, Y, float, fma, IQT.float),
+      FADD_D    -> List(Y, N, Y, float, Y, float, Y, float, N, XX, fma, IQT.float),
+      FSUB_D    -> List(Y, N, Y, float, Y, float, Y, float, N, XX, fma, IQT.float),
+      FMUL_D    -> List(Y, N, Y, float, Y, float, Y, float, N, XX, fma, IQT.float),
+      FDIV_D    -> List(Y, N, Y, float, Y, float, Y, float, N, XX, floatDivSqrt, IQT.float),
+      FSQRT_D   -> List(Y, N, Y, float, Y, float, N, XX, N, XX, floatDivSqrt, IQT.float),
+      FSGNJ_D   -> List(Y, N, Y, float, Y, float, Y, float, N, XX, floatMisc, IQT.float),
+      FSGNJN_D  -> List(Y, N, Y, float, Y, float, Y, float, N, XX, floatMisc, IQT.float),
+      FSGNJX_D  -> List(Y, N, Y, float, Y, float, Y, float, N, XX, floatMisc, IQT.float),
+      FMIN_D    -> List(Y, N, Y, float, Y, float, Y, float, N, XX, floatMisc, IQT.float),
+      FMAX_D    -> List(Y, N, Y, float, Y, float, Y, float, N, XX, floatMisc, IQT.float),
+      FCVT_S_D  -> List(Y, N, Y, float, Y, float, N, XX, N, XX, floatMisc, IQT.float),
+      FCVT_D_S  -> List(Y, N, Y, float, Y, float, N, XX, N, XX, floatMisc, IQT.float),
+      FEQ_D     -> List(Y, N, Y, integer, Y, float, Y, float, N, XX, floatToInt, IQT.float),
+      FLT_D     -> List(Y, N, Y, integer, Y, float, Y, float, N, XX, floatToInt, IQT.float),
+      FLE_D     -> List(Y, N, Y, integer, Y, float, Y, float, N, XX, floatToInt, IQT.float),
+      FCLASS_D  -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, floatToInt, IQT.float),
+      FCVT_W_D  -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, floatToInt, IQT.float),
+      FCVT_WU_D -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, floatToInt, IQT.float),
       FCVT_D_W  -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, intToFloat, IQT.int),
       FCVT_D_WU -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, intToFloat, IQT.int),
 
       // RV64D Standard Extension (in addition to RV32D)
-      FCVT_L_D  -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, floatToInt, IQT.fp),
-      FCVT_LU_D -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, floatToInt, IQT.fp),
-      FMV_X_D   -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, floatToInt, IQT.fp),
+      FCVT_L_D  -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, floatToInt, IQT.float),
+      FCVT_LU_D -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, floatToInt, IQT.float),
+      FMV_X_D   -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, floatToInt, IQT.float),
       FCVT_D_L  -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, intToFloat, IQT.int),
       FCVT_D_LU -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, intToFloat, IQT.int),
       FMV_D_X   -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, intToFloat, IQT.int),

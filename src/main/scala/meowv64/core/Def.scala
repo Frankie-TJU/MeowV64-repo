@@ -148,6 +148,14 @@ class ExecutionUnitLSU
       Seq(RegType.integer, RegType.float)
     )
 
+class ExecutionUnitVectorALU
+    extends ExecutionUnitInfo(
+      ExecUnitType.vectorAlu,
+      2,
+      RegType.vector,
+      Seq(RegType.vector)
+    )
+
 /** Each port can read from one register file, potentially write to one or more
   * register files
   */
@@ -249,7 +257,7 @@ abstract class CoreDef {
     ),
     // Float issue queue
     IssueQueueInfo(
-      IssueQueueType.fp,
+      IssueQueueType.float,
       16,
       ports = Seq(
         // port 2: FMA + FloatMisc + FloatDivSqrt + FloatToInt + FloatToMem
@@ -274,7 +282,22 @@ abstract class CoreDef {
         // port 3: LSU
         LSU_PORT_INFO
       )
-    )
+    ),
+    // Vector issue queue
+    IssueQueueInfo(
+      IssueQueueType.vec,
+      16,
+      ports = Seq(
+        // port 4: VectorALU
+        PortInfo(
+          RegType.vector,
+          Seq(
+            new ExecutionUnitVectorALU(),
+          ),
+          3
+        )(this)
+      )
+    ),
   )
 
   /** Ports
@@ -284,13 +307,17 @@ abstract class CoreDef {
   /** Register write ports
     */
   val REG_WRITE_PORTS: Seq[RegWritePortInfo] = Seq(
+    // integer
     RegWritePortInfo(RegType.integer, Seq(0))(this), // port 0
     RegWritePortInfo(RegType.integer, Seq(1))(this), // port 1
     RegWritePortInfo(RegType.integer, Seq(3, 2))(
       this
     ), // port 2 int2float & 3 lsu
+    // float
     RegWritePortInfo(RegType.float, Seq(2))(this), // port 2
-    RegWritePortInfo(RegType.float, Seq(3, 1))(this) // port 1 float2int & 3 lsu
+    RegWritePortInfo(RegType.float, Seq(3, 1))(this), // port 1 float2int & 3 lsu
+    // vector
+    RegWritePortInfo(RegType.vector, Seq(4))(this), // port 4
   )
 
   /** L1 line width in bytes
@@ -313,11 +340,12 @@ abstract class CoreDef {
   def REG_TYPES: Seq[RegInfo] =
     Seq(
       REG_INT,
-      REG_FLOAT
+      REG_FLOAT,
+      REG_VEC
     )
 
   def REG_MAPPING: Map[RegType.Type, RegInfo] =
-    Map((RegType.integer, REG_INT), (RegType.float, REG_FLOAT))
+    Map((RegType.integer, REG_INT), (RegType.float, REG_FLOAT), (RegType.vector, REG_VEC))
 
   /** Maximum physical register count across different types
     */
