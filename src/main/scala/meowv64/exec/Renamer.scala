@@ -161,7 +161,7 @@ class Renamer(implicit coredef: CoreDef) extends Module {
 
     // Loop through CDB
     for (ent <- cdb.entries) {
-      when(ent.valid && ent.phys === phys) {
+      when(ent.valid && ent.phys === phys && ent.regType === banks(bankIdx).regType) {
         ready := true.B
       }
     }

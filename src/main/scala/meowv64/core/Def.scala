@@ -273,9 +273,9 @@ abstract class CoreDef {
   val REG_WRITE_PORTS: Seq[RegWritePortInfo] = Seq(
     RegWritePortInfo(RegType.integer, Seq(0))(this), // port 0
     RegWritePortInfo(RegType.integer, Seq(1))(this), // port 1
-    RegWritePortInfo(RegType.integer, Seq(2, 3))(this), // port 2 int2float & 3
+    RegWritePortInfo(RegType.integer, Seq(3, 2))(this), // port 2 int2float & 3 lsu
     RegWritePortInfo(RegType.float, Seq(2))(this), // port 2
-    RegWritePortInfo(RegType.float, Seq(1, 3))(this) // port 1 float2int & 3
+    RegWritePortInfo(RegType.float, Seq(3, 1))(this) // port 1 float2int & 3 lsu
   )
 
   /** L1 line width in bytes

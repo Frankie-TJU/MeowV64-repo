@@ -559,8 +559,32 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
     is(Decoder.MEM_WIDTH_FUNC("WU")) { result := shifted(31, 0) }
   }
 
+  // special handling for fld/flw/fsd/fsw/vle.v
+  when(
+    next.instr.instr.op === Decoder.Op("LOAD-FP").ident ||
+      next.instr.instr.op === Decoder.Op("STORE-FP").ident
+  ) {
+    // nan boxing
+    switch(next.instr.instr.funct3) {
+      is(Decoder.MEM_WIDTH_FUNC("W")) {
+        result := Fill(32, 1.U) ## shifted(31, 0)
+      }
+      is(Decoder.MEM_WIDTH_FUNC("D")) { result := shifted }
+      is(0.U, 5.U, 6.U, 7.U) {
+        // special handling for vle.v
+        result := Cat(vectorReadRespData.reverse)
+      }
+    }
+  }
+
   retire.valid := false.B
   retire.bits := Retirement.empty(regInfo)
+
+  // LSU has higher priority, so always ready
+  // we do not wait for retire.ready in LSU
+  when(retire.valid) {
+    assert(retire.fire)
+  }
 
   val reqSent = RegInit(false.B)
   val advance = WireInit(false.B)
