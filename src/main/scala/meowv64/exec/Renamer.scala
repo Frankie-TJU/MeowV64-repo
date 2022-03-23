@@ -55,11 +55,9 @@ class Renamer(implicit coredef: CoreDef) extends Module {
       // 1 means free
       // P0 is hardwired to zero for x0
       // it should never be allocated
-      val freeMask = if (regInfo.fixedZero) {
-        (BigInt(1) << regInfo.physRegs) - 2
-      } else {
-        (BigInt(1) << regInfo.physRegs) - 1
-      }
+      // and it can be used in staleRdPhys = 0 meaning no stale phys register
+      // so keep it deallocated for float as well
+      val freeMask = (BigInt(1) << regInfo.physRegs) - 2
       val freeList = RegInit(freeMask.U(regInfo.physRegs.W))
 
       // masks for updating freeList
@@ -161,7 +159,9 @@ class Renamer(implicit coredef: CoreDef) extends Module {
 
     // Loop through CDB
     for (ent <- cdb.entries) {
-      when(ent.valid && ent.phys === phys && ent.regType === banks(bankIdx).regType) {
+      when(
+        ent.valid && ent.phys === phys && ent.regType === banks(bankIdx).regType
+      ) {
         ready := true.B
       }
     }

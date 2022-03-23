@@ -3,6 +3,7 @@ package meowv64.exec
 import chisel3._
 import chisel3.util.Mux1H
 import chisel3.util.PopCount
+import chisel3.util.Valid
 import chisel3.util.log2Ceil
 import meowv64.core.CSRWriter
 import meowv64.core.CoreDef
@@ -14,7 +15,6 @@ import meowv64.instr.Instr
 import meowv64.reg.RegType
 
 import scala.collection.mutable
-import chisel3.util.Valid
 
 trait UnitSelIO {
   val flush: Bool

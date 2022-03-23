@@ -727,6 +727,7 @@ class Exec(implicit val coredef: CoreDef) extends Module {
       .view(i)
       .rdPhys
     renamer.toExec.releases(i).rdIndex := inflights.reader.view(i).rdIndex
+    // only release stale register if no exception occurred
     renamer.toExec.releases(i).valid := i.U < retireNum &&
       !rob(retirePtr +% i.U).exceptionOccurred
   }
