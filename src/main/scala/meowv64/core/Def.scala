@@ -114,6 +114,15 @@ class ExecutionUnitFloat2Int
       RegType.float,
       Seq(RegType.integer)
     )
+
+// fsd/fsw instructions send to fp & mem issue queues
+class ExecutionUnitFloat2Mem
+    extends ExecutionUnitInfo(
+      ExecUnitType.lsu,
+      2,
+      RegType.float,
+      Seq(RegType.float)
+    )
 class ExecutionUnitFloatMisc
     extends ExecutionUnitInfo(
       ExecUnitType.floatMisc,
@@ -240,14 +249,15 @@ abstract class CoreDef {
       IssueQueueType.fp,
       16,
       ports = Seq(
-        // port 2: FMA + FloatMisc + FloatDivSqrt + FloatToInt
+        // port 2: FMA + FloatMisc + FloatDivSqrt + FloatToInt + FloatToMem
         PortInfo(
           RegType.float,
           Seq(
             new ExecutionUnitFMA(),
             new ExecutionUnitFloatMisc(),
             new ExecutionUnitFloatDivSqrt(),
-            new ExecutionUnitFloat2Int()
+            new ExecutionUnitFloat2Int(),
+            new ExecutionUnitFloat2Mem()
           ),
           3
         )(this)
@@ -273,7 +283,9 @@ abstract class CoreDef {
   val REG_WRITE_PORTS: Seq[RegWritePortInfo] = Seq(
     RegWritePortInfo(RegType.integer, Seq(0))(this), // port 0
     RegWritePortInfo(RegType.integer, Seq(1))(this), // port 1
-    RegWritePortInfo(RegType.integer, Seq(3, 2))(this), // port 2 int2float & 3 lsu
+    RegWritePortInfo(RegType.integer, Seq(3, 2))(
+      this
+    ), // port 2 int2float & 3 lsu
     RegWritePortInfo(RegType.float, Seq(2))(this), // port 2
     RegWritePortInfo(RegType.float, Seq(3, 1))(this) // port 1 float2int & 3 lsu
   )

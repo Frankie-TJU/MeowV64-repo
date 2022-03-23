@@ -546,8 +546,7 @@ class CDB(implicit val coredef: CoreDef) extends Bundle {
 /** Additional ports
   */
 
-class DelayedMemResult(implicit val coredef: CoreDef) extends Bundle {
-}
+class DelayedMemResult(implicit val coredef: CoreDef) extends Bundle {}
 
 trait WithCSRWriter {
   val writer: CSRWriter
@@ -559,4 +558,13 @@ trait WithPrivPort {
 
 trait WithStatus {
   val status: Status
+}
+
+class FloatToMemReq(implicit val coredef: CoreDef) extends Bundle {
+  val data = UInt(coredef.XLEN.W)
+  val lsqIdx = UInt(log2Ceil(coredef.LSQ_DEPTH).W)
+}
+
+trait WithFloatToMem {
+  val toMem: ValidIO[FloatToMemReq]
 }

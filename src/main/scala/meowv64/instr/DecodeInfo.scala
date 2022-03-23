@@ -20,11 +20,12 @@ object ExecUnitType extends ChiselEnum {
 }
 
 object IssueQueueType extends ChiselEnum {
-  val int   = Value(0.U)
-  val fp    = Value(2.U)
-  val vec   = Value(4.U)
-  val mem   = Value(8.U)
-  val fpMem = Value(10.U)
+  val invalid = Value(0.U)
+  val int     = Value(1.U)
+  val fp      = Value(2.U)
+  val vec     = Value(4.U)
+  val mem     = Value(8.U)
+  val fpMem   = Value(10.U)
 
   implicit def bitpat(op: IssueQueueType.Type): BitPat =
     BitPat(op.litValue.U(getWidth.W))

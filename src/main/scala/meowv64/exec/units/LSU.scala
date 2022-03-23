@@ -14,12 +14,8 @@ import meowv64.exec._
 import meowv64.instr.Decoder
 import meowv64.paging._
 import meowv64.reg.RegType
-import meowv64.util.FlushableQueue
-
 import scala.collection.mutable
-import meowv64.instr.InstrExt
 import meowv64.instr.Instr
-import java.util.IntSummaryStatistics
 
 /** DelayedMem = Delayed memory access, memory accesses that have side-effects
   * and thus needs to be preformed in-order.
@@ -149,6 +145,10 @@ object LSUReadState extends ChiselEnum {
   val idle, vectorLoad = Value
 }
 
+class SetHasMem(implicit val coredef: CoreDef) extends Bundle {
+  val robIndex = Output(UInt(log2Ceil(coredef.INFLIGHT_INSTR_LIMIT).W))
+}
+
 class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   val regInfo = coredef.REG_INT
   val flush = IO(Input(Bool()))
@@ -187,6 +187,9 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
     val uncached = new L1UCPort(coredef.L1D)
   })
 
+  // pass fsd/fsw data from FloatToMem
+  val toFloat = IO(Flipped(Valid(new FloatToMemReq)))
+
   val satp = IO(Input(new Satp))
   val status = IO(Input(new Status))
   val ptw = IO(new TLBExt)
@@ -197,9 +200,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
 
   val toExec = IO(new Bundle {
     // set hasMem in rob for delayed memory ops
-    val valid = Output(Bool())
-    val hasMem = Output(Bool())
-    val robIndex = Output(UInt(log2Ceil(coredef.INFLIGHT_INSTR_LIMIT).W))
+    val setHasMem = Valid(new SetHasMem())
 
     // to allocate lsq index
     val lsqIdxBase = Output(UInt(log2Ceil(DEPTH).W))
@@ -368,9 +369,15 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
 
   // set hasMem in rob
   // for side effects
-  toExec.valid := false.B
-  toExec.hasMem := true.B
-  toExec.robIndex := next.robIndex
+  toExec.setHasMem.valid := false.B
+  toExec.setHasMem.bits.robIndex := next.robIndex
+
+  // read store data for fsd/fsw
+  when(toFloat.valid) {
+    assert(!store(toFloat.bits.lsqIdx).dataValid)
+    store(toFloat.bits.lsqIdx).dataValid := true.B
+    store(toFloat.bits.lsqIdx).data := toFloat.bits.data
+  }
 
   // save state to lsq
   when(issue.instr.fire) {
@@ -383,7 +390,10 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
     lsqEntry.robIndex := next.robIndex
 
     lsqEntry.addrValid := true.B
-    lsqEntry.dataValid := true.B
+    // for fsd/fsw, data is provided by FloatToMem unit
+    when(next.instr.instr.op =/= Decoder.Op("STORE-FP").ident) {
+      lsqEntry.dataValid := true.B
+    }
     when(fenceLike) {
       lsqEntry.op := DelayedMemOp.exception
       when(next.instr.instr.funct3 === Decoder.MEM_MISC_FUNC("FENCE.I")) {
@@ -428,13 +438,13 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
       // handle load reserved
       when(amo) {
         // has side effect
-        toExec.valid := true.B
+        toExec.setHasMem.valid := true.B
         lsqEntry.op := DelayedMemOp.store
         lsqEntry.wop := DCWriteOp.commitLR
       }
     }.elsewhen(read && uncached) {
       // has side effect
-      toExec.valid := true.B
+      toExec.setHasMem.valid := true.B
       lsqEntry.op := DelayedMemOp.uncachedLoad
       lsqEntry.addr := addr
 
@@ -471,7 +481,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
 
     }.elsewhen(write) {
       // has side effect
-      toExec.valid := true.B
+      toExec.setHasMem.valid := true.B
       switch(next.instr.instr.funct3) {
         is(Decoder.MEM_WIDTH_FUNC("B")) { lsqEntry.len := DCWriteLen.B }
         is(Decoder.MEM_WIDTH_FUNC("H")) { lsqEntry.len := DCWriteLen.H }
@@ -508,7 +518,10 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
         lsqEntry.wop := DCWriteOp.write
       }
 
-      lsqEntry.data := next.rs2val
+      // for fsd/fsw, data is provided by FloatToMem unit
+      when(next.instr.instr.op =/= Decoder.Op("STORE-FP").ident) {
+        lsqEntry.data := next.rs2val
+      }
 
     }.otherwise {
       lsqEntry.op := DelayedMemOp.exception
@@ -559,21 +572,16 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
     is(Decoder.MEM_WIDTH_FUNC("WU")) { result := shifted(31, 0) }
   }
 
-  // special handling for fld/flw/fsd/fsw/vle.v
+  // special handling for fld/flw
   when(
-    next.instr.instr.op === Decoder.Op("LOAD-FP").ident ||
-      next.instr.instr.op === Decoder.Op("STORE-FP").ident
+    current.instr.op === Decoder.Op("LOAD-FP").ident
   ) {
     // nan boxing
-    switch(next.instr.instr.funct3) {
+    switch(current.instr.funct3) {
       is(Decoder.MEM_WIDTH_FUNC("W")) {
         result := Fill(32, 1.U) ## shifted(31, 0)
       }
       is(Decoder.MEM_WIDTH_FUNC("D")) { result := shifted }
-      is(0.U, 5.U, 6.U, 7.U) {
-        // special handling for vle.v
-        result := Cat(vectorReadRespData.reverse)
-      }
     }
   }
 

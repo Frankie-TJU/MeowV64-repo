@@ -14,6 +14,7 @@ import meowv64.instr.Instr
 import meowv64.reg.RegType
 
 import scala.collection.mutable
+import chisel3.util.Valid
 
 trait UnitSelIO {
   val flush: Bool
@@ -97,6 +98,21 @@ class UnitSel(
       }
 
       u.asInstanceOf[WithStatus].status := status
+    }
+
+    if (u.isInstanceOf[WithFloatToMem]) {
+      println("Found extra port: floatToMem")
+
+      val floatToMem = extras.get("floatToMem") match {
+        case Some(port) => port
+        case None => {
+          val status = IO(Valid(new FloatToMemReq))
+          extras.put("floatToMem", status)
+          status
+        }
+      }
+
+      u.asInstanceOf[WithFloatToMem].toMem <> floatToMem
     }
   }
 

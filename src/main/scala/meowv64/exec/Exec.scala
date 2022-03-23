@@ -190,6 +190,8 @@ class Exec(implicit val coredef: CoreDef) extends Module {
                   Module(new FloatDivSqrt).suggestName("FloatDivSqrt")
                 case ExecUnitType.floatToInt =>
                   Module(new FloatToInt).suggestName("FloatToInt")
+                case ExecUnitType.lsu => // this is actually float to mem
+                  Module(new FloatToMem).suggestName("FloatToMem")
                 case ExecUnitType.vectorAlu =>
                   Module(new VectorALU).suggestName("VectorALU")
                 case ExecUnitType.vectorMisc =>
@@ -291,6 +293,9 @@ class Exec(implicit val coredef: CoreDef) extends Module {
     if (unit.extras.contains("status")) {
       unit.extras("status") := toCtrl.status
     }
+    if (unit.extras.contains("floatToMem")) {
+      unit.extras("floatToMem") <> lsu.toFloat
+    }
   }
 
   assume(units.length == coredef.PORTS.length)
@@ -374,8 +379,10 @@ class Exec(implicit val coredef: CoreDef) extends Module {
           .ident && instr.instr.instr.funct3 =/= Decoder.SYSTEM_FUNC("PRIV"))
     )
 
-    // At most only one sending
-    assert(!(sending & (sending -% 1.U)).orR)
+    // At most only one sending except fpMem
+    when(instr.instr.instr.info.issueQueue =/= IssueQueueType.fpMem) {
+      assert(!(sending & (sending -% 1.U)).orR)
+    }
     assert(!selfCanIssue || sending.orR)
 
     instr := renamer.toExec.output(idx)
@@ -386,7 +393,7 @@ class Exec(implicit val coredef: CoreDef) extends Module {
       selfCanIssue := false.B
       sending := 0.U
     }.otherwise {
-      // Route to applicable stations
+      // Route to applicable issue queues
       val applicable = Exec.route(toIF.view(idx).instr)
       applicable.suggestName(s"applicable_$idx")
       // Find available issue queue
@@ -418,7 +425,7 @@ class Exec(implicit val coredef: CoreDef) extends Module {
 
         sending := mask
 
-        selfCanIssue := mask.orR()
+        selfCanIssue := applicable === mask
 
         if (idx != 0) {
           // Cannot issue GFence that is not on the first slot
@@ -434,7 +441,14 @@ class Exec(implicit val coredef: CoreDef) extends Module {
 
         // check if sending to mem issue queue
         // allocate lsq index
-        when(toIF.view(idx).instr.info.issueQueue === IssueQueueType.mem) {
+        when(
+          (toIF
+            .view(idx)
+            .instr
+            .info
+            .issueQueue
+            .asUInt & IssueQueueType.mem.value.U) === IssueQueueType.mem.value.U
+        ) {
           lsqAllocMask(idx) := true.B
 
           // lsq full
@@ -512,9 +526,9 @@ class Exec(implicit val coredef: CoreDef) extends Module {
   }
 
   // set hasMem when delayed memory op is pushed into queue
-  when(lsu.toExec.valid) {
-    rob(lsu.toExec.robIndex).valid := true.B
-    rob(lsu.toExec.robIndex).hasMem := true.B
+  when(lsu.toExec.setHasMem.valid) {
+    rob(lsu.toExec.setHasMem.bits.robIndex).valid := true.B
+    rob(lsu.toExec.setHasMem.bits.robIndex).hasMem := true.B
   }
 
   // Filling ROB & CDB broadcast
@@ -782,19 +796,16 @@ object ROBEntry {
 object Exec {
 
   def route(instr: Instr)(implicit coredef: CoreDef): UInt = {
-    val ret = Wire(UInt(coredef.ISSUE_QUEUES.length.W))
-    ret := 0.U
+    val ret = Wire(Vec(coredef.ISSUE_QUEUES.length, Bool()))
 
     // compute bitset from unit configuration
     for ((info, idx) <- coredef.ISSUE_QUEUES.zipWithIndex) {
-      when(instr.info.issueQueue === info.issueQueueType) {
-        // compute bit mask
-        val mask = 1 << idx
-
-        ret := mask.U
-      }
+      // compute bit mask
+      ret(
+        idx
+      ) := (instr.info.issueQueue.asUInt & info.issueQueueType.value.U) === info.issueQueueType.value.U
     }
 
-    ret
+    Cat(ret.reverse)
   }
 }
