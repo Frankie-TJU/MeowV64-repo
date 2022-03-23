@@ -666,7 +666,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
           toMem.writer.req.valid := true.B
           when(toMem.writer.req.fire) {
             // for amo instructions, write result
-            when(current.wop =/= DCWriteOp.write) {
+            when(current.wop =/= DCWriteOp.write && current.wop =/= DCWriteOp.commitLR) {
               retire.valid := true.B
               retire.bits.info.wb := toMem.writer.rdata
             }
