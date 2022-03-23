@@ -28,7 +28,7 @@ import scala.collection.mutable
   *   - us: uncached store
   */
 object DelayedMemOp extends ChiselEnum {
-  val load, store, uncachedLoad, uncachedStore, exception = Value
+  val load, store, uncachedLoad, uncachedStore, loadReserved, exception = Value
 }
 
 /** A (maybe-empty) sequential memory access
@@ -272,6 +272,11 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
 
   val release = IO(EnqIO(new Bundle {}))
 
+  // check: release ready should be stable until valid
+  when(RegNext(release.ready && ~release.valid)) {
+    assert(release.ready)
+  }
+
   val l1pass = Wire(Bool())
 
   // Let's do this without helper
@@ -438,15 +443,16 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
         )
       )
     }.elsewhen(read && !uncached) {
-      lsqEntry.op := DelayedMemOp.load
       lsqEntry.addr := addr
 
       // handle load reserved
       when(amo) {
         // has side effect
         toExec.setHasMem.valid := true.B
-        lsqEntry.op := DelayedMemOp.store
+        lsqEntry.op := DelayedMemOp.loadReserved
         lsqEntry.wop := DCWriteOp.commitLR
+      }.otherwise {
+        lsqEntry.op := DelayedMemOp.load
       }
     }.elsewhen(read && uncached) {
       // has side effect
@@ -639,10 +645,32 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
           }
         }
       }
+      is(DelayedMemOp.loadReserved) {
+        // stage 1: read reserved
+        toMem.reader.req.valid := ~reqSent
+        toMem.reader.req.bits.reserve := true.B
+        when(toMem.reader.req.fire) {
+          reqSent := true.B
+        }
+
+        // stage 2: commit LR
+        when(toMem.reader.resp.valid) {
+          retire.valid := true.B
+          current.op := DelayedMemOp.store
+
+          reqSent := false.B
+        }
+      }
       is(DelayedMemOp.store) {
         when(release.ready) {
           toMem.writer.req.valid := true.B
           when(toMem.writer.req.fire) {
+            // for amo instructions, write result
+            when(current.wop =/= DCWriteOp.write) {
+              retire.valid := true.B
+              retire.bits.info.wb := toMem.writer.rdata
+            }
+
             release.valid := true.B
             advance := true.B
           }

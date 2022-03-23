@@ -553,7 +553,6 @@ class Exec(implicit val coredef: CoreDef) extends Module {
       ent.regType := u.retire.bits.rdType
       ent.valid := true.B
 
-      rob(u.retire.bits.robIndex).hasMem := false.B
       rob(u.retire.bits.robIndex).valid := true.B
       // for BRANCH instructions, this means taken before normalization
       rob(u.retire.bits.robIndex).branchTaken := u.retire.bits.info.branchTaken
@@ -627,6 +626,7 @@ class Exec(implicit val coredef: CoreDef) extends Module {
     when(releaseMem.fire) {
       retireNum := 1.U
       rob(retirePtr).valid := false.B
+      rob(retirePtr).hasMem := false.B
       retirePtr := retirePtr +% 1.U
       when(pendingBr && pendingBrTag === retirePtr) {
         toCtrl.branch := pendingBrResult
@@ -707,6 +707,7 @@ class Exec(implicit val coredef: CoreDef) extends Module {
         }
 
         info.valid := false.B
+        info.hasMem := false.B
       }.otherwise {}
     }
 
@@ -753,6 +754,7 @@ class Exec(implicit val coredef: CoreDef) extends Module {
 
     for (row <- rob) {
       row.valid := false.B
+      row.hasMem := false.B
     }
   }
 }
@@ -784,7 +786,7 @@ class ROBEntry(implicit val coredef: CoreDef) extends Bundle {
 object ROBEntry {
   def empty(implicit coredef: CoreDef) = {
     val ret = Wire(new ROBEntry)
-    ret.hasMem := DontCare
+    ret.hasMem := false.B
     ret.valid := false.B
     ret.branchTaken := false.B
     ret.updateFFlags := false.B
