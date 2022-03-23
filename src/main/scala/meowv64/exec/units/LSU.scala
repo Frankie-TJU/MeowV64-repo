@@ -360,6 +360,8 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
 
   when(!next.instr.valid) {
     l1pass := false.B
+  }.elsewhen(fenceLike) {
+    l1pass := true.B
   }.elsewhen(requiresTranslate && !tlb.query.req.ready) {
     l1pass := false.B
   }.otherwise {
