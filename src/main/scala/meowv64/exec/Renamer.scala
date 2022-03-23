@@ -274,7 +274,11 @@ class Renamer(implicit coredef: CoreDef) extends Module {
     var setBusyMask = WireInit(0.U(regInfo.physRegs.W))
 
     for ((instr, idx) <- toExec.input.zipWithIndex) {
-      val phys = PriorityEncoder(bank.freeList & ~clearFreeMask)
+      val freeMask = bank.freeList & ~clearFreeMask
+      // TODO: stall if no registers are free
+      assert(freeMask.orR)
+
+      val phys = PriorityEncoder(freeMask)
       val curMask = WireInit(0.U(regInfo.physRegs.W))
       when(
         instr.instr

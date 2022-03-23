@@ -804,9 +804,9 @@ int main(int argc, char **argv) {
   top->clock = 0;
   init();
 
-  const size_t MAX_RS_COUNT = 5;
-  size_t rs_empty_cycle_count[MAX_RS_COUNT] = {};
-  size_t rs_full_cycle_count[MAX_RS_COUNT] = {};
+  const size_t MAX_IQ_COUNT = 3;
+  size_t iq_empty_cycle_count[MAX_IQ_COUNT] = {};
+  size_t iq_full_cycle_count[MAX_IQ_COUNT] = {};
   size_t cycles = 0;
   size_t issue_num_bounded_by_rob_size = 0;
 
@@ -842,12 +842,12 @@ int main(int argc, char **argv) {
       }
 
       // accumulate rs free cycles
-      for (int i = 0; i < MAX_RS_COUNT; i++) {
-        if ((top->io_debug_0_rsEmptyMask >> i) & 1) {
-          rs_empty_cycle_count[i]++;
+      for (int i = 0; i < MAX_IQ_COUNT; i++) {
+        if ((top->io_debug_0_iqEmptyMask >> i) & 1) {
+          iq_empty_cycle_count[i]++;
         }
-        if ((top->io_debug_0_rsFullMask >> i) & 1) {
-          rs_full_cycle_count[i]++;
+        if ((top->io_debug_0_iqFullMask >> i) & 1) {
+          iq_full_cycle_count[i]++;
         }
       }
 
@@ -885,14 +885,14 @@ int main(int argc, char **argv) {
           (double)top->io_debug_0_minstret / top->io_debug_0_mcycle);
   fprintf(stderr, "> Simulation speed: %.2lf mcycle/s\n",
           (double)top->io_debug_0_mcycle * 1000000 / elapsed_us);
-  fprintf(stderr, "> RS empty cycle:");
-  for (int i = 0; i < MAX_RS_COUNT; i++) {
-    fprintf(stderr, " %.2lf%%", rs_empty_cycle_count[i] * 100.0 / cycles);
+  fprintf(stderr, "> Issue queue empty cycle:");
+  for (int i = 0; i < MAX_IQ_COUNT; i++) {
+    fprintf(stderr, " %.2lf%%", iq_empty_cycle_count[i] * 100.0 / cycles);
   }
   fprintf(stderr, "\n");
-  fprintf(stderr, "> RS full cycle:");
-  for (int i = 0; i < MAX_RS_COUNT; i++) {
-    fprintf(stderr, " %.2lf%%", rs_full_cycle_count[i] * 100.0 / cycles);
+  fprintf(stderr, "> Issue queue full cycle:");
+  for (int i = 0; i < MAX_IQ_COUNT; i++) {
+    fprintf(stderr, " %.2lf%%", iq_full_cycle_count[i] * 100.0 / cycles);
   }
   fprintf(stderr, "\n");
   fprintf(stderr, "> Cycles when issue num is bounded by ROB size: %.2lf%%\n",

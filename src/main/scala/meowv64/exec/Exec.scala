@@ -70,8 +70,8 @@ class Exec(implicit val coredef: CoreDef) extends Module {
     val ptw = new TLBExt
 
     // debug
-    val rsEmptyMask = Output(UInt(coredef.ISSUE_QUEUES.length.W))
-    val rsFullMask = Output(UInt(coredef.ISSUE_QUEUES.length.W))
+    val iqEmptyMask = Output(UInt(coredef.ISSUE_QUEUES.length.W))
+    val iqFullMask = Output(UInt(coredef.ISSUE_QUEUES.length.W))
     val issueNumBoundedByROBSize = Output(Bool())
   })
 
@@ -302,8 +302,8 @@ class Exec(implicit val coredef: CoreDef) extends Module {
   // TODO: asserts Bypass is in unit 0
 
   // collect issue queue free mask to find bottleneck
-  toCore.rsEmptyMask := Cat(issueQueues.map(_.ingress.empty).reverse)
-  toCore.rsFullMask := Cat(issueQueues.map(_.ingress.full).reverse)
+  toCore.iqEmptyMask := Cat(issueQueues.map(_.ingress.empty).reverse)
+  toCore.iqFullMask := Cat(issueQueues.map(_.ingress.full).reverse)
 
   for (iq <- issueQueues) {
     iq.cdb := cdb
