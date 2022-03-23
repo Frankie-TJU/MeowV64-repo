@@ -199,7 +199,7 @@ abstract class CoreDef {
   val INIT_VEC: BigInt = BigInt("FFFF20000000", 16)
 
   // branch history table
-  val BHT_SIZE: Int = 256
+  val BHT_SIZE: Int = 32
   val BHT_WIDTH: Int = 2
   // write bypass entries in BPU
   val BPU_WRITE_BYPASS_COUNT: Int = 2
