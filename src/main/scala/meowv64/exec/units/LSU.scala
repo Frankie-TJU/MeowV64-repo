@@ -19,6 +19,7 @@ import meowv64.util.FlushableQueue
 import scala.collection.mutable
 import meowv64.instr.InstrExt
 import meowv64.instr.Instr
+import java.util.IntSummaryStatistics
 
 /** DelayedMem = Delayed memory access, memory accesses that have side-effects
   * and thus needs to be preformed in-order.
@@ -224,6 +225,9 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
     }
   }
   assert(toExec.lsqAllocCount <= toExec.lsqAllocAccept)
+  assert(toExec.lsqAllocAccept <= emptyEntries)
+  assert(toExec.lsqAllocAccept <= coredef.ISSUE_NUM.U)
+
   for (i <- 0 until coredef.ISSUE_NUM) {
     val idx = tail +% i.U
     when(toExec.lsqAllocCount > i.U) {
@@ -517,7 +521,9 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   // Part 2: issue operations from lsq head
   val current = store(head)
   toMem.reader.req.valid := false.B
-  toMem.reader.req.bits.addr := current.addr(coredef.PADDR_WIDTH - 1, 3) ## 0.U(3.W)
+  toMem.reader.req.bits.addr := current.addr(coredef.PADDR_WIDTH - 1, 3) ## 0.U(
+    3.W
+  )
   toMem.reader.req.bits.reserve := false.B // TODO
   toMem.writer.req.valid := false.B
   toMem.writer.req.bits.addr := current.addr
@@ -533,7 +539,10 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
 
   // compute write back value from reader
   val shifted =
-    toMem.reader.resp.bits >> (current.addr(2, 0) << 3) // TODO: use lookup table?
+    toMem.reader.resp.bits >> (current.addr(
+      2,
+      0
+    ) << 3) // TODO: use lookup table?
   val signedResult = Wire(SInt(coredef.XLEN.W)).suggestName("signedResult")
   val result = Wire(UInt(coredef.VLEN.W)).suggestName("result")
   shifted.suggestName("shifted")
@@ -566,7 +575,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   retire.bits.robIndex := current.robIndex
   retire.bits.info.wb := result
 
-  when(head =/= tail && current.canFire) {
+  when(emptyEntries =/= DEPTH.U && current.canFire) {
     switch(current.op) {
       is(DelayedMemOp.load) {
         toMem.reader.req.valid := ~reqSent
