@@ -436,6 +436,13 @@ class Exec(implicit val coredef: CoreDef) extends Module {
         // allocate lsq index
         when(toIF.view(idx).instr.info.issueQueue === IssueQueueType.mem) {
           lsqAllocMask(idx) := true.B
+
+          // lsq full
+          when(idx.U >= lsu.toExec.lsqAllocAccept) {
+            selfCanIssue := false.B
+          }
+
+          // compute lsq index
           if (idx == 0) {
             instr.lsqIndex := lsu.toExec.lsqIdxBase
           } else {
