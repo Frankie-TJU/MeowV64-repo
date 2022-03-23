@@ -200,9 +200,13 @@ class PipeInstr(val regInfo: RegInfo)(implicit val coredef: CoreDef)
     */
   val rdPhys = UInt(log2Ceil(coredef.MAX_PHYSICAL_REGISTERS).W)
 
-  /** Rob index
+  /** ROB index
     */
   val robIndex = UInt(log2Ceil(coredef.INFLIGHT_INSTR_LIMIT).W)
+
+  /** LSQ index
+    */
+  val lsqIndex = UInt(log2Ceil(coredef.LSQ_DEPTH).W)
 
   /** Illegal instruction
     */
@@ -316,6 +320,7 @@ object PipeInstr {
     ret.rs3val := DontCare
     ret.rdPhys := 0.U
     ret.robIndex := 0.U
+    ret.lsqIndex := 0.U
 
     ret
   }
@@ -542,8 +547,6 @@ class CDB(implicit val coredef: CoreDef) extends Bundle {
   */
 
 class DelayedMemResult(implicit val coredef: CoreDef) extends Bundle {
-  val hasWB = Bool()
-  val data = UInt(coredef.XLEN.W)
 }
 
 trait WithCSRWriter {

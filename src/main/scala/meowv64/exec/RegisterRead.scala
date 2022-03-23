@@ -70,6 +70,7 @@ class RegisterRead(portInfo: PortInfo)(implicit
     s1Instr.instr := s0Instr.instr
     s1Instr.robIndex := s0Instr.robIndex
     s1Instr.rdPhys := s0Instr.rdPhys
+    s1Instr.lsqIndex := s0Instr.lsqIndex
 
   }.elsewhen(s1ToEgress) {
     s1Valid := false.B

@@ -145,7 +145,6 @@ class Exec(implicit val coredef: CoreDef) extends Module {
 
   // Units
   val lsu = Module(new LSU).suggestName("LSU")
-  val hasPendingMem = lsu.hasPending
 
   // collect execution units dynamically
   // Issue Queue -> Port -> Execution Unit
@@ -154,14 +153,7 @@ class Exec(implicit val coredef: CoreDef) extends Module {
   var portIdx = 0
   for ((issueQueueInfo, i) <- coredef.ISSUE_QUEUES.zipWithIndex) {
     val isLSU = issueQueueInfo.issueQueueType == IssueQueueType.mem
-    val issueQueue = if (isLSU) {
-      val lsb = Module(new LSBuf(issueQueueInfo)).suggestName(s"LSBuf")
-      lsb.hasPending := hasPendingMem
-      lsb.fs := toDC.fs
-      lsb
-    } else {
-      Module(new OoOIssueQueue(issueQueueInfo))
-    }
+    val issueQueue = Module(new OoOIssueQueue(issueQueueInfo))
     issueQueue.suggestName(s"IssueQueue_${issueQueueInfo.issueQueueType}")
     issueQueue.cdb <> cdb
     issueQueues.append(issueQueue)
@@ -361,7 +353,10 @@ class Exec(implicit val coredef: CoreDef) extends Module {
 
   // allocate lsq entry
   var lsqAllocMask = WireInit(VecInit.fill(coredef.ISSUE_NUM)(false.B))
-  lsu.toExec.lsqAllocCount := lsqAllocMask.map(_.asUInt).reduce(_ +& _)
+  lsu.toExec.lsqAllocCount := lsqAllocMask
+    .zip(canIssue)
+    .map({ case (alloc, issue) => (alloc & issue).asUInt })
+    .reduce(_ +& _)
 
   for (idx <- (0 until coredef.ISSUE_NUM)) {
     // whether this instruction can issue without considering previous instructions
