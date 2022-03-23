@@ -60,6 +60,9 @@ class DelayedMem(implicit val coredef: CoreDef) extends Bundle {
     */
   val sext = Bool()
   val dataValid = Bool()
+
+  /** Write data, or exception trap value
+    */
   val data = UInt(coredef.VLEN.W)
 
   /** This is vse.v
@@ -656,6 +659,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
       }
       is(DelayedMemOp.exception) {
         retire.bits.info.exception := current.exception
+        retire.bits.info.wb := current.data
         retire.valid := true.B
         when(retire.fire) {
           advance := true.B
