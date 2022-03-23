@@ -524,7 +524,9 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   toMem.writer.req.bits.wdata := current.data
   toMem.writer.req.bits.len := current.len
   toMem.writer.req.bits.op := current.wop
-  toMem.uncached := DontCare
+  toMem.uncached.addr := current.addr
+  toMem.uncached.wdata := current.data
+  toMem.uncached.len := current.len
   toMem.uncached.read := false.B
   toMem.uncached.write := false.B
   release.valid := false.B
@@ -578,10 +580,30 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
           reqSent := false.B
         }
       }
+      is(DelayedMemOp.uncachedLoad) {
+        retire.bits.info.wb := current.getLSB(toMem.uncached.rdata)
+        when(release.ready) {
+          toMem.uncached.read := true.B
+          when(~toMem.uncached.stall) {
+            retire.valid := true.B
+            release.valid := true.B
+            advance := true.B
+          }
+        }
+      }
       is(DelayedMemOp.store) {
         when(release.ready) {
           toMem.writer.req.valid := true.B
           when(toMem.writer.req.fire) {
+            release.valid := true.B
+            advance := true.B
+          }
+        }
+      }
+      is(DelayedMemOp.uncachedStore) {
+        when(release.ready) {
+          toMem.uncached.write := true.B
+          when(~toMem.uncached.stall) {
             release.valid := true.B
             advance := true.B
           }
