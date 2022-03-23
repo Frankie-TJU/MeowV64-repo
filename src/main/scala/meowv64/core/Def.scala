@@ -25,7 +25,10 @@ case class RegInfo(
     physRegs: Int,
     maxOperandCount: Int,
     fixedZero: Boolean
-)
+) {
+  // it may deadlock if physical register is no greater than architectural registers
+  assert(physRegs > 32)
+}
 
 case class IssueQueueInfo(
     issueQueueType: IssueQueueType.Type,
@@ -301,9 +304,9 @@ abstract class CoreDef {
   def REG_INT =
     RegInfo(RegType.integer, XLEN, 64, 2, true)
   def REG_FLOAT =
-    RegInfo(RegType.float, XLEN, 32, 3, false)
+    RegInfo(RegType.float, XLEN, 48, 3, false)
   def REG_VEC =
-    RegInfo(RegType.vector, VLEN, 32, 4, false)
+    RegInfo(RegType.vector, VLEN, 48, 4, false)
 
   /** List of register configurations
     */

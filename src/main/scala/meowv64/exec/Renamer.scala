@@ -270,25 +270,31 @@ class Renamer(implicit coredef: CoreDef) extends Module {
 
   // assign new physical register
   for ((regInfo, bank) <- coredef.REG_TYPES.zip(banks)) {
-    var clearFreeMask = WireInit(0.U(regInfo.physRegs.W))
-    var setBusyMask = WireInit(0.U(regInfo.physRegs.W))
+    val clearFreeMask = WireInit(
+      VecInit.fill(coredef.ISSUE_NUM + 1)(0.U(regInfo.physRegs.W))
+    )
+    val setBusyMask = WireInit(
+      VecInit.fill(coredef.ISSUE_NUM + 1)(0.U(regInfo.physRegs.W))
+    )
 
     for ((instr, idx) <- toExec.input.zipWithIndex) {
-      val freeMask = bank.freeList & ~clearFreeMask
-      // TODO: stall if no registers are free
-      assert(freeMask.orR)
-
+      val freeMask = bank.freeList & ~clearFreeMask(idx)
       val phys = PriorityEncoder(freeMask)
       val curMask = WireInit(0.U(regInfo.physRegs.W))
       when(
         instr.instr
           .getRdType() === regInfo.regType && instr.instr.writeRdEff()
       ) {
+        when(~freeMask.orR) {
+          // no registers are free!
+          toExec.allowBit(idx) := false.B
+        }
+
+        curMask := 1.U << phys
         when(idx.U < toExec.commit) {
           // allocate register for rd
           bank.mapping(instr.instr.getRdIndex) := phys
           toExec.output(idx).rdPhys := phys
-          curMask := 1.U << phys
 
           // save stale physical register
           toExec.output(idx).staleRdPhys := bank.mapping(instr.instr.getRdIndex)
@@ -296,12 +302,12 @@ class Renamer(implicit coredef: CoreDef) extends Module {
       }
 
       // clear bit in free list and set busy bit
-      clearFreeMask = clearFreeMask | curMask
-      setBusyMask = setBusyMask | curMask
+      clearFreeMask(idx + 1) := clearFreeMask(idx) | curMask
+      setBusyMask(idx + 1) := setBusyMask(idx) | curMask
     }
 
-    bank.clearFreeMask := clearFreeMask
-    bank.setBusyMask := setBusyMask
+    bank.clearFreeMask := clearFreeMask(toExec.commit)
+    bank.setBusyMask := setBusyMask(toExec.commit)
   }
 
   // Lastly, handles flush
