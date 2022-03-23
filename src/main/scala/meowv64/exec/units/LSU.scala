@@ -606,6 +606,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
     assert(retire.fire)
   }
 
+  val flushedRead = RegInit(false.B)
   val reqSent = RegInit(false.B)
   val advance = WireInit(false.B)
   when(advance) {
@@ -619,6 +620,13 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   retire.bits.robIndex := current.robIndex
   retire.bits.info.wb := result
 
+  // handle flush between req and resp
+  val actualRespValid = WireInit(toMem.reader.resp.valid)
+  when(flushedRead && toMem.reader.resp.valid) {
+    flushedRead := false.B
+    actualRespValid := false.B
+  }
+
   when(emptyEntries =/= DEPTH.U && current.canFire) {
     switch(current.op) {
       is(DelayedMemOp.load) {
@@ -627,7 +635,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
           reqSent := true.B
         }
 
-        when(toMem.reader.resp.valid) {
+        when(actualRespValid) {
           retire.valid := true.B
 
           advance := true.B
@@ -654,7 +662,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
         }
 
         // stage 2: commit LR
-        when(toMem.reader.resp.valid) {
+        when(actualRespValid) {
           retire.valid := true.B
           current.op := DelayedMemOp.store
 
@@ -666,7 +674,9 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
           toMem.writer.req.valid := true.B
           when(toMem.writer.req.fire) {
             // for amo instructions, write result
-            when(current.wop =/= DCWriteOp.write && current.wop =/= DCWriteOp.commitLR) {
+            when(
+              current.wop =/= DCWriteOp.write && current.wop =/= DCWriteOp.commitLR
+            ) {
               retire.valid := true.B
               retire.bits.info.wb := toMem.writer.rdata
             }
@@ -700,6 +710,12 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
     head := 0.U
     tail := 0.U
     emptyEntries := DEPTH.U
+
+    // a flush occurred between req and resp
+    // NOTE: move this logic to L1 DCache?
+    when(reqSent && ~toMem.reader.resp.valid) {
+      flushedRead := true.B
+    }
 
     reqSent := false.B
 
