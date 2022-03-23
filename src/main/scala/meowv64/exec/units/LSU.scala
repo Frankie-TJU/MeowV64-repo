@@ -423,8 +423,8 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
       lsqEntry.exception.ex(
         Mux(
           read,
-          ExType.LOAD_ACCESS_FAULT,
-          ExType.STORE_ACCESS_FAULT
+          ExType.LOAD_PAGE_FAULT,
+          ExType.STORE_PAGE_FAULT
         )
       )
     }.elsewhen(misaligned) {
