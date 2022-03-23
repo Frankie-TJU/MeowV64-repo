@@ -17,6 +17,8 @@ import meowv64.reg.RegType
 import meowv64.util.FlushableQueue
 
 import scala.collection.mutable
+import meowv64.instr.InstrExt
+import meowv64.instr.Instr
 
 /** DelayedMem = Delayed memory access, memory accesses that have side-effects
   * and thus needs to be preformed in-order.
@@ -46,6 +48,7 @@ class DelayedMem(implicit val coredef: CoreDef) extends Bundle {
   self =>
   val op = DelayedMemOp()
   val wop = DCWriteOp()
+  val instr = new Instr()
 
   val exception = new ExceptionResult()
 
@@ -320,6 +323,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
 
   val aligned = addr(coredef.PADDR_WIDTH - 1, 3) ## 0.U(3.W)
   val offset = addr(2, 0)
+  val amo = next.instr.instr.op === Decoder.Op("AMO").ident
   val uncached = isUncached(addr) && next.instr.instr.op =/= Decoder
     .Op("AMO")
     .ident // Uncached if < 0x80000000 and is not AMO
@@ -368,6 +372,12 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   when(issue.instr.fire) {
     val lsqEntry = store(next.lsqIndex)
 
+    lsqEntry.instr := next.instr.instr
+    lsqEntry.writeRdEff := next.instr.instr.writeRdEff()
+    lsqEntry.rdPhys := next.rdPhys
+    lsqEntry.rdType := next.instr.instr.getRdType()
+    lsqEntry.robIndex := next.robIndex
+
     lsqEntry.addrValid := true.B
     lsqEntry.dataValid := true.B
     when(fenceLike) {
@@ -410,14 +420,92 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
     }.elsewhen(read && !uncached) {
       lsqEntry.op := DelayedMemOp.load
       lsqEntry.addr := addr
+
+      // handle load reserved
+      when(amo) {
+        // has side effect
+        toExec.valid := true.B
+        lsqEntry.op := DelayedMemOp.store
+        lsqEntry.wop := DCWriteOp.commitLR
+      }
     }.elsewhen(read && uncached) {
       // has side effect
       toExec.valid := true.B
       lsqEntry.op := DelayedMemOp.uncachedLoad
       lsqEntry.addr := addr
+
+      switch(next.instr.instr.funct3) {
+        is(Decoder.MEM_WIDTH_FUNC("B")) {
+          lsqEntry.sext := true.B
+          lsqEntry.len := DCWriteLen.B
+        }
+        is(Decoder.MEM_WIDTH_FUNC("H")) {
+          lsqEntry.sext := true.B
+          lsqEntry.len := DCWriteLen.H
+        }
+        is(Decoder.MEM_WIDTH_FUNC("W")) {
+          lsqEntry.sext := true.B
+          lsqEntry.len := DCWriteLen.W
+        }
+        is(Decoder.MEM_WIDTH_FUNC("D")) {
+          lsqEntry.sext := false.B
+          lsqEntry.len := DCWriteLen.D
+        }
+        is(Decoder.MEM_WIDTH_FUNC("BU")) {
+          lsqEntry.sext := false.B
+          lsqEntry.len := DCWriteLen.B
+        }
+        is(Decoder.MEM_WIDTH_FUNC("HU")) {
+          lsqEntry.sext := false.B
+          lsqEntry.len := DCWriteLen.H
+        }
+        is(Decoder.MEM_WIDTH_FUNC("WU")) {
+          lsqEntry.sext := false.B
+          lsqEntry.len := DCWriteLen.W
+        }
+      }
+
     }.elsewhen(write) {
       // has side effect
-      lsqEntry.op := DelayedMemOp.store
+      toExec.valid := true.B
+      switch(next.instr.instr.funct3) {
+        is(Decoder.MEM_WIDTH_FUNC("B")) { lsqEntry.len := DCWriteLen.B }
+        is(Decoder.MEM_WIDTH_FUNC("H")) { lsqEntry.len := DCWriteLen.H }
+        is(Decoder.MEM_WIDTH_FUNC("W")) { lsqEntry.len := DCWriteLen.W }
+        is(Decoder.MEM_WIDTH_FUNC("D")) { lsqEntry.len := DCWriteLen.D }
+      }
+      lsqEntry.addr := addr
+      lsqEntry.sext := false.B
+
+      when(uncached) {
+        lsqEntry.op := DelayedMemOp.uncachedStore
+      }.otherwise {
+        lsqEntry.op := DelayedMemOp.store
+      }
+
+      when(amo) {
+        lsqEntry.wop := MuxLookup(
+          next.instr.instr.funct7(6, 2),
+          DCWriteOp.write,
+          Seq(
+            Decoder.AMO_FUNC("SC") -> DCWriteOp.cond,
+            Decoder.AMO_FUNC("AMOSWAP") -> DCWriteOp.swap,
+            Decoder.AMO_FUNC("AMOADD") -> DCWriteOp.add,
+            Decoder.AMO_FUNC("AMOXOR") -> DCWriteOp.xor,
+            Decoder.AMO_FUNC("AMOAND") -> DCWriteOp.and,
+            Decoder.AMO_FUNC("AMOOR") -> DCWriteOp.or,
+            Decoder.AMO_FUNC("AMOMIN") -> DCWriteOp.min,
+            Decoder.AMO_FUNC("AMOMAX") -> DCWriteOp.max,
+            Decoder.AMO_FUNC("AMOMINU") -> DCWriteOp.minu,
+            Decoder.AMO_FUNC("AMOMAXU") -> DCWriteOp.maxu
+          )
+        )
+      }.otherwise {
+        lsqEntry.wop := DCWriteOp.write
+      }
+
+      lsqEntry.data := next.rs2val
+
     }.otherwise {
       lsqEntry.op := DelayedMemOp.exception
       lsqEntry.exception.ex(
@@ -429,17 +517,41 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   // Part 2: issue operations from lsq head
   val current = store(head)
   toMem.reader.req.valid := false.B
-  toMem.reader.req.bits := DontCare
+  toMem.reader.req.bits.addr := current.addr(coredef.PADDR_WIDTH - 1, 3) ## 0.U(3.W)
+  toMem.reader.req.bits.reserve := false.B // TODO
   toMem.writer.req.valid := false.B
-  toMem.writer.req.bits := DontCare
+  toMem.writer.req.bits.addr := current.addr
+  toMem.writer.req.bits.wdata := current.data
+  toMem.writer.req.bits.len := current.len
+  toMem.writer.req.bits.op := current.wop
   toMem.uncached := DontCare
   toMem.uncached.read := false.B
   toMem.uncached.write := false.B
   release.valid := false.B
 
+  // compute write back value from reader
+  val shifted =
+    toMem.reader.resp.bits >> (current.addr(2, 0) << 3) // TODO: use lookup table?
+  val signedResult = Wire(SInt(coredef.XLEN.W)).suggestName("signedResult")
+  val result = Wire(UInt(coredef.VLEN.W)).suggestName("result")
+  shifted.suggestName("shifted")
+  result := signedResult.asUInt
+  signedResult := DontCare
+
+  switch(current.instr.funct3) {
+    is(Decoder.MEM_WIDTH_FUNC("B")) { signedResult := shifted(7, 0).asSInt }
+    is(Decoder.MEM_WIDTH_FUNC("H")) { signedResult := shifted(15, 0).asSInt }
+    is(Decoder.MEM_WIDTH_FUNC("W")) { signedResult := shifted(31, 0).asSInt }
+    is(Decoder.MEM_WIDTH_FUNC("D")) { result := shifted }
+    is(Decoder.MEM_WIDTH_FUNC("BU")) { result := shifted(7, 0) }
+    is(Decoder.MEM_WIDTH_FUNC("HU")) { result := shifted(15, 0) }
+    is(Decoder.MEM_WIDTH_FUNC("WU")) { result := shifted(31, 0) }
+  }
+
   retire.valid := false.B
   retire.bits := Retirement.empty(regInfo)
 
+  val reqSent = RegInit(false.B)
   val advance = WireInit(false.B)
   when(advance) {
     head := head +% 1.U
@@ -449,19 +561,30 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   retire.bits.rdPhys := current.rdPhys
   retire.bits.rdType := current.rdType
   retire.bits.robIndex := current.robIndex
+  retire.bits.info.wb := result
 
   when(head =/= tail && current.canFire) {
     switch(current.op) {
       is(DelayedMemOp.load) {
-        toMem.reader.req.valid := true.B
+        toMem.reader.req.valid := ~reqSent
         when(toMem.reader.req.fire) {
-          // TODO: wait for resp
+          reqSent := true.B
+        }
+
+        when(toMem.reader.resp.valid) {
+          retire.valid := true.B
+
           advance := true.B
+          reqSent := false.B
         }
       }
       is(DelayedMemOp.store) {
         when(release.ready) {
-          release.valid := true.B
+          toMem.writer.req.valid := true.B
+          when(toMem.writer.req.fire) {
+            release.valid := true.B
+            advance := true.B
+          }
         }
       }
       is(DelayedMemOp.exception) {
@@ -475,6 +598,12 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   }
 
   when(flush) {
+    head := 0.U
+    tail := 0.U
+    emptyEntries := DEPTH.U
+
+    reqSent := false.B
+
     readState := LSUReadState.idle
     vectorReadReqIndex := 0.U
     vectorReadRespIndex := 0.U
