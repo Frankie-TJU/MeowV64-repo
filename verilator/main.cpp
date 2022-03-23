@@ -256,7 +256,10 @@ void step() {
       } else if (pending_write_addr == fromhost_addr) {
         // write to fromhost
         // clear tohost
-        memory[tohost_addr] = 0;
+        for (int i = 0; i < AXI_DATA_BYTES / sizeof(mem_t); i++) {
+          uint64_t addr = tohost_addr + i * sizeof(mem_t);
+          memory[addr] = 0;
+        }
       }
 
       pending_write_addr += 1L << pending_write_size;
