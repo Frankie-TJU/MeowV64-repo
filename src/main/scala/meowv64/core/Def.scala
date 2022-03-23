@@ -292,12 +292,12 @@ abstract class CoreDef {
         PortInfo(
           RegType.vector,
           Seq(
-            new ExecutionUnitVectorALU(),
+            new ExecutionUnitVectorALU()
           ),
           3
         )(this)
       )
-    ),
+    )
   )
 
   /** Ports
@@ -315,9 +315,11 @@ abstract class CoreDef {
     ), // port 2 int2float & 3 lsu
     // float
     RegWritePortInfo(RegType.float, Seq(2))(this), // port 2
-    RegWritePortInfo(RegType.float, Seq(3, 1))(this), // port 1 float2int & 3 lsu
+    RegWritePortInfo(RegType.float, Seq(3, 1))(
+      this
+    ), // port 1 float2int & 3 lsu
     // vector
-    RegWritePortInfo(RegType.vector, Seq(4))(this), // port 4
+    RegWritePortInfo(RegType.vector, Seq(4))(this) // port 4
   )
 
   /** L1 line width in bytes
@@ -345,7 +347,11 @@ abstract class CoreDef {
     )
 
   def REG_MAPPING: Map[RegType.Type, RegInfo] =
-    Map((RegType.integer, REG_INT), (RegType.float, REG_FLOAT), (RegType.vector, REG_VEC))
+    Map(
+      (RegType.integer, REG_INT),
+      (RegType.float, REG_FLOAT),
+      (RegType.vector, REG_VEC)
+    )
 
   /** Maximum physical register count across different types
     */

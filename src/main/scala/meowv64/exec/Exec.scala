@@ -628,8 +628,12 @@ class Exec(implicit val coredef: CoreDef) extends Module {
       rob(retirePtr).valid := false.B
       rob(retirePtr).hasMem := false.B
       retirePtr := retirePtr +% 1.U
+
+      // if hasMem=true, it should never signals exception
+      // because in lsu, we check for exceptions early
       when(pendingBr && pendingBrTag === retirePtr) {
-        toCtrl.branch := pendingBrResult
+        assert(false.B)
+        // toCtrl.branch := pendingBrResult
       }
     }.otherwise {
       retireNum := 0.U

@@ -4,9 +4,9 @@ Naming:
 
 - register -> reg
 - physical -> phys
-- float -> fp
 - memory -> mem
 - integer -> int
 - vector -> vec
 - instruction -> instr
+- index -> idx
 - number of xxx -> xxx_count
