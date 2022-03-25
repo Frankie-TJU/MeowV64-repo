@@ -123,7 +123,8 @@ class UnitSel(
 
   // Arbitration
   for (u <- units) {
-    u.io.next := PipeInstr.empty(regInfo)
+    u.io.next := issue.instr.bits
+    u.io.next.instr.valid := false.B
   }
 
   val execMap = Wire(Vec(units.length, Bool()))
@@ -157,7 +158,7 @@ class UnitSel(
       pipeInput := false.B
       for ((u, e) <- units.zip(pipeExecMap)) {
         when(e) {
-          u.io.next := pipeInstr
+          u.io.next := true.B
           pipeInput := !u.io.stall
         }
       }
@@ -177,7 +178,7 @@ class UnitSel(
       issue.instr.ready := !Mux1H(execMap.zip(units.map(_.io.stall)))
       for ((u, e) <- units.zip(execMap)) {
         when(e) {
-          u.io.next := issue.instr.bits
+          u.io.next.valid := true.B
         }
       }
     }
