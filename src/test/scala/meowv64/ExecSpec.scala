@@ -304,6 +304,7 @@ object ExecTest {
 
 object ExecSpec {
   val cases = List(
+    ("Serial Loop 8", "./testcases/meow/bin/serial-loop-8.bin"),
     ("OP-IMM instructions", "./testcases/meow/bin/op-imm.bin"),
     ("Load/Store", "./testcases/meow/bin/load-store.bin"),
     ("Uncached Load/Store", "./testcases/meow/bin/load-store-uncached.bin"),
