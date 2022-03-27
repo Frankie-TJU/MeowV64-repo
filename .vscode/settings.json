@@ -135,6 +135,7 @@
 		"VLEN",
 		"vlenb",
 		"VLUXEI",
+		"vmval",
 		"vsetivli",
 		"vsetvl",
 		"VSETVLI",

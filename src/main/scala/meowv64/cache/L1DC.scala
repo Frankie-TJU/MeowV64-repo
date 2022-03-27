@@ -76,7 +76,7 @@ class CoreDCWriteReq(val opts: L1DOpts) extends Bundle {
   val addr = UInt(opts.ADDR_WIDTH.W)
   val len = DCWriteLen()
   // TODO
-  val strb = UInt((opts.TO_CORE_TRANSFER_WIDTH/8).W)
+  val strb = UInt((opts.TO_CORE_TRANSFER_WIDTH / 8).W)
   val op = DCWriteOp()
   // WData should be sign extended
   val wdata = UInt(opts.TO_CORE_TRANSFER_WIDTH.W)

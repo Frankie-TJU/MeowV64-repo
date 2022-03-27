@@ -2,16 +2,16 @@ package meowv64.exec.units
 
 import chisel3._
 import chisel3.util._
-import meowv64.core.CoreDef
-import meowv64.exec._
-import hardfloat.MulAddRecFN_interIo
-import meowv64.core.FloatS
-import hardfloat.MulAddRecFNToRaw_preMul
 import hardfloat.MulAddRecFNToRaw_postMul
+import hardfloat.MulAddRecFNToRaw_preMul
+import hardfloat.MulAddRecFN_interIo
 import hardfloat.RoundRawFNToRecFN
-import meowv64.core.VState
-import meowv64.core.FloatH
+import meowv64.core.CoreDef
 import meowv64.core.FloatD
+import meowv64.core.FloatH
+import meowv64.core.FloatS
+import meowv64.core.VState
+import meowv64.exec._
 
 class VectorFMAExt(implicit val coredef: CoreDef) extends Bundle {
   // intermediate
@@ -52,7 +52,7 @@ class VectorFMA(override implicit val coredef: CoreDef)
       Seq(
         1.U -> FloatH.fmt,
         2.U -> FloatS.fmt,
-        3.U -> FloatD.fmt,
+        3.U -> FloatD.fmt
       )
     )
 

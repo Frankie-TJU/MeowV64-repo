@@ -45,7 +45,7 @@ class RegisterRead(portInfo: PortInfo)(implicit
   val s1Valid = RegInit(false.B)
 
   val phys = WireInit(
-    VecInit(s0Instr.rs1Phys, s0Instr.rs2Phys, s0Instr.rs3Phys)
+    VecInit(s0Instr.rs1Phys, s0Instr.rs2Phys, s0Instr.rs3Phys, s0Instr.vmPhys)
   )
   for (i <- 0 until portInfo.readPorts) {
     io.toRegFile.reader(i).addr := phys(i)
@@ -80,10 +80,16 @@ class RegisterRead(portInfo: PortInfo)(implicit
   when(RegNext(ingressToS1)) {
     s1Instr.rs1val := op(0)
     s1Instr.rs2val := op(1)
-    if (portInfo.readPorts > 2) {
+    if (portInfo.readPorts >= 3) {
       s1Instr.rs3val := op(2)
     } else {
       s1Instr.rs3val := 0.U
+    }
+
+    if (portInfo.readPorts >= 4) {
+      s1Instr.vmval := op(3)
+    } else {
+      s1Instr.vmval := 0.U
     }
   }
 
@@ -92,10 +98,16 @@ class RegisterRead(portInfo: PortInfo)(implicit
   when(RegNext(ingressToS1)) {
     io.toUnits.instr.bits.rs1val := op(0)
     io.toUnits.instr.bits.rs2val := op(1)
-    if (portInfo.readPorts > 2) {
+    if (portInfo.readPorts >= 3) {
       io.toUnits.instr.bits.rs3val := op(2)
     } else {
       io.toUnits.instr.bits.rs3val := 0.U
+    }
+
+    if (portInfo.readPorts >= 4) {
+      io.toUnits.instr.bits.vmval := op(3)
+    } else {
+      io.toUnits.instr.bits.vmval := 0.U
     }
   }
 

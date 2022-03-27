@@ -5,6 +5,7 @@ import chisel3.util._
 import meowv64.core.CoreDef
 import meowv64.instr.InstrExt
 import meowv64.instr.RegIndex
+import meowv64.reg.RegType
 
 /** Release stale physical register into free list and update committed mapping
   */
@@ -129,6 +130,7 @@ class Renamer(implicit coredef: CoreDef) extends Module {
           toExec.input(idx).instr.rs3
         )
       )
+      val vm = RegIndex.create(RegType.vector, 0.U)
 
       // check if this instruction relies on previous instructions
       for (i <- (0 until idx)) {
@@ -151,6 +153,13 @@ class Renamer(implicit coredef: CoreDef) extends Module {
           when(
             rs3.ty === rd.ty && rs3.index === rd.index &&
               toExec.input(idx).instr.info.readRs3
+          ) {
+            ret := false.B
+          }
+
+          when(
+            vm.ty === rd.ty && vm.index === rd.index &&
+              toExec.input(idx).instr.readVm
           ) {
             ret := false.B
           }
@@ -215,6 +224,8 @@ class Renamer(implicit coredef: CoreDef) extends Module {
     toExec.output(idx).rs2Ready := true.B
     toExec.output(idx).rs3Phys := 0.U
     toExec.output(idx).rs3Ready := true.B
+    toExec.output(idx).vmPhys := 0.U
+    toExec.output(idx).vmReady := true.B
     toExec.output(idx).staleRdPhys := 0.U
     toExec.output(idx).rdPhys := 0.U
     toExec.output(idx).robIndex := toExec.nextRobIndex +% idx.U
@@ -266,6 +277,16 @@ class Renamer(implicit coredef: CoreDef) extends Module {
           toExec.output(idx).rs3Ready := rs3Ready
         }
       }
+
+      // fourth operand: vm
+      when(
+        RegType.vector === regInfo.regType && instr.instr.readVm
+      ) {
+        val (vmPhys, vmReady) =
+          readRegs(0.U, bankIdx)
+        toExec.output(idx).vmPhys := vmPhys
+        toExec.output(idx).vmReady := vmReady
+      }
     }
 
     toExec.output(idx).instr := instr
@@ -275,6 +296,7 @@ class Renamer(implicit coredef: CoreDef) extends Module {
       toExec.output(idx).rs1Ready := true.B
       toExec.output(idx).rs2Ready := true.B
       toExec.output(idx).rs3Ready := true.B
+      toExec.output(idx).vmReady := true.B
     }
   }
 

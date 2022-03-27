@@ -13,6 +13,7 @@ import meowv64.core.PrivLevel
 import meowv64.core.Satp
 import meowv64.core.StageCtrl
 import meowv64.core.Status
+import meowv64.core.VState
 import meowv64.exec.units._
 import meowv64.instr._
 import meowv64.paging.TLBExt
@@ -20,7 +21,6 @@ import meowv64.reg._
 import meowv64.util._
 
 import scala.collection.mutable.ArrayBuffer
-import meowv64.core.VState
 
 /** Out-of-order execution (Tomasulo's algorithm)
   *
@@ -436,6 +436,7 @@ class Exec(implicit val coredef: CoreDef) extends Module {
         instr.rs1Ready := true.B
         instr.rs2Ready := true.B
         instr.rs3Ready := true.B
+        instr.vmReady := true.B
       }.elsewhen(wasGFence && issuePtr =/= retirePtr) {
         // GFence in-flight
         sending := DontCare

@@ -7,6 +7,7 @@ import meowv64.cache.DCFenceStatus
 import meowv64.core.CoreDef
 import meowv64.core.IssueQueueInfo
 import meowv64.instr.Decoder
+import meowv64.reg.RegType
 
 /** Issue Queue -> Register Read
   */
@@ -84,7 +85,9 @@ class OoOIssueQueue(info: IssueQueueInfo)(implicit
           .getRs1Type() && ent.valid
       ) {
         nextStore(idx).rs1Ready := true.B
-        egMask(idx) := occupied(idx) && instr.rs2Ready && instr.rs3Ready
+        egMask(idx) := occupied(
+          idx
+        ) && instr.rs2Ready && instr.rs3Ready && instr.vmReady
       }
 
       when(
@@ -92,7 +95,9 @@ class OoOIssueQueue(info: IssueQueueInfo)(implicit
           .getRs2Type() && ent.valid
       ) {
         nextStore(idx).rs2Ready := true.B
-        egMask(idx) := occupied(idx) && instr.rs1Ready && instr.rs3Ready
+        egMask(idx) := occupied(
+          idx
+        ) && instr.rs1Ready && instr.rs3Ready && instr.vmReady
       }
 
       when(
@@ -100,7 +105,18 @@ class OoOIssueQueue(info: IssueQueueInfo)(implicit
           .getRs3Type() && ent.valid
       ) {
         nextStore(idx).rs3Ready := true.B
-        egMask(idx) := occupied(idx) && instr.rs1Ready && instr.rs2Ready
+        egMask(idx) := occupied(
+          idx
+        ) && instr.rs1Ready && instr.rs2Ready && instr.vmReady
+      }
+
+      when(
+        ent.phys === instr.vmPhys && ent.regType === RegType.vector && ent.valid
+      ) {
+        nextStore(idx).vmReady := true.B
+        egMask(idx) := occupied(
+          idx
+        ) && instr.rs1Ready && instr.rs2Ready && instr.rs3Ready
       }
     }
   }
@@ -331,6 +347,13 @@ class LSBuf(info: IssueQueueInfo)(implicit val coredef: CoreDef)
           .getRs3Type() && ent.valid
       ) {
         instr.rs3Ready := true.B
+      }
+
+      when(
+        ent.phys === instr.vmPhys && ent.regType === RegType.vector
+          && ent.valid
+      ) {
+        instr.vmReady := true.B
       }
     }
   }

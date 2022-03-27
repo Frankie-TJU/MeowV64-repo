@@ -746,4 +746,6 @@ class Instr extends Bundle {
   def getRs3Type() = WireInit(this.info.rs3Type)
 
   def getRs3() = RegIndex.create(getRs3Type(), rs3)
+
+  def readVm() = this.info.checkVm && ~this.funct7(0)
 }

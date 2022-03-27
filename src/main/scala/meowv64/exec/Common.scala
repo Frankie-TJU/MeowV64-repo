@@ -12,13 +12,13 @@ import meowv64.core.PortInfo
 import meowv64.core.PrivLevel
 import meowv64.core.RegInfo
 import meowv64.core.Status
+import meowv64.core.VState
 import meowv64.instr.BPUResult
 import meowv64.instr.BranchPrediction
 import meowv64.instr.Decoder.InstrType
 import meowv64.instr.InstrExt
 import meowv64.instr.RegIndex
 import meowv64.reg.RegType
-import meowv64.core.VState
 
 /** Exception result
   *
@@ -186,6 +186,7 @@ object RetireInfo {
   *   - rs1val: value of the rs1 operand
   *   - rs2val: value of the rs2 operand
   *   - rs3val: value of the rs3 operand
+  *   - vmval: value of the vm operand
   *
   * @param coredef
   */
@@ -196,6 +197,7 @@ class PipeInstr(val regInfo: RegInfo)(implicit val coredef: CoreDef)
   val rs1val = UInt(regInfo.width.W)
   val rs2val = UInt(regInfo.width.W)
   val rs3val = UInt(regInfo.width.W)
+  val vmval = UInt(regInfo.width.W)
 
   /** Physical register of rd
     */
@@ -221,9 +223,11 @@ class PipeInstr(val regInfo: RegInfo)(implicit val coredef: CoreDef)
   *   - rs1Phys: physical register of the rs1 operand
   *   - rs2Phys: physical register of the rs2 operand
   *   - rs3Phys: physical register of the rs3 operand
+  *   - vmPhys: physical register of the vm operand
   *   - rs1Ready: is rs1 ready?
   *   - rs2Ready: is rs2 ready?
   *   - rs3Ready: is rs3 ready?
+  *   - vmReady: is vm ready?
   *   - rdPhys: physical register of rd
   *   - robIndex: index of this instruction in rob
   *   - lsqIndex: index of this instruction in load store queue
@@ -238,9 +242,11 @@ class IssueQueueInstr()(implicit
   val rs1Phys = UInt(log2Ceil(coredef.MAX_PHYSICAL_REGISTERS).W)
   val rs2Phys = UInt(log2Ceil(coredef.MAX_PHYSICAL_REGISTERS).W)
   val rs3Phys = UInt(log2Ceil(coredef.MAX_PHYSICAL_REGISTERS).W)
+  val vmPhys = UInt(log2Ceil(coredef.MAX_PHYSICAL_REGISTERS).W)
   val rs1Ready = Bool()
   val rs2Ready = Bool()
   val rs3Ready = Bool()
+  val vmReady = Bool()
 
   /** Physical register of rd
     */
@@ -262,7 +268,7 @@ class IssueQueueInstr()(implicit
     */
   def illegal = instr.illegal
 
-  def ready = (illegal || (rs1Ready && rs2Ready && rs3Ready))
+  def ready = (illegal || (rs1Ready && rs2Ready && rs3Ready && vmReady))
 }
 
 /** Instruction pushed by issuer, and reused by rob
@@ -319,6 +325,7 @@ object PipeInstr {
     ret.rs1val := DontCare
     ret.rs2val := DontCare
     ret.rs3val := DontCare
+    ret.vmval := DontCare
     ret.rdPhys := 0.U
     ret.robIndex := 0.U
     ret.lsqIndex := 0.U

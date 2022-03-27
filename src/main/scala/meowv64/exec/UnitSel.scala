@@ -11,11 +11,11 @@ import meowv64.core.PortInfo
 import meowv64.core.PrivLevel
 import meowv64.core.RegInfo
 import meowv64.core.Status
+import meowv64.core.VState
 import meowv64.instr.Instr
 import meowv64.reg.RegType
 
 import scala.collection.mutable
-import meowv64.core.VState
 
 trait UnitSelIO {
   val flush: Bool
@@ -326,7 +326,9 @@ class Retirement(val regInfo: RegInfo)(implicit
 class RetirementIO(val portInfo: PortInfo)(implicit
     val coredef: CoreDef
 ) extends Bundle {
-  val bits = Output(new Retirement(coredef.REG_MAPPING(portInfo.widestWriteRegType)))
+  val bits = Output(
+    new Retirement(coredef.REG_MAPPING(portInfo.widestWriteRegType))
+  )
 
   val valid = Output(Bool())
   val ready = Input(Vec(portInfo.writeRegTypes.length, Bool()))

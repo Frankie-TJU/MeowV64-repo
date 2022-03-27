@@ -11,6 +11,7 @@ import meowv64.core.PrivLevel
 import meowv64.core.Satp
 import meowv64.core.SatpMode
 import meowv64.core.Status
+import meowv64.core.VState
 import meowv64.exec._
 import meowv64.instr.Decoder
 import meowv64.instr.Instr
@@ -18,7 +19,6 @@ import meowv64.paging._
 import meowv64.reg.RegType
 
 import scala.collection.mutable
-import meowv64.core.VState
 
 /** DelayedMem = Delayed memory access, memory accesses that have side-effects
   * and thus needs to be preformed in-order.
@@ -669,6 +669,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
         }
       }
       is(DelayedMemOp.vectorLoad) {
+        // TODO: handle vle32.v @ 0x4 alignment
         toMem.reader.req.bits.addr := current.addr +
           (vectorReadReqIndex << log2Ceil(coredef.XLEN / 8))
         toMem.reader.req.valid := vectorReadReqIndex =/= vectorBeats
