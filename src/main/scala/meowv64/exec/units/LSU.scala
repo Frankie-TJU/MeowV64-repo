@@ -29,8 +29,9 @@ import scala.collection.mutable
   *   - us: uncached store
   */
 object DelayedMemOp extends ChiselEnum {
-  val load, uncachedLoad, vectorLoad, store, uncachedStore, loadReserved,
-      exception = Value
+  val load, uncachedLoad, vectorLoad, loadReserved = Value
+  val store, uncachedStore, vectorStore = Value
+  val exception = Value
 }
 
 /** A (maybe-empty) sequential memory access
@@ -315,13 +316,19 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
 
   // Part 1: compute physical address, check exceptions and save into lsq
   assert(coredef.PADDR_WIDTH > coredef.VADDR_WIDTH)
+  // vle.v
   val vectorLoad =
     next.instr.instr.op === Decoder
       .Op("LOAD-FP")
       .ident && next.instr.instr.funct3.isOneOf(Seq(5.U, 6.U, 7.U))
+  // vse.v
+  val vectorStore =
+    next.instr.instr.op === Decoder
+      .Op("STORE-FP")
+      .ident && next.instr.instr.funct3.isOneOf(Seq(5.U, 6.U, 7.U))
 
   val rawAddr = Wire(UInt(coredef.XLEN.W))
-  when(vectorLoad) {
+  when(vectorLoad || vectorStore) {
     // no imm
     rawAddr := next.rs1val
   }.otherwise {
@@ -513,6 +520,8 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
 
       when(uncached) {
         lsqEntry.op := DelayedMemOp.uncachedStore
+      }.elsewhen(vectorStore) {
+        lsqEntry.op := DelayedMemOp.vectorStore
       }.otherwise {
         lsqEntry.op := DelayedMemOp.store
       }
