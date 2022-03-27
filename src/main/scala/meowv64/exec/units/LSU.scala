@@ -165,6 +165,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   val vectorReadRespData = RegInit(
     VecInit.fill(vectorReadGroupNum)(0.U(coredef.XLEN.W))
   )
+  val vectorReadRespDataComb = WireInit(vectorReadRespData)
   val inflightVectorReadInstr = Reg(new PipeInstr(regInfo))
 
   def isUncached(addr: UInt) = addr < BigInt("80000000", 16).U
@@ -664,7 +665,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
           coredef.XLEN / 8
         ))
         toMem.reader.req.valid := vectorReadReqIndex =/= vectorReadGroupNum.U
-        retire.bits.info.wb := Cat(vectorReadRespData.reverse)
+        retire.bits.info.wb := Cat(vectorReadRespDataComb.reverse)
         when(toMem.reader.req.fire) {
           vectorReadReqIndex := vectorReadReqIndex + 1.U
         }
@@ -672,6 +673,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
         when(actualRespValid) {
           vectorReadRespIndex := vectorReadRespIndex + 1.U
           vectorReadRespData(vectorReadRespIndex) := toMem.reader.resp.bits
+          vectorReadRespDataComb(vectorReadRespIndex) := toMem.reader.resp.bits
 
           when(vectorReadReqIndex === vectorReadGroupNum.U) {
             retire.valid := true.B
