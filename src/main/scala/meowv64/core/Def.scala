@@ -145,7 +145,7 @@ class ExecutionUnitLSU
       ExecUnitType.lsu,
       2,
       RegType.integer,
-      Seq(RegType.integer, RegType.float)
+      Seq(RegType.integer, RegType.float, RegType.vector)
     )
 
 class ExecutionUnitVectorALU
@@ -154,6 +154,14 @@ class ExecutionUnitVectorALU
       2,
       RegType.vector,
       Seq(RegType.vector)
+    )
+
+class ExecutionUnitVector2Int
+    extends ExecutionUnitInfo(
+      ExecUnitType.vectorToInt,
+      1,
+      RegType.vector,
+      Seq(RegType.integer)
     )
 
 /** Each port can read from one register file, potentially write to one or more
@@ -292,7 +300,8 @@ abstract class CoreDef {
         PortInfo(
           RegType.vector,
           Seq(
-            new ExecutionUnitVectorALU()
+            new ExecutionUnitVectorALU(),
+            new ExecutionUnitVector2Int(),
           ),
           3
         )(this)
@@ -308,18 +317,19 @@ abstract class CoreDef {
     */
   val REG_WRITE_PORTS: Seq[RegWritePortInfo] = Seq(
     // integer
-    RegWritePortInfo(RegType.integer, Seq(0))(this), // port 0
-    RegWritePortInfo(RegType.integer, Seq(1))(this), // port 1
-    RegWritePortInfo(RegType.integer, Seq(3, 2))(
+    RegWritePortInfo(RegType.integer, Seq(0))(this), // port 0 alu
+    RegWritePortInfo(RegType.integer, Seq(1))(this), // port 1 alu
+    RegWritePortInfo(RegType.integer, Seq(3, 2, 4))(
       this
-    ), // port 2 int2float & 3 lsu
+    ), // port 2 float2int & 3 lsu & 4 vector
     // float
-    RegWritePortInfo(RegType.float, Seq(2))(this), // port 2
+    RegWritePortInfo(RegType.float, Seq(2))(this), // port 2 float
     RegWritePortInfo(RegType.float, Seq(3, 1))(
       this
-    ), // port 1 float2int & 3 lsu
+    ), // port 1 int2float & 3 lsu
     // vector
-    RegWritePortInfo(RegType.vector, Seq(4))(this) // port 4
+    RegWritePortInfo(RegType.vector, Seq(3))(this), // port 3 lsu
+    RegWritePortInfo(RegType.vector, Seq(4))(this) // port 4 vector
   )
 
   /** L1 line width in bytes
