@@ -312,7 +312,7 @@ object DecodeInfo {
       VFMV_V_F -> List(Y, N, Y, vector, Y, float, N, XX, N, XX, N, floatToVector, IQT.vec),
 
       // Vector Float
-      VFADD_VV -> List(Y, N, Y, vector, Y, vector, Y, vector, N, XX, Y, vectorFma, IQT.vec)
+      VFADD_VV -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFma, IQT.vec)
     )
 
   for (execUnitType <- ExecUnitType.all) {

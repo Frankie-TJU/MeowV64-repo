@@ -320,12 +320,12 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   val vectorLoad =
     next.instr.instr.op === Decoder
       .Op("LOAD-FP")
-      .ident && next.instr.instr.funct3.isOneOf(Seq(5.U, 6.U, 7.U))
+      .ident && next.instr.instr.funct3.isOneOf(Seq(0.U, 5.U, 6.U, 7.U))
   // vse.v
   val vectorStore =
     next.instr.instr.op === Decoder
       .Op("STORE-FP")
-      .ident && next.instr.instr.funct3.isOneOf(Seq(5.U, 6.U, 7.U))
+      .ident && next.instr.instr.funct3.isOneOf(Seq(0.U, 5.U, 6.U, 7.U))
 
   val rawAddr = Wire(UInt(coredef.XLEN.W))
   when(vectorLoad || vectorStore) {

@@ -159,7 +159,7 @@ class ExecutionUnitVectorALU
 class ExecutionUnitVectorFMA
     extends ExecutionUnitInfo(
       ExecUnitType.vectorFma,
-      3,
+      4, // vs1 vs2 vd vm
       RegType.vector,
       Seq(RegType.vector)
     )
@@ -297,7 +297,7 @@ abstract class CoreDef {
             new ExecutionUnitFloat2Int(),
             new ExecutionUnitFloat2Mem()
           ),
-          3
+          3 // rs1 rs2 rs3
         )(this)
       )
     ),
@@ -324,7 +324,7 @@ abstract class CoreDef {
             new ExecutionUnitVectorToMem(),
             new ExecutionUnitVector2Int()
           ),
-          3
+          4 // vs1 vs2 vs3/vd vm
         )(this)
       )
     )
