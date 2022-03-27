@@ -310,7 +310,8 @@ class Retirement(val regInfo: RegInfo)(implicit
 class RetirementIO(val portInfo: PortInfo)(implicit
     val coredef: CoreDef
 ) extends Bundle {
-  val bits = Output(new Retirement(portInfo.regInfo))
+  val bits = Output(new Retirement(coredef.REG_MAPPING(portInfo.widestWriteRegType)))
+
   val valid = Output(Bool())
   val ready = Input(Vec(portInfo.writeRegTypes.length, Bool()))
   def fire = {

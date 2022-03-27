@@ -197,6 +197,9 @@ case class PortInfo(
 
   // writeRegTypes should be the union of writeRegTypes of units
   def writeRegTypes = units.flatMap(_.writeRegTypes).toSet.toSeq
+
+  // find the reg type with largest width
+  def widestWriteRegType = writeRegTypes.maxBy(coredef.REG_MAPPING(_).width)
 }
 
 /** Write ports to register file.
