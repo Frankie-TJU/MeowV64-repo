@@ -10,6 +10,8 @@ import hardfloat.MulAddRecFNToRaw_preMul
 import hardfloat.MulAddRecFNToRaw_postMul
 import hardfloat.RoundRawFNToRecFN
 import meowv64.core.VState
+import meowv64.core.FloatH
+import meowv64.core.FloatD
 
 class VectorFMAExt(implicit val coredef: CoreDef) extends Bundle {
   // intermediate
@@ -43,7 +45,16 @@ class VectorFMA(override implicit val coredef: CoreDef)
   ): (VectorFMAExt, Bool) = {
     val state = Wire(new VectorFMAExt)
     state := DontCare
-    val curFloat = FloatS
+
+    val curFloat = MuxLookup(
+      vState.vtype.vsew,
+      0.U,
+      Seq(
+        1.U -> FloatH.fmt,
+        2.U -> FloatS.fmt,
+        3.U -> FloatD.fmt,
+      )
+    )
 
     // loop over floating point types
     for ((float, idx) <- coredef.FLOAT_TYPES.zipWithIndex) {
@@ -66,7 +77,7 @@ class VectorFMA(override implicit val coredef: CoreDef)
       res := DontCare
       fflags := DontCare
 
-      when(curFloat.fmt === float.fmt) {
+      when(curFloat === float.fmt) {
         for (lane <- 0 until lanes) {
           if (stage == 0) {
             // step 1: collect op and operands

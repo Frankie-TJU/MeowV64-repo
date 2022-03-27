@@ -100,5 +100,5 @@ object FloatH extends FloatType {
   def exp() = 5
   def sig() = 11
   def kind() = FpKind.H
-  def fmt() = ??? // not defined
+  def fmt() = 2.U
 }
