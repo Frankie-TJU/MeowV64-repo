@@ -9,11 +9,12 @@ import meowv64.reg.RegType
 
 // scalafmt: { align.preset = most, maxColumn = 160 }
 object ExecUnitType extends ChiselEnum {
-  val alu, branch, bypass, csr, intToFloat                                          = Value
-  val div, mul                                                                      = Value
-  val fma, floatMisc, floatToInt, floatDivSqrt                                      = Value
-  val vectorAlu, vectorToInt, vectorToFloat, intToVector, floatToVector, vectorMisc = Value
-  val lsu                                                                           = Value
+  val alu, branch, bypass, csr, intToFloat                               = Value
+  val div, mul                                                           = Value
+  val fma, floatMisc, floatToInt, floatDivSqrt                           = Value
+  val vectorAlu, vectorFma                                               = Value
+  val vectorToInt, vectorToFloat, intToVector, floatToVector, vectorMisc = Value
+  val lsu                                                                = Value
 
   implicit def bitpat(op: ExecUnitType.Type): BitPat =
     BitPat(op.litValue.U(getWidth.W))
@@ -300,7 +301,10 @@ object DecodeInfo {
       VMV_V_V  -> List(Y, N, Y, vector, Y, vector, N, XX, N, XX, vectorMisc, IQT.vec),
       VMV_V_I  -> List(Y, N, Y, vector, N, XX, N, XX, N, XX, vectorMisc, IQT.vec),
       VMV_V_X  -> List(Y, N, Y, vector, Y, integer, N, XX, N, XX, intToVector, IQT.vec),
-      VFMV_V_F -> List(Y, N, Y, vector, Y, float, N, XX, N, XX, floatToVector, IQT.vec)
+      VFMV_V_F -> List(Y, N, Y, vector, Y, float, N, XX, N, XX, floatToVector, IQT.vec),
+
+      // Vector Float
+      VFADD_VV -> List(Y, N, Y, vector, Y, vector, Y, vector, N, XX, vectorFma, IQT.vec)
     )
 
   for (execUnitType <- ExecUnitType.all) {
@@ -647,4 +651,7 @@ object Instructions {
   val VMV_V_I  = BitPat("b010111100000?????011?????1010111")
   val VMV_V_X  = BitPat("b010111100000?????100?????1010111")
   val VFMV_V_F = BitPat("b010111100000?????101?????1010111")
+
+  // Vector Float
+  val VFADD_VV = BitPat("b000000???????????001?????1010111")
 }

@@ -3,6 +3,7 @@ package meowv64.exec.units
 import chisel3._
 import chisel3.experimental.ChiselEnum
 import chisel3.util._
+import freechips.rocketchip.util.UIntIsOneOf
 import meowv64.cache._
 import meowv64.core.CoreDef
 import meowv64.core.ExType
@@ -17,7 +18,6 @@ import meowv64.paging._
 import meowv64.reg.RegType
 
 import scala.collection.mutable
-import freechips.rocketchip.util.UIntIsOneOf
 
 /** DelayedMem = Delayed memory access, memory accesses that have side-effects
   * and thus needs to be preformed in-order.

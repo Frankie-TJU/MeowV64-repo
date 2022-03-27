@@ -156,6 +156,14 @@ class ExecutionUnitVectorALU
       Seq(RegType.vector)
     )
 
+class ExecutionUnitVectorFMA
+    extends ExecutionUnitInfo(
+      ExecUnitType.vectorFma,
+      3,
+      RegType.vector,
+      Seq(RegType.vector)
+    )
+
 class ExecutionUnitVector2Int
     extends ExecutionUnitInfo(
       ExecUnitType.vectorToInt,
@@ -301,7 +309,7 @@ abstract class CoreDef {
           RegType.vector,
           Seq(
             new ExecutionUnitVectorALU(),
-            new ExecutionUnitVector2Int(),
+            new ExecutionUnitVector2Int()
           ),
           3
         )(this)

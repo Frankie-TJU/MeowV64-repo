@@ -194,6 +194,8 @@ class Exec(implicit val coredef: CoreDef) extends Module {
                   Module(new FloatToMem).suggestName("FloatToMem")
                 case ExecUnitType.vectorAlu =>
                   Module(new VectorALU).suggestName("VectorALU")
+                case ExecUnitType.vectorFma =>
+                  Module(new VectorFMA).suggestName("VectorFMA")
                 case ExecUnitType.vectorToInt =>
                   Module(new VectorToInt).suggestName("VectorToInt")
                 case ExecUnitType.vectorMisc =>
