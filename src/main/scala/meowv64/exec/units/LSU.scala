@@ -69,10 +69,6 @@ class DelayedMem(implicit val coredef: CoreDef) extends Bundle {
     */
   val data = UInt(coredef.VLEN.W)
 
-  /** This is vse.v
-    */
-  val isVectorStore = Bool()
-
   /** For retirement
     */
   val regInfo = coredef.REG_VEC
@@ -160,15 +156,15 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   val retire = IO(new RetirementIO(coredef.LSU_PORT_INFO))
   val extras = new mutable.HashMap[String, Data]()
 
-  val vectorLanes = coredef.VLEN / coredef.XLEN
-  val vectorReadReqIndex = RegInit(0.U(log2Ceil(vectorLanes + 1).W))
-  val vectorReadRespIndex = RegInit(0.U(log2Ceil(vectorLanes + 1).W))
+  val vectorMaxBeats = coredef.VLEN / coredef.XLEN
+  val vectorReadReqIndex = RegInit(0.U(log2Ceil(vectorMaxBeats + 1).W))
+  val vectorReadRespIndex = RegInit(0.U(log2Ceil(vectorMaxBeats + 1).W))
   val vectorReadRespData = RegInit(
-    VecInit.fill(vectorLanes)(0.U(coredef.XLEN.W))
+    VecInit.fill(vectorMaxBeats)(0.U(coredef.XLEN.W))
   )
   val vectorReadRespDataComb = WireInit(vectorReadRespData)
-  val vectorWriteReqIndex = RegInit(0.U(log2Ceil(vectorLanes + 1).W))
-  val vectorWriteData = Wire(Vec(vectorLanes, UInt(coredef.XLEN.W)))
+  val vectorWriteReqIndex = RegInit(0.U(log2Ceil(vectorMaxBeats + 1).W))
+  val vectorWriteData = Wire(Vec(vectorMaxBeats, UInt(coredef.XLEN.W)))
 
   def isUncached(addr: UInt) = addr < BigInt("80000000", 16).U
 
@@ -576,6 +572,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   toMem.writer.req.bits.addr := current.addr
   toMem.writer.req.bits.wdata := current.data
   toMem.writer.req.bits.len := current.len
+  toMem.writer.req.bits.strb := 0.U // TODO
   toMem.writer.req.bits.op := current.wop
   toMem.uncached.addr := current.addr
   toMem.uncached.wdata := current.data
@@ -651,6 +648,11 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
     actualRespValid := false.B
   }
 
+  // compute memory access beats from vl
+  // beats: vl*sew/64=vl<<vsew>>3
+  val vectorBeats = Wire(UInt(log2Ceil(vectorMaxBeats + 1).W))
+  vectorBeats := (vState.vl << vState.vtype.vsew) >> 3.U
+
   when(emptyEntries =/= DEPTH.U && current.canFire) {
     switch(current.op) {
       is(DelayedMemOp.load) {
@@ -669,7 +671,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
       is(DelayedMemOp.vectorLoad) {
         toMem.reader.req.bits.addr := current.addr +
           (vectorReadReqIndex << log2Ceil(coredef.XLEN / 8))
-        toMem.reader.req.valid := vectorReadReqIndex =/= vectorLanes.U
+        toMem.reader.req.valid := vectorReadReqIndex =/= vectorBeats
         retire.bits.info.wb := Cat(vectorReadRespDataComb.reverse)
         when(toMem.reader.req.fire) {
           vectorReadReqIndex := vectorReadReqIndex + 1.U
@@ -680,7 +682,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
           vectorReadRespData(vectorReadRespIndex) := toMem.reader.resp.bits
           vectorReadRespDataComb(vectorReadRespIndex) := toMem.reader.resp.bits
 
-          when(vectorReadReqIndex === vectorLanes.U) {
+          when(vectorReadReqIndex === vectorBeats) {
             retire.valid := true.B
 
             advance := true.B
@@ -742,7 +744,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
           toMem.writer.req.valid := true.B
           when(toMem.writer.req.fire) {
             vectorWriteReqIndex := vectorWriteReqIndex + 1.U
-            when(vectorWriteReqIndex === (vectorLanes - 1).U) {
+            when(vectorWriteReqIndex === vectorBeats - 1.U) {
               release.valid := true.B
               advance := true.B
               vectorWriteReqIndex := 0.U
