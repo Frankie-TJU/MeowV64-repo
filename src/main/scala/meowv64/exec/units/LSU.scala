@@ -180,6 +180,8 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
 
   // pass fsd/fsw data from FloatToMem
   val toFloat = IO(Flipped(Valid(new FloatToMemReq)))
+  // pass vse.v data from FloatToMem
+  val toVector = IO(Flipped(Valid(new VectorToMemReq)))
 
   val satp = IO(Input(new Satp))
   val status = IO(Input(new Status))
@@ -387,6 +389,13 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
     queue(toFloat.bits.lsqIdx).data := toFloat.bits.data
   }
 
+  // read store data for vse.v
+  when(toVector.valid) {
+    assert(!queue(toVector.bits.lsqIdx).dataValid)
+    queue(toVector.bits.lsqIdx).dataValid := true.B
+    queue(toVector.bits.lsqIdx).data := toVector.bits.data
+  }
+
   // save state to lsq
   when(issue.instr.fire) {
     val lsqEntry = queue(next.lsqIndex)
@@ -398,7 +407,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
     lsqEntry.robIndex := next.robIndex
 
     lsqEntry.addrValid := true.B
-    // for fsd/fsw, data is provided by FloatToMem unit
+    // for fsd/fsw/vse.v, data is provided by FloatToMem/VectorToMem unit
     when(next.instr.instr.op =/= Decoder.Op("STORE-FP").ident) {
       lsqEntry.dataValid := true.B
     }

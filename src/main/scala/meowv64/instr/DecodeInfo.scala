@@ -27,6 +27,7 @@ object IssueQueueType extends ChiselEnum {
   val vec      = Value(4.U)
   val mem      = Value(8.U)
   val floatMem = Value(10.U)
+  val vectorMem = Value(12.U)
 
   implicit def bitpat(op: IssueQueueType.Type): BitPat =
     BitPat(op.litValue.U(getWidth.W))
@@ -286,9 +287,13 @@ object DecodeInfo {
       VSETVL   -> List(Y, N, Y, integer, Y, integer, Y, integer, N, XX, csr, IQT.int),
 
       // Vector Load/Store
+      VLE8_V     -> List(Y, N, Y, vector, Y, integer, N, XX, N, XX, lsu, IQT.mem),
+      VLE16_V    -> List(Y, N, Y, vector, Y, integer, N, XX, N, XX, lsu, IQT.mem),
+      VLE32_V    -> List(Y, N, Y, vector, Y, integer, N, XX, N, XX, lsu, IQT.mem),
       VLE64_V    -> List(Y, N, Y, vector, Y, integer, N, XX, N, XX, lsu, IQT.mem),
       VLUXEI64_V -> List(Y, N, Y, vector, Y, integer, Y, vector, N, XX, lsu, IQT.mem),
-      VSE64_V    -> List(Y, Y, N, XX, Y, integer, N, XX, Y, vector, lsu, IQT.mem),
+      VSE32_V    -> List(Y, Y, N, XX, Y, integer, N, XX, Y, vector, lsu, IQT.vectorMem),
+      VSE64_V    -> List(Y, Y, N, XX, Y, integer, N, XX, Y, vector, lsu, IQT.vectorMem),
 
       // Vector Integer
       VADD_VV  -> List(Y, N, Y, vector, Y, vector, Y, vector, N, XX, vectorAlu, IQT.vec),
@@ -629,6 +634,7 @@ object Instructions {
   val VSETVL   = BitPat("b1000000??????????111?????1010111")
 
   // Vector Load
+  val VLE8_V     = BitPat("b000000?00000?????000?????0000111")
   val VLE16_V    = BitPat("b000000?00000?????101?????0000111")
   val VLE32_V    = BitPat("b000000?00000?????110?????0000111")
   val VLE64_V    = BitPat("b000000?00000?????111?????0000111")

@@ -568,3 +568,12 @@ class FloatToMemReq(implicit val coredef: CoreDef) extends Bundle {
 trait WithFloatToMem {
   val toMem: ValidIO[FloatToMemReq]
 }
+
+class VectorToMemReq(implicit val coredef: CoreDef) extends Bundle {
+  val data = UInt(coredef.VLEN.W)
+  val lsqIdx = UInt(log2Ceil(coredef.LSQ_DEPTH).W)
+}
+
+trait WithVectorToMem {
+  val toMem: ValidIO[VectorToMemReq]
+}

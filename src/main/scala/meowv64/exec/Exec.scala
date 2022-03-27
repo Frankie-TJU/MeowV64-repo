@@ -190,8 +190,14 @@ class Exec(implicit val coredef: CoreDef) extends Module {
                   Module(new FloatDivSqrt).suggestName("FloatDivSqrt")
                 case ExecUnitType.floatToInt =>
                   Module(new FloatToInt).suggestName("FloatToInt")
-                case ExecUnitType.lsu => // this is actually float to mem
-                  Module(new FloatToMem).suggestName("FloatToMem")
+                case ExecUnitType.lsu => {
+                  // this is actually float to mem
+                  if (port.regType == RegType.float) {
+                    Module(new FloatToMem).suggestName("FloatToMem")
+                  } else {
+                    Module(new VectorToMem).suggestName("VectorToMem")
+                  }
+                }
                 case ExecUnitType.vectorAlu =>
                   Module(new VectorALU).suggestName("VectorALU")
                 case ExecUnitType.vectorFma =>
@@ -300,6 +306,9 @@ class Exec(implicit val coredef: CoreDef) extends Module {
     if (unit.extras.contains("floatToMem")) {
       unit.extras("floatToMem") <> lsu.toFloat
     }
+    if (unit.extras.contains("vectorToMem")) {
+      unit.extras("vectorToMem") <> lsu.toVector
+    }
   }
 
   assume(units.length == coredef.PORTS.length)
@@ -383,8 +392,11 @@ class Exec(implicit val coredef: CoreDef) extends Module {
           .ident && instr.instr.instr.funct3 =/= Decoder.SYSTEM_FUNC("PRIV"))
     )
 
-    // At most only one sending except fpMem
-    when(instr.instr.instr.info.issueQueue =/= IssueQueueType.floatMem) {
+    // At most only one sending except floatMem/vectorMem
+    when(
+      instr.instr.instr.info.issueQueue =/= IssueQueueType.floatMem &&
+        instr.instr.instr.info.issueQueue =/= IssueQueueType.vectorMem
+    ) {
       assert(!(sending & (sending -% 1.U)).orR)
     }
     assert(!selfCanIssue || sending.orR)

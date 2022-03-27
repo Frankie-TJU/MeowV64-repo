@@ -114,6 +114,21 @@ class UnitSel(
 
       u.asInstanceOf[WithFloatToMem].toMem <> floatToMem
     }
+
+    if (u.isInstanceOf[WithVectorToMem]) {
+      println("Found extra port: vectorToMem")
+
+      val floatToMem = extras.get("vectorToMem") match {
+        case Some(port) => port
+        case None => {
+          val status = IO(Valid(new VectorToMemReq))
+          extras.put("vectorToMem", status)
+          status
+        }
+      }
+
+      u.asInstanceOf[WithVectorToMem].toMem <> floatToMem
+    }
   }
 
   // pass flush to units
