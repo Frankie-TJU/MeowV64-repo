@@ -18,6 +18,7 @@ import meowv64.instr.Decoder.InstrType
 import meowv64.instr.InstrExt
 import meowv64.instr.RegIndex
 import meowv64.reg.RegType
+import meowv64.core.VState
 
 /** Exception result
   *
@@ -576,4 +577,8 @@ class VectorToMemReq(implicit val coredef: CoreDef) extends Bundle {
 
 trait WithVectorToMem {
   val toMem: ValidIO[VectorToMemReq]
+}
+
+trait WithVState {
+  val vState: VState
 }

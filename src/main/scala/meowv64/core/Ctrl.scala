@@ -97,6 +97,7 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
 
     val priv = Output(PrivLevel())
     val status = Output(new Status)
+    val vState = Output(new VState)
     val debugMode = Output(Bool())
 
     val step = Output(Bool())
@@ -149,7 +150,7 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
     val dscratch0 = new CSRPort(coredef.XLEN)
     val dscratch1 = new CSRPort(coredef.XLEN)
 
-    /** Update vstate
+    /** Update VState
       */
     val updateVState = Flipped(Valid(new VState))
   })
@@ -398,13 +399,14 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
   }
 
   // readonly, can only set by vsetvl
-  val vstate = RegInit(0.U.asTypeOf(new VState))
-  csr.vl.rdata := vstate.vl
-  csr.vtype.rdata := vstate.vtype.asUInt
+  val vState = RegInit(0.U.asTypeOf(new VState))
+  csr.vl.rdata := vState.vl
+  csr.vtype.rdata := vState.vtype.asUInt
   csr.vlenb.rdata := (coredef.VLEN / 8).U
+  toExec.vState := vState
 
   when(csr.updateVState.valid) {
-    vstate := csr.updateVState.bits
+    vState := csr.updateVState.bits
   }
 
   val dcsr = RegInit(DCSR.init)

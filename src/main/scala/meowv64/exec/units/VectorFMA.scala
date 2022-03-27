@@ -9,6 +9,7 @@ import meowv64.core.FloatS
 import hardfloat.MulAddRecFNToRaw_preMul
 import hardfloat.MulAddRecFNToRaw_postMul
 import hardfloat.RoundRawFNToRecFN
+import meowv64.core.VState
 
 class VectorFMAExt(implicit val coredef: CoreDef) extends Bundle {
   // intermediate
@@ -30,7 +31,11 @@ class VectorFMAExt(implicit val coredef: CoreDef) extends Bundle {
 }
 
 class VectorFMA(override implicit val coredef: CoreDef)
-    extends ExecUnit(1, new VectorFMAExt, coredef.REG_VEC) {
+    extends ExecUnit(1, new VectorFMAExt, coredef.REG_VEC)
+    with WithVState {
+
+  val vState = IO(Input(new VState()))
+
   def map(
       stage: Int,
       pipe: PipeInstr,

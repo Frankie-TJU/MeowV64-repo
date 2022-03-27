@@ -15,6 +15,7 @@ import meowv64.instr.Instr
 import meowv64.reg.RegType
 
 import scala.collection.mutable
+import meowv64.core.VState
 
 trait UnitSelIO {
   val flush: Bool
@@ -106,9 +107,9 @@ class UnitSel(
       val floatToMem = extras.get("floatToMem") match {
         case Some(port) => port
         case None => {
-          val status = IO(Valid(new FloatToMemReq))
-          extras.put("floatToMem", status)
-          status
+          val req = IO(Valid(new FloatToMemReq))
+          extras.put("floatToMem", req)
+          req
         }
       }
 
@@ -121,13 +122,28 @@ class UnitSel(
       val floatToMem = extras.get("vectorToMem") match {
         case Some(port) => port
         case None => {
-          val status = IO(Valid(new VectorToMemReq))
-          extras.put("vectorToMem", status)
-          status
+          val req = IO(Valid(new VectorToMemReq))
+          extras.put("vectorToMem", req)
+          req
         }
       }
 
       u.asInstanceOf[WithVectorToMem].toMem <> floatToMem
+    }
+
+    if (u.isInstanceOf[WithVState]) {
+      println("Found extra port: vState")
+
+      val vState = extras.get("vState") match {
+        case Some(port) => port
+        case None => {
+          val vState = IO(Input(new VState))
+          extras.put("vState", vState)
+          vState
+        }
+      }
+
+      u.asInstanceOf[WithVState].vState := vState
     }
   }
 

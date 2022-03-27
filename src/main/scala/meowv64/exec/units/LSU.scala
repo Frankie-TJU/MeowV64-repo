@@ -18,6 +18,7 @@ import meowv64.paging._
 import meowv64.reg.RegType
 
 import scala.collection.mutable
+import meowv64.core.VState
 
 /** DelayedMem = Delayed memory access, memory accesses that have side-effects
   * and thus needs to be preformed in-order.
@@ -191,6 +192,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   val ptw = IO(new TLBExt)
   val tlbRst = IO(Input(Bool()))
   val priv = IO(Input(PrivLevel()))
+  val vState = IO(Input(new VState()))
 
   val DEPTH = coredef.LSQ_DEPTH
 

@@ -20,6 +20,7 @@ import meowv64.reg._
 import meowv64.util._
 
 import scala.collection.mutable.ArrayBuffer
+import meowv64.core.VState
 
 /** Out-of-order execution (Tomasulo's algorithm)
   *
@@ -43,6 +44,7 @@ class Exec(implicit val coredef: CoreDef) extends Module {
 
     val priv = Input(PrivLevel())
     val status = Input(new Status)
+    val vState = Input(new VState)
     val debugMode = Input(Bool())
 
     val step = Input(Bool()) // single stepping in dcsr
@@ -291,6 +293,7 @@ class Exec(implicit val coredef: CoreDef) extends Module {
   lsu.ptw <> toCore.ptw
   lsu.satp := toCore.satp
   lsu.priv := toCtrl.priv
+  lsu.vState := toCtrl.vState
   lsu.tlbRst := toCtrl.tlbRst
   lsu.status := toCtrl.status
 
@@ -308,6 +311,9 @@ class Exec(implicit val coredef: CoreDef) extends Module {
     }
     if (unit.extras.contains("vectorToMem")) {
       unit.extras("vectorToMem") <> lsu.toVector
+    }
+    if (unit.extras.contains("vState")) {
+      unit.extras("vState") := toCtrl.vState
     }
   }
 
