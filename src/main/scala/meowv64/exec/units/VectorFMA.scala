@@ -90,9 +90,9 @@ class VectorFMA(override implicit val coredef: CoreDef)
             val rs1val = rs1Elements(lane)
             val rs2val = rs2Elements(lane)
             val rs3val = rs3Elements(lane)
-            val rs1valHF = float.toHardfloat(rs1Elements(lane))
-            val rs2valHF = float.toHardfloat(rs2Elements(lane))
-            val rs3valHF = float.toHardfloat(rs3Elements(lane))
+            val rs1valHF = float.toHardfloat(rs1val)
+            val rs2valHF = float.toHardfloat(rs2val)
+            val rs3valHF = float.toHardfloat(rs3val)
             val oneHF =
               (BigInt(1) << (float.exp + float.sig - 1))
                 .U(float.widthHardfloat.W)
@@ -102,10 +102,16 @@ class VectorFMA(override implicit val coredef: CoreDef)
             val op = Cat(neg, sign)
             switch(pipe.instr.instr.funct6) {
               is(0.U) {
-                // 1 * rs1 + rs2
+                // vfadd: 1 * rs1 + rs2
                 a := oneHF
                 b := rs1valHF
                 c := rs2valHF
+              }
+              is(0x2c.U) {
+                // vfmacc: rs1 * rs2 + rs3
+                a := rs1valHF
+                b := rs2valHF
+                c := rs3valHF
               }
             }
 
