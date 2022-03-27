@@ -86,9 +86,10 @@ class VectorFMA(override implicit val coredef: CoreDef)
             val op = Cat(neg, sign)
             switch(pipe.instr.instr.funct6) {
               is(0.U) {
-                // rs1 + rs2
-                a := rs1valHF
-                b := rs2valHF
+                // 1 * rs1 + rs2
+                a := oneHF
+                b := rs1valHF
+                c := rs2valHF
               }
             }
 
@@ -104,11 +105,8 @@ class VectorFMA(override implicit val coredef: CoreDef)
             state.toPostMul(idx)(lane) := preMul.io.toPostMul
 
             // step 3: mul & add
-            state.mulAddResult(
-              idx
-            )(
-              lane
-            ) := (preMul.io.mulAddA * preMul.io.mulAddB) +& preMul.io.mulAddC
+            state.mulAddResult(idx)(lane) :=
+              (preMul.io.mulAddA * preMul.io.mulAddB) +& preMul.io.mulAddC
           } else {
             // second stage
             state := ext.get

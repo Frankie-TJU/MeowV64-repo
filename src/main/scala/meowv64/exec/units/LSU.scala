@@ -523,6 +523,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
       when(uncached) {
         lsqEntry.op := DelayedMemOp.uncachedStore
       }.elsewhen(vectorStore) {
+        lsqEntry.len := DCWriteLen.D
         lsqEntry.op := DelayedMemOp.vectorStore
       }.otherwise {
         lsqEntry.op := DelayedMemOp.store

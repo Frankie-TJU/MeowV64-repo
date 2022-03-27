@@ -25,7 +25,7 @@ class VectorToMem(override implicit val coredef: CoreDef)
     val ext = Wire(new VectorToMemExt)
 
     toMem.valid := true.B
-    toMem.bits.data := pipe.rs2val
+    toMem.bits.data := pipe.rs3val
     toMem.bits.lsqIdx := pipe.lsqIndex
 
     (ext, false.B)

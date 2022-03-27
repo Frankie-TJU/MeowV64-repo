@@ -118,7 +118,17 @@ class Renamer(implicit coredef: CoreDef) extends Module {
       val ret = WireDefault(true.B)
       val rs1 = toExec.input(idx).instr.getRs1
       val rs2 = toExec.input(idx).instr.getRs2
-      val rs3 = toExec.input(idx).instr.getRs3
+
+      // NOTE: rdAsRs3 does not use rdType, use rs3Type instead
+      val rs3 = RegIndex.create(
+        toExec.input(idx).instr.getRs3Type(),
+        Mux(
+          toExec.input(idx).instr.info.rdAsRs3,
+          // NOTE: do not use not effective rd here, because writeRd=0
+          toExec.input(idx).instr.rd,
+          toExec.input(idx).instr.rs3
+        )
+      )
 
       // check if this instruction relies on previous instructions
       for (i <- (0 until idx)) {
