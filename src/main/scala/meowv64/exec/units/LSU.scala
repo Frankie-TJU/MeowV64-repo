@@ -17,6 +17,7 @@ import meowv64.paging._
 import meowv64.reg.RegType
 
 import scala.collection.mutable
+import freechips.rocketchip.util.UIntIsOneOf
 
 /** DelayedMem = Delayed memory access, memory accesses that have side-effects
   * and thus needs to be preformed in-order.
@@ -28,7 +29,8 @@ import scala.collection.mutable
   *   - us: uncached store
   */
 object DelayedMemOp extends ChiselEnum {
-  val load, store, uncachedLoad, uncachedStore, loadReserved, exception = Value
+  val load, uncachedLoad, vectorLoad, store, uncachedStore, loadReserved,
+      exception = Value
 }
 
 /** A (maybe-empty) sequential memory access
@@ -71,7 +73,7 @@ class DelayedMem(implicit val coredef: CoreDef) extends Bundle {
 
   /** For retirement
     */
-  val regInfo = coredef.REG_INT
+  val regInfo = coredef.REG_VEC
   val writeRdEff = Bool()
   val rdPhys = UInt(log2Ceil(regInfo.physRegs).W)
   val rdType = RegType()
@@ -145,10 +147,6 @@ object DelayedMem {
   }
 }
 
-object LSUReadState extends ChiselEnum {
-  val idle, vectorLoad = Value
-}
-
 class SetHasMem(implicit val coredef: CoreDef) extends Bundle {
   val robIndex = Output(UInt(log2Ceil(coredef.INFLIGHT_INSTR_LIMIT).W))
 }
@@ -161,28 +159,17 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   val extras = new mutable.HashMap[String, Data]()
 
   val vectorReadGroupNum = coredef.VLEN / coredef.XLEN
-  val vectorReadReqIndex = RegInit(0.U(log2Ceil(vectorReadGroupNum).W))
-  val vectorReadRespIndex = RegInit(0.U(log2Ceil(vectorReadGroupNum).W))
+  val vectorReadReqIndex = RegInit(0.U(log2Ceil(vectorReadGroupNum + 1).W))
+  val vectorReadRespIndex = RegInit(0.U(log2Ceil(vectorReadGroupNum + 1).W))
   val vectorReadRespData = RegInit(
     VecInit.fill(vectorReadGroupNum)(0.U(coredef.XLEN.W))
   )
   val inflightVectorReadInstr = Reg(new PipeInstr(regInfo))
-  val readState = RegInit(LSUReadState.idle)
 
   def isUncached(addr: UInt) = addr < BigInt("80000000", 16).U
 
   val hasNext = issue.instr.valid // TODO: merge into rs.instr
   val next = WireInit(issue.instr.bits)
-  switch(readState) {
-    is(LSUReadState.idle) {
-      when(!issue.instr.valid) {
-        next.instr.valid := false.B
-      }
-    }
-    is(LSUReadState.vectorLoad) {
-      next := inflightVectorReadInstr
-    }
-  }
 
   // FIXME: ValidIO resp
   val toMem = IO(new Bundle {
@@ -212,7 +199,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
     val lsqAllocAccept = Output(UInt(log2Ceil(coredef.ISSUE_NUM + 1).W))
   })
 
-  val store = RegInit(
+  val queue = RegInit(
     VecInit(Seq.fill(DEPTH)(DelayedMem.empty()))
   )
 
@@ -236,7 +223,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   for (i <- 0 until coredef.ISSUE_NUM) {
     val idx = tail +% i.U
     when(toExec.lsqAllocCount > i.U) {
-      store(idx).clear()
+      queue(idx).clear()
     }
   }
 
@@ -326,8 +313,18 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
 
   // Part 1: compute physical address, check exceptions and save into lsq
   assert(coredef.PADDR_WIDTH > coredef.VADDR_WIDTH)
+  val vectorLoad =
+    next.instr.instr.op === Decoder
+      .Op("LOAD-FP")
+      .ident && next.instr.instr.funct3.isOneOf(Seq(5.U, 6.U, 7.U))
+
   val rawAddr = Wire(UInt(coredef.XLEN.W))
-  rawAddr := (next.rs1val.asSInt + next.instr.instr.imm).asUInt // We have imm = 0 for R-type instructions
+  when(vectorLoad) {
+    // no imm
+    rawAddr := next.rs1val
+  }.otherwise {
+    rawAddr := (next.rs1val.asSInt + next.instr.instr.imm).asUInt // We have imm = 0 for R-type instructions
+  }
   tlb.query.req.bits.vpn := rawAddr(47, 12)
   // physical address
   val addr = WireDefault(rawAddr)
@@ -341,13 +338,13 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   val uncached = isUncached(addr) && next.instr.instr.op =/= Decoder
     .Op("AMO")
     .ident // Uncached if < 0x80000000 and is not AMO
-  val read = (
+  val load = (
     next.instr.instr.op === Decoder.Op("LOAD").ident
       || next.instr.instr.op === Decoder.Op("LOAD-FP").ident
       || next.instr.instr.op === Decoder.Op("AMO").ident && next.instr.instr
         .funct7(6, 2) === Decoder.AMO_FUNC("LR")
   ) && next.instr.valid
-  val write = (
+  val store = (
     next.instr.instr.op === Decoder.Op("STORE").ident
       || next.instr.instr.op === Decoder.Op("STORE-FP").ident
       || next.instr.instr.op === Decoder.Op("AMO").ident && next.instr.instr
@@ -364,7 +361,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   val invalAddr = isInvalAddr(rawAddr)
   val misaligned = isMisaligned(offset, next.instr.instr.funct3)
 
-  tlbRequestModify := write
+  tlbRequestModify := store
 
   when(!next.instr.valid) {
     l1pass := false.B
@@ -385,14 +382,14 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
 
   // read store data for fsd/fsw
   when(toFloat.valid) {
-    assert(!store(toFloat.bits.lsqIdx).dataValid)
-    store(toFloat.bits.lsqIdx).dataValid := true.B
-    store(toFloat.bits.lsqIdx).data := toFloat.bits.data
+    assert(!queue(toFloat.bits.lsqIdx).dataValid)
+    queue(toFloat.bits.lsqIdx).dataValid := true.B
+    queue(toFloat.bits.lsqIdx).data := toFloat.bits.data
   }
 
   // save state to lsq
   when(issue.instr.fire) {
-    val lsqEntry = store(next.lsqIndex)
+    val lsqEntry = queue(next.lsqIndex)
 
     lsqEntry.instr := next.instr.instr
     lsqEntry.writeRdEff := next.instr.instr.writeRdEff()
@@ -417,7 +414,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
       lsqEntry.data := rawAddr
       lsqEntry.exception.ex(
         Mux(
-          read,
+          load,
           ExType.LOAD_ACCESS_FAULT,
           ExType.STORE_ACCESS_FAULT
         )
@@ -427,7 +424,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
       lsqEntry.data := rawAddr
       lsqEntry.exception.ex(
         Mux(
-          read,
+          load,
           ExType.LOAD_PAGE_FAULT,
           ExType.STORE_PAGE_FAULT
         )
@@ -437,12 +434,12 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
       lsqEntry.data := rawAddr
       lsqEntry.exception.ex(
         Mux(
-          read,
+          load,
           ExType.LOAD_ADDR_MISALIGN,
           ExType.STORE_ADDR_MISALIGN
         )
       )
-    }.elsewhen(read && !uncached) {
+    }.elsewhen(load && !uncached) {
       lsqEntry.addr := addr
 
       // handle load reserved
@@ -451,10 +448,12 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
         toExec.setHasMem.valid := true.B
         lsqEntry.op := DelayedMemOp.loadReserved
         lsqEntry.wop := DCWriteOp.commitLR
+      }.elsewhen(vectorLoad) {
+        lsqEntry.op := DelayedMemOp.vectorLoad
       }.otherwise {
         lsqEntry.op := DelayedMemOp.load
       }
-    }.elsewhen(read && uncached) {
+    }.elsewhen(load && uncached) {
       // has side effect
       toExec.setHasMem.valid := true.B
       lsqEntry.op := DelayedMemOp.uncachedLoad
@@ -491,7 +490,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
         }
       }
 
-    }.elsewhen(write) {
+    }.elsewhen(store) {
       // has side effect
       toExec.setHasMem.valid := true.B
       switch(next.instr.instr.funct3) {
@@ -544,7 +543,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   }
 
   // Part 2: issue operations from lsq head
-  val current = store(head)
+  val current = queue(head)
   toMem.reader.req.valid := false.B
   toMem.reader.req.bits.addr := current.addr(coredef.PADDR_WIDTH - 1, 3) ## 0.U(
     3.W
@@ -642,6 +641,29 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
           reqSent := false.B
         }
       }
+      is(DelayedMemOp.vectorLoad) {
+        toMem.reader.req.bits.addr := current.addr + (vectorReadReqIndex << log2Ceil(
+          coredef.XLEN / 8
+        ))
+        toMem.reader.req.valid := vectorReadReqIndex =/= vectorReadGroupNum.U
+        retire.bits.info.wb := Cat(vectorReadRespData.reverse)
+        when(toMem.reader.req.fire) {
+          vectorReadReqIndex := vectorReadReqIndex + 1.U
+        }
+
+        when(actualRespValid) {
+          vectorReadRespIndex := vectorReadRespIndex + 1.U
+          vectorReadRespData(vectorReadRespIndex) := toMem.reader.resp.bits
+
+          when(vectorReadReqIndex === vectorReadGroupNum.U) {
+            retire.valid := true.B
+
+            advance := true.B
+            vectorReadReqIndex := 0.U
+            vectorReadRespIndex := 0.U
+          }
+        }
+      }
       is(DelayedMemOp.uncachedLoad) {
         retire.bits.info.wb := current.getLSB(toMem.uncached.rdata)
         when(release.ready) {
@@ -719,7 +741,6 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
 
     reqSent := false.B
 
-    readState := LSUReadState.idle
     vectorReadReqIndex := 0.U
     vectorReadRespIndex := 0.U
   }
