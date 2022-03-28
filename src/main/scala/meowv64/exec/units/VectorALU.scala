@@ -25,13 +25,15 @@ class VectorALU(override implicit val coredef: CoreDef)
     ext.res := 0.U
 
     for ((sew, width) <- Seq((0, 8), (1, 16), (2, 32), (3, 64))) {
-      val lanes = coredef.XLEN / width
+      val lanes = coredef.VLEN / width
       val simm = Wire(SInt(width.W))
       simm := pipe.instr.instr.simm5()
       val rs1Elements = Wire(Vec(lanes, UInt(width.W)))
       rs1Elements := pipe.rs1val.asTypeOf(rs1Elements)
       val rs2Elements = Wire(Vec(lanes, UInt(width.W)))
       rs2Elements := pipe.rs2val.asTypeOf(rs2Elements)
+      val rs3Elements = Wire(Vec(lanes, UInt(width.W)))
+      rs3Elements := pipe.rs3val.asTypeOf(rs3Elements)
       val res = WireInit(VecInit.fill(lanes)(0.U(width.W)))
 
       when(vState.vtype.vsew === sew.U) {
@@ -72,10 +74,16 @@ class VectorALU(override implicit val coredef: CoreDef)
                 }
                 is(4.U) {
                   // VSLL.VX
-                  shiftAmount := pipe.rs2val
+                  shiftAmount := pipe.rs1val
                 }
               }
-              res(i) := rs2Elements(i) << shiftAmount
+
+              // check vm
+              when(pipe.instr.instr.readVm() && ~pipe.vmval(i)) {
+                res(i) := rs3Elements(i)
+              }.otherwise {
+                res(i) := rs2Elements(i) << shiftAmount
+              }
             }
           }
         }
