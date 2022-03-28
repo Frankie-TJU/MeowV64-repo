@@ -995,7 +995,7 @@ class L2Cache(val opts: L2Opts) extends Module {
       stepRefiller(reqTarget)
 
       /** MMIO are handled in the write-back state machine because they are
-        * faster, so they can be handled synchronizely
+        * faster, so they can be handled synchronously
         */
     }.elsewhen(isMMIO(directs(id).addr)) {
       stepRefiller(reqTarget)

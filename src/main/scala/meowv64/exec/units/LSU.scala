@@ -58,6 +58,7 @@ class DelayedMem(implicit val coredef: CoreDef) extends Bundle {
     */
   val addrValid = Bool()
   val addr = UInt(coredef.XLEN.W)
+
   val len = DCWriteLen()
 
   /** Result should be sign extended
@@ -323,6 +324,28 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
     )
   )
 
+  def align(addr: UInt) = {
+    addr(coredef.PADDR_WIDTH - 1, 3) ##
+      0.U(3.W)
+  }
+
+  def getBE(addr: UInt, len: DCWriteLen.Type) = {
+    val offset = addr(log2Ceil(coredef.XLEN / 8) - 1, 0)
+    val mask = MuxLookup(
+      len.asUInt,
+      0.U,
+      Seq(
+        DCWriteLen.B.asUInt -> 0x1.U,
+        DCWriteLen.H.asUInt -> 0x3.U,
+        DCWriteLen.W.asUInt -> 0xf.U,
+        DCWriteLen.D.asUInt -> 0xff.U
+      )
+    )
+    val sliced = Wire(UInt((coredef.XLEN / 8).W))
+    sliced := mask << offset
+    sliced
+  }
+
   // Part 1: compute physical address, check exceptions and save into lsq
   assert(coredef.PADDR_WIDTH > coredef.VADDR_WIDTH)
   // vle.v
@@ -582,15 +605,13 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   // Part 2: issue operations from lsq head
   val current = queue(head)
   toMem.reader.req.valid := false.B
-  toMem.reader.req.bits.addr := current.addr(coredef.PADDR_WIDTH - 1, 3) ## 0.U(
-    3.W
-  )
+  toMem.reader.req.bits.addr := align(current.addr)
   toMem.reader.req.bits.reserve := false.B // TODO
   toMem.writer.req.valid := false.B
   toMem.writer.req.bits.addr := current.addr
   toMem.writer.req.bits.wdata := current.data
   toMem.writer.req.bits.len := current.len
-  toMem.writer.req.bits.strb := 0.U // TODO
+  toMem.writer.req.bits.be := getBE(current.addr, current.len)
   toMem.writer.req.bits.op := current.wop
   toMem.uncached.addr := current.addr
   toMem.uncached.wdata := current.data
@@ -785,9 +806,26 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
         }
       }
       is(DelayedMemOp.vectorStore) {
-        toMem.writer.req.bits.addr := current.addr +
+        toMem.writer.req.bits.addr := align(current.addr) +
           (vectorWriteReqIndex << log2Ceil(coredef.XLEN / 8))
         toMem.writer.req.bits.wdata := vectorWriteData(vectorWriteReqIndex)
+
+        // compute write be
+        // first & last beat is special
+        val offset = current.addr(log2Ceil(coredef.XLEN / 8) - 1, 0)
+        val fullMask = Fill(coredef.XLEN / 8, 1.U).asUInt
+        val firstMask = WireInit(fullMask)
+        when(vectorWriteReqIndex === 0.U) {
+          firstMask := fullMask << offset
+        }
+
+        val lastOffset = offset +
+          (vState.vl << vState.vtype.vsew)(log2Ceil(coredef.XLEN / 8) - 1, 0)
+        val lastMask = WireInit(fullMask)
+        when(vectorWriteReqIndex === vectorBeats - 1.U && lastOffset =/= 0.U) {
+          lastMask := fullMask >> ((coredef.XLEN / 8).U - lastOffset)
+        }
+        toMem.writer.req.bits.be := firstMask & lastMask
 
         when(release.ready) {
           toMem.writer.req.valid := true.B

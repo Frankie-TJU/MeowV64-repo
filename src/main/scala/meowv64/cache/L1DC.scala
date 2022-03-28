@@ -75,8 +75,8 @@ class CoreDCWriteReq(val opts: L1DOpts) extends Bundle {
   // Offset is now embedded inside addr
   val addr = UInt(opts.ADDR_WIDTH.W)
   val len = DCWriteLen()
-  // TODO
-  val strb = UInt((opts.TO_CORE_TRANSFER_WIDTH / 8).W)
+  // Byte enable
+  val be = UInt((opts.TO_CORE_TRANSFER_WIDTH / 8).W)
   val op = DCWriteOp()
   // WData should be sign extended
   val wdata = UInt(opts.TO_CORE_TRANSFER_WIDTH.W)
@@ -91,23 +91,8 @@ class CoreDCWriter(val opts: L1DOpts) extends Bundle {
 
   val IGNORED_WIDTH = log2Ceil(opts.TO_CORE_TRANSFER_WIDTH / 8)
 
-  /** Generate raw byte enable */
-  def be = {
-    val offset = req.bits.addr(IGNORED_WIDTH - 1, 0)
-    val mask = MuxLookup(
-      req.bits.len.asUInt(),
-      0.U,
-      Seq(
-        DCWriteLen.B.asUInt -> 0x1.U,
-        DCWriteLen.H.asUInt -> 0x3.U,
-        DCWriteLen.W.asUInt -> 0xf.U,
-        DCWriteLen.D.asUInt -> 0xff.U
-      )
-    )
-    val sliced = Wire(UInt((opts.TO_CORE_TRANSFER_WIDTH / 8).W))
-    sliced := mask << offset
-    sliced
-  }
+  /** Byte enable */
+  def be = req.bits.be
 
   /** Shifted wdata */
   def sdata = {
