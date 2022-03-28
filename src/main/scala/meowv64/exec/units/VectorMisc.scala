@@ -64,6 +64,14 @@ class VectorMisc(override implicit val coredef: CoreDef)
           }
         }
       }
+      is(Decoder.VP_FUNC("VMVR_V")) {
+        switch(pipe.instr.instr.rs1) {
+          is(0.U) {
+            // VMV1R_V
+            ext.res := rs2Elements
+          }
+        }
+      }
     }
 
     (ext, false.B)

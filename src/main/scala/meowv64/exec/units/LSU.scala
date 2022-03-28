@@ -667,9 +667,11 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   }
 
   // compute memory access beats from vl
-  // beats: vl*sew/64=vl<<vsew>>3
+  // round up to multiples of 64
+  // sew=vsew<<3
+  // beats: (vl*sew+63)/64=((vl<<vsew)<<3+63)>>6=(vl<<vsew+7)>>3
   val vectorBeats = Wire(UInt(log2Ceil(vectorMaxBeats + 1).W))
-  vectorBeats := (vState.vl << vState.vtype.vsew) >> 3.U
+  vectorBeats := ((vState.vl << vState.vtype.vsew) + 7.U) >> 3.U
 
   when(emptyEntries =/= DEPTH.U && current.canFire) {
     switch(current.op) {

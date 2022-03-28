@@ -295,6 +295,8 @@ object DecodeInfo {
       VLE32_V    -> List(Y, N, Y, vector, Y, integer, N, XX, N, XX, N, lsu, IQT.mem),
       VLE64_V    -> List(Y, N, Y, vector, Y, integer, N, XX, N, XX, N, lsu, IQT.mem),
       VLUXEI64_V -> List(Y, Y, Y, vector, Y, integer, Y, vector, Y, vector, Y, lsu, IQT.vectorMem),
+      VSE8_V     -> List(Y, Y, N, XX, Y, integer, N, XX, Y, vector, N, lsu, IQT.vectorMem),
+      VSE16_V    -> List(Y, Y, N, XX, Y, integer, N, XX, Y, vector, N, lsu, IQT.vectorMem),
       VSE32_V    -> List(Y, Y, N, XX, Y, integer, N, XX, Y, vector, N, lsu, IQT.vectorMem),
       VSE64_V    -> List(Y, Y, N, XX, Y, integer, N, XX, Y, vector, N, lsu, IQT.vectorMem),
 
@@ -310,6 +312,7 @@ object DecodeInfo {
       VMV_V_I  -> List(Y, N, Y, vector, N, XX, N, XX, N, XX, N, vectorMisc, IQT.vec),
       VMV_V_X  -> List(Y, N, Y, vector, Y, integer, N, XX, N, XX, N, vectorMisc, IQT.vec),
       VFMV_V_F -> List(Y, N, Y, vector, Y, float, N, XX, N, XX, N, vectorMisc, IQT.vec),
+      VMV1R_V  -> List(Y, N, Y, vector, N, XX, Y, vector, N, XX, N, vectorMisc, IQT.vec),
 
       // Vector Float
       VFADD_VV     -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
@@ -646,6 +649,7 @@ object Instructions {
   val VLUXEI64_V = BitPat("b000001???????????111?????0000111")
 
   // Vector Store
+  val VSE8_V  = BitPat("b000000?00000?????000?????0100111")
   val VSE16_V = BitPat("b000000?00000?????101?????0100111")
   val VSE32_V = BitPat("b000000?00000?????110?????0100111")
   val VSE64_V = BitPat("b000000?00000?????111?????0100111")
@@ -662,6 +666,7 @@ object Instructions {
   val VMV_V_I  = BitPat("b010111100000?????011?????1010111")
   val VMV_V_X  = BitPat("b010111100000?????100?????1010111")
   val VFMV_V_F = BitPat("b010111100000?????101?????1010111")
+  val VMV1R_V  = BitPat("b100111100000?????011?????1010111")
 
   // Vector Float
   val VFADD_VV     = BitPat("b000000???????????001?????1010111")

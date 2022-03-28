@@ -179,7 +179,8 @@ object Decoder {
   val VP_FUNC: Map[String, UInt] = Map(
     "VADD" -> "000000",
     "VMV_S" -> "010000",
-    "VMV_V" -> "010111"
+    "VMV_V" -> "010111",
+    "VMVR_V" -> "100111"
   ).mapValues(Integer.parseInt(_, 2).U(6.W))
 
   implicit class ConvertToBin(self: String) {
