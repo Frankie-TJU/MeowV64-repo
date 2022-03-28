@@ -177,9 +177,10 @@ object Decoder {
   ).mapValues(Integer.parseInt(_, 2).U(5.W))
 
   val VP_FUNC: Map[String, UInt] = Map(
-    "VADD" -> "000000",
+    "VADD_V" -> "000000",
     "VMV_S" -> "010000",
     "VMV_V" -> "010111",
+    "VSLL_V" -> "100101",
     "VMVR_V" -> "100111"
   ).mapValues(Integer.parseInt(_, 2).U(6.W))
 

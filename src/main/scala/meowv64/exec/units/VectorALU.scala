@@ -5,53 +5,82 @@ import chisel3.util._
 import meowv64.core.CoreDef
 import meowv64.exec._
 import meowv64.instr.Decoder
+import meowv64.core.VState
 
 class VectorALUExt(implicit val coredef: CoreDef) extends Bundle {
-  val res = Vec(coredef.vectorBankCount, UInt(coredef.XLEN.W))
+  val res = UInt(coredef.VLEN.W)
 }
 
 class VectorALU(override implicit val coredef: CoreDef)
-    extends ExecUnit(0, new VectorALUExt, coredef.REG_VEC) {
+    extends ExecUnit(0, new VectorALUExt, coredef.REG_VEC)
+    with WithVState {
+
+  val vState = IO(Input(new VState))
   def map(
       stage: Int,
       pipe: PipeInstr,
       ext: Option[VectorALUExt]
   ): (VectorALUExt, Bool) = {
     val ext = Wire(new VectorALUExt)
-    for (i <- 0 until coredef.vectorBankCount) {
-      ext.res(i) := 0.U
-    }
+    ext.res := 0.U
 
-    val simm = Wire(SInt(coredef.XLEN.W))
-    simm := pipe.instr.instr.simm5()
+    for ((sew, width) <- Seq((0, 8), (1, 16), (2, 32), (3, 64))) {
+      val lanes = coredef.XLEN / width
+      val simm = Wire(SInt(width.W))
+      simm := pipe.instr.instr.simm5()
+      val rs1Elements = Wire(Vec(lanes, UInt(width.W)))
+      rs1Elements := pipe.rs1val.asTypeOf(rs1Elements)
+      val rs2Elements = Wire(Vec(lanes, UInt(width.W)))
+      rs2Elements := pipe.rs2val.asTypeOf(rs2Elements)
+      val res = WireInit(VecInit.fill(lanes)(0.U(width.W)))
 
-    val rs1Elements = Wire(Vec(coredef.vectorBankCount, UInt(coredef.XLEN.W)))
-    rs1Elements := pipe.rs1val.asTypeOf(rs1Elements)
-    val rs2Elements = Wire(Vec(coredef.vectorBankCount, UInt(coredef.XLEN.W)))
-    rs2Elements := pipe.rs2val.asTypeOf(rs2Elements)
-
-    switch(pipe.instr.instr.funct6) {
-      is(Decoder.VP_FUNC("VADD")) {
-        switch(pipe.instr.instr.funct3) {
-          is(0.U) {
-            // VADD_VV
-            for (i <- 0 until coredef.vectorBankCount) {
-              ext.res(i) := rs1Elements(i) + rs2Elements(i)
+      when(vState.vtype.vsew === sew.U) {
+        switch(pipe.instr.instr.funct6) {
+          is(Decoder.VP_FUNC("VADD_V")) {
+            switch(pipe.instr.instr.funct3) {
+              is(0.U) {
+                // VADD_VV
+                for (i <- 0 until lanes) {
+                  res(i) := rs1Elements(i) + rs2Elements(i)
+                }
+              }
+              is(3.U) {
+                // VADD_VI
+                for (i <- 0 until lanes) {
+                  res(i) := simm.asUInt + rs2Elements(i)
+                }
+              }
+              is(4.U) {
+                // VADD_VX
+                for (i <- 0 until lanes) {
+                  res(i) := rs1Elements(0) + rs2Elements(i)
+                }
+              }
             }
           }
-          is(3.U) {
-            // VADD_VI
-            for (i <- 0 until coredef.vectorBankCount) {
-              ext.res(i) := simm.asUInt + rs2Elements(i)
-            }
-          }
-          is(4.U) {
-            // VADD_VX
-            for (i <- 0 until coredef.vectorBankCount) {
-              ext.res(i) := rs1Elements(0) + rs2Elements(i)
+          is(Decoder.VP_FUNC("VSLL_V")) {
+            for (i <- 0 until lanes) {
+              val shiftAmount = WireInit(0.U(log2Ceil(width).W))
+              switch(pipe.instr.instr.funct3) {
+                is(0.U) {
+                  // VSLL.VV
+                  shiftAmount := rs1Elements(i)
+                }
+                is(3.U) {
+                  // VSLL.VI
+                  shiftAmount := simm.asUInt
+                }
+                is(4.U) {
+                  // VSLL.VX
+                  shiftAmount := pipe.rs2val
+                }
+              }
+              res(i) := rs2Elements(i) << shiftAmount
             }
           }
         }
+
+        ext.res := Cat(res.reverse)
       }
     }
 
@@ -60,7 +89,7 @@ class VectorALU(override implicit val coredef: CoreDef)
 
   def finalize(pipe: PipeInstr, ext: VectorALUExt): RetireInfo = {
     val info = WireDefault(RetireInfo.vacant(regInfo))
-    info.wb := Cat(ext.res.reverse)
+    info.wb := ext.res
 
     info
   }
