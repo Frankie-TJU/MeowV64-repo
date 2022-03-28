@@ -2,11 +2,11 @@ package meowv64.exec
 
 import chisel3._
 import chisel3.util.Decoupled
+import chisel3.util.MixedVec
 import meowv64.core.CoreDef
 import meowv64.core.PortInfo
 import meowv64.core.RegInfo
 import meowv64.reg.RegReader
-import chisel3.util.MixedVec
 import meowv64.reg.RegType
 
 /** Register Read -> Unit Selector

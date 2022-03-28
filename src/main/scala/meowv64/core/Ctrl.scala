@@ -56,6 +56,18 @@ class VType(implicit coredef: CoreDef) extends Bundle {
   val vta = Bool()
   val vsew = UInt(3.W)
   val vlmul = UInt(3.W)
+
+  def floatFmt = {
+    MuxLookup(
+      vsew,
+      0.U,
+      Seq(
+        1.U -> FloatH.fmt,
+        2.U -> FloatS.fmt,
+        3.U -> FloatD.fmt
+      )
+    )
+  }
 }
 
 class Ctrl(implicit coredef: CoreDef) extends Module {

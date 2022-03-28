@@ -7,9 +7,6 @@ import hardfloat.MulAddRecFNToRaw_preMul
 import hardfloat.MulAddRecFN_interIo
 import hardfloat.RoundRawFNToRecFN
 import meowv64.core.CoreDef
-import meowv64.core.FloatD
-import meowv64.core.FloatH
-import meowv64.core.FloatS
 import meowv64.core.VState
 import meowv64.exec._
 
@@ -46,15 +43,7 @@ class VectorFMA(override implicit val coredef: CoreDef)
     val state = Wire(new VectorFMAExt)
     state := DontCare
 
-    val curFloat = MuxLookup(
-      vState.vtype.vsew,
-      0.U,
-      Seq(
-        1.U -> FloatH.fmt,
-        2.U -> FloatS.fmt,
-        3.U -> FloatD.fmt
-      )
-    )
+    val curFloat = vState.vtype.floatFmt
 
     // loop over floating point types
     for ((float, idx) <- coredef.FLOAT_TYPES.zipWithIndex) {

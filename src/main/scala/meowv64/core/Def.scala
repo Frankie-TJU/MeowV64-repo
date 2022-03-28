@@ -173,6 +173,14 @@ class ExecutionUnitVectorToMem
       Seq(RegType.vector)
     )
 
+class ExecutionUnitVectorFloatRedSum
+    extends ExecutionUnitInfo(
+      ExecUnitType.vectorFloatRedSum,
+      4,
+      RegType.vector,
+      Seq(RegType.vector)
+    )
+
 class ExecutionUnitVectorMisc
     extends ExecutionUnitInfo(
       ExecUnitType.vectorMisc,
@@ -338,7 +346,8 @@ abstract class CoreDef {
             new ExecutionUnitVectorALU(),
             new ExecutionUnitVectorFMA(),
             new ExecutionUnitVectorToMem(),
-            new ExecutionUnitVectorMisc()
+            new ExecutionUnitVectorMisc(),
+            new ExecutionUnitVectorFloatRedSum()
           )
         )(this)
       )
