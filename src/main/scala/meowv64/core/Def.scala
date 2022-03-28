@@ -181,13 +181,18 @@ class ExecutionUnitVectorMisc
       Seq(RegType.integer, RegType.float, RegType.vector)
     )
 
-/** Each port can read from one register file, potentially write to one or more
-  * register files
+/** Each port can read from one or more register files, potentially write to one
+  * or more register files
+  *
+  * @param regType
+  *   Main operand type
   */
 case class PortInfo(
     regType: RegType.Type,
-    units: Seq[ExecutionUnitInfo],
-    readPorts: Int
+    operandTypes: Seq[
+      Seq[RegType.Type]
+    ],
+    units: Seq[ExecutionUnitInfo]
 )(implicit coredef: CoreDef) {
   def regInfo = coredef.REG_MAPPING(regType)
 
@@ -244,10 +249,10 @@ abstract class CoreDef {
     // port 3: LSU
     PortInfo(
       RegType.integer,
+      Seq(Seq(RegType.integer), Seq(RegType.integer)), // rs1 rs2
       Seq(
         new ExecutionUnitLSU()
-      ),
-      2
+      )
     )(this)
 
   val LSQ_DEPTH: Int = 16
@@ -261,25 +266,25 @@ abstract class CoreDef {
         // port 0: ALU + Branch + CSR + Bypass
         PortInfo(
           RegType.integer,
+          Seq(Seq(RegType.integer), Seq(RegType.integer)), // rs1 rs2
           Seq(
             new ExecutionUnitALU(),
             new ExecutionUnitBranch(),
             new ExecutionUnitCSR(),
             new ExecutionUnitBypass()
-          ),
-          2
+          )
         )(this),
         // port 1: ALU + Mul + Div + Int2Float + Branch
         PortInfo(
           RegType.integer,
+          Seq(Seq(RegType.integer), Seq(RegType.integer)), // rs1 rs2
           Seq(
             new ExecutionUnitALU(),
             new ExecutionUnitMul(),
             new ExecutionUnitDiv(),
             new ExecutionUnitInt2Float(),
             new ExecutionUnitBranch()
-          ),
-          2
+          )
         )(this)
       )
     ),
@@ -292,13 +297,17 @@ abstract class CoreDef {
         PortInfo(
           RegType.float,
           Seq(
+            Seq(RegType.float),
+            Seq(RegType.float),
+            Seq(RegType.float)
+          ), // rs1 rs2 rs3
+          Seq(
             new ExecutionUnitFMA(),
             new ExecutionUnitFloatMisc(),
             new ExecutionUnitFloatDivSqrt(),
             new ExecutionUnitFloat2Int(),
             new ExecutionUnitFloat2Mem()
-          ),
-          3 // rs1 rs2 rs3
+          )
         )(this)
       )
     ),
@@ -320,12 +329,17 @@ abstract class CoreDef {
         PortInfo(
           RegType.vector,
           Seq(
+            Seq(RegType.vector),
+            Seq(RegType.vector),
+            Seq(RegType.vector),
+            Seq(RegType.vector)
+          ), // vs1 vs2 vs3/vd vm
+          Seq(
             new ExecutionUnitVectorALU(),
             new ExecutionUnitVectorFMA(),
             new ExecutionUnitVectorToMem(),
             new ExecutionUnitVectorMisc()
-          ),
-          4 // vs1 vs2 vs3/vd vm
+          )
         )(this)
       )
     )
@@ -399,9 +413,9 @@ abstract class CoreDef {
       (
         regInfo.regType,
         PORTS
-          .filter(_.regType == regInfo.regType)
-          .map(_.readPorts)
-          .sum
+          .flatMap(_.operandTypes)
+          .flatMap(x => x)
+          .count(_ == regInfo.regType)
       )
     }
   }.toMap

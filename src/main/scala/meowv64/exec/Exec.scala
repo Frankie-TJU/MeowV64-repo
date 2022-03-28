@@ -91,12 +91,14 @@ class Exec(implicit val coredef: CoreDef) extends Module {
         for (port <- coredef.PORTS)
           yield new Bundle {
             // `readPorts` read ports
-            val reader = Vec(
-              port.readPorts,
-              new RegReader(
-                port.regInfo.width,
-                port.regInfo.physRegs
-              )
+            val reader = MixedVec(
+              for (regType <- port.operandTypes.flatMap(x => x))
+                yield new Bundle {
+                  val port = new RegReader(
+                    coredef.REG_MAPPING(regType).width,
+                    coredef.REG_MAPPING(regType).physRegs
+                  )
+                }
             )
           }
       )
@@ -194,7 +196,7 @@ class Exec(implicit val coredef: CoreDef) extends Module {
                   Module(new FloatToInt).suggestName("FloatToInt")
                 case ExecUnitType.lsu => {
                   // this is actually float to mem
-                  if (port.regType == RegType.float) {
+                  if (unit.regType == RegType.float) {
                     Module(new FloatToMem).suggestName("FloatToMem")
                   } else {
                     Module(new VectorToMem).suggestName("VectorToMem")
