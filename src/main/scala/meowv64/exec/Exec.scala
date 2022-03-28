@@ -166,13 +166,13 @@ class Exec(implicit val coredef: CoreDef) extends Module {
       val bypassIdx =
         port.units.map(_.execUnitType).indexOf(ExecUnitType.bypass)
       val regRead = Module(new RegisterRead(port))
-      regRead.suggestName(s"RegisterRead_${portIdx}")
+      regRead.suggestName(s"RegisterRead_Port${portIdx}")
       regRead.io.flush := toCtrl.ctrl.flush
 
       val unitSel = if (isLSU) {
         lsu
       } else {
-        Module(
+        val module = Module(
           new UnitSel(
             port,
             for (unit <- port.units) yield {
@@ -220,6 +220,8 @@ class Exec(implicit val coredef: CoreDef) extends Module {
             hasPipe = false
           )
         )
+        module.suggestName(s"UnitSel_Port${portIdx}")
+        module
       }
 
       unitSel.issue <> regRead.io.toUnits

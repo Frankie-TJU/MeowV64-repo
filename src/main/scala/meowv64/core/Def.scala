@@ -329,11 +329,11 @@ abstract class CoreDef {
         PortInfo(
           RegType.vector,
           Seq(
-            Seq(RegType.vector),
+            Seq(RegType.vector, RegType.integer, RegType.float),
             Seq(RegType.vector),
             Seq(RegType.vector),
             Seq(RegType.vector)
-          ), // vs1 vs2 vs3/vd vm
+          ), // vs1/rs1 vs2 vs3/vd vm
           Seq(
             new ExecutionUnitVectorALU(),
             new ExecutionUnitVectorFMA(),
