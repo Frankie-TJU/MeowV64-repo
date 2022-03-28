@@ -154,6 +154,17 @@ class L2CacheTest(dut: WrappedL2, seed: Long, len: Int) {
       dut.io.writer.req.bits.len.poke(DCWriteLen.safe(cur.lg2Len.U)._1)
       dut.io.writer.req.bits.wdata.poke(cur.wdata.U)
 
+      // compute CoreDCWriter.be
+      // 0x0, D => 0b11111111
+      // 0x1, B => 0b00000010
+      // 0x2, H => 0b00001100
+      // 0x4, W => 0b11110000
+      val offset = (cur.addr & 0x7).toInt
+      val mask = BigInt(1 << (1 << cur.lg2Len)) - 1
+      val be = mask << offset
+
+      dut.io.writer.req.bits.be.poke(be.U)
+
       if (cur.isRead && dut.io.reader.req.ready.peek.litToBoolean == true) {
         waitingRead match {
           case None => {
@@ -180,15 +191,6 @@ class L2CacheTest(dut: WrappedL2, seed: Long, len: Int) {
       ) {
         val aligned = align(cur.addr)
         val original = ref.get(aligned).getOrElse(BigInt(0))
-
-        // compute CoreDCWriter.be
-        // 0x0, D => 0b11111111
-        // 0x1, B => 0b00000010
-        // 0x2, H => 0b00001100
-        // 0x4, W => 0b11110000
-        val offset = (cur.addr & 0x7).toInt
-        val mask = BigInt(1 << (1 << cur.lg2Len)) - 1
-        val be = mask << offset
 
         // convert byte mask to bit mask
         var wmask = BigInt(0)
