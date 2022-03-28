@@ -4,6 +4,7 @@ import chisel3._
 import chisel3.util._
 import meowv64.core.CoreDef
 import meowv64.exec._
+import meowv64.instr.Decoder
 
 class VectorToMemExt(implicit val coredef: CoreDef) extends Bundle {}
 
@@ -25,7 +26,13 @@ class VectorToMem(override implicit val coredef: CoreDef)
     val ext = Wire(new VectorToMemExt)
 
     toMem.valid := true.B
-    toMem.bits.data := pipe.rs3val
+    when(pipe.instr.instr.op === Decoder.Op("LOAD-FP").ident) {
+      // vluxei.v
+      toMem.bits.data := pipe.rs2val
+    }.otherwise {
+      // vse.v
+      toMem.bits.data := pipe.rs3val
+    }
     toMem.bits.lsqIdx := pipe.lsqIndex
 
     (ext, false.B)

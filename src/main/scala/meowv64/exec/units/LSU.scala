@@ -30,7 +30,7 @@ import scala.collection.mutable
   *   - us: uncached store
   */
 object DelayedMemOp extends ChiselEnum {
-  val load, uncachedLoad, vectorLoad, loadReserved = Value
+  val load, uncachedLoad, vectorLoad, vectorIndexedLoad, loadReserved = Value
   val store, uncachedStore, vectorStore = Value
   val exception = Value
 }
@@ -65,7 +65,7 @@ class DelayedMem(implicit val coredef: CoreDef) extends Bundle {
   val sext = Bool()
   val dataValid = Bool()
 
-  /** Write data, or exception trap value
+  /** Write data, or exception trap value, or read index for indexed load
     */
   val data = UInt(coredef.VLEN.W)
 
@@ -318,9 +318,13 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   assert(coredef.PADDR_WIDTH > coredef.VADDR_WIDTH)
   // vle.v
   val vectorLoad =
-    next.instr.instr.op === Decoder
-      .Op("LOAD-FP")
-      .ident && next.instr.instr.funct3.isOneOf(Seq(0.U, 5.U, 6.U, 7.U))
+    next.instr.instr.op === Decoder.Op("LOAD-FP").ident &&
+      next.instr.instr.mop === 0x0.U &&
+      next.instr.instr.funct3.isOneOf(Seq(0.U, 5.U, 6.U, 7.U))
+  // vluxei.v
+  val vectorIndexedLoad =
+    next.instr.instr.op === Decoder.Op("LOAD-FP").ident &&
+      next.instr.instr.mop === 0x1.U
   // vse.v
   val vectorStore =
     next.instr.instr.op === Decoder
@@ -328,8 +332,9 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
       .ident && next.instr.instr.funct3.isOneOf(Seq(0.U, 5.U, 6.U, 7.U))
 
   val rawAddr = Wire(UInt(coredef.XLEN.W))
-  when(vectorLoad || vectorStore) {
+  when(vectorLoad || vectorStore || vectorIndexedLoad) {
     // no imm
+    // TODO: handle vector across page
     rawAddr := next.rs1val
   }.otherwise {
     rawAddr := (next.rs1val.asSInt + next.instr.instr.imm).asUInt // We have imm = 0 for R-type instructions
@@ -466,6 +471,8 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
         lsqEntry.wop := DCWriteOp.commitLR
       }.elsewhen(vectorLoad) {
         lsqEntry.op := DelayedMemOp.vectorLoad
+      }.elsewhen(vectorIndexedLoad) {
+        lsqEntry.op := DelayedMemOp.vectorIndexedLoad
       }.otherwise {
         lsqEntry.op := DelayedMemOp.load
       }
@@ -668,10 +675,31 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
           reqSent := false.B
         }
       }
-      is(DelayedMemOp.vectorLoad) {
+      is(DelayedMemOp.vectorLoad, DelayedMemOp.vectorIndexedLoad) {
         // TODO: handle vle32.v @ 0x4 alignment
-        toMem.reader.req.bits.addr := current.addr +
-          (vectorReadReqIndex << log2Ceil(coredef.XLEN / 8))
+        when(current.op === DelayedMemOp.vectorLoad) {
+          toMem.reader.req.bits.addr := current.addr +
+            (vectorReadReqIndex << log2Ceil(coredef.XLEN / 8))
+        }.otherwise {
+          // sew = 8 << vsew
+          // shift = sew * reqIndex = reqIndex << 3 << vsew
+          val shift = (vectorReadReqIndex << 3) << vState.vtype.vsew
+          // mask = (1 << sew) - 1
+          val mask = MuxLookup(
+            vState.vtype.vsew,
+            0.U,
+            Seq(
+              0.U -> 0xffL.U, // 8
+              1.U -> 0xffffL.U, // 16
+              2.U -> 0xffffffffL.U, // 32
+              3.U -> 0xffffffffffffffffL.U // 64
+            )
+          )
+          // index is stored in data
+          // TODO: how to handle masked off elements?
+          val offset = WireInit((current.data >> shift) & mask)
+          toMem.reader.req.bits.addr := current.addr +% offset
+        }
         toMem.reader.req.valid := vectorReadReqIndex =/= vectorBeats
         retire.bits.info.wb := Cat(vectorReadRespDataComb.reverse)
         when(toMem.reader.req.fire) {
