@@ -197,7 +197,7 @@ class PipeInstr(val regInfo: RegInfo)(implicit val coredef: CoreDef)
   val rs1val = UInt(regInfo.width.W)
   val rs2val = UInt(regInfo.width.W)
   val rs3val = UInt(regInfo.width.W)
-  val vmval = UInt(regInfo.width.W)
+  val vmval = UInt((regInfo.width / 8).W) // at most 1/8*VLEN
 
   /** Physical register of rd
     */
@@ -579,6 +579,8 @@ trait WithFloatToMem {
 
 class VectorToMemReq(implicit val coredef: CoreDef) extends Bundle {
   val data = UInt(coredef.VLEN.W)
+  val index = UInt(coredef.VLEN.W)
+  val vm = UInt((coredef.VLEN / 8).W)
   val lsqIdx = UInt(log2Ceil(coredef.LSQ_DEPTH).W)
 }
 

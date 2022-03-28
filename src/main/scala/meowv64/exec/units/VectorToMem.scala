@@ -28,11 +28,13 @@ class VectorToMem(override implicit val coredef: CoreDef)
     toMem.valid := true.B
     when(pipe.instr.instr.op === Decoder.Op("LOAD-FP").ident) {
       // vluxei.v
-      toMem.bits.data := pipe.rs2val
+      toMem.bits.index := pipe.rs2val // vs2
+      toMem.bits.data := pipe.rs3val // vd
     }.otherwise {
       // vse.v
       toMem.bits.data := pipe.rs3val
     }
+    toMem.bits.vm := pipe.vmval
     toMem.bits.lsqIdx := pipe.lsqIndex
 
     (ext, false.B)

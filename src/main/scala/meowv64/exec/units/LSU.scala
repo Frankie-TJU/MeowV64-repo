@@ -65,9 +65,18 @@ class DelayedMem(implicit val coredef: CoreDef) extends Bundle {
   val sext = Bool()
   val dataValid = Bool()
 
-  /** Write data, or exception trap value, or read index for indexed load
+  // TODO: move these big registers to a separate queue
+  /** Write data, or exception trap value, or original vd
     */
   val data = UInt(coredef.VLEN.W)
+
+  /** Vector load index
+    */
+  val index = UInt(coredef.VLEN.W)
+
+  /** Vector mask
+    */
+  val vm = UInt((coredef.VLEN / 8).W)
 
   /** For retirement
     */
@@ -406,6 +415,8 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
     assert(!queue(toVector.bits.lsqIdx).dataValid)
     queue(toVector.bits.lsqIdx).dataValid := true.B
     queue(toVector.bits.lsqIdx).data := toVector.bits.data
+    queue(toVector.bits.lsqIdx).index := toVector.bits.index
+    queue(toVector.bits.lsqIdx).vm := toVector.bits.vm
   }
 
   // save state to lsq
@@ -692,12 +703,11 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
               0.U -> 0xffL.U, // 8
               1.U -> 0xffffL.U, // 16
               2.U -> 0xffffffffL.U, // 32
-              3.U -> 0xffffffffffffffffL.U // 64
+              3.U -> ((BigInt(1) << 64) - 1).U // 64
             )
           )
-          // index is stored in data
           // TODO: how to handle masked off elements?
-          val offset = WireInit((current.data >> shift) & mask)
+          val offset = WireInit((current.index >> shift) & mask)
           toMem.reader.req.bits.addr := current.addr +% offset
         }
         toMem.reader.req.valid := vectorReadReqIndex =/= vectorBeats
@@ -717,6 +727,14 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
             advance := true.B
             vectorReadReqIndex := 0.U
             vectorReadRespIndex := 0.U
+          }
+        }
+
+        // handle vm
+        for (i <- 0 until vectorMaxBeats) {
+          // TODO: handle eew
+          when(~current.vm(i) && current.instr.readVm()) {
+            vectorReadRespDataComb(i) := current.data >> (i * coredef.XLEN).U
           }
         }
       }
