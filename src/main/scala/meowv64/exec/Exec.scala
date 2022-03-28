@@ -652,8 +652,7 @@ class Exec(implicit val coredef: CoreDef) extends Module {
 
     when(releaseMem.fire) {
       retireNum := 1.U
-      rob(retirePtr).valid := false.B
-      rob(retirePtr).hasMem := false.B
+      rob(retirePtr).clear()
       retirePtr := retirePtr +% 1.U
 
       // if hasMem=true, it should never signals exception
@@ -737,8 +736,7 @@ class Exec(implicit val coredef: CoreDef) extends Module {
           toCtrl.nepc := inflight.addr
         }
 
-        info.valid := false.B
-        info.hasMem := false.B
+        info.clear()
       }.otherwise {}
     }
 
@@ -784,8 +782,7 @@ class Exec(implicit val coredef: CoreDef) extends Module {
     pendingBr := false.B
 
     for (row <- rob) {
-      row.valid := false.B
-      row.hasMem := false.B
+      row.clear()
     }
   }
 }
@@ -812,6 +809,14 @@ class ROBEntry(implicit val coredef: CoreDef) extends Bundle {
   /** Exception has occurred
     */
   val exceptionOccurred = Bool()
+
+  def clear() = {
+    this.valid := false.B
+    this.hasMem := false.B
+    this.branchTaken := false.B
+    this.updateFFlags := false.B
+    this.exceptionOccurred := false.B
+  }
 }
 
 object ROBEntry {
