@@ -9,12 +9,12 @@ import meowv64.reg.RegType
 
 // scalafmt: { align.preset = most, maxColumn = 160 }
 object ExecUnitType extends ChiselEnum {
-  val alu, branch, bypass, csr, intToFloat                               = Value
-  val div, mul                                                           = Value
-  val fma, floatMisc, floatToInt, floatDivSqrt                           = Value
-  val vectorAlu, vectorFma                                               = Value
-  val vectorToInt, vectorToFloat, intToVector, floatToVector, vectorMisc = Value
-  val lsu                                                                = Value
+  val alu, branch, bypass, csr, intToFloat     = Value
+  val div, mul                                 = Value
+  val fma, floatMisc, floatToInt, floatDivSqrt = Value
+  val vectorAlu, vectorFma                     = Value
+  val vectorMisc                               = Value
+  val lsu                                      = Value
 
   implicit def bitpat(op: ExecUnitType.Type): BitPat =
     BitPat(op.litValue.U(getWidth.W))
@@ -302,17 +302,17 @@ object DecodeInfo {
       VADD_VV  -> List(Y, N, Y, vector, Y, vector, Y, vector, N, XX, N, vectorAlu, IQT.vec),
       VADD_VI  -> List(Y, N, Y, vector, Y, vector, N, XX, N, XX, N, vectorAlu, IQT.vec),
       VADD_VX  -> List(Y, N, Y, vector, Y, vector, Y, integer, N, XX, N, vectorAlu, IQT.vec),
-      VFMV_F_S -> List(Y, N, Y, float, N, XX, Y, vector, N, XX, N, vectorToFloat, IQT.vec),
-      VMV_X_S  -> List(Y, N, Y, integer, N, XX, Y, vector, N, XX, N, vectorToInt, IQT.vec),
-      VFMV_S_F -> List(Y, N, Y, vector, Y, float, N, XX, N, XX, N, floatToVector, IQT.vec),
-      VMV_S_X  -> List(Y, N, Y, vector, Y, integer, N, XX, N, XX, N, intToVector, IQT.vec),
+      VFMV_F_S -> List(Y, N, Y, float, N, XX, Y, vector, N, XX, N, vectorMisc, IQT.vec),
+      VMV_X_S  -> List(Y, N, Y, integer, N, XX, Y, vector, N, XX, N, vectorMisc, IQT.vec),
+      VFMV_S_F -> List(Y, N, Y, vector, Y, float, N, XX, N, XX, N, vectorMisc, IQT.vec),
+      VMV_S_X  -> List(Y, N, Y, vector, Y, integer, N, XX, N, XX, N, vectorMisc, IQT.vec),
       VMV_V_V  -> List(Y, N, Y, vector, Y, vector, N, XX, N, XX, N, vectorMisc, IQT.vec),
       VMV_V_I  -> List(Y, N, Y, vector, N, XX, N, XX, N, XX, N, vectorMisc, IQT.vec),
-      VMV_V_X  -> List(Y, N, Y, vector, Y, integer, N, XX, N, XX, N, intToVector, IQT.vec),
-      VFMV_V_F -> List(Y, N, Y, vector, Y, float, N, XX, N, XX, N, floatToVector, IQT.vec),
+      VMV_V_X  -> List(Y, N, Y, vector, Y, integer, N, XX, N, XX, N, vectorMisc, IQT.vec),
+      VFMV_V_F -> List(Y, N, Y, vector, Y, float, N, XX, N, XX, N, vectorMisc, IQT.vec),
 
       // Vector Float
-      VFADD_VV -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
+      VFADD_VV  -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
       VFMACC_VV -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFma, IQT.vec)
     )
 

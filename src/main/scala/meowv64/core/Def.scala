@@ -126,6 +126,7 @@ class ExecutionUnitFloat2Mem
       RegType.float,
       Seq(RegType.float)
     )
+
 class ExecutionUnitFloatMisc
     extends ExecutionUnitInfo(
       ExecUnitType.floatMisc,
@@ -172,12 +173,12 @@ class ExecutionUnitVectorToMem
       Seq(RegType.vector)
     )
 
-class ExecutionUnitVector2Int
+class ExecutionUnitVectorMisc
     extends ExecutionUnitInfo(
-      ExecUnitType.vectorToInt,
+      ExecUnitType.vectorMisc,
       1,
       RegType.vector,
-      Seq(RegType.integer)
+      Seq(RegType.integer, RegType.float, RegType.vector)
     )
 
 /** Each port can read from one register file, potentially write to one or more
@@ -322,7 +323,7 @@ abstract class CoreDef {
             new ExecutionUnitVectorALU(),
             new ExecutionUnitVectorFMA(),
             new ExecutionUnitVectorToMem(),
-            new ExecutionUnitVector2Int()
+            new ExecutionUnitVectorMisc()
           ),
           4 // vs1 vs2 vs3/vd vm
         )(this)
@@ -345,11 +346,13 @@ abstract class CoreDef {
     ), // port 2 float2int & 3 lsu & 4 vector
     // float
     RegWritePortInfo(RegType.float, Seq(2))(this), // port 2 float
-    RegWritePortInfo(RegType.float, Seq(3, 1))(
+    RegWritePortInfo(RegType.float, Seq(3, 1, 4))(
       this
-    ), // port 1 int2float & 3 lsu
+    ), // port 1 int2float & 3 lsu & 4 vector
     // vector
-    RegWritePortInfo(RegType.vector, Seq(3))(this), // port 3 lsu
+    RegWritePortInfo(RegType.vector, Seq(3))(
+      this
+    ), // port & 3 lsu
     RegWritePortInfo(RegType.vector, Seq(4))(this) // port 4 vector
   )
 
