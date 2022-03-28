@@ -356,7 +356,8 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   // vluxei.v
   val vectorIndexedLoad =
     next.instr.instr.op === Decoder.Op("LOAD-FP").ident &&
-      next.instr.instr.mop === 0x1.U
+      next.instr.instr.mop === 0x1.U &&
+      next.instr.instr.funct3.isOneOf(Seq(0.U, 5.U, 6.U, 7.U))
   // vse.v
   val vectorStore =
     next.instr.instr.op === Decoder
