@@ -313,6 +313,9 @@ object DecodeInfo {
       VMV_V_X  -> List(Y, N, Y, vector, Y, integer, N, XX, N, XX, N, vectorMisc, IQT.vec),
       VFMV_V_F -> List(Y, N, Y, vector, Y, float, N, XX, N, XX, N, vectorMisc, IQT.vec),
       VMV1R_V  -> List(Y, N, Y, vector, N, XX, Y, vector, N, XX, N, vectorMisc, IQT.vec),
+      VSLL_VV  -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorAlu, IQT.vec),
+      VSLL_VI  -> List(Y, Y, Y, vector, N, XX, Y, vector, Y, vector, Y, vectorAlu, IQT.vec),
+      VSLL_VX  -> List(Y, Y, Y, vector, Y, integer, Y, vector, Y, vector, Y, vectorAlu, IQT.vec),
 
       // Vector Float
       VFADD_VV     -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
@@ -666,6 +669,9 @@ object Instructions {
   val VMV_V_I  = BitPat("b010111100000?????011?????1010111")
   val VMV_V_X  = BitPat("b010111100000?????100?????1010111")
   val VFMV_V_F = BitPat("b010111100000?????101?????1010111")
+  val VSLL_VV  = BitPat("b100101???????????000?????1010111")
+  val VSLL_VI  = BitPat("b100101???????????011?????1010111")
+  val VSLL_VX  = BitPat("b100101???????????100?????1010111")
   val VMV1R_V  = BitPat("b1001111?????00000011?????1010111")
 
   // Vector Float
