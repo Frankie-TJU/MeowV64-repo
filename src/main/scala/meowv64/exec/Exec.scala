@@ -576,7 +576,7 @@ class Exec(implicit val coredef: CoreDef) extends Module {
     brResults(idx) := branchResult
     brTvals(idx) := u.retire.bits.info.wb
 
-    when(u.retire.valid) {
+    when(u.retire.fire) {
       ent.valid := true.B
 
       rob(u.retire.bits.robIndex).valid := true.B
