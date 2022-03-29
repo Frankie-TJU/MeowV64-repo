@@ -561,9 +561,10 @@ class Exec(implicit val coredef: CoreDef) extends Module {
   // Filling ROB & CDB broadcast
   for (((u, ent), idx) <- units.zip(cdb.entries).zipWithIndex) {
     ent.valid := false.B
-    ent.phys := 0.U // Helps to debug, because we are asserting store(0) === 0
+    // better timing
     ent.data := u.retire.bits.info.wb
-    ent.regType := RegType.integer
+    ent.phys := u.retire.bits.rdPhys
+    ent.regType := u.retire.bits.rdType
 
     // TODO: maybe pipeline here?
     val dist = u.retire.bits.robIndex -% retirePtr
@@ -576,8 +577,6 @@ class Exec(implicit val coredef: CoreDef) extends Module {
     brTvals(idx) := u.retire.bits.info.wb
 
     when(u.retire.valid) {
-      ent.phys := u.retire.bits.rdPhys
-      ent.regType := u.retire.bits.rdType
       ent.valid := true.B
 
       rob(u.retire.bits.robIndex).valid := true.B
