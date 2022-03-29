@@ -354,5 +354,14 @@ Multicore.v
 Multicore.anno.json
 
 ucli.key
+alib-*/
+*.svf
+*_report_*.txt
+*_check_*.txt
+*.syn.v
+*.sdc
+*.ddc
+*.sdf
+
 .vscode/*
 !.vscode/settings.json

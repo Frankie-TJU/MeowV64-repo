@@ -868,7 +868,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
 
     // a flush occurred between req and resp
     // NOTE: move this logic to L1 DCache?
-    when(reqSent && ~toMem.reader.resp.valid) {
+    when((reqSent || toMem.reader.req.fire) && ~toMem.reader.resp.valid) {
       flushedRead := true.B
     }
 

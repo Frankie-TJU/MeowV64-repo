@@ -251,7 +251,6 @@ void step() {
           res = 1;
         } else {
           fprintf(stderr, "> Unhandled tohost: %x\n", input);
-          assert(false);
         }
       } else if (pending_write_addr == fromhost_addr) {
         // write to fromhost
