@@ -68,12 +68,12 @@ class OoOIssueQueue(info: IssueQueueInfo)(implicit
   val occupied = RegInit(VecInit(Seq.fill(DEPTH)(false.B)))
 
   // Egress part
+  val nextStore = WireDefault(store)
   val egMask = WireDefault(
     VecInit(
-      store.zip(occupied).map({ case (instr, valid) => valid && instr.ready })
+      nextStore.zip(occupied).map({ case (instr, valid) => valid && instr.ready })
     )
   )
-  val nextStore = WireDefault(store)
   val nextOccupied = WireDefault(occupied)
 
   // CDB data fetch
@@ -85,9 +85,6 @@ class OoOIssueQueue(info: IssueQueueInfo)(implicit
           .getRs1Type() && ent.valid
       ) {
         nextStore(idx).rs1Ready := true.B
-        egMask(idx) := occupied(
-          idx
-        ) && instr.rs2Ready && instr.rs3Ready && instr.vmReady
       }
 
       when(
@@ -95,9 +92,6 @@ class OoOIssueQueue(info: IssueQueueInfo)(implicit
           .getRs2Type() && ent.valid
       ) {
         nextStore(idx).rs2Ready := true.B
-        egMask(idx) := occupied(
-          idx
-        ) && instr.rs1Ready && instr.rs3Ready && instr.vmReady
       }
 
       when(
@@ -105,18 +99,12 @@ class OoOIssueQueue(info: IssueQueueInfo)(implicit
           .getRs3Type() && ent.valid
       ) {
         nextStore(idx).rs3Ready := true.B
-        egMask(idx) := occupied(
-          idx
-        ) && instr.rs1Ready && instr.rs2Ready && instr.vmReady
       }
 
       when(
         ent.phys === instr.vmPhys && ent.regType === RegType.vector && ent.valid
       ) {
         nextStore(idx).vmReady := true.B
-        egMask(idx) := occupied(
-          idx
-        ) && instr.rs1Ready && instr.rs2Ready && instr.rs3Ready
       }
     }
   }
