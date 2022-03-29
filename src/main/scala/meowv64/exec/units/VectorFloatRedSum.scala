@@ -1,6 +1,7 @@
 package meowv64.exec.units
 
 import chisel3._
+import chisel3.util.Cat
 import chisel3.util.log2Ceil
 import hardfloat.AddRecFN
 import meowv64.core.CoreDef
@@ -10,7 +11,6 @@ import meowv64.exec.ExecUnitPort
 import meowv64.exec.PipeInstr
 import meowv64.exec.RetireInfo
 import meowv64.exec.WithVState
-import chisel3.util.Cat
 
 class VectorFloatRedSum(implicit val coredef: CoreDef)
     extends Module
@@ -64,7 +64,9 @@ class VectorFloatRedSum(implicit val coredef: CoreDef)
           a := currentValue
         }
 
-        when(currentInstr.instr.instr.readVm() && ~currentInstr.vmval(progress)) {
+        when(
+          currentInstr.instr.instr.readVm() && ~currentInstr.vmval(progress)
+        ) {
           // masked off, do not update
           // TODO: skip this element instead
           b := 0.U

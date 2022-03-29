@@ -71,7 +71,9 @@ class OoOIssueQueue(info: IssueQueueInfo)(implicit
   val nextStore = WireDefault(store)
   val egMask = WireDefault(
     VecInit(
-      nextStore.zip(occupied).map({ case (instr, valid) => valid && instr.ready })
+      nextStore
+        .zip(occupied)
+        .map({ case (instr, valid) => valid && instr.ready })
     )
   )
   val nextOccupied = WireDefault(occupied)

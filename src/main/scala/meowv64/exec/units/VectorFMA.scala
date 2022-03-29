@@ -5,23 +5,50 @@ import chisel3.util._
 import hardfloat.MulAddRecFNToRaw_postMul
 import hardfloat.MulAddRecFNToRaw_preMul
 import hardfloat.MulAddRecFN_interIo
+import hardfloat.RawFloat
 import hardfloat.RoundRawFNToRecFN
 import meowv64.core.CoreDef
 import meowv64.core.VState
 import meowv64.exec._
 
 class VectorFMAExt(implicit val coredef: CoreDef) extends Bundle {
-  // intermediate
+  // stage 0 to stage 1:
   val toPostMul = MixedVec(for (float <- coredef.FLOAT_TYPES) yield {
     Vec(
       coredef.VLEN / float.width,
       new MulAddRecFN_interIo(float.exp, float.sig)
     )
   })
-  val mulAddResult = MixedVec(for (float <- coredef.FLOAT_TYPES) yield {
+  val mulAddA = MixedVec(for (float <- coredef.FLOAT_TYPES) yield {
     Vec(
       coredef.VLEN / float.width,
-      UInt((2 * float.sig + 1).W)
+      UInt(float.sig().W)
+    )
+  })
+  val mulAddB = MixedVec(for (float <- coredef.FLOAT_TYPES) yield {
+    Vec(
+      coredef.VLEN / float.width,
+      UInt(float.sig().W)
+    )
+  })
+  val mulAddC = MixedVec(for (float <- coredef.FLOAT_TYPES) yield {
+    Vec(
+      coredef.VLEN / float.width,
+      UInt((float.sig() * 2).W)
+    )
+  })
+
+  // stage 1 to stage 2:
+  val rawOut = MixedVec(for (float <- coredef.FLOAT_TYPES) yield {
+    Vec(
+      coredef.VLEN / float.width,
+      new RawFloat(float.exp, float.sig + 2)
+    )
+  })
+  val invalidExc = MixedVec(for (float <- coredef.FLOAT_TYPES) yield {
+    Vec(
+      coredef.VLEN / float.width,
+      Bool()
     )
   })
 
@@ -30,7 +57,7 @@ class VectorFMAExt(implicit val coredef: CoreDef) extends Bundle {
 }
 
 class VectorFMA(override implicit val coredef: CoreDef)
-    extends ExecUnit(1, new VectorFMAExt, coredef.REG_VEC)
+    extends ExecUnit(2, new VectorFMAExt, coredef.REG_VEC)
     with WithVState {
 
   val vState = IO(Input(new VState()))
@@ -114,33 +141,44 @@ class VectorFMA(override implicit val coredef: CoreDef)
             preMul.io.c := c
 
             state.toPostMul(idx)(lane) := preMul.io.toPostMul
+            state.mulAddA(idx)(lane) := preMul.io.mulAddA
+            state.mulAddB(idx)(lane) := preMul.io.mulAddB
+            state.mulAddC(idx)(lane) := preMul.io.mulAddC
 
-            // step 3: mul & add
-            state.mulAddResult(idx)(lane) :=
-              (preMul.io.mulAddA * preMul.io.mulAddB) +& preMul.io.mulAddC
-          } else {
+          } else if (stage == 1) {
             // second stage
-            state := ext.get
+            val lastState = ext.get
 
-            // step 1: post mul
+            // step 1: mul & add
+            val mulAddResult =
+              (lastState.mulAddA(idx)(lane) * lastState.mulAddB(idx)(lane)) +&
+                lastState.mulAddC(idx)(lane)
+
+            // step 2: post mul
             val postMul =
               Module(new MulAddRecFNToRaw_postMul(float.exp, float.sig))
             postMul.suggestName(s"postMul_${float.name}")
-            postMul.io.fromPreMul := state.toPostMul(idx)(lane)
-            postMul.io.mulAddResult := state.mulAddResult(idx)(lane)
+            postMul.io.fromPreMul := lastState.toPostMul(idx)(lane)
+            postMul.io.mulAddResult := mulAddResult
             // TODO
             postMul.io.roundingMode := 0.U
 
-            // step 2: rounding
+            state.rawOut(idx)(lane) := postMul.io.rawOut
+            state.invalidExc(idx)(lane) := postMul.io.invalidExc
+          } else {
+            // third stage
+            val lastState = ext.get
+
+            // step 3: rounding
             val round = Module(new RoundRawFNToRecFN(float.exp, float.sig, 0))
             round.suggestName(s"round_${float.name}")
-            round.io.in := postMul.io.rawOut
+            round.io.in := lastState.rawOut(idx)(lane)
             round.io.infiniteExc := false.B
-            round.io.invalidExc := postMul.io.invalidExc
+            round.io.invalidExc := lastState.invalidExc(idx)(lane)
             round.io.detectTininess := false.B
             round.io.roundingMode := 0.U
 
-            // step 3: convert to ieee
+            // step 2: convert to ieee
             when(pipe.instr.instr.readVm() && ~pipe.vmval(lane)) {
               // masked off, retain old value
               res(lane) := rs3Elements(lane)
