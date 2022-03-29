@@ -1,6 +1,5 @@
 #include "VRiscVSystem.h"
 #include <arpa/inet.h>
-#include <elf.h>
 #include <fcntl.h>
 #include <gmpxx.h>
 #include <iostream>
@@ -12,6 +11,12 @@
 #include <unistd.h>
 #include <verilated.h>
 #include <verilated_fst_c.h>
+
+#ifdef __APPLE__
+#include "elf-local.h"
+#else
+#include <elf.h>
+#endif
 
 // memory mapping
 typedef uint32_t mem_t;

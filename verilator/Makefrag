@@ -1,5 +1,7 @@
 VERILATOR = verilator
-VERILATOR_FLAGS = -Wno-fatal --trace-fst --timescale-override 1ns/1ns -LDFLAGS "-lgmp -lgmpxx"
+GMP_CFLAGS = $(shell pkg-config --cflags gmp)
+GMP_LDFLAGS = $(shell pkg-config --libs gmp)
+VERILATOR_FLAGS = -Wno-fatal --trace-fst --timescale-override 1ns/1ns -CFLAGS "$(GMP_CFLAGS)" -LDFLAGS "$(GMP_LDFLAGS) -lgmp -lgmpxx"
 CURRENT_DIR = $(shell pwd)
 VERILOG_SRCS = RiscVSystem.v
 
