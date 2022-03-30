@@ -53,7 +53,9 @@ set_ungroup [get_designs { INToRecFN* \
 	DivSqrtRecFNToRaw_small* \
 	RecFNToIN* \
 	RecFNToRecFN* \
-	CompareRecFN* }]
+	CompareRecFN* \
+	AddRawFN* \
+	AddRecFN* }]
 compile_ultra -no_autoungroup -retime
 
 # export
