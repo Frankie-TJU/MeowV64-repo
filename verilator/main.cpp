@@ -67,7 +67,7 @@ struct jtag_vpi_cmd {
 
 int res = 0;
 
-const uint64_t AXI_DATA_WIDTH = 128;
+const uint64_t AXI_DATA_WIDTH = 256;
 const uint64_t AXI_DATA_BYTES = AXI_DATA_WIDTH / 8;
 
 // tohost/fromhost

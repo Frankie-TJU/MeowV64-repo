@@ -10,6 +10,9 @@ import meowv64.core.CoreDef
 import meowv64.data._
 
 class CoreDCReadReq(val opts: L1DOpts) extends Bundle {
+
+  /** Address can be unaligned with regard to cache line boundary
+    */
   val addr = UInt(opts.ADDR_WIDTH.W)
 
   /** for lr instruction */
@@ -35,6 +38,9 @@ object CoreDCReadReq {
   */
 class CoreDCReader(implicit val coredef: CoreDef) extends Bundle {
   val req = Decoupled(new CoreDCReadReq(coredef.L1D))
+
+  /** Data will be shifted for in-line offset
+    */
   val resp = Input(Valid(UInt(coredef.L1D.TO_CORE_TRANSFER_WIDTH.W)))
 }
 
@@ -57,14 +63,16 @@ object DCWriteOp extends ChiselEnum {
 }
 
 object DCWriteLen extends ChiselEnum {
-  val B, H, W, D = Value
+  val B, H, W, D, Q, O = Value
 
   def toAXISize(len: DCWriteLen.Type) = Mux1H(
     Seq(
       (len === DCWriteLen.B) -> AXI.Constants.Size.S1.U,
       (len === DCWriteLen.H) -> AXI.Constants.Size.S2.U,
       (len === DCWriteLen.W) -> AXI.Constants.Size.S4.U,
-      (len === DCWriteLen.D) -> AXI.Constants.Size.S8.U
+      (len === DCWriteLen.D) -> AXI.Constants.Size.S8.U,
+      (len === DCWriteLen.Q) -> AXI.Constants.Size.S16.U,
+      (len === DCWriteLen.O) -> AXI.Constants.Size.S32.U
     )
   )
 }
@@ -228,9 +236,10 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
   }
 
   // Asserting that in-line offset is 0
-  assert((!r.req.valid) || r.req.bits.addr(IGNORED_WIDTH - 1, 0) === 0.U)
+  // assert((!r.req.valid) || r.req.bits.addr(IGNORED_WIDTH - 1, 0) === 0.U)
+  // The check for read is no longer true, because we shift the data here
   // assert((!w.write) || w.addr(IGNORED_WIDTH-1, 0) === 0.U)
-  //   The check for write is no longer true, because of AMO
+  // The check for write is no longer true, because of AMO
 
   toL2.l1data := 0.U
   toL2.l1addr := 0.U
@@ -770,7 +779,8 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
     pendingRead := true.B
   }
 
-  r.data := rdata
+  // handle offset in read addr
+  r.data := rdata >> pipeAddr(IGNORED_WIDTH - 1, 0)
 
   // L2 Handler
   toL2.l2stall := false.B

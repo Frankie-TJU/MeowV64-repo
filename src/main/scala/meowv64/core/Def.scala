@@ -381,7 +381,7 @@ abstract class CoreDef {
 
   /** L1 line width in bytes
     */
-  val L1_LINE_BYTES: Int = 16
+  val L1_LINE_BYTES: Int = 32
 
   /** Return address stack size
     */

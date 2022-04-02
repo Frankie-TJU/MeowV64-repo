@@ -17,7 +17,7 @@ abstract class SystemDef(val coreCount: Int) {
 
   val CYCLE_PER_TIMEUNIT: Int = 50 // We're running on 50M
 
-  val L2_LINE_BYTES: Int = 16 // In bytes
+  val L2_LINE_BYTES: Int = 32 // In bytes
 
   val INTERRUPT_CNT: Int = 15
 
