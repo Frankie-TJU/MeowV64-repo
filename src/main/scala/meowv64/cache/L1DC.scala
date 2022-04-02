@@ -247,8 +247,8 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
 
   // Read pipes
   val pipeRead = RegInit(false.B)
-  val pipeReserve = RegInit(false.B)
-  val pipeAddr = RegInit(0.U(opts.ADDR_WIDTH.W))
+  val pipeReadReserve = RegInit(false.B)
+  val pipeReadAddr = RegInit(0.U(opts.ADDR_WIDTH.W))
 
   ptw.resp.bits := r.data
   ptw.resp.valid := pipeRead && r.req.ready && current === 0.U
@@ -270,18 +270,18 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
       && getIndex(reserved) === getIndex(addr)
   )
 
-  val pendingWOp = RegNext(w.req.bits.op)
-  val pendingWData = RegNext(w.req.bits.wdata)
-  val pendingWLen = RegNext(w.req.bits.len)
-  val pendingWAddr = RegNext(w.req.bits.addr)
-  amoalu.io.offset := pendingWAddr(log2Ceil(opts.XLEN / 8) - 1, 0)
-  amoalu.io.wdata := pendingWData
-  amoalu.io.length := pendingWLen
-  amoalu.io.op := pendingWOp
+  val pendingWriteOp = RegNext(w.req.bits.op)
+  val pendingWriteData = RegNext(w.req.bits.wdata)
+  val pendingWriteLen = RegNext(w.req.bits.len)
+  val pendingWriteAddr = RegNext(w.req.bits.addr)
+  amoalu.io.offset := pendingWriteAddr(log2Ceil(opts.XLEN / 8) - 1, 0)
+  amoalu.io.wdata := pendingWriteData
+  amoalu.io.length := pendingWriteLen
+  amoalu.io.op := pendingWriteOp
 
   /** Write result for amo and sc instructions
     */
-  val pendingWret = RegInit(0.U(opts.XLEN.W))
+  val pendingWriteRet = RegInit(0.U(opts.XLEN.W))
 
   val wbuf = RegInit(
     VecInit(Seq.fill(opts.WRITE_BUF_DEPTH)(WriteEv.default(opts)))
@@ -321,9 +321,9 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
       nstate.asUInt,
       waddr,
       Seq(
-        (MainState.reading.asUInt(), pipeAddr),
-        (MainState.readingRefill.asUInt(), pipeAddr),
-        (MainState.readingSpin.asUInt(), pipeAddr)
+        (MainState.reading.asUInt(), pipeReadAddr),
+        (MainState.readingRefill.asUInt(), pipeReadAddr),
+        (MainState.readingSpin.asUInt(), pipeReadAddr)
       )
     )
   }.otherwise {
@@ -331,9 +331,9 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
       state.asUInt(),
       waddr,
       Seq(
-        (MainState.reading.asUInt(), pipeAddr),
-        (MainState.readingRefill.asUInt(), pipeAddr),
-        (MainState.readingSpin.asUInt(), pipeAddr)
+        (MainState.reading.asUInt(), pipeReadAddr),
+        (MainState.readingRefill.asUInt(), pipeReadAddr),
+        (MainState.readingSpin.asUInt(), pipeReadAddr)
       )
     )
   }
@@ -369,10 +369,10 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
   // Rst
   val rstCnt = RegInit(0.U(log2Ceil(opts.LINE_PER_ASSOC).W))
 
-  val pipeAddrIdx = Wire(UInt())
+  val pipeReadAddrIdx = Wire(UInt())
   val waddrIdx = Wire(UInt())
   val wlookupIdx = Wire(UInt())
-  pipeAddrIdx := getIndex(pipeAddr)
+  pipeReadAddrIdx := getIndex(pipeReadAddr)
   waddrIdx := getIndex(waddr)
   wlookupIdx := getIndex(wlookupAddr)
 
@@ -433,9 +433,9 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
         when(wbuf(wbufHead).isAMO) {
           amoalu.io.rdata := lookup.data(getSublineIdx(waddr))
           written.data(getSublineIdx(waddr)) := amoalu.io.muxed
-          pendingWret := amoalu.io.rsliced
+          pendingWriteRet := amoalu.io.rsliced
         }.otherwise {
-          pendingWret := 0.U // Successful SC
+          pendingWriteRet := 0.U // Successful SC
         }
 
         when(wbuf(wbufHead).isCond) {
@@ -458,7 +458,7 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
         wbuf(wbufHead).isCond && !reserveMatch(waddr)
       ) {
         // SC failed
-        pendingWret := 1.U
+        pendingWriteRet := 1.U
         wbuf(wbufHead).valid := false.B
         wbufHead := wbufHead +% 1.U
         nstate := MainState.idle
@@ -490,7 +490,7 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
 
     is(MainState.reading) {
       val reservedCollision = (wlookups(victim).valid
-        && getIndex(pipeAddr) === getIndex(reserved)
+        && getIndex(pipeReadAddr) === getIndex(reserved)
         && wlookups(victim).tag === getTag(reserved)
         && resValid)
       when(if (opts.ASSOC_IDX_WIDTH == 0) { false.B }
@@ -500,7 +500,7 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
       }.elsewhen(!wlookups(victim).valid || !wlookups(victim).dirty) {
         nstate := MainState.readingRefill
       }.otherwise {
-        toL2.l1addr := wlookups(victim).tag ## getIndex(pipeAddr) ## 0.U(
+        toL2.l1addr := wlookups(victim).tag ## getIndex(pipeReadAddr) ## 0.U(
           opts.OFFSET_WIDTH.W
         )
         toL2.l1req := L1DCPort.L1Req.writeback
@@ -513,7 +513,7 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
         when(!toL2.l1stall) {
           // Must be an read-miss
           l1writing(victim) := true.B
-          writingAddr := getIndex(pipeAddr)
+          writingAddr := getIndex(pipeReadAddr)
           writingData := invalid
 
           nstate := MainState.readingRefill
@@ -552,12 +552,13 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
         L1DCPort.L1Req.read,
         L1DCPort.L1Req.modify
       )
-      val l1addr = Mux(state === MainState.readingRefill, pipeAddr, waddr)
+      val l1addr = Mux(state === MainState.readingRefill, pipeReadAddr, waddr)
       toL2.l1addr := getTag(l1addr) ## getIndex(l1addr) ## 0.U(
         opts.OFFSET_WIDTH.W
       )
 
-      val writtenAddr = Mux(state === MainState.readingRefill, pipeAddr, waddr)
+      val writtenAddr =
+        Mux(state === MainState.readingRefill, pipeReadAddr, waddr)
 
       val written = Wire(new DLine(opts))
       written.valid := true.B
@@ -577,8 +578,8 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
             getSublineIdx(waddr)
           )
           written.data(getSublineIdx(waddr)) := amoalu.io.muxed
-          // pendingWret := amoalu.io.rsliced
-          // pendingWret is set in the branch below
+          // pendingWriteRet := amoalu.io.rsliced
+          // pendingWriteRet is set in the branch below
         }
       }
 
@@ -596,13 +597,13 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
             resValid := false.B
             when(!reserveMatch(waddr)) {
               // SC failed
-              pendingWret := 1.U
+              pendingWriteRet := 1.U
               l1writing(victim) := false.B
             }
           }.elsewhen(wbuf(wbufHead).isAMO) {
-            pendingWret := amoalu.io.rsliced
+            pendingWriteRet := amoalu.io.rsliced
           }.otherwise {
-            pendingWret := 0.U
+            pendingWriteRet := 0.U
           }
 
           wbuf(wbufHead).valid := false.B
@@ -627,7 +628,7 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
   val wmHit = VecInit(wmHits).asUInt().orR
   val wmHitHead = wbuf(wbufHead).valid && wbuf(wbufHead).aligned === w.aligned
 
-  w.rdata := pendingWret
+  w.rdata := pendingWriteRet
   val pushed = RegInit(false.B) // Pushed state for
 
   when(~w.req.valid) {
@@ -702,7 +703,7 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
   // Handle read interface
   // For debug use only
   val hitCount = PopCount(
-    lookups.map(line => line.valid && line.tag === getTag(pipeAddr))
+    lookups.map(line => line.valid && line.tag === getTag(pipeReadAddr))
   )
   // when reset, hitMap contains X
   when(state =/= MainState.rst) {
@@ -710,58 +711,59 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
     assert(hitCount <= 1.U)
   }
 
-  val hits = lookups.map(line => line.valid && line.tag === getTag(pipeAddr))
+  val hits =
+    lookups.map(line => line.valid && line.tag === getTag(pipeReadAddr))
   val hit = VecInit(hits).asUInt().orR
   val storeJustWrittenData = RegNext(writingData)
   val storeJustWritten = (
     RegNext(writing).asUInt().orR && RegNext(writingAddr) === getIndex(
-      pipeAddr
+      pipeReadAddr
     ) && (
       storeJustWrittenData.valid && storeJustWrittenData.tag === getTag(
-        pipeAddr
+        pipeReadAddr
       )
     )
   )
   val lookupRdata = Mux(
     storeJustWritten,
-    storeJustWrittenData.data(getSublineIdx(pipeAddr)),
+    storeJustWrittenData.data(getSublineIdx(pipeReadAddr)),
     Mux1H(
       lookups.map(line =>
         (
-          line.valid && line.tag === getTag(pipeAddr),
-          line.data(getSublineIdx(pipeAddr))
+          line.valid && line.tag === getTag(pipeReadAddr),
+          line.data(getSublineIdx(pipeReadAddr))
         )
       )
     )
   )
 
-  val pendingWHits =
-    wbuf.map(buf => buf.valid && buf.aligned === getLineAddr(pipeAddr))
-  val pendingWdata = Mux1H(pendingWHits, wbuf.map(_.sdata))
-  val pendingBe = Mux1H(pendingWHits, wbuf.map(_.be))
+  val pendingWriteBufHits =
+    wbuf.map(buf => buf.valid && buf.aligned === getLineAddr(pipeReadAddr))
+  val pendingWriteBufData = Mux1H(pendingWriteBufHits, wbuf.map(_.sdata))
+  val pendingWriteBufBe = Mux1H(pendingWriteBufHits, wbuf.map(_.be))
 
   val rdata = Mux(
-    VecInit(pendingWHits).asUInt.orR,
-    muxBE(pendingBe, pendingWdata, lookupRdata),
+    VecInit(pendingWriteBufHits).asUInt.orR,
+    muxBE(pendingWriteBufBe, pendingWriteBufData, lookupRdata),
     lookupRdata
   )
 
   when(r.req.ready) {
     pipeRead := r.req.valid
-    pipeReserve := r.req.bits.reserve
-    pipeAddr := r.req.bits.addr
+    pipeReadReserve := r.req.bits.reserve
+    pipeReadAddr := r.req.bits.addr
 
     queryAddr := r.req.bits.addr
 
-    assert((!pipeRead) || RegNext(queryAddr) === pipeAddr)
+    assert((!pipeRead) || RegNext(queryAddr) === pipeReadAddr)
   }.otherwise {
-    queryAddr := pipeAddr
+    queryAddr := pipeReadAddr
   }
 
-  when(pipeRead && pipeReserve && r.req.ready) {
+  when(pipeRead && pipeReadReserve && r.req.ready) {
     resValid := true.B
     resCommitted := false.B
-    reserved := getTag(pipeAddr) ## getIndex(pipeAddr) ## 0.U(
+    reserved := getTag(pipeReadAddr) ## getIndex(pipeReadAddr) ## 0.U(
       opts.OFFSET_WIDTH.W
     )
   }
@@ -780,7 +782,7 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
   }
 
   // handle offset in read addr
-  r.data := rdata >> pipeAddr(IGNORED_WIDTH - 1, 0)
+  r.data := rdata >> pipeReadAddr(IGNORED_WIDTH - 1, 0)
 
   // L2 Handler
   toL2.l2stall := false.B
