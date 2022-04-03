@@ -3,6 +3,7 @@ package meowv64.cache
 import chisel3._
 import chisel3.util._
 import chisel3.util.log2Ceil
+import meowv64.exec.MuxBE
 
 /** Computes atomic operations
   */
@@ -12,14 +13,14 @@ class AMOALU(val opts: L1DOpts) extends Module {
 
     /** Data read from memory
       */
-    val rdata = Input(UInt(opts.XLEN.W))
+    val rdata = Input(UInt(opts.TO_CORE_TRANSFER_WIDTH.W))
 
     /** Data from register
       */
     val wdata = Input(UInt(opts.XLEN.W))
 
     val offset = Input(
-      UInt(log2Ceil(opts.XLEN / 8).W)
+      UInt(log2Ceil(opts.TO_CORE_TRANSFER_WIDTH / 8).W)
     ) // If op =/= write or idle, then length must be W or D
     val length = Input(DCWriteLen())
 
@@ -30,13 +31,16 @@ class AMOALU(val opts: L1DOpts) extends Module {
 
     /** Data to be written to memory
       */
-    val muxed = Output(UInt(opts.XLEN.W))
+    val muxed = Output(UInt(opts.TO_CORE_TRANSFER_WIDTH.W))
   })
+
+  val shiftedRData = Wire(UInt(opts.XLEN.W))
+  shiftedRData := io.rdata >> (io.offset << 3)
 
   /** Memory, sign extended to 64 bits
     */
   val rextended = Wire(SInt(opts.XLEN.W))
-  rextended := io.rdata.asSInt()
+  rextended := shiftedRData.asSInt()
 
   val rconverted = rextended.asUInt()
 
@@ -47,8 +51,7 @@ class AMOALU(val opts: L1DOpts) extends Module {
   /** Memory, zero extended to 64 bits
     */
   val rraw = Wire(UInt(opts.XLEN.W))
-
-  rraw := io.rdata
+  rraw := shiftedRData
 
   // clip wdata to 32 bits if necessary
   val wdataSigned = Wire(SInt(opts.XLEN.W))
@@ -59,13 +62,8 @@ class AMOALU(val opts: L1DOpts) extends Module {
   when(io.length === DCWriteLen.W) {
     wdataUnsigned := io.wdata(31, 0)
     wdataSigned := io.wdata(31, 0).asSInt()
-    when(io.offset.head(1) === 0.U) {
-      rextended := io.rdata(31, 0).asSInt()
-      rraw := io.rdata(31, 0)
-    }.otherwise {
-      rextended := io.rdata(63, 32).asSInt()
-      rraw := io.rdata(63, 32)
-    }
+    rextended := shiftedRData(31, 0).asSInt()
+    rraw := shiftedRData(31, 0)
   }
 
   /** Compute result
@@ -110,11 +108,16 @@ class AMOALU(val opts: L1DOpts) extends Module {
     }
   }
 
-  when(io.length === DCWriteLen.D) {
-    io.muxed := filtered
-  }.elsewhen(io.offset.head(1) === 0.U) {
-    io.muxed := io.rdata(63, 32) ## filtered(31, 0)
-  }.otherwise {
-    io.muxed := filtered(31, 0) ## io.rdata(31, 0)
-  }
+  val mask = MuxLookup(
+    io.length.asUInt,
+    0.U,
+    Seq(
+      DCWriteLen.W.asUInt -> 0xf.U,
+      DCWriteLen.D.asUInt -> 0xff.U
+    )
+  )
+  val shiftedMask = Wire(UInt((opts.TO_CORE_TRANSFER_WIDTH / 8).W))
+  shiftedMask := mask << io.offset
+
+  io.muxed := MuxBE(shiftedMask, filtered, io.rdata)
 }

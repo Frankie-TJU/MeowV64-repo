@@ -8,6 +8,7 @@ import meowv64.cache.L1DCPort.L1Req
 import meowv64.cache.L1DCPort.L2Req
 import meowv64.core.CoreDef
 import meowv64.data._
+import meowv64.exec.MuxBE
 
 class CoreDCReadReq(val opts: L1DOpts) extends Bundle {
 
@@ -182,25 +183,6 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
     0.U
   } else {
     addr(opts.OFFSET_WIDTH - 1, IGNORED_WIDTH)
-  }
-
-  def muxBE(be: UInt, wdata: UInt, base: UInt): UInt = {
-    assume(be.getWidth * 8 == wdata.getWidth)
-    assume(be.getWidth * 8 == base.getWidth)
-
-    val ret = Wire(Vec(be.getWidth, UInt(8.W)))
-
-    for (
-      (sel, (w, b), r) <- (
-        be.asBools(),
-        wdata.asTypeOf(ret).zip(base.asTypeOf(ret)),
-        ret
-      ).zipped
-    ) {
-      r := Mux(sel, w, b)
-    }
-
-    ret.asUInt
   }
 
   val stores =
@@ -428,7 +410,7 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
         val written = Wire(lookup.cloneType)
 
         written := lookup
-        written.data(getSublineIdx(waddr)) := muxBE(
+        written.data(getSublineIdx(waddr)) := MuxBE(
           wbuf(wbufHead).be,
           wbuf(wbufHead).sdata,
           lookup.data(getSublineIdx(waddr))
@@ -571,7 +553,7 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
       written.data := toL2.l2data.asTypeOf(written.data)
 
       when(state === MainState.wallocRefill) {
-        written.data(getSublineIdx(waddr)) := muxBE(
+        written.data(getSublineIdx(waddr)) := MuxBE(
           wbuf(wbufHead).be,
           wbuf(wbufHead).sdata,
           toL2.l2data.asTypeOf(written.data)(getSublineIdx(waddr))
@@ -677,7 +659,7 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
   }.otherwise {
     for (buf <- wbuf) {
       when(buf.aligned === w.aligned) {
-        buf.sdata := muxBE(w.be, w.sdata, buf.sdata)
+        buf.sdata := MuxBE(w.be, w.sdata, buf.sdata)
         buf.be := buf.be | w.be
       }
     }
@@ -748,7 +730,7 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
 
   val rdata = Mux(
     VecInit(pendingWriteBufHits).asUInt.orR,
-    muxBE(pendingWriteBufBe, pendingWriteBufData, lookupRdata),
+    MuxBE(pendingWriteBufBe, pendingWriteBufData, lookupRdata),
     lookupRdata
   )
 

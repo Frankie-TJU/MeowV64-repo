@@ -591,3 +591,36 @@ trait WithVectorToMem {
 trait WithVState {
   val vState: VState
 }
+
+object MuxBE {
+
+  /** Apply byte enable mask
+    *
+    * @param be
+    *   byte enable
+    * @param wdata
+    *   new data
+    * @param base
+    *   old data
+    * @return
+    *   muxed data
+    */
+  def apply(be: UInt, wdata: UInt, base: UInt): UInt = {
+    assert(be.getWidth * 8 == wdata.getWidth)
+    assert(be.getWidth * 8 == base.getWidth)
+
+    val ret = Wire(Vec(be.getWidth, UInt(8.W)))
+
+    for (
+      (sel, (w, b), r) <- (
+        be.asBools(),
+        wdata.asTypeOf(ret).zip(base.asTypeOf(ret)),
+        ret
+      ).zipped
+    ) {
+      r := Mux(sel, w, b)
+    }
+
+    ret.asUInt
+  }
+}
