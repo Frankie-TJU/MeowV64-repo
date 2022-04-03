@@ -29,7 +29,7 @@ class L1IC(opts: L1Opts) extends Module {
   toDM.read.bits := DontCare
   toDM.read.valid := false.B
 
-  val IGNORED_WIDTH = log2Ceil(opts.TO_CORE_TRANSFER_WIDTH / 8)
+  val IGNORED_WIDTH = log2Ceil(opts.TO_CORE_TRANSFER_BYTES)
 
   val validArray = RegInit(0.U((opts.LINE_PER_ASSOC * opts.ASSOC).W))
   val tagArray =

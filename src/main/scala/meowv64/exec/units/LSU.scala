@@ -329,10 +329,10 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   }
 
   def getBE(addr: UInt, len: DCWriteLen.Type) = {
-    val IGNORED_WIDTH = log2Ceil(coredef.L1D.TO_CORE_TRANSFER_WIDTH / 8)
+    val IGNORED_WIDTH = log2Ceil(coredef.L1D.TO_CORE_TRANSFER_BYTES)
     val offset = addr(IGNORED_WIDTH - 1, 0)
     val mask = DCWriteLen.toByteEnable(len)
-    val sliced = Wire(UInt((coredef.L1D.TO_CORE_TRANSFER_WIDTH / 8).W))
+    val sliced = Wire(UInt(coredef.L1D.TO_CORE_TRANSFER_BYTES.W))
     sliced := mask << offset
     sliced
   }
@@ -680,12 +680,12 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   // beat width is coredef.L1D.TO_CORE_TRANSFER_WIDTH
   // sew=8<<vsew
   // end address = start address + (vl*sew)/8 = start address + vl << vsew
-  // beats: ceil((start address offset + vl*sew / 8) / (TO_CORE_TRANSFER_WIDTH / 8))
-  // = (start address offset + vl*sew / 8 + TO_CODE_TRANSFER_WIDTH / 8 - 1) / (TO_CORE_TRANSFER_WIDTH / 8)
-  val IGNORED_WIDTH = log2Ceil(coredef.L1D.TO_CORE_TRANSFER_WIDTH / 8)
+  // beats: ceil((start address offset + vl*sew / 8) / TO_CORE_TRANSFER_BYTES)
+  // = (start address offset + vl*sew / 8 + TO_CORE_TRANSFER_BYTES - 1) / TO_CORE_TRANSFER_BYTES
+  val IGNORED_WIDTH = log2Ceil(coredef.L1D.TO_CORE_TRANSFER_BYTES)
   val vectorBeats = Wire(UInt(log2Ceil(vectorMaxBeats + 1).W))
   vectorBeats := (current.addr(IGNORED_WIDTH - 1, 0) +
-    (vState.vl << vState.vtype.vsew) + (coredef.L1D.TO_CORE_TRANSFER_WIDTH / 8 - 1).U) >>
+    (vState.vl << vState.vtype.vsew) + (coredef.L1D.TO_CORE_TRANSFER_BYTES - 1).U) >>
     IGNORED_WIDTH
 
   when(emptyEntries =/= DEPTH.U && current.canFire) {
@@ -752,7 +752,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
               // second beat
               vectorReadRespDataComb := vectorReadRespData |
                 (toMem.reader.resp.bits <<
-                  (((coredef.L1D.TO_CORE_TRANSFER_WIDTH / 8).U -
+                  ((coredef.L1D.TO_CORE_TRANSFER_BYTES.U -
                     current.addr(IGNORED_WIDTH - 1, 0)) << 3))
             }
           }.otherwise {
@@ -845,7 +845,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
 
           // shift vectorData
           toMem.writer.req.bits.wdata := current.data >>
-            (((coredef.L1D.TO_CORE_TRANSFER_WIDTH / 8).U -
+            ((coredef.L1D.TO_CORE_TRANSFER_BYTES.U -
               current.addr(IGNORED_WIDTH - 1, 0)) << 3)
         }
 

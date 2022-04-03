@@ -98,7 +98,7 @@ class CoreDCWriteReq(val opts: L1DOpts) extends Bundle {
   val addr = UInt(opts.ADDR_WIDTH.W)
   val len = DCWriteLen()
   // Byte enable
-  val be = UInt((opts.TO_CORE_TRANSFER_WIDTH / 8).W)
+  val be = UInt(opts.TO_CORE_TRANSFER_BYTES.W)
   val op = DCWriteOp()
   // WData should be sign extended
   val wdata = UInt(opts.TO_CORE_TRANSFER_WIDTH.W)
@@ -111,7 +111,7 @@ class CoreDCWriter(val opts: L1DOpts) extends Bundle {
 
   val rdata = Input(UInt(opts.TO_CORE_TRANSFER_WIDTH.W)) // AMOSWAP and friends
 
-  val IGNORED_WIDTH = log2Ceil(opts.TO_CORE_TRANSFER_WIDTH / 8)
+  val IGNORED_WIDTH = log2Ceil(opts.TO_CORE_TRANSFER_BYTES)
 
   /** Byte enable */
   def be = req.bits.be
@@ -158,7 +158,7 @@ object DLine {
 // Write FIFO
 class WriteEv(val opts: L1DOpts) extends Bundle {
   val aligned = UInt(opts.ADDR_WIDTH.W)
-  val be = UInt((opts.TO_CORE_TRANSFER_WIDTH / 8).W)
+  val be = UInt(opts.TO_CORE_TRANSFER_BYTES.W)
   val sdata = UInt(opts.TO_CORE_TRANSFER_WIDTH.W)
   val isAMO = Bool()
 
@@ -185,7 +185,7 @@ object WriteEv {
 
 class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
   // Constants and helpers
-  val IGNORED_WIDTH = log2Ceil(opts.TO_CORE_TRANSFER_WIDTH / 8)
+  val IGNORED_WIDTH = log2Ceil(opts.TO_CORE_TRANSFER_BYTES)
   assert(opts.TO_CORE_TRANSFER_WIDTH == opts.TO_L2_TRANSFER_WIDTH)
 
   def getLineAddr(addr: UInt) =

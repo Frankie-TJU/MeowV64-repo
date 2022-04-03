@@ -125,7 +125,7 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
     val ptw = new TLBExt
   })
 
-  val ICAlign = log2Ceil(coredef.L1I.TO_CORE_TRANSFER_WIDTH / 8)
+  val ICAlign = log2Ceil(coredef.L1I.TO_CORE_TRANSFER_BYTES)
 
   // Internal PC counter
   val s1Pc = RegInit(coredef.INIT_VEC.U(coredef.XLEN.W))
@@ -193,7 +193,7 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
     s2Successive := s1Successive
 
     // If We send an request to IC, step forward PC counter
-    s1Pc := s1AlignedFPc + (coredef.L1I.TO_CORE_TRANSFER_WIDTH / 8).U
+    s1Pc := s1AlignedFPc + (coredef.L1I.TO_CORE_TRANSFER_BYTES).U
     s1PipeSuccessive := true.B
   }
 
@@ -657,7 +657,7 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
     lastS2ResReg := 0.U.asTypeOf(lastS2ResReg)
     lastS2Res := 0.U.asTypeOf(lastS2ResReg)
 
-    val ICAlign = log2Ceil(coredef.L1I.TO_CORE_TRANSFER_WIDTH / 8)
+    val ICAlign = log2Ceil(coredef.L1I.TO_CORE_TRANSFER_BYTES)
     // Set pc directly, because we are waiting for one tick
     s1Pc := toCtrl.pc
     s1FPc := toCtrl.pc

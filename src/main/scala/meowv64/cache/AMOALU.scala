@@ -20,7 +20,7 @@ class AMOALU(val opts: L1DOpts) extends Module {
     val wdata = Input(UInt(opts.XLEN.W))
 
     val offset = Input(
-      UInt(log2Ceil(opts.TO_CORE_TRANSFER_WIDTH / 8).W)
+      UInt(log2Ceil(opts.TO_CORE_TRANSFER_BYTES).W)
     ) // If op =/= write or idle, then length must be W or D
     val length = Input(DCWriteLen())
 
@@ -109,7 +109,7 @@ class AMOALU(val opts: L1DOpts) extends Module {
   }
 
   val mask = DCWriteLen.toByteEnable(io.length)
-  val shiftedMask = Wire(UInt((opts.TO_CORE_TRANSFER_WIDTH / 8).W))
+  val shiftedMask = Wire(UInt((opts.TO_CORE_TRANSFER_BYTES).W))
   shiftedMask := mask << io.offset
   val shiftedFiltered = Wire(UInt(opts.TO_CORE_TRANSFER_WIDTH.W))
   shiftedFiltered := filtered << (io.offset << 3)

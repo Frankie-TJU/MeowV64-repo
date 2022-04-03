@@ -73,6 +73,8 @@ trait L1Opts extends CacheOpts {
     */
   val TO_CORE_TRANSFER_WIDTH: Int
 
+  def TO_CORE_TRANSFER_BYTES: Int = TO_CORE_TRANSFER_WIDTH / 8
+
   /** L1 <-> L2 transfer size in bits.
     */
   def TO_L2_TRANSFER_WIDTH: Int = LINE_BYTES * 8

@@ -54,7 +54,7 @@ class MicroBTBEntry(implicit val coredef: CoreDef) extends Bundle {
 }
 
 class BPUResult(implicit val coredef: CoreDef) extends Bundle {
-  val OFFSET_WIDTH = log2Ceil(coredef.L1I.TO_CORE_TRANSFER_WIDTH / 8)
+  val OFFSET_WIDTH = log2Ceil(coredef.L1I.TO_CORE_TRANSFER_BYTES)
   val INDEX_WIDTH = log2Ceil(coredef.BHT_SIZE)
   val TAG_WIDTH = coredef.VADDR_WIDTH - OFFSET_WIDTH - INDEX_WIDTH
 
@@ -189,7 +189,7 @@ class MicroBTB(implicit val coredef: CoreDef) extends Module {
   })
 
   val INLINE_COUNT = coredef.L1I.TO_CORE_TRANSFER_WIDTH / Const.INSTR_MIN_WIDTH
-  val OFFSET_WIDTH = log2Ceil(coredef.L1I.TO_CORE_TRANSFER_WIDTH / 8)
+  val OFFSET_WIDTH = log2Ceil(coredef.L1I.TO_CORE_TRANSFER_BYTES)
   val INDEX_WIDTH = log2Ceil(coredef.BHT_SIZE)
   val INDEX_OFFSET_WIDTH = OFFSET_WIDTH + INDEX_WIDTH
   val TAG_WIDTH = coredef.VADDR_WIDTH - OFFSET_WIDTH - INDEX_WIDTH
