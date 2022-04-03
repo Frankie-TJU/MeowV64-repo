@@ -1099,7 +1099,8 @@ class L2Cache(val opts: L2Opts) extends Module {
 
     is(L2WBState.writing) {
       axi.WDATA := wbDataView(wbPtr)
-      axi.WSTRB := ((1 << (axi.DATA_WIDTH / 8)) - 1).U
+      // TODO: compute correct wstrb
+      axi.WSTRB := (-1).S((axi.DATA_WIDTH / 8).W).asUInt // Write all stuff
       axi.WVALID := true.B
 
       val isLast = wbPtr === (axiGrpNum - 1).U
