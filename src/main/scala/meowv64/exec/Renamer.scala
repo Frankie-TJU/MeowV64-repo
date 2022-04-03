@@ -356,9 +356,9 @@ class Renamer(implicit coredef: CoreDef) extends Module {
           for (i <- 0 until idx) {
             when(
               toExec.input(i).instr.writeRdEff() &&
-                toExec.input(idx).instr.getRdIndex() === instr.instr
+                toExec.input(i).instr.getRdIndex() === instr.instr
                   .getRdIndex() &&
-                toExec.input(idx).instr.getRdType() === instr.instr.getRdType()
+                toExec.input(i).instr.getRdType() === instr.instr.getRdType()
             ) {
               staleRdPhys := assignedPhys(i)
             }
