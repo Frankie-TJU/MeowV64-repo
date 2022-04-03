@@ -180,11 +180,11 @@ class Renamer(implicit coredef: CoreDef) extends Module {
     val mapping = banks(bankIdx).mapping
     val regBusy = banks(bankIdx).regBusy
 
-    val phys = mapping(reg)
+    val phys = WireInit(mapping(reg))
     val ready = WireDefault(~(regBusy(phys)))
 
     // Handle same cycle dependency
-    for (i <- (0 until (issueIdx - 1))) {
+    for (i <- (0 until issueIdx)) {
       when(toExec.input(i).instr.writeRdEff()) {
         val rd = toExec.input(i).instr.getRd
         when(banks(bankIdx).regType === rd.ty && reg === rd.index) {
@@ -353,7 +353,7 @@ class Renamer(implicit coredef: CoreDef) extends Module {
           // save stale physical register
           // handle same cycle dependency
           val staleRdPhys = WireInit(bank.mapping(instr.instr.getRdIndex))
-          for (i <- 0 until (idx - 1)) {
+          for (i <- 0 until idx) {
             when(
               toExec.input(i).instr.writeRdEff() &&
                 toExec.input(idx).instr.getRdIndex() === instr.instr
