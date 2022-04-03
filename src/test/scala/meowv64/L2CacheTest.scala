@@ -22,7 +22,7 @@ object L1DCacheTestDef
     extends {
       val ADDR_WIDTH: Int = 48
       val ASSOC: Int = 2
-      val LINE_BYTES: Int = 16
+      val LINE_BYTES: Int = 8
       val SIZE_BYTES: Int = 128
       val TO_CORE_TRANSFER_WIDTH: Int = 64
       val XLEN: Int = 64
@@ -36,7 +36,7 @@ object L2CacheTestDef
       val ADDR_WIDTH: Int = 48
       val ASSOC: Int = 4
       val CORE_COUNT: Int = 1
-      val LINE_BYTES: Int = 16
+      val LINE_BYTES: Int = 8
       val SIZE_BYTES: Int = 256
       val WB_DEPTH: Int = 4
       val XLEN: Int = 64
