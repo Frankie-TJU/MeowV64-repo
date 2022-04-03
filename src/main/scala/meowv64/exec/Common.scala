@@ -274,8 +274,6 @@ class IssueQueueInstr()(implicit
 /** Instruction pushed by issuer, and reused by rob
   */
 class InflightInstr(implicit val coredef: CoreDef) extends Bundle {
-  // val rdname = UInt(coredef.XLEN.W)
-  // rdname === tag, so we don't need this wire anymore
   val op = UInt(5.W)
   val isC = Bool()
   val addr = UInt(coredef.XLEN.W)
@@ -534,9 +532,6 @@ class CDBEntry(val portInfo: PortInfo)(implicit val coredef: CoreDef)
   val valid = Bool()
   val phys = UInt(log2Ceil(coredef.MAX_PHYSICAL_REGISTERS).W)
   val regType = RegType()
-  val data = UInt(
-    portInfo.writeRegTypes.map(coredef.REG_MAPPING(_).width).max.W
-  )
 }
 
 /** Common data bus

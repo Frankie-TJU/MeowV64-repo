@@ -1,4 +1,8 @@
 SECTIONS {
+    /* move tohost/fromhost to uncached memory region */
+    . = 0x60000000;
+    .tohost : { *(.tohost) }
+    
     . = 0x80000000;
     .text 0x80000000 : {
         *(.text.init)

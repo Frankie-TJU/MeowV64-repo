@@ -18,7 +18,7 @@ L1 可以发的请求有：
 
 L2 可以发的请求有：
 
-1. l2req = flush(1)，让 L1 发送 l1req = writeback，l1data 为 L1 中缓存的 dirty 数据，状态 M -> S
+1. l2req = flush(1)，让 L1 进行写回操作，此时 l1data 为 L1 中缓存的 dirty 数据，状态 M -> S
 2. l2req = invalidate(2)，让 L1 把 cache line 设为 invalid，状态 S -> I
 
 ### read

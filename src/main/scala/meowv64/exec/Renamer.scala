@@ -113,7 +113,7 @@ class Renamer(implicit coredef: CoreDef) extends Module {
   // TODO: asserts that CDB never broadcasts names that are being allocated
 
   val canRename = (0 until coredef.ISSUE_NUM).map(idx => {
-    if (idx == 0) {
+    if (true) {
       true.B
     } else {
       val ret = WireDefault(true.B)
@@ -169,12 +169,30 @@ class Renamer(implicit coredef: CoreDef) extends Module {
     }
   })
 
-  def readRegs(reg: UInt, bankIdx: Int) = {
+  // Save assigned phys register for same cycle dependency
+  val assignedPhys = WireInit(
+    VecInit.fill(coredef.ISSUE_NUM)(
+      0.U(log2Ceil(coredef.MAX_PHYSICAL_REGISTERS).W)
+    )
+  )
+
+  def readRegs(reg: UInt, issueIdx: Int, bankIdx: Int) = {
     val mapping = banks(bankIdx).mapping
     val regBusy = banks(bankIdx).regBusy
 
     val phys = mapping(reg)
     val ready = WireDefault(~(regBusy(phys)))
+
+    // Handle same cycle dependency
+    for (i <- (0 until (issueIdx - 1))) {
+      when(toExec.input(i).instr.writeRdEff()) {
+        val rd = toExec.input(i).instr.getRd
+        when(banks(bankIdx).regType === rd.ty && reg === rd.index) {
+          phys := assignedPhys(i)
+          ready := false.B
+        }
+      }
+    }
 
     // Loop through CDB
     for (ent <- cdb.entries) {
@@ -238,6 +256,7 @@ class Renamer(implicit coredef: CoreDef) extends Module {
         val (rs1Phys, rs1Ready) =
           readRegs(
             instr.instr.rs1,
+            idx,
             bankIdx
           )
         toExec.output(idx).rs1Phys := rs1Phys
@@ -250,6 +269,7 @@ class Renamer(implicit coredef: CoreDef) extends Module {
         val (rs2Phys, rs2Ready) =
           readRegs(
             instr.instr.rs2,
+            idx,
             bankIdx
           )
         toExec.output(idx).rs2Phys := rs2Phys
@@ -271,6 +291,7 @@ class Renamer(implicit coredef: CoreDef) extends Module {
                 instr.instr.rd,
                 instr.instr.rs3
               ),
+              idx,
               bankIdx
             )
           toExec.output(idx).rs3Phys := rs3Phys
@@ -283,7 +304,7 @@ class Renamer(implicit coredef: CoreDef) extends Module {
         RegType.vector === regInfo.regType && instr.instr.readVm
       ) {
         val (vmPhys, vmReady) =
-          readRegs(0.U, bankIdx)
+          readRegs(0.U, idx, bankIdx)
         toExec.output(idx).vmPhys := vmPhys
         toExec.output(idx).vmReady := vmReady
       }
@@ -323,13 +344,27 @@ class Renamer(implicit coredef: CoreDef) extends Module {
         }
 
         curMask := 1.U << phys
+        assignedPhys(idx) := phys
         when(idx.U < toExec.commit) {
           // allocate register for rd
           bank.mapping(instr.instr.getRdIndex) := phys
           toExec.output(idx).rdPhys := phys
 
           // save stale physical register
-          toExec.output(idx).staleRdPhys := bank.mapping(instr.instr.getRdIndex)
+          // handle same cycle dependency
+          val staleRdPhys = WireInit(bank.mapping(instr.instr.getRdIndex))
+          for (i <- 0 until (idx - 1)) {
+            when(
+              toExec.input(i).instr.writeRdEff() &&
+                toExec.input(idx).instr.getRdIndex() === instr.instr
+                  .getRdIndex() &&
+                toExec.input(idx).instr.getRdType() === instr.instr.getRdType()
+            ) {
+              staleRdPhys := assignedPhys(i)
+            }
+          }
+
+          toExec.output(idx).staleRdPhys := staleRdPhys
         }
       }
 

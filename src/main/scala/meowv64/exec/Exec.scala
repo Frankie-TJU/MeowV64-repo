@@ -562,7 +562,6 @@ class Exec(implicit val coredef: CoreDef) extends Module {
   for (((u, ent), idx) <- units.zip(cdb.entries).zipWithIndex) {
     ent.valid := false.B
     // better timing
-    ent.data := u.retire.bits.info.wb
     ent.phys := u.retire.bits.rdPhys
     ent.regType := u.retire.bits.rdType
 
