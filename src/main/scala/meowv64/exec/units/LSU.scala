@@ -716,7 +716,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
       is(DelayedMemOp.vectorLoad, DelayedMemOp.vectorIndexedLoad) {
         when(current.op === DelayedMemOp.vectorLoad) {
           // at most two beats
-          assert(vectorBeats === 1.U || vectorBeats === 2.U)
+          assert(vectorBeats <= 2.U)
           when(vectorReadReqIndex === 0.U) {
             // first beat
             toMem.reader.req.bits.addr := current.addr
@@ -769,7 +769,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
             // indexed load
             vectorReadRespDataComb := vectorReadRespData |
               (toMem.reader.resp.bits(coredef.XLEN - 1, 0) <<
-                vectorReadRespIndex << log2Ceil(coredef.XLEN))
+                (vectorReadRespIndex << log2Ceil(coredef.XLEN)))
           }
 
           when(vectorReadReqIndex === vectorBeats) {
@@ -842,6 +842,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
       }
       is(DelayedMemOp.vectorStore) {
         val WIDTH = coredef.L1D.TO_CORE_TRANSFER_WIDTH
+        assert(vectorBeats <= 2.U)
         when(vectorWriteReqIndex === 0.U) {
           // first beat
           toMem.writer.req.bits.addr := current.addr
