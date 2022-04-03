@@ -66,6 +66,19 @@ object DCWriteOp extends ChiselEnum {
 object DCWriteLen extends ChiselEnum {
   val B, H, W, D, Q, O = Value
 
+  /** Compute byte enable
+    */
+  def toByteEnable(len: DCWriteLen.Type) = MuxLookup(
+    len.asUInt,
+    0.U,
+    Seq(
+      DCWriteLen.B.asUInt -> 0x1.U,
+      DCWriteLen.H.asUInt -> 0x3.U,
+      DCWriteLen.W.asUInt -> 0xf.U,
+      DCWriteLen.D.asUInt -> 0xff.U
+    )
+  )
+
   def toAXISize(len: DCWriteLen.Type) = Mux1H(
     Seq(
       (len === DCWriteLen.B) -> AXI.Constants.Size.S1.U,

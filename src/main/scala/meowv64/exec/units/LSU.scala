@@ -331,16 +331,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   def getBE(addr: UInt, len: DCWriteLen.Type) = {
     val IGNORED_WIDTH = log2Ceil(coredef.L1D.TO_CORE_TRANSFER_WIDTH / 8)
     val offset = addr(IGNORED_WIDTH - 1, 0)
-    val mask = MuxLookup(
-      len.asUInt,
-      0.U,
-      Seq(
-        DCWriteLen.B.asUInt -> 0x1.U,
-        DCWriteLen.H.asUInt -> 0x3.U,
-        DCWriteLen.W.asUInt -> 0xf.U,
-        DCWriteLen.D.asUInt -> 0xff.U
-      )
-    )
+    val mask = DCWriteLen.toByteEnable(len)
     val sliced = Wire(UInt((coredef.L1D.TO_CORE_TRANSFER_WIDTH / 8).W))
     sliced := mask << offset
     sliced

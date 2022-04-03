@@ -108,16 +108,11 @@ class AMOALU(val opts: L1DOpts) extends Module {
     }
   }
 
-  val mask = MuxLookup(
-    io.length.asUInt,
-    0.U,
-    Seq(
-      DCWriteLen.W.asUInt -> 0xf.U,
-      DCWriteLen.D.asUInt -> 0xff.U
-    )
-  )
+  val mask = DCWriteLen.toByteEnable(io.length)
   val shiftedMask = Wire(UInt((opts.TO_CORE_TRANSFER_WIDTH / 8).W))
   shiftedMask := mask << io.offset
+  val shiftedFiltered = Wire(UInt(opts.TO_CORE_TRANSFER_WIDTH.W))
+  shiftedFiltered := filtered << (io.offset << 3)
 
-  io.muxed := MuxBE(shiftedMask, filtered, io.rdata)
+  io.muxed := MuxBE(shiftedMask, shiftedFiltered, io.rdata)
 }
