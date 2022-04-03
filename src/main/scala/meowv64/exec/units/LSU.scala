@@ -668,7 +668,6 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   val advance = WireInit(false.B)
   when(advance) {
     retireNum := 1.U
-    head := head +% 1.U
   }
 
   retire.bits.writeRdEff := current.writeRdEff

@@ -241,8 +241,9 @@ class ExecTest(dut: system.RiscVSystem, file: String) {
             }
             case Some((addr, _, _)) if addr == 0x60000040L => {
               // fromhost in ISA testsuite
+              // clear tohost
               for (i <- 0 until axiDataBytes / 4) {
-                mem.put(addr + i * 4, 0)
+                mem.put(0x60000000L + i * 4, 0)
               }
             }
             case _ => {}
