@@ -264,7 +264,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   val tlbRequestModify = WireDefault(false.B)
   tlb.satp := satp
   tlb.ptw <> ptw
-  tlb.query.req.valid := requiresTranslate && next.instr.valid && !fenceLike
+  tlb.query.req.valid := requiresTranslate && issue.instr.valid && !fenceLike
   tlb.query.req.bits.isModify := tlbRequestModify
   tlb.query.req.bits.mode := tlbMode
   tlb.flush := tlbRst
