@@ -462,7 +462,7 @@ abstract class CoreDef {
         val ASSOC: Int = 2
         val LINE_BYTES: Int = outer.L1_LINE_BYTES
         val SIZE_BYTES: Int = 2048 // 2KB L1 D
-        val TO_CORE_TRANSFER_WIDTH: Int = outer.XLEN
+        val TO_CORE_TRANSFER_WIDTH: Int = outer.L1_LINE_BYTES * 8
         val XLEN: Int = outer.XLEN
 
         val WRITE_BUF_DEPTH: Int = 4

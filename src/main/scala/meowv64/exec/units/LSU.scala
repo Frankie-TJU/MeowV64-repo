@@ -169,10 +169,9 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   val vectorMaxBeats = coredef.VLEN / coredef.XLEN
   val vectorReadReqIndex = RegInit(0.U(log2Ceil(vectorMaxBeats + 1).W))
   val vectorReadRespIndex = RegInit(0.U(log2Ceil(vectorMaxBeats + 1).W))
-  val vectorReadRespData = RegInit(
-    VecInit.fill(vectorMaxBeats)(0.U(coredef.XLEN.W))
-  )
+  val vectorReadRespData = RegInit(0.U(coredef.VLEN.W))
   val vectorReadRespDataComb = WireInit(vectorReadRespData)
+  vectorReadRespData := vectorReadRespDataComb
   val vectorWriteReqIndex = RegInit(0.U(log2Ceil(vectorMaxBeats + 1).W))
   val vectorWriteData = Wire(Vec(vectorMaxBeats, UInt(coredef.XLEN.W)))
 
@@ -330,7 +329,8 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   }
 
   def getBE(addr: UInt, len: DCWriteLen.Type) = {
-    val offset = addr(log2Ceil(coredef.XLEN / 8) - 1, 0)
+    val IGNORED_WIDTH = log2Ceil(coredef.L1D.TO_CORE_TRANSFER_WIDTH / 8)
+    val offset = addr(IGNORED_WIDTH - 1, 0)
     val mask = MuxLookup(
       len.asUInt,
       0.U,
@@ -341,7 +341,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
         DCWriteLen.D.asUInt -> 0xff.U
       )
     )
-    val sliced = Wire(UInt((coredef.XLEN / 8).W))
+    val sliced = Wire(UInt((coredef.L1D.TO_CORE_TRANSFER_WIDTH / 8).W))
     sliced := mask << offset
     sliced
   }
@@ -623,10 +623,8 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
 
   // compute write back value from reader
   val shifted =
-    toMem.reader.resp.bits >> (current.addr(
-      2,
-      0
-    ) << 3) // TODO: use lookup table?
+    toMem.reader.resp.bits >>
+      (current.addr(2, 0) << 3) // TODO: use lookup table?
   val signedResult = Wire(SInt(coredef.XLEN.W)).suggestName("signedResult")
   val result = Wire(UInt(coredef.VLEN.W)).suggestName("result")
   shifted.suggestName("shifted")
@@ -689,12 +687,16 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   }
 
   // compute memory access beats from vl
-  // round up to multiples of 64
-  // sew=vsew<<3
-  // beats: (vl*sew+63)/64=((vl<<vsew)<<3+63)>>6=(vl<<vsew+7)>>3
-  // TODO: misalign
+  // beat width is coredef.L1D.TO_CORE_TRANSFER_WIDTH
+  // sew=8<<vsew
+  // end address = start address + (vl*sew)/8 = start address + vl << vsew
+  // beats: ceil((start address offset + vl*sew / 8) / (TO_CORE_TRANSFER_WIDTH / 8))
+  // = (start address offset + vl*sew / 8 + TO_CODE_TRANSFER_WIDTH / 8 - 1) / (TO_CORE_TRANSFER_WIDTH / 8)
+  val IGNORED_WIDTH = log2Ceil(coredef.L1D.TO_CORE_TRANSFER_WIDTH / 8)
   val vectorBeats = Wire(UInt(log2Ceil(vectorMaxBeats + 1).W))
-  vectorBeats := ((vState.vl << vState.vtype.vsew) + 7.U) >> 3.U
+  vectorBeats := (current.addr(IGNORED_WIDTH - 1, 0) +
+    (vState.vl << vState.vtype.vsew) + (coredef.L1D.TO_CORE_TRANSFER_WIDTH / 8 - 1).U) >>
+    IGNORED_WIDTH
 
   when(emptyEntries =/= DEPTH.U && current.canFire) {
     switch(current.op) {
@@ -712,11 +714,20 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
         }
       }
       is(DelayedMemOp.vectorLoad, DelayedMemOp.vectorIndexedLoad) {
-        // TODO: handle vle32.v @ 0x4 alignment
         when(current.op === DelayedMemOp.vectorLoad) {
-          toMem.reader.req.bits.addr := current.addr +
-            (vectorReadReqIndex << log2Ceil(coredef.XLEN / 8))
+          // at most two beats
+          assert(vectorBeats === 1.U || vectorBeats === 2.U)
+          when(vectorReadReqIndex === 0.U) {
+            // first beat
+            toMem.reader.req.bits.addr := current.addr
+          }.otherwise {
+            toMem.reader.req.bits.addr :=
+              (current.addr(coredef.PADDR_WIDTH - 1, IGNORED_WIDTH) ##
+                0.U(IGNORED_WIDTH.W)) +
+                (vectorReadReqIndex << IGNORED_WIDTH)
+          }
         }.otherwise {
+          // indexed load
           // sew = 8 << vsew
           // shift = sew * reqIndex = reqIndex << 3 << vsew
           val shift = (vectorReadReqIndex << 3) << vState.vtype.vsew
@@ -736,32 +747,54 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
           toMem.reader.req.bits.addr := current.addr +% offset
         }
         toMem.reader.req.valid := vectorReadReqIndex =/= vectorBeats
-        retire.bits.info.wb := Cat(vectorReadRespDataComb.reverse)
         when(toMem.reader.req.fire) {
           vectorReadReqIndex := vectorReadReqIndex + 1.U
         }
 
         when(actualRespValid) {
           vectorReadRespIndex := vectorReadRespIndex + 1.U
-          vectorReadRespData(vectorReadRespIndex) := toMem.reader.resp.bits
-          vectorReadRespDataComb(vectorReadRespIndex) := toMem.reader.resp.bits
+
+          when(current.op === DelayedMemOp.vectorLoad) {
+            when(vectorReadRespIndex === 0.U) {
+              // first beat
+              vectorReadRespDataComb := toMem.reader.resp.bits
+            }.otherwise {
+              // second beat
+              vectorReadRespDataComb := vectorReadRespData |
+                (toMem.reader.resp.bits <<
+                  (((coredef.L1D.TO_CORE_TRANSFER_WIDTH / 8).U -
+                    current.addr(IGNORED_WIDTH - 1, 0)) << 3))
+            }
+          }.otherwise {
+            // indexed load
+            vectorReadRespDataComb := vectorReadRespData |
+              (toMem.reader.resp.bits(coredef.XLEN - 1, 0) <<
+                vectorReadRespIndex << log2Ceil(coredef.XLEN))
+          }
 
           when(vectorReadReqIndex === vectorBeats) {
             retire.valid := true.B
 
             advance := true.B
+            vectorReadRespData := 0.U
             vectorReadReqIndex := 0.U
             vectorReadRespIndex := 0.U
           }
         }
 
         // handle vm
+        val maskVec = WireInit(VecInit.fill(coredef.VLEN)(false.B))
+        val mask = Cat(maskVec.reverse)
         for (i <- 0 until vectorMaxBeats) {
           // TODO: handle eew
           when(~current.vm(i) && current.instr.readVm()) {
-            vectorReadRespDataComb(i) := current.data >> (i * coredef.XLEN).U
+            for (j <- 0 until coredef.XLEN) {
+              maskVec(i * 64 + j) := true.B
+            }
           }
         }
+
+        retire.bits.info.wb := (current.data & mask) | (vectorReadRespDataComb & ~mask)
       }
       is(DelayedMemOp.uncachedLoad) {
         retire.bits.info.wb := current.getLSB(toMem.uncached.rdata)
@@ -808,24 +841,37 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
         }
       }
       is(DelayedMemOp.vectorStore) {
-        toMem.writer.req.bits.addr := align(current.addr) +
-          (vectorWriteReqIndex << log2Ceil(coredef.XLEN / 8))
-        toMem.writer.req.bits.wdata := vectorWriteData(vectorWriteReqIndex)
+        val WIDTH = coredef.L1D.TO_CORE_TRANSFER_WIDTH
+        when(vectorWriteReqIndex === 0.U) {
+          // first beat
+          toMem.writer.req.bits.addr := current.addr
+          toMem.writer.req.bits.wdata := current.data
+        }.otherwise {
+          toMem.writer.req.bits.addr :=
+            (current.addr(coredef.PADDR_WIDTH - 1, IGNORED_WIDTH) ##
+              0.U(IGNORED_WIDTH.W)) +
+              (vectorWriteReqIndex << IGNORED_WIDTH)
+
+          // shift vectorData
+          toMem.writer.req.bits.wdata := current.data >>
+            (((coredef.L1D.TO_CORE_TRANSFER_WIDTH / 8).U -
+              current.addr(IGNORED_WIDTH - 1, 0)) << 3)
+        }
 
         // compute write be
         // first & last beat is special
-        val offset = current.addr(log2Ceil(coredef.XLEN / 8) - 1, 0)
-        val fullMask = Fill(coredef.XLEN / 8, 1.U).asUInt
+        val offset = current.addr(log2Ceil(WIDTH / 8) - 1, 0)
+        val fullMask = Fill(WIDTH / 8, 1.U).asUInt
         val firstMask = WireInit(fullMask)
         when(vectorWriteReqIndex === 0.U) {
           firstMask := fullMask << offset
         }
 
         val lastOffset = offset +
-          (vState.vl << vState.vtype.vsew)(log2Ceil(coredef.XLEN / 8) - 1, 0)
+          (vState.vl << vState.vtype.vsew)(log2Ceil(WIDTH / 8) - 1, 0)
         val lastMask = WireInit(fullMask)
         when(vectorWriteReqIndex === vectorBeats - 1.U && lastOffset =/= 0.U) {
-          lastMask := fullMask >> ((coredef.XLEN / 8).U - lastOffset)
+          lastMask := fullMask >> ((WIDTH / 8).U - lastOffset)
         }
         toMem.writer.req.bits.be := firstMask & lastMask
 
@@ -874,6 +920,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
 
     reqSent := false.B
 
+    vectorReadRespData := 0.U
     vectorReadReqIndex := 0.U
     vectorReadRespIndex := 0.U
   }

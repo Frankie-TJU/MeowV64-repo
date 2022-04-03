@@ -172,6 +172,7 @@ object WriteEv {
 class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
   // Constants and helpers
   val IGNORED_WIDTH = log2Ceil(opts.TO_CORE_TRANSFER_WIDTH / 8)
+  assert(opts.TO_CORE_TRANSFER_WIDTH == opts.TO_L2_TRANSFER_WIDTH)
 
   def getLineAddr(addr: UInt) =
     addr(opts.ADDR_WIDTH - 1, IGNORED_WIDTH) ## 0.U(IGNORED_WIDTH.W)
@@ -364,6 +365,9 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
   writingData := DontCare
   writingAddr := DontCare
 
+  dontTouch(writingAddr)
+  dontTouch(writingData)
+  dontTouch(writing)
   stores.write(writingAddr, VecInit(Seq.fill(opts.ASSOC)(writingData)), writing)
 
   // Rst
@@ -782,7 +786,7 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
   }
 
   // handle offset in read addr
-  r.data := rdata >> pipeReadAddr(IGNORED_WIDTH - 1, 0)
+  r.data := rdata >> (pipeReadAddr(IGNORED_WIDTH - 1, 0) << 3)
 
   // L2 Handler
   toL2.l2stall := false.B
