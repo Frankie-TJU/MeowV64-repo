@@ -5,7 +5,7 @@ import chisel3.experimental.ChiselEnum
 import chisel3.util.Valid
 import chisel3.util.log2Ceil
 
-/** Cache definations and interfaces
+/** Cache definitions and interfaces
   *
   * Unless explicitly stated, size/width numbers are in bits
   */

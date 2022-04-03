@@ -694,7 +694,7 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
 
       w.req.ready := true.B
     }.otherwise {
-      // Wtire merge miss, fifo full, wait for fifo
+      // merge miss, fifo full, wait for fifo
       w.req.ready := false.B
     }
   }

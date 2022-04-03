@@ -17,7 +17,7 @@ object S2State extends ChiselEnum {
   val rst, idle, refill, refilled = Value
 }
 
-// TODO: Change to xpm_tdpmem
+// TODO: Use sram ip
 class L1IC(opts: L1Opts) extends Module {
   val toCPU = IO(new CoreICPort(opts))
   val toL2 = IO(new L1ICPort(opts))

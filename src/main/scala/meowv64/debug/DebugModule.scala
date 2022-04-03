@@ -33,7 +33,9 @@ object DebugModuleState extends ChiselEnum {
   val idle, req, resp = Value
 }
 
-class DMControl extends Bundle {
+/** Debug Module Control (dmcontrol, at 0x10)
+  */
+class DebugModuleControl extends Bundle {
   val haltreq = Bool()
   val resumereq = Bool()
   val hartreset = Bool()
@@ -50,7 +52,9 @@ class DMControl extends Bundle {
   val dmactive = Bool()
 }
 
-class DMStatus extends Bundle {
+/** Debug Module Status (DebugModuleStatus, at 0x11)
+  */
+class DebugModuleStatus extends Bundle {
   val ndmresetpending = Bool()
   val stickyunavail = Bool()
   val impebreak = Bool()
@@ -74,6 +78,8 @@ class DMStatus extends Bundle {
   val version = UInt(4.W)
 }
 
+/** Hart Info (hartinfo, at 0x12)
+  */
 class HartInfo extends Bundle {
   val nscratch = UInt(4.W)
   val zero = UInt(3.W)
@@ -82,7 +88,9 @@ class HartInfo extends Bundle {
   val dataaddr = UInt(4.W)
 }
 
-class AbstractCS extends Bundle {
+/** Abstract Control and Status (abstractcs, at 0x16)
+  */
+class AbstractControlStatus extends Bundle {
   val progbufsize = UInt(5.W)
   val zero1 = UInt(11.W)
   val busy = Bool()
@@ -120,13 +128,17 @@ class AccessMemoryCmd extends Bundle {
   val zero2 = UInt(14.W)
 }
 
+/** Abstract Command Autoexec (abstractauto, at 0x18)
+  */
 class AbstractAuto extends Bundle {
   val autoexecprogbuf = UInt(16.W)
   val zero = UInt(4.W)
   val autoexecdata = UInt(12.W)
 }
 
-class SystemBusCS extends Bundle {
+/** System Bus Access Control and Status (sbcs, at 0x38)
+  */
+class SystemBusControlStatus extends Bundle {
   val sbversion = UInt(3.W)
   val zero = UInt(6.W)
   val sbbusyerror = Bool()
@@ -173,6 +185,8 @@ object DebugModuleMapping
     }
     with MMIOMapping
 
+/** Abstract command state
+  */
 object AbstractState extends ChiselEnum {
   val idle, action, resume, memory = Value
 }
@@ -216,7 +230,7 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
   val absCommand = RegInit(0.U(32.W))
   val cmderr = RegInit(0.U(3.W))
 
-  // dmcontrol registers
+  // DebugModuleControl registers
   val hartreset = RegInit(false.B)
   val hartsel = RegInit(
     0.U(log2Ceil(sDef.CORE_COUNT))
@@ -348,7 +362,7 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
         is(0x10.U) {
           // dmcontrol
           when(curReq.isRead) {
-            val resp = WireInit(0.U.asTypeOf(new DMControl))
+            val resp = WireInit(0.U.asTypeOf(new DebugModuleControl))
             resp.hartreset := hartreset
             val hartselExtended = Wire(UInt(20.W))
             hartselExtended := hartsel
@@ -359,7 +373,7 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
 
             curResp.data := resp.asUInt
           }.otherwise {
-            val req = Wire(new DMControl)
+            val req = Wire(new DebugModuleControl)
             req := curReq.data.asTypeOf(req)
 
             hartreset := req.hartreset
@@ -383,7 +397,7 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
         is(0x11.U) {
           // dmstatus
           when(curReq.isRead) {
-            val resp = WireInit(0.U.asTypeOf(new DMStatus))
+            val resp = WireInit(0.U.asTypeOf(new DebugModuleStatus))
             // halted == in debug mode
             val halted = WireInit(io.core(hartsel).halted)
             resp.allhalted := halted
@@ -416,7 +430,7 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
         is(0x16.U) {
           // abstractcs
           when(curReq.isRead) {
-            val resp = WireInit(0.U.asTypeOf(new AbstractCS))
+            val resp = WireInit(0.U.asTypeOf(new AbstractControlStatus))
             resp.progbufsize := progBufferSize.U
             resp.busy := absState =/= AbstractState.idle
             resp.cmderr := cmderr
@@ -424,7 +438,7 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
 
             curResp.data := resp.asUInt
           }.otherwise {
-            val req = Wire(new AbstractCS)
+            val req = Wire(new AbstractControlStatus)
             req := curReq.data.asTypeOf(req)
 
             when(req.cmderr =/= 0.U) {
@@ -514,13 +528,13 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
         is(0x38.U) {
           // sbcs
           when(curReq.isRead) {
-            val resp = WireInit(0.U.asTypeOf(new SystemBusCS))
+            val resp = WireInit(0.U.asTypeOf(new SystemBusControlStatus))
             resp.sbversion := 1.U
             resp.sbaccess := 2.U
 
             curResp.data := resp.asUInt
           }.otherwise {
-            val req = Wire(new SystemBusCS)
+            val req = Wire(new SystemBusControlStatus)
             req := curReq.data.asTypeOf(req)
           }
           curResp.fail := false.B
@@ -699,7 +713,7 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
                     val scratchIdx =
                       Mux(gprIdx === a0, 0x7b2.U, 0x7b3.U)
                     // csrrs a1, scratchIdx, zero
-                    // csr=scratcIdx rs1=zero 010 rd=a1 1110011
+                    // csr=scratchIdx rs1=zero 010 rd=a1 1110011
                     ramInsts(0) := (scratchIdx << 20) | (2.U << 12) |
                       (a1 << 7) | (0x73.U)
                   }.otherwise {
