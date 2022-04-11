@@ -156,6 +156,11 @@ class RetireInfo(val regInfo: RegInfo)(implicit val coredef: CoreDef)
   val updateFFlags = Bool()
   val fflags = UInt(5.W)
 
+  /** Update vState for vector operations
+    */
+  val updateVState = Bool()
+  val vState = new VState()
+
   /** Exception result
     */
   val exception = new ExceptionResult
@@ -173,7 +178,9 @@ object RetireInfo {
     info.wb := 0.U
     info.branchTaken := false.B
     info.updateFFlags := false.B
+    info.updateVState := false.B
     info.fflags := 0.U
+    info.vState := 0.U.asTypeOf(new VState)
 
     info
   }

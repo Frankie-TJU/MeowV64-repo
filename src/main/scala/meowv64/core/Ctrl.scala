@@ -117,9 +117,10 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
 
     val tlbRst = Output(Bool())
 
-    /** Update fflags
+    /** Update fflags & vState
       */
-    val fflags = Flipped(Valid(UInt(5.W)))
+    val updateFFlags = Flipped(Valid(UInt(5.W)))
+    val updateVState = Flipped(Valid(new VState))
   })
 
   val int = IO(Input(new CoreInt))
@@ -161,10 +162,6 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
     val dpc = new CSRPort(coredef.XLEN)
     val dscratch0 = new CSRPort(coredef.XLEN)
     val dscratch1 = new CSRPort(coredef.XLEN)
-
-    /** Update VState
-      */
-    val updateVState = Flipped(Valid(new VState))
   })
 
   val dm = IO(new CoreToDebugModule)
@@ -405,8 +402,8 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
 
   // update fflags
   // and set mstatus.fs = 3(dirty)
-  when(toExec.fflags.valid) {
-    fcsr.fflags := toExec.fflags.bits
+  when(toExec.updateFFlags.valid) {
+    fcsr.fflags := toExec.updateFFlags.bits
     status.fs := 3.U
   }
 
@@ -417,8 +414,8 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
   csr.vlenb.rdata := (coredef.VLEN / 8).U
   toExec.vState := vState
 
-  when(csr.updateVState.valid) {
-    vState := csr.updateVState.bits
+  when(toExec.updateVState.valid) {
+    vState := toExec.updateVState.bits
   }
 
   val dcsr = RegInit(DCSR.init)

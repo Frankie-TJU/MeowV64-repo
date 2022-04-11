@@ -99,10 +99,6 @@ class CSRWriter(implicit coredef: CoreDef) extends Bundle {
   val rdata = Input(UInt(coredef.XLEN.W))
   val wdata = Output(UInt(coredef.XLEN.W))
   val write = Output(Bool())
-
-  // vsetvl
-  val currentVState = Input(new VState)
-  val updateVState = Valid(new VState)
 }
 
 object CSR {

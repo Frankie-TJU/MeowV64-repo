@@ -88,7 +88,7 @@ class CSR(implicit val coredef: CoreDef)
   when(setVLMAX) {
     newVState.vl := vlmax
   }.elsewhen(keepVL) {
-    newVState.vl := writer.currentVState.vl
+    newVState.vl := vState.vl
   }.otherwise {
     // simplify
     // 1. vl = AVL if AVL <= VLMAX
@@ -110,8 +110,6 @@ class CSR(implicit val coredef: CoreDef)
 
   writer.write := false.B
   writer.wdata := wdata
-  writer.updateVState.valid := false.B
-  writer.updateVState.bits := 0.U.asTypeOf(new VState)
 
   switch(instr.instr.funct3) {
     is(
@@ -178,10 +176,12 @@ class CSR(implicit val coredef: CoreDef)
     pipeWritten := false.B
   }
 
+  val info = WireDefault(RetireInfo.vacant(regInfo))
+
   when(state === CSRState.pipe) {
     when(RegNext(isVSETVL)) {
-      writer.updateVState.valid := true.B
-      writer.updateVState.bits := RegNext(newVState)
+      info.updateVState := true.B
+      info.vState := RegNext(newVState)
 
       nstate := CSRState.read
     }.otherwise {
@@ -190,8 +190,6 @@ class CSR(implicit val coredef: CoreDef)
       nstate := CSRState.read
     }
   }
-
-  val info = WireDefault(RetireInfo.vacant(regInfo))
 
   when(fault) {
     info.exception.ex(ExType.ILLEGAL_INSTR)

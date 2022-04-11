@@ -158,9 +158,10 @@ class Core(implicit val coredef: CoreDef) extends Module {
   ctrl.toExec.int <> exec.toCtrl.int
   ctrl.toExec.intAck := exec.toCtrl.intAck
   ctrl.toExec.priv <> exec.toCtrl.priv
-  ctrl.toExec.vState <> exec.toCtrl.vState
   ctrl.toExec.status <> exec.toCtrl.status
-  ctrl.toExec.fflags <> exec.toCtrl.fflags
+  ctrl.toExec.updateFFlags <> exec.toCtrl.updateFFlags
+  ctrl.toExec.updateVState <> exec.toCtrl.updateVState
+  ctrl.toExec.vState <> exec.toCtrl.vState
   ctrl.toExec.debugMode <> exec.toCtrl.debugMode
   ctrl.toExec.step <> exec.toCtrl.step
   ctrl.toExec.stepAck := exec.toCtrl.stepAck
@@ -205,11 +206,6 @@ class Core(implicit val coredef: CoreDef) extends Module {
   csr.attach("dpc").connect(ctrl.csr.dpc)
   csr.attach("dscratch0").connect(ctrl.csr.dscratch0)
   csr.attach("dscratch1").connect(ctrl.csr.dscratch1)
-
-  // allow CSR unit to read/write current VState
-  csrWriter.currentVState.vl := ctrl.csr.vl.rdata
-  csrWriter.currentVState.vtype := ctrl.csr.vtype.rdata.asTypeOf(new VType)
-  ctrl.csr.updateVState := csrWriter.updateVState
 
   val mscratch = RegInit(0.U(coredef.XLEN.W))
   csr.attach("mscratch").connect(CSRPort.fromReg(coredef.XLEN, mscratch))

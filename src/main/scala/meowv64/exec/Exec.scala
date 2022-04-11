@@ -54,7 +54,11 @@ class Exec(implicit val coredef: CoreDef) extends Module {
 
     /** Update fflags
       */
-    val fflags = Valid(UInt(5.W))
+    val updateFFlags = Valid(UInt(5.W))
+
+    /** Update vState
+      */
+    val updateVState = Valid(new VState())
   })
 
   val toBPU = IO(new Bundle {
@@ -579,15 +583,18 @@ class Exec(implicit val coredef: CoreDef) extends Module {
       ent.valid := true.B
 
       rob(u.retire.bits.robIndex).valid := true.B
+      val info = u.retire.bits.info
       // for BRANCH instructions, this means taken before normalization
-      rob(u.retire.bits.robIndex).branchTaken := u.retire.bits.info.branchTaken
+      rob(u.retire.bits.robIndex).branchTaken := info.branchTaken
+
+      rob(u.retire.bits.robIndex).updateFFlags := info.updateFFlags
+      rob(u.retire.bits.robIndex).fflags := info.fflags
+      rob(u.retire.bits.robIndex).updateVState := info.updateVState
+      rob(u.retire.bits.robIndex).vState := info.vState
+
       rob(
         u.retire.bits.robIndex
-      ).updateFFlags := u.retire.bits.info.updateFFlags
-      rob(u.retire.bits.robIndex).fflags := u.retire.bits.info.fflags
-      rob(
-        u.retire.bits.robIndex
-      ).exceptionOccurred := u.retire.bits.info.exception.ex =/= ExReq.none
+      ).exceptionOccurred := info.exception.ex =/= ExReq.none
     }
   }
 
@@ -610,8 +617,12 @@ class Exec(implicit val coredef: CoreDef) extends Module {
   //cdb.entries(coredef.UNIT_COUNT).valid := false.B
 
   // do not update fflags by default
-  toCtrl.fflags.valid := false.B
-  toCtrl.fflags.bits := 0.U
+  toCtrl.updateFFlags.valid := false.B
+  toCtrl.updateFFlags.bits := 0.U
+
+  // do not update vState by default
+  toCtrl.updateVState.valid := false.B
+  toCtrl.updateVState.bits := 0.U.asTypeOf(new VState())
 
   // single stepping counter
   val singleStepCounter = RegInit(0.U(1.W))
@@ -712,8 +723,14 @@ class Exec(implicit val coredef: CoreDef) extends Module {
 
         // update fflags
         when(info.updateFFlags) {
-          toCtrl.fflags.valid := true.B
-          toCtrl.fflags.bits := info.fflags
+          toCtrl.updateFFlags.valid := true.B
+          toCtrl.updateFFlags.bits := info.fflags
+        }
+
+        // update vState
+        when(info.updateVState) {
+          toCtrl.updateVState.valid := true.B
+          toCtrl.updateVState.bits := info.vState
         }
 
         // Update BPU accordingly
@@ -804,6 +821,11 @@ class ROBEntry(implicit val coredef: CoreDef) extends Bundle {
   val updateFFlags = Bool()
   val fflags = UInt(5.W)
 
+  /** Update vState
+    */
+  val updateVState = Bool()
+  val vState = new VState()
+
   /** Exception has occurred
     */
   val exceptionOccurred = Bool()
@@ -813,6 +835,7 @@ class ROBEntry(implicit val coredef: CoreDef) extends Bundle {
     this.hasMem := false.B
     this.branchTaken := false.B
     this.updateFFlags := false.B
+    this.updateVState := false.B
     this.exceptionOccurred := false.B
   }
 }
@@ -824,7 +847,9 @@ object ROBEntry {
     ret.valid := false.B
     ret.branchTaken := false.B
     ret.updateFFlags := false.B
-    ret.fflags := false.B
+    ret.updateVState := false.B
+    ret.fflags := 0.U
+    ret.vState := 0.U.asTypeOf(new VState)
     ret.exceptionOccurred := false.B
 
     ret
