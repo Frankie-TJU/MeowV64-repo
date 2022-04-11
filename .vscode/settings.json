@@ -225,6 +225,7 @@
 		"vsetvl",
 		"VSETVLI",
 		"vsew",
+		"vstate",
 		"vtype",
 		"waddr",
 		"walloc",
@@ -245,5 +246,10 @@
 	],
 	"files.watcherExclude": {
 		"**/target": true
+	},
+	"files.associations": {
+		"dataset1.h": "c",
+		"util.h": "c",
+		"stdlib.h": "c"
 	}
 }

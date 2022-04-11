@@ -396,10 +396,10 @@ class Exec(implicit val coredef: CoreDef) extends Module {
 
     // Is global fence? (FENCE.I, CSR)
     val isGFence = (
-      instr.instr.instr.info.execUnit === ExecUnitType.csr ||
-        (instr.instr.instr.op === Decoder
-          .Op("SYSTEM")
-          .ident && instr.instr.instr.funct3 =/= Decoder.SYSTEM_FUNC("PRIV"))
+      (instr.instr.instr.info.execUnit === ExecUnitType.csr &&
+        instr.instr.instr.op =/= Decoder.Op("OP-V").ident) ||
+        (instr.instr.instr.op === Decoder.Op("SYSTEM").ident &&
+          instr.instr.instr.funct3 =/= Decoder.SYSTEM_FUNC("PRIV"))
     )
 
     // At most only one sending except floatMem/vectorMem

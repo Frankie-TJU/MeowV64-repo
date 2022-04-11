@@ -18,7 +18,8 @@ class CSR(implicit val coredef: CoreDef)
     with ExecUnitInt
     with WithCSRWriter
     with WithPrivPort
-    with WithStatus {
+    with WithStatus
+    with WithVState {
   val DEPTH: Int = 0
 
   object CSRState extends ChiselEnum {
@@ -30,6 +31,7 @@ class CSR(implicit val coredef: CoreDef)
   val priv = IO(Input(PrivLevel()))
   val status = IO(Input(new Status))
   val writer = IO(new CSRWriter())
+  val vState = IO(Input(new VState()))
 
   val state = RegInit(CSRState.read)
   val nstate = WireDefault(state)
@@ -46,6 +48,9 @@ class CSR(implicit val coredef: CoreDef)
   // compute new vstate
   val isVSETVL = instr.instr.op === Decoder.Op("OP-V").ident
   val newVState = WireInit(0.U.asTypeOf(new VState))
+  // TODO: check more fields
+  val vStateUnchanged =
+    newVState.vl === vState.vl && newVState.vtype.vsew === vState.vtype.vsew
   val avl = WireInit(0.U(coredef.XLEN.W))
   val newVType = WireInit(0.U(coredef.XLEN.W))
   switch(instr.instr.raw(31, 30)) {
@@ -168,6 +173,11 @@ class CSR(implicit val coredef: CoreDef)
   // when no fault occurred
   // send branch to npc to flush pipeline
   val pipeWritten = RegNext(!fault)
+  when(isVSETVL && vStateUnchanged) {
+    // do not flush pipeline if vstate is unchanged
+    pipeWritten := false.B
+  }
+
   when(state === CSRState.pipe) {
     when(RegNext(isVSETVL)) {
       writer.updateVState.valid := true.B
