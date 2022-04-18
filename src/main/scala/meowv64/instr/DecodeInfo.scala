@@ -290,10 +290,10 @@ object DecodeInfo {
       VSETVL   -> List(Y, N, Y, integer, Y, integer, Y, integer, N, XX, N, csr, IQT.int),
 
       // Vector Load/Store
-      VLE8_V     -> List(Y, N, Y, vector, Y, integer, N, XX, N, XX, N, lsu, IQT.mem),
-      VLE16_V    -> List(Y, N, Y, vector, Y, integer, N, XX, N, XX, N, lsu, IQT.mem),
-      VLE32_V    -> List(Y, N, Y, vector, Y, integer, N, XX, N, XX, N, lsu, IQT.mem),
-      VLE64_V    -> List(Y, N, Y, vector, Y, integer, N, XX, N, XX, N, lsu, IQT.mem),
+      VLE8_V     -> List(Y, Y, Y, vector, Y, integer, N, XX, Y, vector, N, lsu, IQT.vectorMem),
+      VLE16_V    -> List(Y, Y, Y, vector, Y, integer, N, XX, Y, vector, N, lsu, IQT.vectorMem),
+      VLE32_V    -> List(Y, Y, Y, vector, Y, integer, N, XX, Y, vector, N, lsu, IQT.vectorMem),
+      VLE64_V    -> List(Y, Y, Y, vector, Y, integer, N, XX, Y, vector, N, lsu, IQT.vectorMem),
       VLUXEI64_V -> List(Y, Y, Y, vector, Y, integer, Y, vector, Y, vector, Y, lsu, IQT.vectorMem),
       VSE8_V     -> List(Y, Y, N, XX, Y, integer, N, XX, Y, vector, N, lsu, IQT.vectorMem),
       VSE16_V    -> List(Y, Y, N, XX, Y, integer, N, XX, Y, vector, N, lsu, IQT.vectorMem),

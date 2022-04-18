@@ -179,7 +179,11 @@ class VectorFMA(override implicit val coredef: CoreDef)
             round.io.roundingMode := 0.U
 
             // step 2: convert to ieee
-            when(pipe.instr.instr.readVm() && ~pipe.vmval(lane)) {
+            when(
+              (pipe.instr.instr.readVm() && ~pipe.vmval(
+                lane
+              )) || lane.U >= vState.vl
+            ) {
               // masked off, retain old value
               res(lane) := rs3Elements(lane)
               fflags(lane) := 0.U

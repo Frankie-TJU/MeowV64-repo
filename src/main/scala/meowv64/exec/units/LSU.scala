@@ -170,7 +170,8 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   val vectorReadReqIndex = RegInit(0.U(log2Ceil(vectorMaxBeats + 1).W))
   val vectorReadRespIndex = RegInit(0.U(log2Ceil(vectorMaxBeats + 1).W))
   val vectorReadRespData = RegInit(0.U(coredef.VLEN.W))
-  val vectorReadRespDataComb = WireInit(vectorReadRespData)
+  val vectorReadRespDataComb = Wire(UInt(coredef.VLEN.W))
+  vectorReadRespDataComb := vectorReadRespData
   vectorReadRespData := vectorReadRespDataComb
   val vectorWriteReqIndex = RegInit(0.U(log2Ceil(vectorMaxBeats + 1).W))
   val vectorWriteData = Wire(Vec(vectorMaxBeats, UInt(coredef.XLEN.W)))
@@ -425,7 +426,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
     queue(toFloat.bits.lsqIdx).data := toFloat.bits.data
   }
 
-  // read store data for vse.v
+  // read store data for vse.v or vd for vle.v
   when(toVector.valid) {
     assert(!queue(toVector.bits.lsqIdx).dataValid)
     queue(toVector.bits.lsqIdx).dataValid := true.B
@@ -445,8 +446,12 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
     lsqEntry.robIndex := next.robIndex
 
     lsqEntry.addrValid := true.B
-    // for fsd/fsw/vse.v, data is provided by FloatToMem/VectorToMem unit
-    when(next.instr.instr.op =/= Decoder.Op("STORE-FP").ident) {
+    // for ld/lw/fld/flw, data is valid
+    // for fsd/fsw/vse.v/vle.v/vluxei.v, data is provided by FloatToMem/VectorToMem unit
+    when(
+      next.instr.instr.op =/= Decoder.Op("STORE-FP").ident &&
+        !vectorLoad && !vectorIndexedLoad
+    ) {
       lsqEntry.dataValid := true.B
     }
     when(fenceLike) {
@@ -773,18 +778,27 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
         }
 
         // handle vm
-        val maskVec = WireInit(VecInit.fill(coredef.VLEN)(false.B))
+        val maskVec = WireInit(VecInit.fill(coredef.VLEN / 8)(true.B))
         val mask = Cat(maskVec.reverse)
-        for (i <- 0 until vectorMaxBeats) {
-          // TODO: handle eew
-          when(~current.vm(i) && current.instr.readVm()) {
-            for (j <- 0 until coredef.XLEN) {
-              maskVec(i * 64 + j) := true.B
+        for (vsew <- 0 to 3) {
+          val width = 8 << vsew
+          // handle eew
+          when(vState.vtype.vsew === vsew.U) {
+            for (lane <- 0 until coredef.VLEN / width) {
+              // compute byte mask
+              when(
+                (~current.vm(lane) &&
+                  current.instr.readVm()) || lane.U >= vState.vl
+              ) {
+                for (j <- 0 until width / 8) {
+                  maskVec(lane * width / 8 + j) := false.B
+                }
+              }
             }
           }
         }
 
-        retire.bits.info.wb := (current.data & mask) | (vectorReadRespDataComb & ~mask)
+        retire.bits.info.wb := MuxBE(mask, vectorReadRespDataComb, current.data)
       }
       is(DelayedMemOp.uncachedLoad) {
         retire.bits.info.wb := current.getLSB(toMem.uncached.rdata)
