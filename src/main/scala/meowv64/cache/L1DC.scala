@@ -270,7 +270,7 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
   val pendingWriteData = RegNext(w.req.bits.wdata)
   val pendingWriteLen = RegNext(w.req.bits.len)
   val pendingWriteAddr = RegNext(w.req.bits.addr)
-  amoalu.io.offset := pendingWriteAddr(log2Ceil(opts.XLEN / 8) - 1, 0)
+  amoalu.io.offset := pendingWriteAddr(log2Ceil(opts.TO_CORE_TRANSFER_BYTES) - 1, 0)
   amoalu.io.wdata := pendingWriteData
   amoalu.io.length := pendingWriteLen
   amoalu.io.op := pendingWriteOp
