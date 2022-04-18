@@ -166,7 +166,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   val retire = IO(new RetirementIO(coredef.LSU_PORT_INFO))
   val extras = new mutable.HashMap[String, Data]()
 
-  val vectorMaxBeats = coredef.VLEN / coredef.XLEN
+  val vectorMaxBeats = coredef.VLEN / 8
   val vectorReadReqIndex = RegInit(0.U(log2Ceil(vectorMaxBeats + 1).W))
   val vectorReadRespIndex = RegInit(0.U(log2Ceil(vectorMaxBeats + 1).W))
   val vectorReadRespData = RegInit(0.U(coredef.VLEN.W))
@@ -684,14 +684,19 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   // compute memory access beats from vl
   // beat width is coredef.L1D.TO_CORE_TRANSFER_WIDTH
   // sew=8<<vsew
-  // end address = start address + (vl*sew)/8 = start address + vl << vsew
-  // beats: ceil((start address offset + vl*sew / 8) / TO_CORE_TRANSFER_BYTES)
-  // = (start address offset + vl*sew / 8 + TO_CORE_TRANSFER_BYTES - 1) / TO_CORE_TRANSFER_BYTES
   val IGNORED_WIDTH = log2Ceil(coredef.L1D.TO_CORE_TRANSFER_BYTES)
   val vectorBeats = Wire(UInt(log2Ceil(vectorMaxBeats + 1).W))
-  vectorBeats := (current.addr(IGNORED_WIDTH - 1, 0) +
-    (vState.vl << vState.vtype.vsew) + (coredef.L1D.TO_CORE_TRANSFER_BYTES - 1).U) >>
-    IGNORED_WIDTH
+  when(current.op === DelayedMemOp.vectorIndexedLoad) {
+    // one beat for each element
+    vectorBeats := vState.vl
+  }.otherwise {
+    // end address = start address + (vl * sew) / 8 = start address + (vl << vsew)
+    // beats: ceil((start address offset + vl * sew / 8) / TO_CORE_TRANSFER_BYTES)
+    // = (start address offset + (vl << vsew) + TO_CORE_TRANSFER_BYTES - 1) / TO_CORE_TRANSFER_BYTES
+    vectorBeats := (current.addr(IGNORED_WIDTH - 1, 0) +
+      (vState.vl << vState.vtype.vsew) + (coredef.L1D.TO_CORE_TRANSFER_BYTES - 1).U) >>
+      IGNORED_WIDTH
+  }
 
   when(emptyEntries =/= DEPTH.U && current.canFire) {
     switch(current.op) {
