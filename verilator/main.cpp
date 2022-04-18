@@ -913,7 +913,11 @@ int main(int argc, char **argv) {
             begin_signature, end_signature);
     FILE *fp = fopen("dump.sig", "w");
     for (uint64_t addr = begin_signature; addr < end_signature; addr += 16) {
-      fprintf(fp, "%016llx%016llx\n", memory[addr + 8], memory[addr]);
+      uint64_t words = 16 / sizeof(mem_t);
+      for (uint64_t i = 0;i < 16;i += sizeof(mem_t)) {
+        fprintf(fp, "%08lx", memory[addr + 16 - sizeof(mem_t) - i]);
+      }
+      fprintf(fp, "\n");
     }
     fclose(fp);
   }
