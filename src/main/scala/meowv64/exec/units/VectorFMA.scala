@@ -175,7 +175,7 @@ class VectorFMA(override implicit val coredef: CoreDef)
             round.io.in := lastState.rawOut(idx)(lane)
             round.io.infiniteExc := false.B
             round.io.invalidExc := lastState.invalidExc(idx)(lane)
-            round.io.detectTininess := false.B
+            round.io.detectTininess := hardfloat.consts.tininess_afterRounding
             round.io.roundingMode := 0.U
 
             // step 2: convert to ieee

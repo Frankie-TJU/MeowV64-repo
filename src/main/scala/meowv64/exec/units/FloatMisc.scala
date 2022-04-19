@@ -140,7 +140,7 @@ class FloatMisc(override implicit val coredef: CoreDef)
           new RecFNToRecFN(singleExpWidth, singleSigWidth, expWidth, sigWidth)
         )
         convS2D.io.in := rs1valSingleHF
-        convS2D.io.detectTininess := false.B
+        convS2D.io.detectTininess := hardfloat.consts.tininess_afterRounding
         convS2D.io.roundingMode := 0.U
 
         ext.res := fNFromRecFN(expWidth, sigWidth, convS2D.io.out)
@@ -153,7 +153,7 @@ class FloatMisc(override implicit val coredef: CoreDef)
         )
 
         convD2S.io.in := rs1valHF
-        convD2S.io.detectTininess := false.B
+        convD2S.io.detectTininess := hardfloat.consts.tininess_afterRounding
         convD2S.io.roundingMode := 0.U
 
         // NaN boxing

@@ -58,8 +58,7 @@ class FMA(override implicit val coredef: CoreDef)
           val rs1valHF = float.toHardfloat(rs1val)
           val rs2valHF = float.toHardfloat(rs2val)
           val rs3valHF = float.toHardfloat(rs3val)
-          val oneHF =
-            (BigInt(1) << (float.exp + float.sig - 1)).U(float.widthHardfloat.W)
+          val oneHF = float.oneHardfloat()
 
           val neg = WireInit(false.B)
           val sign = WireInit(false.B)
@@ -112,6 +111,9 @@ class FMA(override implicit val coredef: CoreDef)
                   // rs1 * rs2 + 0
                   a := rs1valHF
                   b := rs2valHF
+                  // the signedness of 0 is rs1 ^ rs2
+                  c := (rs1val(float.width() - 1) ^
+                    rs2val(float.width() - 1)) << float.width()
                 }
               }
             }
@@ -153,7 +155,7 @@ class FMA(override implicit val coredef: CoreDef)
           round.io.in := postMul.io.rawOut
           round.io.infiniteExc := false.B
           round.io.invalidExc := postMul.io.invalidExc
-          round.io.detectTininess := false.B
+          round.io.detectTininess := hardfloat.consts.tininess_afterRounding
           round.io.roundingMode := 0.U
 
           // step 3: convert to ieee

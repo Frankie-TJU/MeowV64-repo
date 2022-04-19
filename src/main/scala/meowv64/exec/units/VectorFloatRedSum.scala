@@ -80,7 +80,7 @@ class VectorFloatRedSum(implicit val coredef: CoreDef)
         adder.io.a := a
         adder.io.b := b
         adder.io.roundingMode := 0.U
-        adder.io.detectTininess := false.B
+        adder.io.detectTininess := hardfloat.consts.tininess_afterRounding
         currentValue := adder.io.out
 
         progress := progress + 1.U

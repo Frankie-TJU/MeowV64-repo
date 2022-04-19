@@ -34,7 +34,7 @@ class FloatDivSqrt(override implicit val coredef: CoreDef)
       new RecFNToRecFN(FloatS.exp, FloatS.sig, FloatD.exp, FloatD.sig)
     )
     convS2D.io.in := n
-    convS2D.io.detectTininess := false.B
+    convS2D.io.detectTininess := hardfloat.consts.tininess_afterRounding
     convS2D.io.roundingMode := 0.U
     convS2D.io.out
   }
@@ -44,7 +44,7 @@ class FloatDivSqrt(override implicit val coredef: CoreDef)
       new RecFNToRecFN(FloatD.exp, FloatD.sig, FloatS.exp, FloatS.sig)
     )
     convD2S.io.in := n
-    convD2S.io.detectTininess := false.B
+    convD2S.io.detectTininess := hardfloat.consts.tininess_afterRounding
     convD2S.io.roundingMode := 0.U
     convD2S.io.out
   }
@@ -61,7 +61,7 @@ class FloatDivSqrt(override implicit val coredef: CoreDef)
   div_sqrt.io.inValid := false.B
   div_sqrt.io.a := 0.U
   div_sqrt.io.b := 0.U
-  div_sqrt.io.detectTininess := 0.U
+  div_sqrt.io.detectTininess := hardfloat.consts.tininess_afterRounding
   div_sqrt.io.sqrtOp := false.B
   div_sqrt.io.roundingMode := 0.U
 
@@ -109,7 +109,7 @@ class FloatDivSqrt(override implicit val coredef: CoreDef)
         idle := false.B
       }
       div_sqrt.io.roundingMode := false.B
-      div_sqrt.io.detectTininess := false.B
+      div_sqrt.io.detectTininess := hardfloat.consts.tininess_afterRounding
       div_sqrt.io.sqrtOp := pipe.instr.instr.funct5 === Decoder.FP_FUNC("FSQRT")
     } else {
       // stage 1: Output

@@ -60,7 +60,7 @@ class IntToFloat(override implicit val coredef: CoreDef)
           convI2F.suggestName(s"convI2F_${float.name}")
           convI2F.io.signedIn := false.B
           convI2F.io.roundingMode := 0.U
-          convI2F.io.detectTininess := false.B
+          convI2F.io.detectTininess := hardfloat.consts.tininess_afterRounding
 
           convI2F.io.in := pipe.rs1val
           when(pipe.instr.instr.rs2 === 0.U) {
