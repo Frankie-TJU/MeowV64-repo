@@ -19,11 +19,20 @@ object Main extends App {
     .getDeclaredConstructor()
     .newInstance()
     .asInstanceOf[SystemDef]
-  (new chisel3.stage.ChiselStage()).execute(
-    Array("-X", "verilog") ++ rest,
+  // generate verilog & system verilog
+  val annotations =
     Seq(
       ChiselGeneratorAnnotation(() => new RiscVSystem()(conf)),
       RunFirrtlTransformAnnotation(Dependency(ZeroInit))
     )
+
+  (new chisel3.stage.ChiselStage()).execute(
+    Array("-X", "verilog") ++ rest,
+    annotations
+  )
+
+  (new chisel3.stage.ChiselStage()).execute(
+    Array("-X", "sverilog") ++ rest,
+    annotations
   )
 }
