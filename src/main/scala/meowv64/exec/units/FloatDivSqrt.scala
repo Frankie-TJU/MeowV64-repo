@@ -65,6 +65,13 @@ class FloatDivSqrt(override implicit val coredef: CoreDef)
   div_sqrt.io.sqrtOp := false.B
   div_sqrt.io.roundingMode := 0.U
 
+  // stalls
+  // pipeline flow if: 1. idle 2. output is valid
+  val outValid = div_sqrt.io.outValid_div || div_sqrt.io.outValid_sqrt
+  val flow = idle || outValid
+  val stall = ~flow
+  val fire = io.next.instr.valid && flow && div_sqrt.io.inReady
+
   def map(
       stage: Int,
       pipe: PipeInstr,
@@ -72,13 +79,6 @@ class FloatDivSqrt(override implicit val coredef: CoreDef)
   ): (FloatDivSqrtExt, Bool) = {
     val state = Wire(new FloatDivSqrtExt)
     state := DontCare
-
-    // stalls
-    // pipeline flow if: 1. idle 2. output is valid
-    val outValid = div_sqrt.io.outValid_div || div_sqrt.io.outValid_sqrt
-    val flow = idle || outValid
-    val stall = ~flow
-    val fire = io.next.instr.valid && flow && div_sqrt.io.inReady
 
     if (stage == 0) {
       // stage 0: Input
@@ -127,10 +127,8 @@ class FloatDivSqrt(override implicit val coredef: CoreDef)
         state.res := fNFromRecFN(floatType.exp, floatType.sig, div_sqrt.io.out)
       }
       state.fflags := div_sqrt.io.exceptionFlags
-      when(outValid && ~fire) {
-        idle := true.B
-      }
     }
+
     (state, stall)
   }
 
@@ -147,4 +145,9 @@ class FloatDivSqrt(override implicit val coredef: CoreDef)
   }
 
   init()
+
+  // move this here, otherwise it might be missed
+  when(outValid && ~fire) {
+    idle := true.B
+  }
 }
