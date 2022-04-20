@@ -14,3 +14,4 @@ RUN apt install -y make bsdextrautils autoconf g++ build-essential
 RUN apt install -y zlib1g-dev
 RUN apt install -y libgmp-dev
 RUN apt install -y pkg-config
+RUN apt install -y z3

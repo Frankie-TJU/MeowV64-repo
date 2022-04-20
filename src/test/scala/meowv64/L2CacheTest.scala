@@ -33,7 +33,7 @@ object L1DCacheTestDef
     }
     with L1DOpts;
 
-object L2CacheTestDef
+class L2CacheTestDef(override val FORMAL: Boolean)
     extends {
       val ADDR_WIDTH: Int = 48
       val ASSOC: Int = 4
@@ -47,7 +47,6 @@ object L2CacheTestDef
         CLINTMapping,
         PLICMapping
       )
-      override val FORMAL = true
     }
     with L2Opts
 
@@ -238,7 +237,7 @@ class L2CacheSpec extends AnyFlatSpec with Matchers with ChiselScalatestTester {
   it should s"run successfully" in {
     val seed = L2CacheSpec.DEFAULT_SEED
     val len = L2CacheSpec.DEFAULT_LENGTH
-    test(new WrappedL2(L1DCacheTestDef, L2CacheTestDef, CacheTestDef))
+    test(new WrappedL2(L1DCacheTestDef, new L2CacheTestDef(false), CacheTestDef))
       .withAnnotations(Simulator.getAnnotations()) { dut =>
         new L2CacheTest(dut, seed, len)
       }
@@ -253,7 +252,7 @@ class L2CacheFormalSpec
 
   it should s"pass formal verification" in {
     verify(
-      new WrappedL2(L1DCacheTestDef, L2CacheTestDef, CacheTestDef),
+      new WrappedL2(L1DCacheTestDef, new L2CacheTestDef(true), CacheTestDef),
       Seq(BoundedCheck(kMax = 5), WriteVcdAnnotation)
     )
   }
