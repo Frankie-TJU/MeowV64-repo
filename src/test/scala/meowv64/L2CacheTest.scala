@@ -11,6 +11,8 @@ import scala.util.Random
 import scala.collection.mutable.HashMap
 import meowv64.interrupt.CLINTMapping
 import meowv64.interrupt.PLICMapping
+import chiseltest.formal.Formal
+import chiseltest.formal.BoundedCheck
 
 object CacheTestDef extends CoreDef {
 
@@ -45,6 +47,7 @@ object L2CacheTestDef
         CLINTMapping,
         PLICMapping
       )
+      override val FORMAL = true
     }
     with L2Opts
 
@@ -239,5 +242,19 @@ class L2CacheSpec extends AnyFlatSpec with Matchers with ChiselScalatestTester {
       .withAnnotations(Simulator.getAnnotations()) { dut =>
         new L2CacheTest(dut, seed, len)
       }
+  }
+}
+
+class L2CacheFormalSpec
+    extends AnyFlatSpec
+    with Formal
+    with ChiselScalatestTester {
+  behavior of "L2CacheFormalSpec"
+
+  it should s"pass formal verification" in {
+    verify(
+      new WrappedL2(L1DCacheTestDef, L2CacheTestDef, CacheTestDef),
+      Seq(BoundedCheck(kMax = 5), WriteVcdAnnotation)
+    )
   }
 }

@@ -1,6 +1,8 @@
 package meowv64.data
 
 import chisel3._
+import chiseltest.formal.past
+import chiseltest.formal.stable
 
 // AXI master port, without ACLK / ARSESTn
 class AXI(
@@ -8,7 +10,9 @@ class AXI(
     val ADDR_WIDTH: Int = 48,
     val ID_WIDTH: Int = 4
 ) extends Bundle {
-  if (DATA_WIDTH == 32) throw new Error()
+  val ACLK = Output(Clock())
+  val ARESETN = Output(Reset())
+
   // TODO: asserts DATA_WIDTH % 8 === 0
   val AWID = Output(UInt(ID_WIDTH.W))
   val AWADDR = Output(UInt(ADDR_WIDTH.W))
@@ -54,6 +58,50 @@ class AXI(
   val RLAST = Input(Bool())
   val RVALID = Input(Bool())
   val RREADY = Output(Bool())
+
+  // https://github.com/ZipCPU/wb2axip/blob/master/bench/formal/faxi_master.v
+  // https://github.com/ZipCPU/wb2axip/blob/master/bench/formal/faxi_slave.v
+  def formalAsMaster() = {
+    val lgDepth = 10
+    assume(lgDepth > 8)
+    assume(Seq(8, 16, 32, 64, 128, 256, 512, 1024).contains(DATA_WIDTH))
+
+    when(past(AWVALID && !AWREADY)) {
+      assert(AWVALID)
+      assert(stable(AWADDR))
+      assert(stable(AWID))
+      assert(stable(AWLEN))
+      assert(stable(AWSIZE))
+      assert(stable(AWBURST))
+    }
+
+    when(past(WVALID && !WREADY)) {
+      assert(WVALID)
+      assert(stable(WSTRB))
+      assert(stable(WDATA))
+      assert(stable(WLAST))
+    }
+
+    when(past(BVALID && !BREADY)) {
+      assume(BVALID)
+      assume(stable(BRESP))
+    }
+
+    when(past(ARVALID && !ARREADY)) {
+      assert(ARVALID)
+      assert(stable(ARID))
+      assert(stable(ARADDR))
+      assert(stable(ARLEN))
+      assert(stable(ARSIZE))
+      assert(stable(ARBURST))
+    }
+
+    when(past(RVALID && !RREADY)) {
+      assume(RVALID)
+      assume(stable(RDATA))
+      assume(stable(RLAST))
+    }
+  }
 }
 
 object AXI {

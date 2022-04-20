@@ -36,10 +36,12 @@ trait L2Opts extends L1Opts {
   val AXI_DATA_WIDTH: Int
 
   /** Unused
-    *
-    * @return
     */
   val TO_CORE_TRANSFER_WIDTH = 0
+
+  /** Enable formal assertions
+    */
+  val FORMAL = false
 }
 
 /** MSI protocol states: vacant(I), shared(S), modified(M)
@@ -169,7 +171,12 @@ class L2Cache(val opts: L2Opts) extends Module {
   def ports = dc.iterator ++ ic.iterator
 
   val axi = IO(new AXI(opts.AXI_DATA_WIDTH, opts.ADDR_WIDTH))
+  if (opts.FORMAL) {
+    axi.formalAsMaster()
+  }
   axi := DontCare
+  axi.ACLK := clock
+  axi.ARESETN := ~reset.asBool
   axi.ARVALID := false.B
   axi.RREADY := false.B
   axi.AWVALID := false.B
