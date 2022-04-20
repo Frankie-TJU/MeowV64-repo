@@ -751,9 +751,11 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
         toMem.reader.req.valid := vectorReadReqIndex =/= vectorBeats
         when(toMem.reader.req.fire) {
           vectorReadReqIndex := vectorReadReqIndex + 1.U
+          reqSent := true.B
         }
 
         when(actualRespValid) {
+          reqSent := toMem.reader.req.fire
           vectorReadRespIndex := vectorReadRespIndex + 1.U
 
           when(current.op === DelayedMemOp.vectorLoad) {
