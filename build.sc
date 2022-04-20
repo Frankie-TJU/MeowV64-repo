@@ -8,9 +8,9 @@ import com.goyeau.mill.scalafix.ScalafixModule
 
 // learned from https://github.com/OpenXiangShan/fudian/blob/main/build.sc
 val defaultVersions = Map(
-  "chisel3" -> ("edu.berkeley.cs", "3.5.0", false),
-  "chisel3-plugin" -> ("edu.berkeley.cs", "3.5.0", true),
-  "chiseltest" -> ("edu.berkeley.cs", "0.5.0", false),
+  "chisel3" -> ("edu.berkeley.cs", "3.5.2", false),
+  "chisel3-plugin" -> ("edu.berkeley.cs", "3.5.2", true),
+  "chiseltest" -> ("edu.berkeley.cs", "0.5.1", false),
   "scalatest" -> ("org.scalatest", "3.2.10", false)
 )
 
@@ -47,7 +47,8 @@ object meowv64 extends SbtModule with ScalafmtModule with ScalafixModule {
 
   override def ivyDeps = super.ivyDeps() ++ Agg(
     getVersion("chisel3"),
-    getVersion("scalatest")
+    getVersion("scalatest"),
+    getVersion("chiseltest")
   )
 
   override def scalacPluginIvyDeps = super.scalacPluginIvyDeps() ++ Agg(
@@ -69,10 +70,7 @@ object meowv64 extends SbtModule with ScalafmtModule with ScalafixModule {
       with TestModule.ScalaTest
       with ScalafmtModule
       with ScalafixModule {
-    override def ivyDeps = super.ivyDeps() ++ Agg(
-      getVersion("scalatest"),
-      getVersion("chiseltest")
-    )
+    override def ivyDeps = super.ivyDeps() ++ Agg()
 
     override def scalafixIvyDeps = Agg(
       ivy"com.github.liancheng::organize-imports:0.5.0"
