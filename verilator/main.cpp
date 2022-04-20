@@ -808,11 +808,12 @@ int main(int argc, char **argv) {
   top->clock = 0;
   init();
 
-  const size_t MAX_IQ_COUNT = 3;
+  const size_t MAX_IQ_COUNT = 4;
   size_t iq_empty_cycle_count[MAX_IQ_COUNT] = {};
   size_t iq_full_cycle_count[MAX_IQ_COUNT] = {};
   size_t cycles = 0;
   size_t issue_num_bounded_by_rob_size = 0;
+  size_t issue_num_bounded_by_lsq_size = 0;
 
   fprintf(stderr, "> Simulation started\n");
   uint64_t begin = get_time_us();
@@ -858,6 +859,9 @@ int main(int argc, char **argv) {
       if (top->io_debug_0_issueNumBoundedByROBSize) {
         issue_num_bounded_by_rob_size++;
       }
+      if (top->io_debug_0_issueNumBoundedByLSQSize) {
+        issue_num_bounded_by_lsq_size++;
+      }
 
       cycles++;
     }
@@ -901,6 +905,8 @@ int main(int argc, char **argv) {
   fprintf(stderr, "\n");
   fprintf(stderr, "> Cycles when issue num is bounded by ROB size: %.2lf%%\n",
           issue_num_bounded_by_rob_size * 100.0 / cycles);
+  fprintf(stderr, "> Cycles when issue num is bounded by LSQ size: %.2lf%%\n",
+          issue_num_bounded_by_lsq_size * 100.0 / cycles);
 
   if (begin_signature && end_signature) {
     if (begin_signature_override) {

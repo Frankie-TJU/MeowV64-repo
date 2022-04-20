@@ -30,6 +30,7 @@ class CoreDebug(implicit val coredef: CoreDef) extends Bundle {
   val iqEmptyMask = UInt(coredef.ISSUE_QUEUES.length.W)
   val iqFullMask = UInt(coredef.ISSUE_QUEUES.length.W)
   val issueNumBoundedByROBSize = Output(Bool())
+  val issueNumBoundedByLSQSize = Output(Bool())
 }
 
 class CoreToDebugModule extends Bundle {
@@ -228,4 +229,5 @@ class Core(implicit val coredef: CoreDef) extends Module {
   io.debug.iqEmptyMask := exec.toCore.iqEmptyMask
   io.debug.iqFullMask := exec.toCore.iqFullMask
   io.debug.issueNumBoundedByROBSize := exec.toCore.issueNumBoundedByROBSize
+  io.debug.issueNumBoundedByLSQSize := exec.toCore.issueNumBoundedByLSQSize
 }

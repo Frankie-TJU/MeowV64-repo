@@ -210,6 +210,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
     val lsqIdxBase = Output(UInt(log2Ceil(DEPTH).W))
     val lsqAllocCount = Input(UInt(log2Ceil(coredef.ISSUE_NUM + 1).W))
     val lsqAllocAccept = Output(UInt(log2Ceil(coredef.ISSUE_NUM + 1).W))
+    val lsqEmptyEntries = Output(UInt(log2Ceil(DEPTH + 1).W))
   })
 
   val queue = RegInit(
@@ -229,6 +230,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
       toExec.lsqAllocAccept := (i + 1).U
     }
   }
+  toExec.lsqEmptyEntries := emptyEntries
   assert(toExec.lsqAllocCount <= toExec.lsqAllocAccept)
   assert(toExec.lsqAllocAccept <= emptyEntries)
   assert(toExec.lsqAllocAccept <= coredef.ISSUE_NUM.U)
