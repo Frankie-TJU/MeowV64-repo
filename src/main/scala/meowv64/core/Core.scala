@@ -7,6 +7,7 @@ import meowv64.exec.Exec
 import meowv64.instr._
 import meowv64.paging.PTW
 import meowv64.reg._
+import chisel3.util.log2Ceil
 
 class CoreInt extends Bundle {
   val meip = Bool()
@@ -29,8 +30,10 @@ class CoreDebug(implicit val coredef: CoreDef) extends Bundle {
   // exec
   val iqEmptyMask = UInt(coredef.ISSUE_QUEUES.length.W)
   val iqFullMask = UInt(coredef.ISSUE_QUEUES.length.W)
+  val issueNum = UInt(log2Ceil(coredef.ISSUE_NUM + 1).W)
   val issueNumBoundedByROBSize = Output(Bool())
   val issueNumBoundedByLSQSize = Output(Bool())
+  val retireNum = UInt(log2Ceil(coredef.ISSUE_NUM + 1).W)
 }
 
 class CoreToDebugModule extends Bundle {
@@ -228,6 +231,8 @@ class Core(implicit val coredef: CoreDef) extends Module {
   io.debug.minstret := ctrl.csr.minstret.rdata
   io.debug.iqEmptyMask := exec.toCore.iqEmptyMask
   io.debug.iqFullMask := exec.toCore.iqFullMask
+  io.debug.issueNum := exec.toCore.issueNum
   io.debug.issueNumBoundedByROBSize := exec.toCore.issueNumBoundedByROBSize
   io.debug.issueNumBoundedByLSQSize := exec.toCore.issueNumBoundedByLSQSize
+  io.debug.retireNum := exec.toCore.retireNum
 }

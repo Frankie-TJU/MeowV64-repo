@@ -8,11 +8,13 @@
 > mcycle: 550648
 > minstret: 464893
 > IPC: 0.84
-> Simulation speed: 20411.89 mcycle/s
+> Simulation speed: 21804.66 mcycle/s
 > Issue queue empty cycle: 17.25% 99.69% 35.99% 100.00%
 > Issue queue full cycle: 0.18% 0.00% 0.00% 0.00%
 > Cycles when issue num is bounded by ROB size: 32.28%
 > Cycles when issue num is bounded by LSQ size: 3.10%
+> Issue Num: 0=24.54% 1=11.72% 2=63.74%
+> Retire Num: 0=46.11% 1=23.36% 2=30.53%
 2K performance run parameters for coremark.
 CoreMark Size    : 666
 Total ticks      : 489151
@@ -41,11 +43,13 @@ minstret = 422106
 > mcycle: 262643
 > minstret: 198813
 > IPC: 0.76
-> Simulation speed: 22148.65 mcycle/s
+> Simulation speed: 22700.29 mcycle/s
 > Issue queue empty cycle: 32.57% 100.00% 45.52% 100.00%
 > Issue queue full cycle: 0.00% 0.00% 0.00% 0.00%
 > Cycles when issue num is bounded by ROB size: 4.67%
 > Cycles when issue num is bounded by LSQ size: 9.35%
+> Issue Num: 0=28.57% 1=12.24% 2=59.18%
+> Retire Num: 0=49.09% 1=26.13% 2=24.78%
 Microseconds for one run through Dhrystone: 501
 Dhrystones per Second:                      1994
 mcycle = 250742
@@ -60,11 +64,13 @@ minstret = 192533
 > mcycle: 23960
 > minstret: 13039
 > IPC: 0.54
-> Simulation speed: 18058.08 mcycle/s
+> Simulation speed: 21803.98 mcycle/s
 > Issue queue empty cycle: 30.35% 99.99% 53.91% 99.99%
 > Issue queue full cycle: 0.00% 0.00% 0.00% 0.00%
 > Cycles when issue num is bounded by ROB size: 13.65%
 > Cycles when issue num is bounded by LSQ size: 0.03%
+> Issue Num: 0=33.41% 1=8.90% 2=57.69%
+> Retire Num: 0=61.84% 1=21.91% 2=16.24%
 mcycle = 9391
 minstret = 4631
 -------------------------------
@@ -77,11 +83,13 @@ minstret = 4631
 > mcycle: 330631
 > minstret: 329024
 > IPC: 1.00
-> Simulation speed: 18403.02 mcycle/s
+> Simulation speed: 22553.76 mcycle/s
 > Issue queue empty cycle: 69.61% 13.18% 57.88% 100.00%
 > Issue queue full cycle: 1.01% 0.00% 0.00% 0.00%
 > Cycles when issue num is bounded by ROB size: 22.83%
 > Cycles when issue num is bounded by LSQ size: 1.99%
+> Issue Num: 0=29.47% 1=30.68% 2=39.86%
+> Retire Num: 0=33.43% 1=33.63% 2=32.94%
 C0: reg block 4x5x6, cache block 24x25x24
 C0: 24684 instructions
 C0: 26372 cycles
@@ -97,11 +105,13 @@ C0: 1092 Mflops @ 1 GHz
 > mcycle: 43701
 > minstret: 54411
 > IPC: 1.25
-> Simulation speed: 21594.64 mcycle/s
+> Simulation speed: 21848.16 mcycle/s
 > Issue queue empty cycle: 7.72% 100.00% 23.53% 100.00%
 > Issue queue full cycle: 0.00% 0.00% 0.00% 0.00%
 > Cycles when issue num is bounded by ROB size: 66.40%
 > Cycles when issue num is bounded by LSQ size: 0.07%
+> Issue Num: 0=17.92% 1=11.21% 2=70.86%
+> Retire Num: 0=28.67% 1=18.19% 2=53.15%
 
 matmul(cid, nc, 16, input1_data, input2_data, results_data); barrier(nc): 33747 cycles, 8.2 cycles/iter, 0.7 CPI
 -------------------------------
@@ -114,11 +124,13 @@ matmul(cid, nc, 16, input1_data, input2_data, results_data); barrier(nc): 33747 
 > mcycle: 68071
 > minstret: 47657
 > IPC: 0.70
-> Simulation speed: 20982.40 mcycle/s
+> Simulation speed: 21534.25 mcycle/s
 > Issue queue empty cycle: 37.31% 37.78% 26.74% 100.00%
 > Issue queue full cycle: 0.01% 0.00% 0.00% 0.00%
 > Cycles when issue num is bounded by ROB size: 80.07%
 > Cycles when issue num is bounded by LSQ size: 0.10%
+> Issue Num: 0=50.15% 1=15.60% 2=34.25%
+> Retire Num: 0=54.95% 1=20.11% 2=24.94%
 
 vvadd(cid, nc, 1000, input1_data, input2_data, results_data); barrier(nc): 13713 cycles, 13.7 cycles/iter, 1.3 CPI
 
@@ -133,11 +145,13 @@ vvadd(cid, nc, 1000, results_data, input2_data, results_data); barrier(nc): 1313
 > mcycle: 46119
 > minstret: 52261
 > IPC: 1.13
-> Simulation speed: 22210.04 mcycle/s
+> Simulation speed: 22712.07 mcycle/s
 > Issue queue empty cycle: 18.88% 100.00% 90.20% 100.00%
 > Issue queue full cycle: 0.00% 0.00% 0.00% 0.00%
 > Cycles when issue num is bounded by ROB size: 3.54%
 > Cycles when issue num is bounded by LSQ size: 0.01%
+> Issue Num: 0=17.82% 1=16.82% 2=65.36%
+> Retire Num: 0=32.55% 1=21.62% 2=45.84%
 mcycle = 21230
 minstret = 24991
 -------------------------------
@@ -150,11 +164,13 @@ minstret = 24991
 > mcycle: 1862
 > minstret: 1225
 > IPC: 0.66
-> Simulation speed: 19971.47 mcycle/s
+> Simulation speed: 19874.05 mcycle/s
 > Issue queue empty cycle: 46.47% 99.89% 78.37% 99.89%
 > Issue queue full cycle: 0.05% 0.05% 0.05% 0.05%
 > Cycles when issue num is bounded by ROB size: 11.35%
 > Cycles when issue num is bounded by LSQ size: 0.05%
+> Issue Num: 0=56.05% 1=10.33% 2=33.62%
+> Retire Num: 0=59.37% 1=15.69% 2=24.95%
 -------------------------------
 > Loaded 36728 bytes from ELF ../../testcases/riscv-tests/build/benchmarks/qsort.riscv
 > Using tohost at 60000000
@@ -165,11 +181,13 @@ minstret = 24991
 > mcycle: 318160
 > minstret: 263271
 > IPC: 0.83
-> Simulation speed: 21159.37 mcycle/s
+> Simulation speed: 22060.83 mcycle/s
 > Issue queue empty cycle: 19.22% 100.00% 51.97% 100.00%
 > Issue queue full cycle: 0.00% 0.00% 0.00% 0.00%
 > Cycles when issue num is bounded by ROB size: 16.02%
 > Cycles when issue num is bounded by LSQ size: 0.05%
+> Issue Num: 0=29.09% 1=6.91% 2=64.00%
+> Retire Num: 0=44.35% 1=28.55% 2=27.10%
 mcycle = 216345
 minstret = 153273
 -------------------------------
@@ -182,11 +200,13 @@ minstret = 153273
 > mcycle: 481751
 > minstret: 367655
 > IPC: 0.76
-> Simulation speed: 18796.84 mcycle/s
+> Simulation speed: 20324.62 mcycle/s
 > Issue queue empty cycle: 1.05% 100.00% 3.33% 100.00%
 > Issue queue full cycle: 18.49% 0.00% 0.00% 0.00%
 > Cycles when issue num is bounded by ROB size: 69.68%
 > Cycles when issue num is bounded by LSQ size: 0.01%
+> Issue Num: 0=48.01% 1=27.26% 2=24.73%
+> Retire Num: 0=45.19% 1=33.31% 2=21.50%
 mcycle = 228325
 minstret = 174822
 -------------------------------
@@ -199,11 +219,13 @@ minstret = 174822
 > mcycle: 290536
 > minstret: 164610
 > IPC: 0.57
-> Simulation speed: 20290.43 mcycle/s
+> Simulation speed: 22327.81 mcycle/s
 > Issue queue empty cycle: 10.67% 25.73% 14.42% 83.64%
 > Issue queue full cycle: 0.00% 0.00% 0.00% 0.00%
 > Cycles when issue num is bounded by ROB size: 55.90%
 > Cycles when issue num is bounded by LSQ size: 0.04%
+> Issue Num: 0=45.45% 1=7.58% 2=46.96%
+> Retire Num: 0=64.64% 1=14.08% 2=21.29%
 Row: 500
 Col: 500
 NNZ: 2399
@@ -221,11 +243,13 @@ minstret = 126449
 > mcycle: 17907
 > minstret: 10241
 > IPC: 0.57
-> Simulation speed: 20744.57 mcycle/s
+> Simulation speed: 20985.54 mcycle/s
 > Issue queue empty cycle: 18.35% 99.99% 23.85% 99.99%
 > Issue queue full cycle: 0.01% 0.01% 0.01% 0.01%
 > Cycles when issue num is bounded by ROB size: 17.45%
 > Cycles when issue num is bounded by LSQ size: 30.31%
+> Issue Num: 0=38.86% 1=20.41% 2=40.73%
+> Retire Num: 0=52.27% 1=38.30% 2=9.43%
 mcycle = 7336
 minstret = 4160
 -------------------------------
@@ -238,10 +262,12 @@ minstret = 4160
 > mcycle: 10749
 > minstret: 8717
 > IPC: 0.81
-> Simulation speed: 20893.75 mcycle/s
+> Simulation speed: 22262.17 mcycle/s
 > Issue queue empty cycle: 7.57% 99.98% 19.75% 99.98%
 > Issue queue full cycle: 0.01% 0.01% 0.01% 0.01%
 > Cycles when issue num is bounded by ROB size: 80.96%
 > Cycles when issue num is bounded by LSQ size: 0.05%
+> Issue Num: 0=44.66% 1=21.54% 2=33.80%
+> Retire Num: 0=47.31% 1=24.36% 2=28.33%
 mcycle = 3062
 minstret = 2723
