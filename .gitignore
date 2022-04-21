@@ -365,3 +365,7 @@ alib-*/
 
 .vscode/*
 !.vscode/settings.json
+RiscVSystem.anno.json
+RiscVSystem.fir
+RiscVSystem.v
+RiscVSystem.sv
