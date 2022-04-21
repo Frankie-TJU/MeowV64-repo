@@ -78,8 +78,10 @@ class Exec(implicit val coredef: CoreDef) extends Module {
     // debug
     val iqEmptyMask = Output(UInt(coredef.ISSUE_QUEUES.length.W))
     val iqFullMask = Output(UInt(coredef.ISSUE_QUEUES.length.W))
+    val issueNum = Output(UInt(log2Ceil(coredef.ISSUE_NUM + 1).W))
     val issueNumBoundedByROBSize = Output(Bool())
     val issueNumBoundedByLSQSize = Output(Bool())
+    val retireNum = Output(UInt(log2Ceil(coredef.ISSUE_NUM + 1).W))
   })
 
   val csrWriter = IO(new CSRWriter())
@@ -378,8 +380,12 @@ class Exec(implicit val coredef: CoreDef) extends Module {
   val maxIssueNum =
     retirePtr -% issuePtr -% 1.U // issuePtr cannot reach retirePtr
   assert(issueNum <= maxIssueNum)
+
+  // debug
+  toCore.issueNum := issueNum
   toCore.issueNumBoundedByROBSize := issueNum === maxIssueNum
   toCore.issueNumBoundedByLSQSize := issueNum === lsu.toExec.lsqEmptyEntries
+  toCore.retireNum := retireNum
 
   val wasGFence = RegInit(false.B)
   val canIssue = Wire(Vec(coredef.ISSUE_NUM, Bool()))

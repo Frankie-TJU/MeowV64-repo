@@ -809,11 +809,14 @@ int main(int argc, char **argv) {
   init();
 
   const size_t MAX_IQ_COUNT = 4;
+  const size_t ISSUE_NUM = 2;
   size_t iq_empty_cycle_count[MAX_IQ_COUNT] = {};
   size_t iq_full_cycle_count[MAX_IQ_COUNT] = {};
   size_t cycles = 0;
   size_t issue_num_bounded_by_rob_size = 0;
   size_t issue_num_bounded_by_lsq_size = 0;
+  size_t issue_num[ISSUE_NUM + 1] = {};
+  size_t retire_num[ISSUE_NUM + 1] = {};
 
   fprintf(stderr, "> Simulation started\n");
   uint64_t begin = get_time_us();
@@ -862,6 +865,8 @@ int main(int argc, char **argv) {
       if (top->io_debug_0_issueNumBoundedByLSQSize) {
         issue_num_bounded_by_lsq_size++;
       }
+      issue_num[top->io_debug_0_issueNum]++;
+      retire_num[top->io_debug_0_retireNum]++;
 
       cycles++;
     }
@@ -908,6 +913,18 @@ int main(int argc, char **argv) {
   fprintf(stderr, "> Cycles when issue num is bounded by LSQ size: %.2lf%%\n",
           issue_num_bounded_by_lsq_size * 100.0 / cycles);
 
+  fprintf(stderr, "> Issue Num:");
+  for (int i = 0; i <= ISSUE_NUM; i++) {
+    fprintf(stderr, " %d=%.2lf%%", i, issue_num[i] * 100.0 / cycles);
+  }
+  fprintf(stderr, "\n");
+
+  fprintf(stderr, "> Retire Num:");
+  for (int i = 0; i <= ISSUE_NUM; i++) {
+    fprintf(stderr, " %d=%.2lf%%", i, retire_num[i] * 100.0 / cycles);
+  }
+  fprintf(stderr, "\n");
+
   if (begin_signature && end_signature) {
     if (begin_signature_override) {
       // signature is copied
@@ -920,7 +937,7 @@ int main(int argc, char **argv) {
     FILE *fp = fopen("dump.sig", "w");
     for (uint64_t addr = begin_signature; addr < end_signature; addr += 16) {
       uint64_t words = 16 / sizeof(mem_t);
-      for (uint64_t i = 0;i < 16;i += sizeof(mem_t)) {
+      for (uint64_t i = 0; i < 16; i += sizeof(mem_t)) {
         fprintf(fp, "%08lx", memory[addr + 16 - sizeof(mem_t) - i]);
       }
       fprintf(fp, "\n");
