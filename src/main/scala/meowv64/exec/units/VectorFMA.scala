@@ -75,18 +75,24 @@ class VectorFMA(override implicit val coredef: CoreDef)
     // loop over floating point types
     for ((float, idx) <- coredef.FLOAT_TYPES.zipWithIndex) {
       val lanes = coredef.VLEN / float.width()
-      val rs1Elements = Wire(
-        Vec(lanes, UInt(float.width.W))
-      )
-      rs1Elements := pipe.rs1val.asTypeOf(rs1Elements)
-      val rs2Elements = Wire(
-        Vec(lanes, UInt(float.width.W))
-      )
-      rs2Elements := pipe.rs2val.asTypeOf(rs2Elements)
-      val rs3Elements = Wire(
-        Vec(lanes, UInt(float.width.W))
-      )
-      rs3Elements := pipe.rs3val.asTypeOf(rs3Elements)
+
+      def getLanes(index: Int, input: UInt) = {
+        val res = Wire(
+          Vec(lanes, UInt(float.width.W))
+        )
+        res := input.asTypeOf(res)
+        when(pipe.instr.instr.funct3 === 5.U && (index == 1).B) {
+          // vxxx.vf
+          for (i <- 0 until lanes) {
+            res(i) := input
+          }
+        }
+        res
+      }
+
+      val rs1Elements = getLanes(1, pipe.rs1val)
+      val rs2Elements = getLanes(2, pipe.rs2val)
+      val rs3Elements = getLanes(3, pipe.rs3val)
 
       val res = Wire(Vec(lanes, UInt(float.width.W)))
       val fflags = Wire(Vec(lanes, UInt(5.W)))

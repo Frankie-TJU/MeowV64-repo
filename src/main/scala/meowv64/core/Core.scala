@@ -2,12 +2,12 @@ package meowv64.core
 
 import chisel3._
 import chisel3.experimental.ChiselEnum
+import chisel3.util.log2Ceil
 import meowv64.cache._
 import meowv64.exec.Exec
 import meowv64.instr._
 import meowv64.paging.PTW
 import meowv64.reg._
-import chisel3.util.log2Ceil
 
 class CoreInt extends Bundle {
   val meip = Bool()
