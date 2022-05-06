@@ -202,8 +202,12 @@ class MicroBTB(implicit val coredef: CoreDef) extends Module {
     OFFSET_WIDTH.W
   ) // The input address should be aligned anyway
 
+  // memory blackbox does not support nested aggregate data type
   val store =
-    SyncReadMem(coredef.BHT_SIZE, Vec(INLINE_COUNT, new MicroBTBEntry))
+    SyncReadMem(
+      coredef.BHT_SIZE,
+      Vec(INLINE_COUNT, UInt((new MicroBTBEntry).getWidth.W))
+    )
 
   val doingReset = RegInit(true.B)
   val resetCnt = RegInit(0.U(log2Ceil(coredef.BHT_SIZE).W))
@@ -215,7 +219,9 @@ class MicroBTB(implicit val coredef: CoreDef) extends Module {
   // one cycle delay
   toFetch.s2Res.valid := RegNext(toFetch.s1Pc.valid)
   when(toFetch.s2Res.valid) {
-    toFetch.s2Res.bits := VecInit(s2Readout.map(_.taken(s2Tag)))
+    toFetch.s2Res.bits := VecInit(
+      s2Readout.map(_.asTypeOf(new MicroBTBEntry).taken(s2Tag))
+    )
   }.otherwise {
     toFetch.s2Res.bits := 0.U.asTypeOf(toFetch.s2Res.bits)
   }
@@ -293,7 +299,11 @@ class MicroBTB(implicit val coredef: CoreDef) extends Module {
     )
   )
 
-  store.write(waddr, data, we)
+  store.write(
+    waddr,
+    data.asTypeOf(Vec(INLINE_COUNT, UInt((new MicroBTBEntry).getWidth.W))),
+    we
+  )
 
   // Save to write bypass buffer
   when(toExec.valid) {

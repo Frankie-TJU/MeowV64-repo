@@ -27,7 +27,7 @@ object Main extends App {
     )
 
   (new chisel3.stage.ChiselStage()).execute(
-    Array("-X", "verilog") ++ rest,
+    Array("-X", "verilog", "-firw", "-gmv", "full") ++ rest,
     annotations
   )
 

@@ -34,11 +34,12 @@ class L1IC(opts: L1Opts) extends Module {
   val validArray = RegInit(0.U((opts.LINE_PER_ASSOC * opts.ASSOC).W))
   val tagArray =
     Mem(opts.LINE_PER_ASSOC, Vec(opts.ASSOC, UInt(opts.TAG_WIDTH.W)))
+  // memory blackbox does not support nested aggregate data type
   val dataArray = SyncReadMem(
     opts.LINE_PER_ASSOC,
     Vec(
       opts.ASSOC,
-      Vec(opts.TRANSFER_COUNT, UInt(opts.TO_CORE_TRANSFER_WIDTH.W))
+      UInt((opts.TRANSFER_COUNT * opts.TO_CORE_TRANSFER_WIDTH).W)
     )
   )
 
@@ -56,7 +57,13 @@ class L1IC(opts: L1Opts) extends Module {
   )
   dataArray.write(
     writerAddr,
-    VecInit(Seq.fill(opts.ASSOC)(writerData)),
+    VecInit(
+      Seq.fill(opts.ASSOC)(
+        writerData.asTypeOf(
+          UInt((opts.TRANSFER_COUNT * opts.TO_CORE_TRANSFER_WIDTH).W)
+        )
+      )
+    ),
     writerMask
   )
 
@@ -89,7 +96,14 @@ class L1IC(opts: L1Opts) extends Module {
     readValid(i) := validArray(Cat(i.U, getIndex(readingAddr)))
   }
   val readouts = tagArray.read(getIndex(readingAddr))
-  val dataReadouts = dataArray.read(getIndex(readingAddr))
+  val dataReadouts = dataArray
+    .read(getIndex(readingAddr))
+    .asTypeOf(
+      Vec(
+        opts.ASSOC,
+        Vec(opts.TRANSFER_COUNT, UInt(opts.TO_CORE_TRANSFER_WIDTH.W))
+      )
+    )
   val hitMap = VecInit(
     readouts.zip(readValid).map { case (tag, valid) =>
       valid && tag === getTag(readingAddr)
