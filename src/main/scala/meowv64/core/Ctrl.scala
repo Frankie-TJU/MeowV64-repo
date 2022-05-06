@@ -403,7 +403,7 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
   // update fflags
   // and set mstatus.fs = 3(dirty)
   when(toExec.updateFFlags.valid) {
-    fcsr.fflags := toExec.updateFFlags.bits
+    fcsr.fflags := fcsr.fflags | toExec.updateFFlags.bits
     status.fs := 3.U
   }
 

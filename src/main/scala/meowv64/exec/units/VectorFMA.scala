@@ -210,7 +210,12 @@ class VectorFMA(override implicit val coredef: CoreDef)
 
   def finalize(pipe: PipeInstr, ext: VectorFMAExt): RetireInfo = {
     val info = WireDefault(RetireInfo.vacant(regInfo))
+    // result
     info.wb := ext.res
+
+    // fflags
+    info.updateFFlags := true.B
+    info.fflags := ext.fflags
 
     info
   }

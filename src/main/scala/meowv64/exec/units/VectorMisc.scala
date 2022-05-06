@@ -3,9 +3,9 @@ package meowv64.exec.units
 import chisel3._
 import chisel3.util._
 import meowv64.core.CoreDef
+import meowv64.core.VState
 import meowv64.exec._
 import meowv64.instr.Decoder
-import meowv64.core.VState
 
 class VectorMiscExt(implicit val coredef: CoreDef) extends Bundle {
   val res = UInt(coredef.VLEN.W)
