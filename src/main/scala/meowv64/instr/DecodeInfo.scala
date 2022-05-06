@@ -320,8 +320,10 @@ object DecodeInfo {
       // Vector Float
       VFADD_VV     -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
       VFADD_VF     -> List(Y, Y, Y, vector, Y, float, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
+      VFREDUSUM_VS -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFloatRedSum, IQT.vec),
       VFSUB_VV     -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
       VFSUB_VF     -> List(Y, Y, Y, vector, Y, float, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
+      VFREDOSUM_VS -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFloatRedSum, IQT.vec),
       VFMUL_VV     -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
       VFMUL_VF     -> List(Y, Y, Y, vector, Y, float, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
       VFRSUB_VF    -> List(Y, Y, Y, vector, Y, float, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
@@ -340,8 +342,7 @@ object DecodeInfo {
       VFMSAC_VV    -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
       VFMSAC_VF    -> List(Y, Y, Y, vector, Y, float, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
       VFNMSAC_VV   -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
-      VFNMSAC_VF   -> List(Y, Y, Y, vector, Y, float, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
-      VFREDOSUM_VS -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFloatRedSum, IQT.vec)
+      VFNMSAC_VF   -> List(Y, Y, Y, vector, Y, float, Y, vector, Y, vector, Y, vectorFma, IQT.vec)
     )
 
   for (execUnitType <- ExecUnitType.all) {
@@ -698,6 +699,7 @@ object Instructions {
   // Vector Float
   val VFADD_VV     = BitPat("b000000???????????001?????1010111")
   val VFADD_VF     = BitPat("b000000???????????101?????1010111")
+  val VFREDUSUM_VS = BitPat("b000001???????????001?????1010111")
   val VFSUB_VV     = BitPat("b000010???????????001?????1010111")
   val VFSUB_VF     = BitPat("b000010???????????101?????1010111")
   val VFREDOSUM_VS = BitPat("b000011???????????001?????1010111")

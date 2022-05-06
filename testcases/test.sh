@@ -19,9 +19,11 @@ do
 		vfnmsac \
 		vfnmsub \
 		vfredosum \
+		vfredusum \
 		vfsub \
 		vle \
 		vluxei \
+		vmul \
 		vmv \
 		vmvr \
 		vse \
