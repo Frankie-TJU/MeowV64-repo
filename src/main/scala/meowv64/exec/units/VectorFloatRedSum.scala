@@ -52,6 +52,7 @@ class VectorFloatRedSum(implicit val coredef: CoreDef)
       rs3Elements := currentInstr.rs3val.asTypeOf(rs3Elements)
 
       val currentValue = Reg(UInt(float.widthHardfloat.W))
+      val currentFFlags = RegInit(0.U(5.W))
       when(curFloat === float.fmt) {
         // compute a + b
         val a = WireInit(0.U(float.widthHardfloat.W))
@@ -82,16 +83,20 @@ class VectorFloatRedSum(implicit val coredef: CoreDef)
         adder.io.roundingMode := 0.U
         adder.io.detectTininess := hardfloat.consts.tininess_afterRounding
         currentValue := adder.io.out
+        currentFFlags := currentFFlags | adder.io.exceptionFlags
 
         progress := progress + 1.U
 
         // only set lane 0 of vd
         rs3Elements(0) := float.fromHardfloat(adder.io.out)
         io.retirement.wb := Cat(rs3Elements.reverse)
+        io.retirement.updateFFlags := true.B
+        io.retirement.fflags := currentFFlags | adder.io.exceptionFlags
         when(progress + 1.U === vState.vl) {
           io.retiredInstr.instr.valid := true.B
           busy := false.B
           io.stall := false.B
+          currentFFlags := 0.U
         }
       }
     }
