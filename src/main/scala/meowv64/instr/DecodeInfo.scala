@@ -320,6 +320,8 @@ object DecodeInfo {
       // Vector Float
       VFADD_VV     -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
       VFADD_VF     -> List(Y, Y, Y, vector, Y, float, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
+      VFMADD_VV    -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
+      VFMADD_VF    -> List(Y, Y, Y, vector, Y, float, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
       VFMACC_VV    -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
       VFMACC_VF    -> List(Y, Y, Y, vector, Y, float, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
       VFREDOSUM_VS -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFloatRedSum, IQT.vec)
@@ -682,6 +684,7 @@ object Instructions {
   val VFREDOSUM_VS = BitPat("b000011???????????001?????1010111")
   val VFMUL_VV     = BitPat("b100100???????????001?????1010111")
   val VFMADD_VV    = BitPat("b101000???????????001?????1010111")
+  val VFMADD_VF    = BitPat("b101000???????????101?????1010111")
   val VFNMADD_VV   = BitPat("b101001???????????001?????1010111")
   val VFMSUB_VV    = BitPat("b101010???????????001?????1010111")
   val VFNMSUB_VV   = BitPat("b101011???????????001?????1010111")

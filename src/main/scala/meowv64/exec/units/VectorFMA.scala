@@ -129,6 +129,12 @@ class VectorFMA(override implicit val coredef: CoreDef)
                 b := rs1valHF
                 c := rs2valHF
               }
+              is(0x28.U) {
+                // vfmadd: rs1 * rs3 + rs2
+                a := rs1valHF
+                b := rs3valHF
+                c := rs2valHF
+              }
               is(0x2c.U) {
                 // vfmacc: rs1 * rs2 + rs3
                 a := rs1valHF
