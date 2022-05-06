@@ -70,6 +70,22 @@ class VectorMisc(override implicit val coredef: CoreDef)
               }
             }
           }
+          is(Decoder.VP_FUNC("VSLIDEDOWN_V")) {
+            switch(pipe.instr.instr.funct3) {
+              is(3.U) {
+                // vslidedown.vi
+                val shift = pipe.instr.instr.rs1
+                for (i <- 0 until lanes) {
+                  res(i) := 0.U
+                  for (j <- i until lanes) {
+                    when(shift === (j-i).U) {
+                      res(i) := rs2Elements(j)
+                    }
+                  }
+                }
+              }
+            }
+          }
           is(Decoder.VP_FUNC("VMV_V")) {
             switch(pipe.instr.instr.funct3) {
               is(0.U) {

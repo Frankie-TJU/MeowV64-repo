@@ -178,6 +178,7 @@ object Decoder {
 
   val VP_FUNC: Map[String, UInt] = Map(
     "VADD_V" -> "000000",
+    "VSLIDEDOWN_V" -> "001111",
     "VMV_S" -> "010000",
     "VMV_V" -> "010111",
     "VSLL_V" -> "100101",
