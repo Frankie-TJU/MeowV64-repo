@@ -302,8 +302,8 @@ object DecodeInfo {
 
       // Vector Integer
       VADD_VV  -> List(Y, N, Y, vector, Y, vector, Y, vector, N, XX, N, vectorAlu, IQT.vec),
-      VADD_VI  -> List(Y, N, Y, vector, Y, vector, N, XX, N, XX, N, vectorAlu, IQT.vec),
-      VADD_VX  -> List(Y, N, Y, vector, Y, vector, Y, integer, N, XX, N, vectorAlu, IQT.vec),
+      VADD_VI  -> List(Y, N, Y, vector, N, XX, Y, vector, N, XX, N, vectorAlu, IQT.vec),
+      VADD_VX  -> List(Y, N, Y, vector, Y, integer, Y, vector, N, XX, N, vectorAlu, IQT.vec),
       VFMV_F_S -> List(Y, N, Y, float, N, XX, Y, vector, N, XX, N, vectorMisc, IQT.vec),
       VMV_X_S  -> List(Y, N, Y, integer, N, XX, Y, vector, N, XX, N, vectorMisc, IQT.vec),
       VFMV_S_F -> List(Y, N, Y, vector, Y, float, N, XX, N, XX, N, vectorMisc, IQT.vec),
