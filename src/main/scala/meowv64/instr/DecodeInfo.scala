@@ -320,14 +320,26 @@ object DecodeInfo {
       // Vector Float
       VFADD_VV     -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
       VFADD_VF     -> List(Y, Y, Y, vector, Y, float, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
+      VFSUB_VV     -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
+      VFSUB_VF     -> List(Y, Y, Y, vector, Y, float, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
       VFMUL_VV     -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
       VFMUL_VF     -> List(Y, Y, Y, vector, Y, float, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
       VFMADD_VV    -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
       VFMADD_VF    -> List(Y, Y, Y, vector, Y, float, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
+      VFNMADD_VV   -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
+      VFNMADD_VF   -> List(Y, Y, Y, vector, Y, float, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
       VFMSUB_VV    -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
       VFMSUB_VF    -> List(Y, Y, Y, vector, Y, float, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
+      VFNMSUB_VV   -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
+      VFNMSUB_VF   -> List(Y, Y, Y, vector, Y, float, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
       VFMACC_VV    -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
       VFMACC_VF    -> List(Y, Y, Y, vector, Y, float, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
+      VFNMACC_VV   -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
+      VFNMACC_VF   -> List(Y, Y, Y, vector, Y, float, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
+      VFMSAC_VV    -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
+      VFMSAC_VF    -> List(Y, Y, Y, vector, Y, float, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
+      VFNMSAC_VV   -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
+      VFNMSAC_VF   -> List(Y, Y, Y, vector, Y, float, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
       VFREDOSUM_VS -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFloatRedSum, IQT.vec)
     )
 
@@ -685,18 +697,25 @@ object Instructions {
   // Vector Float
   val VFADD_VV     = BitPat("b000000???????????001?????1010111")
   val VFADD_VF     = BitPat("b000000???????????101?????1010111")
+  val VFSUB_VV     = BitPat("b000010???????????001?????1010111")
+  val VFSUB_VF     = BitPat("b000010???????????101?????1010111")
   val VFREDOSUM_VS = BitPat("b000011???????????001?????1010111")
   val VFMUL_VV     = BitPat("b100100???????????001?????1010111")
   val VFMUL_VF     = BitPat("b100100???????????101?????1010111")
   val VFMADD_VV    = BitPat("b101000???????????001?????1010111")
   val VFMADD_VF    = BitPat("b101000???????????101?????1010111")
   val VFNMADD_VV   = BitPat("b101001???????????001?????1010111")
+  val VFNMADD_VF   = BitPat("b101001???????????101?????1010111")
   val VFMSUB_VV    = BitPat("b101010???????????001?????1010111")
   val VFMSUB_VF    = BitPat("b101010???????????101?????1010111")
   val VFNMSUB_VV   = BitPat("b101011???????????001?????1010111")
+  val VFNMSUB_VF   = BitPat("b101011???????????101?????1010111")
   val VFMACC_VV    = BitPat("b101100???????????001?????1010111")
   val VFMACC_VF    = BitPat("b101100???????????101?????1010111")
   val VFNMACC_VV   = BitPat("b101101???????????001?????1010111")
+  val VFNMACC_VF   = BitPat("b101101???????????101?????1010111")
   val VFMSAC_VV    = BitPat("b101110???????????001?????1010111")
+  val VFMSAC_VF    = BitPat("b101110???????????101?????1010111")
   val VFNMSAC_VV   = BitPat("b101111???????????001?????1010111")
+  val VFNMSAC_VF   = BitPat("b101111???????????101?????1010111")
 }

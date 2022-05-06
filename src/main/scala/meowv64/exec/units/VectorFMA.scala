@@ -123,11 +123,18 @@ class VectorFMA(override implicit val coredef: CoreDef)
             val sign = WireInit(false.B)
             val op = Cat(neg, sign)
             switch(pipe.instr.instr.funct6) {
-              is(0.U) {
+              is(0x00.U) {
                 // vfadd: 1 * rs1 + rs2
                 a := oneHF
                 b := rs1valHF
                 c := rs2valHF
+              }
+              is(0x02.U) {
+                // vfsub: 1 * rs1 - rs2
+                a := oneHF
+                b := rs1valHF
+                c := rs2valHF
+                sign := true.B
               }
               is(0x24.U) {
                 // vfmul: rs1 * rs2 + 0
@@ -141,6 +148,14 @@ class VectorFMA(override implicit val coredef: CoreDef)
                 b := rs3valHF
                 c := rs2valHF
               }
+              is(0x29.U) {
+                // vfnmadd: -(rs1 * rs3) - rs2
+                a := rs1valHF
+                b := rs3valHF
+                c := rs2valHF
+                neg := true.B
+                sign := true.B
+              }
               is(0x2a.U) {
                 // vfmsub: rs1 * rs3 - rs2
                 a := rs1valHF
@@ -148,11 +163,40 @@ class VectorFMA(override implicit val coredef: CoreDef)
                 c := rs2valHF
                 sign := true.B
               }
+              is(0x2b.U) {
+                // vfnmsub: -(rs1 * rs3) + rs2
+                a := rs1valHF
+                b := rs3valHF
+                c := rs2valHF
+                neg := true.B
+              }
               is(0x2c.U) {
                 // vfmacc: rs1 * rs2 + rs3
                 a := rs1valHF
                 b := rs2valHF
                 c := rs3valHF
+              }
+              is(0x2d.U) {
+                // vfnmacc: -(rs1 * rs2) - rs3
+                a := rs1valHF
+                b := rs2valHF
+                c := rs3valHF
+                neg := true.B
+                sign := true.B
+              }
+              is(0x2e.U) {
+                // vfmsac: rs1 * rs2 - rs3
+                a := rs1valHF
+                b := rs2valHF
+                c := rs3valHF
+                sign := true.B
+              }
+              is(0x2f.U) {
+                // vfnmsac: -(rs1 * rs2) + rs3
+                a := rs1valHF
+                b := rs2valHF
+                c := rs3valHF
+                neg := true.B
               }
             }
 

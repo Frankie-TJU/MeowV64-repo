@@ -6,8 +6,6 @@ import meowv64.core.CoreDef
 import meowv64.core.VState
 import meowv64.exec._
 import meowv64.instr.Decoder
-import meowv64.core.FloatS
-import meowv64.core.FloatD
 
 class VectorMiscExt(implicit val coredef: CoreDef) extends Bundle {
   val res = UInt(coredef.VLEN.W)
