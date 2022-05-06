@@ -189,7 +189,7 @@ class L2Cache(val opts: L2Opts) extends Module {
 
   // Assoc and writers
   val directories = Mem(LINE_COUNT, Vec(opts.ASSOC, new L2DirEntry(opts)))
-  val stores =
+  val l2DataArray =
     SyncReadMem(LINE_COUNT, Vec(opts.ASSOC, UInt(opts.LINE_WIDTH.W)))
 
   val dataWriter = Wire(new Bundle {
@@ -209,7 +209,7 @@ class L2Cache(val opts: L2Opts) extends Module {
   dirWriter := DontCare
   dirWriter.mask := VecInit(Seq.fill(opts.ASSOC)(false.B))
 
-  stores.write(
+  l2DataArray.write(
     dataWriter.addr,
     VecInit(Seq.fill(opts.ASSOC)(dataWriter.data)),
     dataWriter.mask
@@ -365,7 +365,7 @@ class L2Cache(val opts: L2Opts) extends Module {
   // Compute directory lookups & delayed data fetch
   val lookups = directories.read(targetIndex)
   for (l <- lookups) { l.validate() }
-  val datas = stores.read(targetIndex)
+  val datas = l2DataArray.read(targetIndex)
   val pipeLookups = RegNext(lookups)
   val hits = lookups.map(_.hit(targetAddr))
   val hit = VecInit(hits).asUInt().orR

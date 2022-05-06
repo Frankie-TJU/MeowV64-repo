@@ -35,7 +35,7 @@ class L1IC(opts: L1Opts) extends Module {
   val tagArray =
     Mem(opts.LINE_PER_ASSOC, Vec(opts.ASSOC, UInt(opts.TAG_WIDTH.W)))
   // memory blackbox does not support nested aggregate data type
-  val dataArray = SyncReadMem(
+  val icDataArray = SyncReadMem(
     opts.LINE_PER_ASSOC,
     Vec(
       opts.ASSOC,
@@ -55,7 +55,7 @@ class L1IC(opts: L1Opts) extends Module {
     VecInit(Seq.fill(opts.ASSOC)(writerTag)),
     writerMask
   )
-  dataArray.write(
+  icDataArray.write(
     writerAddr,
     VecInit(
       Seq.fill(opts.ASSOC)(
@@ -96,7 +96,7 @@ class L1IC(opts: L1Opts) extends Module {
     readValid(i) := validArray(Cat(i.U, getIndex(readingAddr)))
   }
   val readouts = tagArray.read(getIndex(readingAddr))
-  val dataReadouts = dataArray
+  val dataReadouts = icDataArray
     .read(getIndex(readingAddr))
     .asTypeOf(
       Vec(

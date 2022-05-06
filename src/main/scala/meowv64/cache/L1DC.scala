@@ -198,7 +198,7 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
     addr(opts.OFFSET_WIDTH - 1, IGNORED_WIDTH)
   }
 
-  val stores =
+  val dcDataArray =
     SyncReadMem(opts.LINE_PER_ASSOC, Vec(opts.ASSOC, new DLine(opts)))
 
   // Ports, mr = Memory read, ptw = Page table walker
@@ -252,7 +252,7 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
   mr.resp.valid := pipeRead && r.req.ready && current === 1.U
 
   val queryAddr = Wire(UInt(opts.ADDR_WIDTH.W))
-  val lookups = stores.read(getIndex(queryAddr))
+  val lookups = dcDataArray.read(getIndex(queryAddr))
 
   // AMO/SC stuff
   val amoalu = Module(new AMOALU(opts))
@@ -338,7 +338,7 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
   }
 
   // FIXME: merge this with lookups
-  val wlookups = stores.read(getIndex(wlookupAddr))
+  val wlookups = dcDataArray.read(getIndex(wlookupAddr))
   val whits = wlookups.map(line => line.valid && line.tag === getTag(waddr))
   val whit = VecInit(whits).asUInt.orR
   val wdirtyHits =
@@ -366,7 +366,11 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
   dontTouch(writingAddr)
   dontTouch(writingData)
   dontTouch(writing)
-  stores.write(writingAddr, VecInit(Seq.fill(opts.ASSOC)(writingData)), writing)
+  dcDataArray.write(
+    writingAddr,
+    VecInit(Seq.fill(opts.ASSOC)(writingData)),
+    writing
+  )
 
   // Rst
   val rstCnt = RegInit(0.U(log2Ceil(opts.LINE_PER_ASSOC).W))

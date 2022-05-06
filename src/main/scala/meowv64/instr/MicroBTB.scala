@@ -203,7 +203,7 @@ class MicroBTB(implicit val coredef: CoreDef) extends Module {
   ) // The input address should be aligned anyway
 
   // memory blackbox does not support nested aggregate data type
-  val store =
+  val btbEntries =
     SyncReadMem(
       coredef.BHT_SIZE,
       Vec(INLINE_COUNT, UInt((new MicroBTBEntry).getWidth.W))
@@ -215,7 +215,7 @@ class MicroBTB(implicit val coredef: CoreDef) extends Module {
   // Prediction part
   val s1Tag = getTag(toFetch.s1Pc.bits)
   val s2Tag = RegNext(s1Tag)
-  val s2Readout = store.read(getIndex(toFetch.s1Pc.bits))
+  val s2Readout = btbEntries.read(getIndex(toFetch.s1Pc.bits))
   // one cycle delay
   toFetch.s2Res.valid := RegNext(toFetch.s1Pc.valid)
   when(toFetch.s2Res.valid) {
@@ -299,7 +299,7 @@ class MicroBTB(implicit val coredef: CoreDef) extends Module {
     )
   )
 
-  store.write(
+  btbEntries.write(
     waddr,
     data.asTypeOf(Vec(INLINE_COUNT, UInt((new MicroBTBEntry).getWidth.W))),
     we
