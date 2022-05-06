@@ -198,8 +198,12 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
     addr(opts.OFFSET_WIDTH - 1, IGNORED_WIDTH)
   }
 
+  // memory blackbox does not support nested aggregate data type
   val dcDataArray =
-    SyncReadMem(opts.LINE_PER_ASSOC, Vec(opts.ASSOC, new DLine(opts)))
+    SyncReadMem(
+      opts.LINE_PER_ASSOC,
+      Vec(opts.ASSOC, UInt((new DLine(opts)).getWidth.W))
+    )
 
   // Ports, mr = Memory read, ptw = Page table walker
   val mr = IO(Flipped(new CoreDCReader))
@@ -252,7 +256,9 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
   mr.resp.valid := pipeRead && r.req.ready && current === 1.U
 
   val queryAddr = Wire(UInt(opts.ADDR_WIDTH.W))
-  val lookups = dcDataArray.read(getIndex(queryAddr))
+  val lookups = dcDataArray
+    .read(getIndex(queryAddr))
+    .asTypeOf(Vec(opts.ASSOC, new DLine(opts)))
 
   // AMO/SC stuff
   val amoalu = Module(new AMOALU(opts))
@@ -338,7 +344,9 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
   }
 
   // FIXME: merge this with lookups
-  val wlookups = dcDataArray.read(getIndex(wlookupAddr))
+  val wlookups = dcDataArray
+    .read(getIndex(wlookupAddr))
+    .asTypeOf(Vec(opts.ASSOC, new DLine(opts)))
   val whits = wlookups.map(line => line.valid && line.tag === getTag(waddr))
   val whit = VecInit(whits).asUInt.orR
   val wdirtyHits =
@@ -368,7 +376,8 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
   dontTouch(writing)
   dcDataArray.write(
     writingAddr,
-    VecInit(Seq.fill(opts.ASSOC)(writingData)),
+    VecInit(Seq.fill(opts.ASSOC)(writingData))
+      .asTypeOf(Vec(opts.ASSOC, UInt((new DLine(opts)).getWidth.W))),
     writing
   )
 
