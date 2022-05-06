@@ -6,6 +6,8 @@ import meowv64.core.CoreDef
 import meowv64.core.VState
 import meowv64.exec._
 import meowv64.instr.Decoder
+import meowv64.core.FloatS
+import meowv64.core.FloatD
 
 class VectorMiscExt(implicit val coredef: CoreDef) extends Bundle {
   val res = UInt(coredef.VLEN.W)
@@ -24,14 +26,10 @@ class VectorMisc(override implicit val coredef: CoreDef)
     val ext = Wire(new VectorMiscExt)
     ext.res := 0.U
 
-    val curFloat = vState.vtype.floatFmt
-
-    for ((float, idx) <- coredef.FLOAT_TYPES.zipWithIndex) {
-      val lanes = coredef.VLEN / float.width()
-      val width = float.width()
+    for ((sew, width) <- Seq((0, 8), (1, 16), (2, 32), (3, 64))) {
+      val lanes = coredef.VLEN / width
       val simm = Wire(SInt(width.W))
       simm := pipe.instr.instr.simm5()
-
       val rs1Elements = Wire(Vec(lanes, UInt(width.W)))
       rs1Elements := pipe.rs1val.asTypeOf(rs1Elements)
       val rs2Elements = Wire(Vec(lanes, UInt(width.W)))
@@ -39,8 +37,9 @@ class VectorMisc(override implicit val coredef: CoreDef)
       val rs3Elements = Wire(Vec(lanes, UInt(width.W)))
       rs3Elements := pipe.rs3val.asTypeOf(rs3Elements)
       val res = WireInit(VecInit.fill(lanes)(0.U(width.W)))
+      val float = coredef.FLOAT_TYPES.find(_.width() == width)
 
-      when(curFloat === float.fmt) {
+      when(vState.vtype.vsew === sew.U) {
         ext.res := Cat(res.reverse)
 
         switch(pipe.instr.instr.funct6) {
@@ -49,7 +48,14 @@ class VectorMisc(override implicit val coredef: CoreDef)
               is(1.U) {
                 // VFMV_F_S
                 // handle nan boxing
-                ext.res := float.box(pipe.rs2val, coredef.XLEN)
+                float match {
+                  case Some(f) => {
+                    ext.res := f.box(pipe.rs2val, coredef.XLEN)
+                  }
+                  case None => {
+                    assert(false.B, "vfmv.f.s not implemented for the width")
+                  }
+                }
               }
               is(2.U) {
                 // VMV_X_S
