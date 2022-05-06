@@ -130,10 +130,10 @@ class VectorFMA(override implicit val coredef: CoreDef)
                 c := rs2valHF
               }
               is(0x02.U) {
-                // vfsub: 1 * rs1 - rs2
+                // vfsub: 1 * rs2 - rs1
                 a := oneHF
-                b := rs1valHF
-                c := rs2valHF
+                b := rs2valHF
+                c := rs1valHF
                 sign := true.B
               }
               is(0x24.U) {
@@ -141,6 +141,13 @@ class VectorFMA(override implicit val coredef: CoreDef)
                 a := rs1valHF
                 b := rs2valHF
                 c := 0.U
+              }
+              is(0x27.U) {
+                // vfrsub: 1 * rs1 - rs2
+                a := oneHF
+                b := rs1valHF
+                c := rs2valHF
+                sign := true.B
               }
               is(0x28.U) {
                 // vfmadd: rs1 * rs3 + rs2
