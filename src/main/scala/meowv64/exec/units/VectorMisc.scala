@@ -52,8 +52,13 @@ class VectorMisc(override implicit val coredef: CoreDef)
                 ext.res := float.box(pipe.rs2val, coredef.XLEN)
               }
               is(2.U) {
-                // VFMV_F_S/VMV_X_S
-                res(0) := pipe.rs2val
+                // VMV_X_S
+                // sign extension
+                val signed = Wire(SInt(width.W))
+                signed := rs2Elements(0).asSInt
+                val extended = Wire(SInt(coredef.XLEN.W))
+                extended := signed
+                ext.res := extended.asUInt
               }
               is(5.U, 6.U) {
                 // VFMV_S_F/VMV_S_X
