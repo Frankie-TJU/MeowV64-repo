@@ -29,6 +29,7 @@ do
 		vmulhu_32 \
 		vmv \
 		vmvr \
+		vrsub \
 		vse \
 		vsetvl \
 		vsll
