@@ -211,6 +211,8 @@ class Exec(implicit val coredef: CoreDef) extends Module {
                 }
                 case ExecUnitType.vectorAlu =>
                   Module(new VectorALU).suggestName("VectorALU")
+                case ExecUnitType.vectorMul =>
+                  Module(new VectorMul).suggestName("VectorMul")
                 case ExecUnitType.vectorFma =>
                   Module(new VectorFMA).suggestName("VectorFMA")
                 case ExecUnitType.vectorFloatRedSum =>

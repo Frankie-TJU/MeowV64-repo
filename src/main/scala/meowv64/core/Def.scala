@@ -157,6 +157,14 @@ class ExecutionUnitVectorALU
       Seq(RegType.vector)
     )
 
+class ExecutionUnitVectorMul
+    extends ExecutionUnitInfo(
+      ExecUnitType.vectorMul,
+      2,
+      RegType.vector,
+      Seq(RegType.vector)
+    )
+
 class ExecutionUnitVectorFMA
     extends ExecutionUnitInfo(
       ExecUnitType.vectorFma,
@@ -344,6 +352,7 @@ abstract class CoreDef {
           ), // vs1/rs1 vs2 vs3/vd vm
           Seq(
             new ExecutionUnitVectorALU(),
+            new ExecutionUnitVectorMul(),
             new ExecutionUnitVectorFMA(),
             new ExecutionUnitVectorToMem(),
             new ExecutionUnitVectorMisc(),
