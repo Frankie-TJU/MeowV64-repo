@@ -26,9 +26,9 @@ current_design $toplevel_name
 set_host_options -max_cores 16
 
 # timing
-# 333MHz clock
-create_clock clock -period 3.0000
-create_clock clk -period 3.0000
+# 600MHz clock
+create_clock clock -period 1.667
+create_clock clk -period 1.667
 # dff clock to output: 0.14ns
 # assume all input comes from output of dff
 set_input_delay 0.14 -clock clock [all_inputs]
