@@ -369,3 +369,5 @@ RiscVSystem.anno.json
 RiscVSystem.fir
 RiscVSystem.v
 RiscVSystem.sv
+*_ext.v
+firrtl_black_box_resource_files.f
