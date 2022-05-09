@@ -9,14 +9,26 @@ import meowv64.core.VState
 
 class VectorMulExt(implicit val coredef: CoreDef) extends Bundle {
   // only consider 32bit/64bit mul
-  val maxLanes = coredef.VLEN / 32
-  val x1 = Vec(maxLanes, UInt(coredef.XLEN.W))
-  val x2 = Vec(maxLanes, UInt(coredef.XLEN.W))
+  val widths = Seq(32, 64)
+  val x1 = MixedVec(
+    for (width <- widths) yield Vec(coredef.VLEN / width, UInt(width.W))
+  )
+  val x2 = MixedVec(
+    for (width <- widths) yield Vec(coredef.VLEN / width, UInt(width.W))
+  )
 
-  val mid1 = Vec(maxLanes, UInt(coredef.XLEN.W))
-  val mid2 = Vec(maxLanes, UInt(coredef.XLEN.W))
+  val mid1 = MixedVec(
+    for (width <- widths) yield Vec(coredef.VLEN / width, UInt(width.W))
+  )
+  val mid2 = MixedVec(
+    for (width <- widths) yield Vec(coredef.VLEN / width, UInt(width.W))
+  )
 
-  val neg = Vec(maxLanes, Bool())
+  val neg = MixedVec(
+    for (width <- widths) yield Vec(coredef.VLEN / width, Bool())
+  )
+
+  val res = UInt(coredef.VLEN.W)
 }
 
 class VectorMul(override implicit val coredef: CoreDef)
@@ -35,7 +47,7 @@ class VectorMul(override implicit val coredef: CoreDef)
     val ext = Wire(new VectorMulExt)
     ext := 0.U.asTypeOf(ext)
 
-    for ((sew, width) <- Seq((2, 32), (3, 64))) {
+    for ((i, sew, width) <- Seq((0, 2, 32), (1, 3, 64))) {
       val lanes = coredef.VLEN / width
 
       val rs1Elements = Wire(Vec(lanes, UInt(width.W)))
@@ -43,14 +55,13 @@ class VectorMul(override implicit val coredef: CoreDef)
       val rs2Elements = Wire(Vec(lanes, UInt(width.W)))
       rs2Elements := pipe.rs2val.asTypeOf(rs2Elements)
 
-      val isDWord = vState.vtype.vsew === 3.U
       when(vState.vtype.vsew === sew.U) {
-        for (i <- 0 until lanes) {
+        for (lane <- 0 until lanes) {
           if (stage == 0) {
             // Pipelining requests
 
             val (op1, op2) =
-              (Wire(SInt(coredef.XLEN.W)), Wire(SInt(coredef.XLEN.W)))
+              (Wire(SInt(width.W)), Wire(SInt(width.W)))
 
             when(pipe.instr.instr.funct3 === 0x6.U) {
               // vmul.vx
@@ -61,82 +72,78 @@ class VectorMul(override implicit val coredef: CoreDef)
             }
             op2 := rs2Elements(i).asSInt
 
-            when(isDWord) {
-              ext.neg(i) := DontCare
-              ext.x1(i) := DontCare
-              ext.x2(i) := DontCare
+            ext.neg(i)(lane) := DontCare
+            ext.x1(i)(lane) := DontCare
+            ext.x2(i)(lane) := DontCare
 
-              switch(pipe.instr.instr.funct6) {
-                is(0x25.U) {
-                  // vmul
-                  ext.neg(i) := false.B
-                  ext.x1(i) := op1.asUInt
-                  ext.x2(i) := op2.asUInt
-                }
-
-                is(0x27.U) {
-                  // vmulh
-                  ext.neg(i) := op1(63) ^ op2(63)
-                  ext.x1(i) := op1.abs().asUInt
-                  ext.x2(i) := op2.abs().asUInt
-                }
-
-                is(0x24.U) {
-                  // vmulhu
-                  ext.neg(i) := false.B
-                  ext.x1(i) := op1.asUInt
-                  ext.x2(i) := op2.asUInt
-                }
-
-                is(0x26.U) {
-                  // vmulhsu
-                  ext.neg(i) := op1(63)
-                  ext.x1(i) := op1.abs().asUInt
-                  ext.x2(i) := op2.asUInt
-                }
+            switch(pipe.instr.instr.funct6) {
+              is(0x25.U) {
+                // vmul
+                ext.neg(i)(lane) := false.B
+                ext.x1(i)(lane) := op1.asUInt
+                ext.x2(i)(lane) := op2.asUInt
               }
-            }.otherwise {
-              ext.neg(i) := DontCare
-              ext.x1(i) := op1.asUInt
-              ext.x2(i) := op2.asUInt
+
+              is(0x27.U) {
+                // vmulh
+                ext.neg(i)(lane) := op1(width - 1) ^ op2(width - 1)
+                ext.x1(i)(lane) := op1.abs().asUInt
+                ext.x2(i)(lane) := op2.abs().asUInt
+              }
+
+              is(0x24.U) {
+                // vmulhu
+                ext.neg(i)(lane) := false.B
+                ext.x1(i)(lane) := op1.asUInt
+                ext.x2(i)(lane) := op2.asUInt
+              }
+
+              is(0x26.U) {
+                // vmulhsu
+                // signed vs2, not rs1 in mulhsu
+                ext.neg(i)(lane) := op2(width - 1)
+                ext.x1(i)(lane) := op1.abs().asUInt
+                ext.x2(i)(lane) := op2.asUInt
+              }
             }
 
-            ext.mid1(i) := DontCare
-            ext.mid2(i) := DontCare
+            ext.mid1(i)(lane) := DontCare
+            ext.mid2(i)(lane) := DontCare
 
           } else if (stage == 1) {
             // printf(p"[MUL  0]: COMP ${Hexadecimal(pipe.rs1val)} * ${Hexadecimal(pipe.rs2val)}\n")
             val prev = _ext.get
-            ext.neg(i) := prev.neg(i)
+            ext.neg(i)(lane) := prev.neg(i)(lane)
 
-            ext.x1(i) := prev.x1(i)(31, 0) * prev.x2(i)(31, 0)
-            ext.mid1(i) := prev.x1(i)(63, 32) * prev.x2(i)(31, 0)
-            ext.mid2(i) := prev.x1(i)(31, 0) * prev.x2(i)(63, 32)
-            ext.x2(i) := prev.x1(i)(63, 32) * prev.x2(i)(63, 32)
+            ext.x1(i)(lane) := prev.x1(i)(lane)(width / 2 - 1, 0) *
+              prev.x2(i)(lane)(width / 2 - 1, 0)
+            ext.mid1(i)(lane) := prev.x1(i)(lane)(width - 1, width / 2) *
+              prev.x2(i)(lane)(width / 2 - 1, 0)
+            ext.mid2(i)(lane) := prev.x1(i)(lane)(width / 2 - 1, 0) *
+              prev.x2(i)(lane)(width - 1, width / 2)
+            ext.x2(i)(lane) := prev.x1(i)(lane)(width - 1, width / 2) *
+              prev.x2(i)(lane)(width - 1, width / 2)
 
           } else if (stage == 2) {
             val prev = _ext.get
 
-            when(!isDWord) {
-              // Can only be MULW
-              val extended = Wire(SInt(coredef.XLEN.W))
-              extended := prev.x1(i)(31, 0).asSInt
-              ext.x1(i) := extended.asUInt()
+            val added = Wire(UInt((width * 2).W))
+            added := prev.x1(i)(lane) +&
+              ((prev.mid1(i)(lane) +& prev.mid2(i)(lane)) << (width / 2)) +&
+              (prev.x2(i)(lane) << width)
+            when(pipe.instr.instr.funct6 === 0x25.U) {
+              // vmul
+              ext.x1(i)(lane) := added(width - 1, 0)
             }.otherwise {
-              val added = Wire(UInt((coredef.XLEN * 2).W))
-              added := prev.x1(i) +& ((prev.mid1(i) +& prev.mid2(i)) << 32) +& (prev.x2(i) << 64)
-              when(pipe.instr.instr.funct3 === Decoder.MULDIV_FUNC("MUL")) {
-                ext.x1(i) := added(63, 0)
-              }.otherwise {
-                val signed = added.asSInt
+              val signed = added.asSInt
 
-                when(prev.neg(i)) {
-                  ext.x1(i) := (-signed).asUInt()(127, 64)
-                }.otherwise {
-                  ext.x1(i) := signed(127, 64)
-                }
+              when(prev.neg(i)(lane)) {
+                ext.x1(i)(lane) := (-signed).asUInt()(2 * width - 1, width)
+              }.otherwise {
+                ext.x1(i)(lane) := signed(2 * width - 1, width)
               }
             }
+            ext.res := Cat(ext.x1(i).reverse)
           } else {
             throw new Error(s"Unexpected stage $stage in Mul module")
           }
@@ -151,7 +158,7 @@ class VectorMul(override implicit val coredef: CoreDef)
   override def finalize(pipe: PipeInstr, ext: VectorMulExt): RetireInfo = {
     val info = WireDefault(RetireInfo.vacant(regInfo))
 
-    info.wb := Cat(ext.x1.reverse)
+    info.wb := ext.res
 
     info
   }
