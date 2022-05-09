@@ -89,7 +89,8 @@ class CSR(val XLEN: Int) {
 }
 
 class VState(implicit coredef: CoreDef) extends Bundle {
-  val vl = UInt(coredef.XLEN.W)
+  // vl <= vlen
+  val vl = UInt(log2Ceil(coredef.VLEN + 1).W)
   val vtype = new VType
 }
 
