@@ -39,6 +39,14 @@ class VectorFMAExt(implicit val coredef: CoreDef) extends Bundle {
   })
 
   // stage 1 to stage 2:
+  val mulAddResult = MixedVec(for (float <- coredef.FLOAT_TYPES) yield {
+    Vec(
+      coredef.VLEN / float.width,
+      UInt((float.sig * 2 + 1).W),
+    )
+  })
+
+  // stage 2 to stage 3:
   val rawOut = MixedVec(for (float <- coredef.FLOAT_TYPES) yield {
     Vec(
       coredef.VLEN / float.width,
@@ -57,7 +65,7 @@ class VectorFMAExt(implicit val coredef: CoreDef) extends Bundle {
 }
 
 class VectorFMA(override implicit val coredef: CoreDef)
-    extends ExecUnit(2, new VectorFMAExt, coredef.REG_VEC)
+    extends ExecUnit(3, new VectorFMAExt, coredef.REG_VEC)
     with WithVState {
 
   val vState = IO(Input(new VState()))
@@ -222,30 +230,34 @@ class VectorFMA(override implicit val coredef: CoreDef)
             state.mulAddC(idx)(lane) := preMul.io.mulAddC
 
           } else if (stage == 1) {
-            // second stage
+            // stage 2
             val lastState = ext.get
 
-            // step 1: mul & add
             val mulAddResult =
               (lastState.mulAddA(idx)(lane) * lastState.mulAddB(idx)(lane)) +&
                 lastState.mulAddC(idx)(lane)
 
-            // step 2: post mul
+            state.toPostMul(idx)(lane) := lastState.toPostMul(idx)(lane)
+            state.mulAddResult(idx)(lane) := mulAddResult
+          } else if (stage == 2) {
+            // stage 3: post mul
+            val lastState = ext.get
+
             val postMul =
               Module(new MulAddRecFNToRaw_postMul(float.exp, float.sig))
             postMul.suggestName(s"postMul_${float.name}")
             postMul.io.fromPreMul := lastState.toPostMul(idx)(lane)
-            postMul.io.mulAddResult := mulAddResult
+            postMul.io.mulAddResult := lastState.mulAddResult(idx)(lane)
             // TODO
             postMul.io.roundingMode := 0.U
 
             state.rawOut(idx)(lane) := postMul.io.rawOut
             state.invalidExc(idx)(lane) := postMul.io.invalidExc
           } else {
-            // third stage
+            // stage 4
             val lastState = ext.get
 
-            // step 3: rounding
+            // step 1: rounding
             val round = Module(new RoundRawFNToRecFN(float.exp, float.sig, 0))
             round.suggestName(s"round_${float.name}")
             round.io.in := lastState.rawOut(idx)(lane)
