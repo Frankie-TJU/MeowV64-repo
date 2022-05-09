@@ -67,9 +67,9 @@ class VectorMul(override implicit val coredef: CoreDef)
               op1 := rs1Elements(0).asSInt
             }.otherwise {
               // vmul.vv
-              op1 := rs1Elements(i).asSInt
+              op1 := rs1Elements(lane).asSInt
             }
-            op2 := rs2Elements(i).asSInt
+            op2 := rs2Elements(lane).asSInt
 
             ext.neg(i)(lane) := DontCare
             ext.x1(i)(lane) := DontCare
