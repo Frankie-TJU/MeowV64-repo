@@ -42,7 +42,7 @@ class VectorFMAExt(implicit val coredef: CoreDef) extends Bundle {
   val mulAddResult = MixedVec(for (float <- coredef.FLOAT_TYPES) yield {
     Vec(
       coredef.VLEN / float.width,
-      UInt((float.sig * 2 + 1).W),
+      UInt((float.sig * 2 + 1).W)
     )
   })
 

@@ -5,6 +5,7 @@ import chisel3.util._
 import hardfloat.MulAddRecFNToRaw_postMul
 import hardfloat.MulAddRecFNToRaw_preMul
 import hardfloat.MulAddRecFN_interIo
+import hardfloat.RawFloat
 import hardfloat.RoundRawFNToRecFN
 import meowv64.core.CoreDef
 import meowv64.exec._
@@ -12,11 +13,26 @@ import meowv64.instr.Decoder
 
 class FMAExt(implicit val coredef: CoreDef) extends Bundle {
   // intermediate
+  // stage 0 to stage 1
   val toPostMul = MixedVec(for (float <- coredef.FLOAT_TYPES) yield {
     new MulAddRecFN_interIo(float.exp, float.sig)
   })
-  val mulAddResult = MixedVec(for (float <- coredef.FLOAT_TYPES) yield {
-    UInt((2 * float.sig + 1).W)
+  val mulAddA = MixedVec(for (float <- coredef.FLOAT_TYPES) yield {
+    UInt(float.sig().W)
+  })
+  val mulAddB = MixedVec(for (float <- coredef.FLOAT_TYPES) yield {
+    UInt(float.sig().W)
+  })
+  val mulAddC = MixedVec(for (float <- coredef.FLOAT_TYPES) yield {
+    UInt((float.sig() * 2).W)
+  })
+
+  // stage 1 to stage 2
+  val rawOut = MixedVec(for (float <- coredef.FLOAT_TYPES) yield {
+    new RawFloat(float.exp, float.sig + 2)
+  })
+  val invalidExc = MixedVec(for (_ <- coredef.FLOAT_TYPES) yield {
+    Bool()
   })
 
   // result
@@ -24,15 +40,17 @@ class FMAExt(implicit val coredef: CoreDef) extends Bundle {
   val fflags = UInt(5.W)
 }
 
-/** 1 stage FMA.
+/** 2 stage FMA.
   *
-  * Cycle 1: convert to hardfloat, preMul, mulAdd
+  * Cycle 1: convert to hardfloat, preMul
   *
-  * Cycle 2: postMul, round, convert to ieee
+  * Cycle 2: mulAdd, postMul
+  *
+  * Cycle 3: round, convert to ieee
   */
 class FMA(override implicit val coredef: CoreDef)
     extends ExecUnit(
-      1,
+      2,
       new FMAExt,
       coredef.REG_FLOAT
     ) {
@@ -129,36 +147,41 @@ class FMA(override implicit val coredef: CoreDef)
 
           state.toPostMul(idx) := preMul.io.toPostMul
 
-          // step 3: mul & add
-          state.mulAddResult(
-            idx
-          ) := (preMul.io.mulAddA * preMul.io.mulAddB) +& preMul.io.mulAddC
-
-          state.res := 0.U
-          state.fflags := 0.U
-        } else {
+          state.mulAddA(idx) := preMul.io.mulAddA
+          state.mulAddB(idx) := preMul.io.mulAddB
+          state.mulAddC(idx) := preMul.io.mulAddC
+        } else if (stage == 1) {
           // second stage
-          state := ext.get
+          val lastState = ext.get
 
-          // step 1: post mul
+          val mulAddResult =
+            (lastState.mulAddA(idx) * lastState.mulAddB(idx)) +& lastState
+              .mulAddC(idx)
+
           val postMul =
             Module(new MulAddRecFNToRaw_postMul(float.exp, float.sig))
           postMul.suggestName(s"postMul_${float.name}")
-          postMul.io.fromPreMul := state.toPostMul(idx)
-          postMul.io.mulAddResult := state.mulAddResult(idx)
+          postMul.io.fromPreMul := lastState.toPostMul(idx)
+          postMul.io.mulAddResult := mulAddResult
           // TODO
           postMul.io.roundingMode := 0.U
 
-          // step 2: rounding
+          state.rawOut(idx) := postMul.io.rawOut
+          state.invalidExc(idx) := postMul.io.invalidExc
+        } else if (stage == 2) {
+          // third stage
+          val lastState = ext.get
+
+          // rounding
           val round = Module(new RoundRawFNToRecFN(float.exp, float.sig, 0))
           round.suggestName(s"round_${float.name}")
-          round.io.in := postMul.io.rawOut
+          round.io.in := lastState.rawOut(idx)
           round.io.infiniteExc := false.B
-          round.io.invalidExc := postMul.io.invalidExc
+          round.io.invalidExc := lastState.invalidExc(idx)
           round.io.detectTininess := hardfloat.consts.tininess_afterRounding
           round.io.roundingMode := 0.U
 
-          // step 3: convert to ieee
+          // convert to ieee
           state.res := float.box(
             float.fromHardfloat(round.io.out),
             coredef.XLEN

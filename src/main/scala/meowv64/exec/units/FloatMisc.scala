@@ -5,12 +5,11 @@ import chisel3.util._
 import hardfloat.CompareRecFN
 import hardfloat.RecFNToRecFN
 import hardfloat.fNFromRecFN
-import hardfloat.recFNFromFN
 import meowv64.core.CoreDef
+import meowv64.core.FloatD
 import meowv64.core.FloatS
 import meowv64.exec._
 import meowv64.instr.Decoder
-import meowv64.core.FloatD
 
 class FloatMiscExt(implicit val coredef: CoreDef) extends Bundle {
   val res = UInt(coredef.XLEN.W)
