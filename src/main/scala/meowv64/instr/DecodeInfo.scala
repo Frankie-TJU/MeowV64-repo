@@ -309,6 +309,23 @@ object DecodeInfo {
       VSUB_VX       -> List(Y, N, Y, vector, Y, integer, Y, vector, N, XX, N, vectorAlu, IQT.vec),
       VRSUB_VI      -> List(Y, N, Y, vector, N, XX, Y, vector, N, XX, N, vectorAlu, IQT.vec),
       VRSUB_VX      -> List(Y, N, Y, vector, Y, integer, Y, vector, N, XX, N, vectorAlu, IQT.vec),
+      VMINU_VV      -> List(Y, N, Y, vector, Y, vector, Y, vector, N, XX, N, vectorAlu, IQT.vec),
+      VMINU_VX      -> List(Y, N, Y, vector, Y, integer, Y, vector, N, XX, N, vectorAlu, IQT.vec),
+      VMIN_VV       -> List(Y, N, Y, vector, Y, vector, Y, vector, N, XX, N, vectorAlu, IQT.vec),
+      VMIN_VX       -> List(Y, N, Y, vector, Y, integer, Y, vector, N, XX, N, vectorAlu, IQT.vec),
+      VMAXU_VV      -> List(Y, N, Y, vector, Y, vector, Y, vector, N, XX, N, vectorAlu, IQT.vec),
+      VMAXU_VX      -> List(Y, N, Y, vector, Y, integer, Y, vector, N, XX, N, vectorAlu, IQT.vec),
+      VMAX_VV       -> List(Y, N, Y, vector, Y, vector, Y, vector, N, XX, N, vectorAlu, IQT.vec),
+      VMAX_VX       -> List(Y, N, Y, vector, Y, integer, Y, vector, N, XX, N, vectorAlu, IQT.vec),
+      VAND_VV       -> List(Y, N, Y, vector, Y, vector, Y, vector, N, XX, N, vectorAlu, IQT.vec),
+      VAND_VI       -> List(Y, N, Y, vector, N, XX, Y, vector, N, XX, N, vectorAlu, IQT.vec),
+      VAND_VX       -> List(Y, N, Y, vector, Y, integer, Y, vector, N, XX, N, vectorAlu, IQT.vec),
+      VOR_VV        -> List(Y, N, Y, vector, Y, vector, Y, vector, N, XX, N, vectorAlu, IQT.vec),
+      VOR_VI        -> List(Y, N, Y, vector, N, XX, Y, vector, N, XX, N, vectorAlu, IQT.vec),
+      VOR_VX        -> List(Y, N, Y, vector, Y, integer, Y, vector, N, XX, N, vectorAlu, IQT.vec),
+      VXOR_VV       -> List(Y, N, Y, vector, Y, vector, Y, vector, N, XX, N, vectorAlu, IQT.vec),
+      VXOR_VI       -> List(Y, N, Y, vector, N, XX, Y, vector, N, XX, N, vectorAlu, IQT.vec),
+      VXOR_VX       -> List(Y, N, Y, vector, Y, integer, Y, vector, N, XX, N, vectorAlu, IQT.vec),
       VSLIDEDOWN_VI -> List(Y, N, Y, vector, N, XX, Y, vector, N, XX, N, vectorMisc, IQT.vec),
       VMV_X_S       -> List(Y, N, Y, integer, N, XX, Y, vector, N, XX, N, vectorMisc, IQT.vec),
       VMV_S_X       -> List(Y, N, Y, vector, Y, integer, N, XX, N, XX, N, vectorMisc, IQT.vec),
@@ -701,6 +718,23 @@ object Instructions {
   val VSUB_VX       = BitPat("b000010???????????100?????1010111")
   val VRSUB_VI      = BitPat("b000011???????????011?????1010111")
   val VRSUB_VX      = BitPat("b000011???????????100?????1010111")
+  val VMINU_VV      = BitPat("b000100???????????000?????1010111")
+  val VMINU_VX      = BitPat("b000100???????????100?????1010111")
+  val VMIN_VV       = BitPat("b000101???????????000?????1010111")
+  val VMIN_VX       = BitPat("b000101???????????100?????1010111")
+  val VMAXU_VV      = BitPat("b000110???????????000?????1010111")
+  val VMAXU_VX      = BitPat("b000110???????????100?????1010111")
+  val VMAX_VV       = BitPat("b000111???????????000?????1010111")
+  val VMAX_VX       = BitPat("b000111???????????100?????1010111")
+  val VAND_VV       = BitPat("b001001???????????000?????1010111")
+  val VAND_VI       = BitPat("b001001???????????011?????1010111")
+  val VAND_VX       = BitPat("b001001???????????100?????1010111")
+  val VOR_VV        = BitPat("b001010???????????000?????1010111")
+  val VOR_VI        = BitPat("b001010???????????011?????1010111")
+  val VOR_VX        = BitPat("b001010???????????100?????1010111")
+  val VXOR_VV       = BitPat("b001011???????????000?????1010111")
+  val VXOR_VI       = BitPat("b001011???????????011?????1010111")
+  val VXOR_VX       = BitPat("b001011???????????100?????1010111")
   val VSLIDEDOWN_VI = BitPat("b001111???????????011?????1010111")
   val VMV_X_S       = BitPat("b0100001?????00000010?????1010111")
   val VMV_S_X       = BitPat("b010000100000?????110?????1010111")

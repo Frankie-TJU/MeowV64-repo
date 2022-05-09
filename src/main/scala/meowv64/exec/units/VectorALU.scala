@@ -92,6 +92,168 @@ class VectorALU(override implicit val coredef: CoreDef)
               }
             }
           }
+          is(Decoder.VP_FUNC("VMINU_V")) {
+            switch(pipe.instr.instr.funct3) {
+              is(0.U) {
+                // VMINU_VV
+                for (i <- 0 until lanes) {
+                  when(rs1Elements(i) < rs2Elements(i)) {
+                    res(i) := rs1Elements(i)
+                  }.otherwise {
+                    res(i) := rs2Elements(i)
+                  }
+                }
+              }
+              is(4.U) {
+                // VMINU_VX
+                for (i <- 0 until lanes) {
+                  when(rs1Elements(0) < rs2Elements(i)) {
+                    res(i) := rs1Elements(0)
+                  }.otherwise {
+                    res(i) := rs2Elements(i)
+                  }
+                }
+              }
+            }
+          }
+          is(Decoder.VP_FUNC("VMIN_V")) {
+            switch(pipe.instr.instr.funct3) {
+              is(0.U) {
+                // VMIN_VV
+                for (i <- 0 until lanes) {
+                  when(rs1Elements(i).asSInt < rs2Elements(i).asSInt) {
+                    res(i) := rs1Elements(i)
+                  }.otherwise {
+                    res(i) := rs2Elements(i)
+                  }
+                }
+              }
+              is(4.U) {
+                // VMIN_VX
+                for (i <- 0 until lanes) {
+                  when(rs1Elements(0).asSInt < rs2Elements(i).asSInt) {
+                    res(i) := rs1Elements(0)
+                  }.otherwise {
+                    res(i) := rs2Elements(i)
+                  }
+                }
+              }
+            }
+          }
+          is(Decoder.VP_FUNC("VMAXU_V")) {
+            switch(pipe.instr.instr.funct3) {
+              is(0.U) {
+                // VMAXU_VV
+                for (i <- 0 until lanes) {
+                  when(rs1Elements(i) < rs2Elements(i)) {
+                    res(i) := rs2Elements(i)
+                  }.otherwise {
+                    res(i) := rs1Elements(i)
+                  }
+                }
+              }
+              is(4.U) {
+                // VMAXU_VX
+                for (i <- 0 until lanes) {
+                  when(rs1Elements(0) < rs2Elements(i)) {
+                    res(i) := rs2Elements(i)
+                  }.otherwise {
+                    res(i) := rs1Elements(0)
+                  }
+                }
+              }
+            }
+          }
+          is(Decoder.VP_FUNC("VMAX_V")) {
+            switch(pipe.instr.instr.funct3) {
+              is(0.U) {
+                // VMAXU_VV
+                for (i <- 0 until lanes) {
+                  when(rs1Elements(i).asSInt < rs2Elements(i).asSInt) {
+                    res(i) := rs2Elements(i)
+                  }.otherwise {
+                    res(i) := rs1Elements(i)
+                  }
+                }
+              }
+              is(4.U) {
+                // VMAXU_VX
+                for (i <- 0 until lanes) {
+                  when(rs1Elements(0).asSInt < rs2Elements(i).asSInt) {
+                    res(i) := rs2Elements(i)
+                  }.otherwise {
+                    res(i) := rs1Elements(0)
+                  }
+                }
+              }
+            }
+          }
+          is(Decoder.VP_FUNC("VAND_V")) {
+            switch(pipe.instr.instr.funct3) {
+              is(0.U) {
+                // VAND_VV
+                for (i <- 0 until lanes) {
+                  res(i) := rs1Elements(i) & rs2Elements(i)
+                }
+              }
+              is(3.U) {
+                // VAND_VI
+                for (i <- 0 until lanes) {
+                  res(i) := simm.asUInt & rs2Elements(i)
+                }
+              }
+              is(4.U) {
+                // VAND_VX
+                for (i <- 0 until lanes) {
+                  res(i) := rs1Elements(0) & rs2Elements(i)
+                }
+              }
+            }
+          }
+          is(Decoder.VP_FUNC("VOR_V")) {
+            switch(pipe.instr.instr.funct3) {
+              is(0.U) {
+                // VOR_VV
+                for (i <- 0 until lanes) {
+                  res(i) := rs1Elements(i) | rs2Elements(i)
+                }
+              }
+              is(3.U) {
+                // VOR_VI
+                for (i <- 0 until lanes) {
+                  res(i) := simm.asUInt | rs2Elements(i)
+                }
+              }
+              is(4.U) {
+                // VOR_VX
+                for (i <- 0 until lanes) {
+                  res(i) := rs1Elements(0) | rs2Elements(i)
+                }
+              }
+            }
+          }
+          is(Decoder.VP_FUNC("VXOR_V")) {
+            switch(pipe.instr.instr.funct3) {
+              is(0.U) {
+                // VXOR_VV
+                for (i <- 0 until lanes) {
+                  res(i) := rs1Elements(i) ^ rs2Elements(i)
+                }
+              }
+              is(3.U) {
+                // VXOR_VI
+                for (i <- 0 until lanes) {
+                  res(i) := simm.asUInt ^ rs2Elements(i)
+                }
+              }
+              is(4.U) {
+                // VXOR_VX
+                for (i <- 0 until lanes) {
+                  res(i) := rs1Elements(0) ^ rs2Elements(i)
+                }
+              }
+            }
+          }
           is(Decoder.VP_FUNC("VSLL_V")) {
             for (i <- 0 until lanes) {
               val shiftAmount = WireInit(0.U(log2Ceil(width).W))
