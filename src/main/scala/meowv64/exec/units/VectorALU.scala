@@ -60,6 +60,38 @@ class VectorALU(override implicit val coredef: CoreDef)
               }
             }
           }
+          is(Decoder.VP_FUNC("VSUB_V")) {
+            switch(pipe.instr.instr.funct3) {
+              is(0.U) {
+                // VSUB_VV
+                for (i <- 0 until lanes) {
+                  res(i) := rs2Elements(i) - rs1Elements(i)
+                }
+              }
+              is(3.U) {
+                // VSUB_VX
+                for (i <- 0 until lanes) {
+                  res(i) := rs2Elements(i) - rs1Elements(0)
+                }
+              }
+            }
+          }
+          is(Decoder.VP_FUNC("VRSUB_V")) {
+            switch(pipe.instr.instr.funct3) {
+              is(3.U) {
+                // VRSUB_VI
+                for (i <- 0 until lanes) {
+                  res(i) := simm.asUInt - rs2Elements(i)
+                }
+              }
+              is(4.U) {
+                // VRSUB_VX
+                for (i <- 0 until lanes) {
+                  res(i) := rs1Elements(0) - rs2Elements(i)
+                }
+              }
+            }
+          }
           is(Decoder.VP_FUNC("VSLL_V")) {
             for (i <- 0 until lanes) {
               val shiftAmount = WireInit(0.U(log2Ceil(width).W))

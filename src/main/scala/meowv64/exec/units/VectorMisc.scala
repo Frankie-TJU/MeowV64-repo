@@ -78,7 +78,7 @@ class VectorMisc(override implicit val coredef: CoreDef)
                 for (i <- 0 until lanes) {
                   res(i) := 0.U
                   for (j <- i until lanes) {
-                    when(shift === (j-i).U) {
+                    when(shift === (j - i).U) {
                       res(i) := rs2Elements(j)
                     }
                   }
