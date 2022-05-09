@@ -24,8 +24,12 @@ do
 		vle \
 		vluxei \
 		vmul \
+		vmulh_32 \
+		vmulhsu_32 \
+		vmulhu_32 \
 		vmv \
 		vmvr \
+		vrsub \
 		vse \
 		vsetvl \
 		vsll
