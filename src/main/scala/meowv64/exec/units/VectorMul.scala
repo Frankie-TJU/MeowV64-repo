@@ -102,8 +102,8 @@ class VectorMul(override implicit val coredef: CoreDef)
                 // vmulhsu
                 // signed vs2, not rs1 in mulhsu
                 ext.neg(i)(lane) := op2(width - 1)
-                ext.x1(i)(lane) := op1.abs().asUInt
-                ext.x2(i)(lane) := op2.asUInt
+                ext.x1(i)(lane) := op1.asUInt
+                ext.x2(i)(lane) := op2.abs().asUInt
               }
             }
 
