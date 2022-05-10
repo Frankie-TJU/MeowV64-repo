@@ -9,14 +9,15 @@ import meowv64.reg.RegType
 
 // scalafmt: { align.preset = most, maxColumn = 160 }
 object ExecUnitType extends ChiselEnum {
-  val alu, branch, bypass, csr, intToFloat = Value
-  val div, mul                             = Value
-  val fma, floatToInt, floatDivSqrt        = Value
-  val floatMisc, floatMiscMultiCycle       = Value
-  val vectorAlu, vectorMul                 = Value
-  val vectorFma, vectorFloatRedSum         = Value
-  val vectorMisc                           = Value
-  val lsu                                  = Value
+  val alu, branch, bypass, csr         = Value
+  val intToFloat, intToFloatMultiCycle = Value
+  val div, mul                         = Value
+  val fma, floatToInt, floatDivSqrt    = Value
+  val floatMisc, floatMiscMultiCycle   = Value
+  val vectorAlu, vectorMul             = Value
+  val vectorFma, vectorFloatRedSum     = Value
+  val vectorMisc                       = Value
+  val lsu                              = Value
 
   implicit def bitpat(op: ExecUnitType.Type): BitPat =
     BitPat(op.litValue.U(getWidth.W))
@@ -228,15 +229,15 @@ object DecodeInfo {
       FLT_S     -> List(Y, N, Y, integer, Y, float, Y, float, N, XX, N, floatToInt, IQT.float),
       FLE_S     -> List(Y, N, Y, integer, Y, float, Y, float, N, XX, N, floatToInt, IQT.float),
       FCLASS_S  -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, N, floatToInt, IQT.float),
-      FCVT_S_W  -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, N, intToFloat, IQT.int),
-      FCVT_S_WU -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, N, intToFloat, IQT.int),
+      FCVT_S_W  -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, N, intToFloatMultiCycle, IQT.int),
+      FCVT_S_WU -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, N, intToFloatMultiCycle, IQT.int),
       FMV_W_X   -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, N, intToFloat, IQT.int),
 
       // RV64F Standard Extension (in addition to RV32F)
       FCVT_L_S  -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, N, floatToInt, IQT.float),
       FCVT_LU_S -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, N, floatToInt, IQT.float),
-      FCVT_S_L  -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, N, intToFloat, IQT.int),
-      FCVT_S_LU -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, N, intToFloat, IQT.int),
+      FCVT_S_L  -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, N, intToFloatMultiCycle, IQT.int),
+      FCVT_S_LU -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, N, intToFloatMultiCycle, IQT.int),
 
       // RV32D Standard Extension
       FLD       -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, N, lsu, IQT.mem),
@@ -263,15 +264,15 @@ object DecodeInfo {
       FCLASS_D  -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, N, floatToInt, IQT.float),
       FCVT_W_D  -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, N, floatToInt, IQT.float),
       FCVT_WU_D -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, N, floatToInt, IQT.float),
-      FCVT_D_W  -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, N, intToFloat, IQT.int),
-      FCVT_D_WU -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, N, intToFloat, IQT.int),
+      FCVT_D_W  -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, N, intToFloatMultiCycle, IQT.int),
+      FCVT_D_WU -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, N, intToFloatMultiCycle, IQT.int),
 
       // RV64D Standard Extension (in addition to RV32D)
       FCVT_L_D  -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, N, floatToInt, IQT.float),
       FCVT_LU_D -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, N, floatToInt, IQT.float),
       FMV_X_D   -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, N, floatToInt, IQT.float),
-      FCVT_D_L  -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, N, intToFloat, IQT.int),
-      FCVT_D_LU -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, N, intToFloat, IQT.int),
+      FCVT_D_L  -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, N, intToFloatMultiCycle, IQT.int),
+      FCVT_D_LU -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, N, intToFloatMultiCycle, IQT.int),
       FMV_D_X   -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, N, intToFloat, IQT.int),
 
       // Trap-Return Instructions

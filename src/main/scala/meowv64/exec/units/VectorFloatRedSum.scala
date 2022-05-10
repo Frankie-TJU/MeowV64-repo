@@ -34,36 +34,24 @@ class VectorFloatRedSum(implicit val coredef: CoreDef)
 
   // vfredosum:
   // vs1[0] + vs2[0] + vs2[1] + ... + vs2[n-1]
-  when(busy) {
-    // loop over floating point types
-    for ((float, idx) <- coredef.FLOAT_TYPES.zipWithIndex) {
-      val lanes = coredef.VLEN / float.width()
-      val rs1Elements = Wire(
-        Vec(lanes, UInt(float.width.W))
-      )
-      rs1Elements := currentInstr.rs1val.asTypeOf(rs1Elements)
-      val rs2Elements = Wire(
-        Vec(lanes, UInt(float.width.W))
-      )
-      rs2Elements := currentInstr.rs2val.asTypeOf(rs2Elements)
+  // loop over floating point types
+  for ((float, idx) <- coredef.FLOAT_TYPES.zipWithIndex) {
+    val lanes = coredef.VLEN / float.width()
+
+    val currentValue = Reg(UInt(float.widthHardfloat.W))
+    val currentFFlags = Reg(UInt(5.W))
+    val currentRs2ElementsHF = Reg(Vec(lanes, UInt(float.widthHardfloat.W)))
+    when(busy) {
       val rs3Elements = Wire(
         Vec(lanes, UInt(float.width.W))
       )
       rs3Elements := currentInstr.rs3val.asTypeOf(rs3Elements)
-
-      val currentValue = Reg(UInt(float.widthHardfloat.W))
-      val currentFFlags = RegInit(0.U(5.W))
       when(curFloat === float.fmt) {
         // compute a + b
         val a = WireInit(0.U(float.widthHardfloat.W))
         val b = WireInit(0.U(float.widthHardfloat.W))
-        when(progress === 0.U) {
-          // vs1[0] + vs2[0]
-          a := float.toHardfloat(rs1Elements(0))
-        }.otherwise {
-          // currentValue + vs2[progress]
-          a := currentValue
-        }
+        // currentValue + vs2[progress]
+        a := currentValue
 
         when(
           currentInstr.instr.instr.readVm() && ~currentInstr.vmval(progress)
@@ -72,7 +60,7 @@ class VectorFloatRedSum(implicit val coredef: CoreDef)
           // TODO: skip this element instead
           b := 0.U
         }.otherwise {
-          b := float.toHardfloat(rs2Elements(progress))
+          b := currentRs2ElementsHF(progress)
         }
 
         val adder = Module(new AddRecFN(float.exp(), float.sig()))
@@ -82,6 +70,7 @@ class VectorFloatRedSum(implicit val coredef: CoreDef)
         adder.io.b := b
         adder.io.roundingMode := 0.U
         adder.io.detectTininess := hardfloat.consts.tininess_afterRounding
+
         currentValue := adder.io.out
         currentFFlags := currentFFlags | adder.io.exceptionFlags
 
@@ -99,6 +88,22 @@ class VectorFloatRedSum(implicit val coredef: CoreDef)
           currentFFlags := 0.U
         }
       }
+    }.elsewhen(io.next.valid && ~busy) {
+      val rs1Elements = Wire(
+        Vec(lanes, UInt(float.width.W))
+      )
+      rs1Elements := io.next.rs1val.asTypeOf(rs1Elements)
+      val rs2Elements = Wire(
+        Vec(lanes, UInt(float.width.W))
+      )
+      rs2Elements := io.next.rs2val.asTypeOf(rs2Elements)
+
+      // convert ieee to hardfloat
+      currentValue := float.toHardfloat(rs1Elements(0))
+      for (i <- 0 until lanes) {
+        currentRs2ElementsHF(i) := float.toHardfloat(rs2Elements(i))
+      }
+      currentFFlags := 0.U
     }
   }
 

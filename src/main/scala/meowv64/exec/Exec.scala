@@ -194,6 +194,8 @@ class Exec(implicit val coredef: CoreDef) extends Module {
                 case ExecUnitType.div => Module(new Div(16)).suggestName("Div")
                 case ExecUnitType.intToFloat =>
                   Module(new IntToFloat).suggestName("IntToFloat")
+                case ExecUnitType.intToFloatMultiCycle =>
+                  Module(new IntToFloatMultiCycle).suggestName("IntToFloatMultiCycle")
                 case ExecUnitType.fma => Module(new FMA).suggestName("FMA")
                 case ExecUnitType.floatMisc =>
                   Module(new FloatMisc).suggestName("FloatMisc")

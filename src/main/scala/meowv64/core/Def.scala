@@ -89,6 +89,15 @@ class ExecutionUnitInt2Float
       RegType.integer,
       Seq(RegType.float)
     )
+
+class ExecutionUnitInt2FloatMultiCycle
+    extends ExecutionUnitInfo(
+      ExecUnitType.intToFloatMultiCycle,
+      1,
+      RegType.integer,
+      Seq(RegType.float)
+    )
+
 class ExecutionUnitMul
     extends ExecutionUnitInfo(
       ExecUnitType.mul,
@@ -299,7 +308,7 @@ abstract class CoreDef {
             new ExecutionUnitBypass()
           )
         )(this),
-        // port 1: ALU + Mul + Div + Int2Float + Branch
+        // port 1: ALU + Mul + Div + Int2Float + Int2FloatMultiCycle + Branch
         PortInfo(
           RegType.integer,
           Seq(Seq(RegType.integer), Seq(RegType.integer)), // rs1 rs2
@@ -308,6 +317,7 @@ abstract class CoreDef {
             new ExecutionUnitMul(),
             new ExecutionUnitDiv(),
             new ExecutionUnitInt2Float(),
+            new ExecutionUnitInt2FloatMultiCycle(),
             new ExecutionUnitBranch()
           )
         )(this)
