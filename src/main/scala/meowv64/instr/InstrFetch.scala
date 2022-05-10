@@ -51,7 +51,8 @@ class InstrExt(implicit val coredef: CoreDef) extends Bundle {
 
   /** Next PC for this instruction
     */
-  def npc: UInt = Mux(instr.base === InstrType.C, addr + 2.U, addr + 4.U)
+  // def npc: UInt = Mux(instr.base === InstrType.C, addr + 2.U, addr + 4.U)
+  val npc = UInt(coredef.XLEN.W)
 
   /** Whether this instruction breaks the instruction flow
     */
@@ -68,6 +69,7 @@ object InstrExt {
     val ret = Wire(new InstrExt)
 
     ret.addr := DontCare
+    ret.npc := DontCare
     ret.instr := DontCare
     ret.valid := false.B
     ret.pred := DontCare
@@ -411,6 +413,12 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
     val acrossPage =
       !isInstr16 && addr(12, log2Ceil(Const.INSTR_MIN_WIDTH / 8)).andR()
     decoded(i).addr := addr
+    // compute pc of next instruction
+    when(isInstr16) {
+      decoded(i).npc := addr + 2.U
+    }.otherwise {
+      decoded(i).npc := addr + 4.U
+    }
 
     // If an instruction span across the page border:
     // We need to consider fault/inval addr from both the previous page and the next page

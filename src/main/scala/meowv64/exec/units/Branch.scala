@@ -9,7 +9,6 @@ import meowv64.core.PrivLevel
 import meowv64.core.Status
 import meowv64.exec._
 import meowv64.instr.Decoder
-import meowv64.instr.Decoder.InstrType
 
 class BranchExt extends Bundle {
 
@@ -169,14 +168,8 @@ class Branch(override implicit val coredef: CoreDef)
         info.exception.nofire
       }
     }.otherwise { // JAL/JALR, JAL is now in Bypass, so this must be JALR
-      val linked = Wire(UInt(coredef.XLEN.W))
-      linked := pipe.instr.addr + 4.U
-      when(pipe.instr.instr.base === InstrType.C) {
-        linked := pipe.instr.addr + 2.U // This is an compressed instr instead
-      }
-
       // info.regWaddr := pipe.instr.instr.rd
-      info.wb := linked.asUInt
+      info.wb := pipe.instr.npc
 
       // actual branch target
       val dest =
