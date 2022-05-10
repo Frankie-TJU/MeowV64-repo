@@ -9,13 +9,14 @@ import meowv64.reg.RegType
 
 // scalafmt: { align.preset = most, maxColumn = 160 }
 object ExecUnitType extends ChiselEnum {
-  val alu, branch, bypass, csr, intToFloat     = Value
-  val div, mul                                 = Value
-  val fma, floatMisc, floatToInt, floatDivSqrt = Value
-  val vectorAlu, vectorMul                     = Value
-  val vectorFma, vectorFloatRedSum             = Value
-  val vectorMisc                               = Value
-  val lsu                                      = Value
+  val alu, branch, bypass, csr, intToFloat = Value
+  val div, mul                             = Value
+  val fma, floatToInt, floatDivSqrt        = Value
+  val floatMisc, floatMiscMultiCycle       = Value
+  val vectorAlu, vectorMul                 = Value
+  val vectorFma, vectorFloatRedSum         = Value
+  val vectorMisc                           = Value
+  val lsu                                  = Value
 
   implicit def bitpat(op: ExecUnitType.Type): BitPat =
     BitPat(op.litValue.U(getWidth.W))
@@ -218,8 +219,8 @@ object DecodeInfo {
       FSGNJ_S   -> List(Y, N, Y, float, Y, float, Y, float, N, XX, N, floatMisc, IQT.float),
       FSGNJN_S  -> List(Y, N, Y, float, Y, float, Y, float, N, XX, N, floatMisc, IQT.float),
       FSGNJX_S  -> List(Y, N, Y, float, Y, float, Y, float, N, XX, N, floatMisc, IQT.float),
-      FMIN_S    -> List(Y, N, Y, float, Y, float, Y, float, N, XX, N, floatMisc, IQT.float),
-      FMAX_S    -> List(Y, N, Y, float, Y, float, Y, float, N, XX, N, floatMisc, IQT.float),
+      FMIN_S    -> List(Y, N, Y, float, Y, float, Y, float, N, XX, N, floatMiscMultiCycle, IQT.float),
+      FMAX_S    -> List(Y, N, Y, float, Y, float, Y, float, N, XX, N, floatMiscMultiCycle, IQT.float),
       FCVT_W_S  -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, N, floatToInt, IQT.float),
       FCVT_WU_S -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, N, floatToInt, IQT.float),
       FMV_X_W   -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, N, floatToInt, IQT.float),
@@ -252,10 +253,10 @@ object DecodeInfo {
       FSGNJ_D   -> List(Y, N, Y, float, Y, float, Y, float, N, XX, N, floatMisc, IQT.float),
       FSGNJN_D  -> List(Y, N, Y, float, Y, float, Y, float, N, XX, N, floatMisc, IQT.float),
       FSGNJX_D  -> List(Y, N, Y, float, Y, float, Y, float, N, XX, N, floatMisc, IQT.float),
-      FMIN_D    -> List(Y, N, Y, float, Y, float, Y, float, N, XX, N, floatMisc, IQT.float),
-      FMAX_D    -> List(Y, N, Y, float, Y, float, Y, float, N, XX, N, floatMisc, IQT.float),
-      FCVT_S_D  -> List(Y, N, Y, float, Y, float, N, XX, N, XX, N, floatMisc, IQT.float),
-      FCVT_D_S  -> List(Y, N, Y, float, Y, float, N, XX, N, XX, N, floatMisc, IQT.float),
+      FMIN_D    -> List(Y, N, Y, float, Y, float, Y, float, N, XX, N, floatMiscMultiCycle, IQT.float),
+      FMAX_D    -> List(Y, N, Y, float, Y, float, Y, float, N, XX, N, floatMiscMultiCycle, IQT.float),
+      FCVT_S_D  -> List(Y, N, Y, float, Y, float, N, XX, N, XX, N, floatMiscMultiCycle, IQT.float),
+      FCVT_D_S  -> List(Y, N, Y, float, Y, float, N, XX, N, XX, N, floatMiscMultiCycle, IQT.float),
       FEQ_D     -> List(Y, N, Y, integer, Y, float, Y, float, N, XX, N, floatToInt, IQT.float),
       FLT_D     -> List(Y, N, Y, integer, Y, float, Y, float, N, XX, N, floatToInt, IQT.float),
       FLE_D     -> List(Y, N, Y, integer, Y, float, Y, float, N, XX, N, floatToInt, IQT.float),

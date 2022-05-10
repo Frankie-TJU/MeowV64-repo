@@ -134,6 +134,15 @@ class ExecutionUnitFloatMisc
       RegType.float,
       Seq(RegType.float)
     )
+
+class ExecutionUnitFloatMiscMultiCycle
+    extends ExecutionUnitInfo(
+      ExecUnitType.floatMiscMultiCycle,
+      2,
+      RegType.float,
+      Seq(RegType.float)
+    )
+
 class ExecutionUnitFloatDivSqrt
     extends ExecutionUnitInfo(
       ExecUnitType.floatDivSqrt,
@@ -309,7 +318,7 @@ abstract class CoreDef {
       IssueQueueType.float,
       16,
       ports = Seq(
-        // port 2: FMA + FloatMisc + FloatDivSqrt + FloatToInt + FloatToMem
+        // port 2: FMA + FloatMisc + FloatMiscMultiCycle + FloatDivSqrt + FloatToInt + FloatToMem
         PortInfo(
           RegType.float,
           Seq(
@@ -320,6 +329,7 @@ abstract class CoreDef {
           Seq(
             new ExecutionUnitFMA(),
             new ExecutionUnitFloatMisc(),
+            new ExecutionUnitFloatMiscMultiCycle(),
             new ExecutionUnitFloatDivSqrt(),
             new ExecutionUnitFloat2Int(),
             new ExecutionUnitFloat2Mem()
