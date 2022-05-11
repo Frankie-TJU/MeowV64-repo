@@ -10,8 +10,8 @@ if {$rc == 1} {
 set input_verilog [list RiscVSystem.v btbEntries_ext.v icDataArray_ext.v l2DataArray_ext.v]
 set input_vhdl [list ]
 #set toplevel_name RiscVSystem
-#set toplevel_name Core
-set toplevel_name Exec
+set toplevel_name Core
+#set toplevel_name Exec
 #set toplevel_name VectorFMA
 
 # load design

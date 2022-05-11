@@ -10,6 +10,8 @@ import com.goyeau.mill.scalafix.ScalafixModule
 val defaultVersions = Map(
   "chisel3" -> ("edu.berkeley.cs", "3.5.2", false),
   "chisel3-plugin" -> ("edu.berkeley.cs", "3.5.2", true),
+  "paradise" -> ("org.scalamacros", "2.1.1", true),
+  "json4s-jackson" -> ("org.json4s", "3.6.1", false),
   "chiseltest" -> ("edu.berkeley.cs", "0.5.1", false),
   "scalatest" -> ("org.scalatest", "3.2.10", false)
 )
@@ -25,10 +27,24 @@ def getVersion(dep: String) = {
     ivy"$org::$dep:$version"
 }
 
-object hardfloat extends ScalaModule {
-  override def scalaVersion = commonScalaVersion
+trait CommonModule extends ScalaModule {
+  def scalaVersion = commonScalaVersion
 
-  override def millSourcePath = os.pwd / "berkeley-hardfloat"
+  // for snapshot dependencies
+  override def repositoriesTask = T.task {
+    super.repositoriesTask() ++ Seq(
+      MavenRepository("https://oss.sonatype.org/content/repositories/snapshots")
+    )
+  }
+
+  override def scalacOptions = super.scalacOptions() ++
+    Seq("-deprecation", "-unchecked", "-Xsource:2.11") ++ // for chisel3
+    Seq("-Ywarn-unused", "-Ywarn-adapted-args", "-deprecation") // for scalafix
+
+}
+
+object hardfloat extends CommonModule with ScalaModule {
+  override def millSourcePath = os.pwd / "submodules" / "berkeley-hardfloat"
 
   override def ivyDeps = super.ivyDeps() ++ Agg(
     getVersion("chisel3"),
@@ -40,9 +56,42 @@ object hardfloat extends ScalaModule {
   )
 }
 
-object meowv64 extends SbtModule with ScalafmtModule with ScalafixModule {
-  override def scalaVersion = commonScalaVersion
+object cde extends CommonModule with ScalaModule {
+  override def millSourcePath =
+    os.pwd / "submodules" / "cde" / "cde"
+}
 
+object rocketChipMacros extends CommonModule with ScalaModule {
+  override def millSourcePath = os.pwd / "submodules" / "rocket-chip" / "macros"
+
+  override def ivyDeps = super.ivyDeps() ++ Agg(
+    ivy"org.scala-lang:scala-reflect:$commonScalaVersion"
+  )
+}
+
+object rocketChip extends CommonModule with SbtModule {
+  override def millSourcePath = os.pwd / "submodules" / "rocket-chip"
+
+  override def ivyDeps = super.ivyDeps() ++ Agg(
+    getVersion("chisel3"),
+    getVersion("json4s-jackson"),
+    ivy"org.scala-lang:scala-reflect:$commonScalaVersion"
+  )
+
+  override def scalacPluginIvyDeps = super.scalacPluginIvyDeps() ++ Agg(
+    getVersion("chisel3-plugin"),
+    getVersion("paradise")
+  )
+
+  override def moduleDeps =
+    super.moduleDeps ++ Seq(hardfloat, rocketChipMacros, cde)
+}
+
+object meowv64
+    extends CommonModule
+    with ScalafmtModule
+    with ScalafixModule
+    with SbtModule {
   override def millSourcePath = os.pwd
 
   override def ivyDeps = super.ivyDeps() ++ Agg(
@@ -55,15 +104,11 @@ object meowv64 extends SbtModule with ScalafmtModule with ScalafixModule {
     getVersion("chisel3-plugin")
   )
 
-  override def scalacOptions = super.scalacOptions() ++
-    Seq("-deprecation", "-unchecked", "-Xsource:2.11") ++ // for chisel3
-    Seq("-Ywarn-unused", "-Ywarn-adapted-args", "-deprecation") // for scalafix
-
   override def scalafixIvyDeps = Agg(
     ivy"com.github.liancheng::organize-imports:0.5.0"
   )
 
-  override def moduleDeps = super.moduleDeps ++ Seq(hardfloat)
+  override def moduleDeps = super.moduleDeps ++ Seq(hardfloat, rocketChip)
 
   object test
       extends Tests
