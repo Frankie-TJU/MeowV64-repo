@@ -361,7 +361,7 @@ abstract class CoreDef {
       IssueQueueType.vec,
       16,
       ports = Seq(
-        // port 4: VectorALU
+        // port 4: VectorALU + VectorMul + VectorFMA + VectorToMem + VectorMisc + VectorFloatRedSUm
         PortInfo(
           RegType.vector,
           Seq(
@@ -377,6 +377,19 @@ abstract class CoreDef {
             new ExecutionUnitVectorToMem(),
             new ExecutionUnitVectorMisc(),
             new ExecutionUnitVectorFloatRedSum()
+          )
+        )(this),
+        // port 5: VectorFMA
+        PortInfo(
+          RegType.vector,
+          Seq(
+            Seq(RegType.vector, RegType.float),
+            Seq(RegType.vector),
+            Seq(RegType.vector),
+            Seq(RegType.vector)
+          ), // vs1/rs1 vs2 vs3/vd vm
+          Seq(
+            new ExecutionUnitVectorFMA()
           )
         )(this)
       )
@@ -404,8 +417,9 @@ abstract class CoreDef {
     // vector
     RegWritePortInfo(RegType.vector, Seq(3))(
       this
-    ), // port & 3 lsu
-    RegWritePortInfo(RegType.vector, Seq(4))(this) // port 4 vector
+    ), // port 3 lsu
+    RegWritePortInfo(RegType.vector, Seq(4))(this), // port 4 vector
+    RegWritePortInfo(RegType.vector, Seq(5))(this) // port 5 vector
   )
 
   /** L1 line width in bytes
