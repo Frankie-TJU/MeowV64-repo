@@ -10,7 +10,9 @@ if {$rc == 1} {
 set input_verilog [list RiscVSystem.v btbEntries_ext.v icDataArray_ext.v l2DataArray_ext.v]
 set input_vhdl [list ]
 #set toplevel_name RiscVSystem
-set toplevel_name Core
+#set toplevel_name Core
+set toplevel_name Exec
+#set toplevel_name VectorFMA
 
 # load design
 read_file -format verilog $input_verilog
@@ -29,10 +31,10 @@ set_host_options -max_cores 16
 # 600MHz clock
 create_clock clock -period 1.667
 create_clock clk -period 1.667
-# dff clock to output: 0.14ns
+# dff clock to output: 0.11ns
 # assume all input comes from output of dff
-set_input_delay 0.14 -clock clock [all_inputs]
-set_input_delay 0.14 -clock clk [all_inputs]
+set_input_delay 0.11 -clock clock [all_inputs]
+set_input_delay 0.11 -clock clk [all_inputs]
 # dff setup time: 0.02ns
 # assume all output goes to dff
 set_output_delay 0.02 -clock clock [all_outputs]
