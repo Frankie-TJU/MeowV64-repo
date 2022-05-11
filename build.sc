@@ -38,7 +38,6 @@ trait CommonScalaModule extends ScalaModule {
   }
 
   def scalacOptions = super.scalacOptions() ++
-    Seq("-deprecation", "-unchecked", "-Xsource:2.11") ++ // for chisel3
     Seq("-Ywarn-unused", "-Ywarn-adapted-args", "-deprecation") // for scalafix
 
 }
@@ -54,17 +53,15 @@ trait CommonSbtModule extends SbtModule {
   }
 
   def scalacOptions = super.scalacOptions() ++
-    Seq("-deprecation", "-unchecked", "-Xsource:2.11") ++ // for chisel3
     Seq("-Ywarn-unused", "-Ywarn-adapted-args", "-deprecation") // for scalafix
 
 }
 
-object hardfloat extends CommonScalaModule {
+object hardfloat extends CommonSbtModule {
   override def millSourcePath = os.pwd / "submodules" / "berkeley-hardfloat"
 
   override def ivyDeps = super.ivyDeps() ++ Agg(
-    getVersion("chisel3"),
-    getVersion("scalatest")
+    getVersion("chisel3")
   )
 
   override def scalacPluginIvyDeps = super.scalacPluginIvyDeps() ++ Agg(
@@ -101,6 +98,9 @@ object rocketChip extends CommonSbtModule {
 
   override def moduleDeps =
     super.moduleDeps ++ Seq(hardfloat, rocketChipMacros, cde)
+
+  override def scalacOptions = super.scalacOptions() ++
+    Seq("-deprecation", "-unchecked", "-Xsource:2.11")
 }
 
 object meowv64 extends CommonSbtModule with ScalafmtModule with ScalafixModule {
@@ -120,7 +120,7 @@ object meowv64 extends CommonSbtModule with ScalafmtModule with ScalafixModule {
     ivy"com.github.liancheng::organize-imports:0.5.0"
   )
 
-  override def moduleDeps = super.moduleDeps ++ Seq(hardfloat, rocketChip)
+  override def moduleDeps = super.moduleDeps ++ Seq(hardfloat, cde, rocketChip)
 
   object test
       extends Tests
