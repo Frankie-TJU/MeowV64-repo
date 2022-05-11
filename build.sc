@@ -27,7 +27,7 @@ def getVersion(dep: String) = {
     ivy"$org::$dep:$version"
 }
 
-trait CommonModule extends ScalaModule {
+trait CommonScalaModule extends ScalaModule {
   def scalaVersion = commonScalaVersion
 
   // for snapshot dependencies
@@ -37,13 +37,29 @@ trait CommonModule extends ScalaModule {
     )
   }
 
-  override def scalacOptions = super.scalacOptions() ++
+  def scalacOptions = super.scalacOptions() ++
     Seq("-deprecation", "-unchecked", "-Xsource:2.11") ++ // for chisel3
     Seq("-Ywarn-unused", "-Ywarn-adapted-args", "-deprecation") // for scalafix
 
 }
 
-object hardfloat extends CommonModule with ScalaModule {
+trait CommonSbtModule extends SbtModule {
+  def scalaVersion = commonScalaVersion
+
+  // for snapshot dependencies
+  override def repositoriesTask = T.task {
+    super.repositoriesTask() ++ Seq(
+      MavenRepository("https://oss.sonatype.org/content/repositories/snapshots")
+    )
+  }
+
+  def scalacOptions = super.scalacOptions() ++
+    Seq("-deprecation", "-unchecked", "-Xsource:2.11") ++ // for chisel3
+    Seq("-Ywarn-unused", "-Ywarn-adapted-args", "-deprecation") // for scalafix
+
+}
+
+object hardfloat extends CommonScalaModule {
   override def millSourcePath = os.pwd / "submodules" / "berkeley-hardfloat"
 
   override def ivyDeps = super.ivyDeps() ++ Agg(
@@ -56,12 +72,12 @@ object hardfloat extends CommonModule with ScalaModule {
   )
 }
 
-object cde extends CommonModule with ScalaModule {
+object cde extends CommonScalaModule {
   override def millSourcePath =
     os.pwd / "submodules" / "cde" / "cde"
 }
 
-object rocketChipMacros extends CommonModule with ScalaModule {
+object rocketChipMacros extends CommonScalaModule {
   override def millSourcePath = os.pwd / "submodules" / "rocket-chip" / "macros"
 
   override def ivyDeps = super.ivyDeps() ++ Agg(
@@ -69,7 +85,7 @@ object rocketChipMacros extends CommonModule with ScalaModule {
   )
 }
 
-object rocketChip extends CommonModule with SbtModule {
+object rocketChip extends CommonSbtModule {
   override def millSourcePath = os.pwd / "submodules" / "rocket-chip"
 
   override def ivyDeps = super.ivyDeps() ++ Agg(
@@ -87,11 +103,7 @@ object rocketChip extends CommonModule with SbtModule {
     super.moduleDeps ++ Seq(hardfloat, rocketChipMacros, cde)
 }
 
-object meowv64
-    extends CommonModule
-    with ScalafmtModule
-    with ScalafixModule
-    with SbtModule {
+object meowv64 extends CommonSbtModule with ScalafmtModule with ScalafixModule {
   override def millSourcePath = os.pwd
 
   override def ivyDeps = super.ivyDeps() ++ Agg(
