@@ -1,7 +1,9 @@
 #!/bin/bash
 set -e
 mkdir -p build
-rm -rf build/*
+cd build
+git clean -fdx .
+cd ..
 mill meowv64.runMain \
 	freechips.rocketchip.system.Generator \
 	-td build \
