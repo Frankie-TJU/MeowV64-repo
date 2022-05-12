@@ -94,9 +94,6 @@ void init() {
 
   top->mem_axi4_ARREADY = 0;
   top->mem_axi4_RVALID = 0;
-
-  // Always have interrupt 1 set at high
-  top->io_eints_1 = 1;
 }
 
 // step per clock fall

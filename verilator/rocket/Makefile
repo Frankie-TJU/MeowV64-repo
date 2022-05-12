@@ -9,7 +9,7 @@ VERILOG_SRCS = meowv64.rocket.MeowV64Config.v plusarg_reader.v EICG_wrapper.v
 
 all: VRiscVSystem
 
-$(VERILOG_SRCS):
+%.v: ../../build/%.v
 	cp ../../build/$@ .
 
 VRiscVSystem: ../rocket/main.cpp $(VERILOG_SRCS)

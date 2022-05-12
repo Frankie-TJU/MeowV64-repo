@@ -1,9 +1,8 @@
 #!/bin/bash
 set -e
 mkdir -p build
-cd build
-git clean -fdx .
-cd ..
+git clean -fdx build
+cp ./submodules/rocket-chip/src/main/resources/vsrc/EICG_wrapper.v build/
 mill meowv64.runMain \
 	freechips.rocketchip.system.Generator \
 	-td build \
