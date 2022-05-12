@@ -1096,7 +1096,10 @@ class L2Cache(val opts: L2Opts) extends Module {
         }
       }.elsewhen(
         VecInit(
-          directs.map(d => d.req =/= L1UCReq.idle && isMMIO(d.addr))
+          directs.map(d =>
+            d.req === L1UCReq.write ||
+              (d.req === L1UCReq.read && isMMIO(d.addr))
+          )
         ).asUInt
           .orR()
       ) {
