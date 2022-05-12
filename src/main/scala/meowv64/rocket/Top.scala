@@ -1,15 +1,15 @@
 package meowv64.rocket
 
-import chisel3._
 import chipsalliance.rocketchip.config.Parameters
+import chisel3._
+import freechips.rocketchip.devices.debug.Debug
+import freechips.rocketchip.devices.debug.JtagDTMKey
+import freechips.rocketchip.devices.tilelink.BootROM
+import freechips.rocketchip.devices.tilelink.BootROMLocated
+import freechips.rocketchip.diplomacy.LazyModule
+import freechips.rocketchip.jtag.JTAGIO
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.util._
-import freechips.rocketchip.diplomacy.LazyModule
-import freechips.rocketchip.devices.tilelink.BootROMLocated
-import freechips.rocketchip.devices.tilelink.BootROM
-import freechips.rocketchip.jtag.JTAGIO
-import freechips.rocketchip.devices.debug.JtagDTMKey
-import freechips.rocketchip.devices.debug.Debug
 
 class RiscVSystem(implicit val p: Parameters) extends Module {
   val target = Module(LazyModule(new RocketTop).module)

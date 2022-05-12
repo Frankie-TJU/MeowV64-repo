@@ -2,19 +2,20 @@ package meowv64.rocket
 
 import chisel3._
 import freechips.rocketchip.config._
-import freechips.rocketchip.subsystem._
 import freechips.rocketchip.diplomacy._
-import freechips.rocketchip.rocket._
-import freechips.rocketchip.subsystem.{RocketCrossingParams}
-import freechips.rocketchip.tilelink._
 import freechips.rocketchip.interrupts._
-import freechips.rocketchip.util._
-import freechips.rocketchip.tile._
 import freechips.rocketchip.prci.ClockSinkParameters
-import meowv64.core.CoreDef
-import meowv64.system.SystemDef
+import freechips.rocketchip.rocket._
+import freechips.rocketchip.subsystem.RocketCrossingParams
+import freechips.rocketchip.subsystem._
+import freechips.rocketchip.tile._
+import freechips.rocketchip.tilelink._
+import freechips.rocketchip.util._
 import meowv64.core.Core
+import meowv64.core.CoreDef
 import meowv64.system.DefaultSystemDef
+import meowv64.system.SystemDef
+import meowv64.cache.L1DCPort
 
 case class MeowV64CoreParams(
     coredef: CoreDef
@@ -24,12 +25,12 @@ case class MeowV64CoreParams(
   val useVM: Boolean = true
   val useHypervisor: Boolean = false
   val useUser: Boolean = true
-  val useSupervisor: Boolean = false
+  val useSupervisor: Boolean = true
   val useDebug: Boolean = true
   val useAtomics: Boolean = true
   val useAtomicsOnlyForIO: Boolean = false
   val useCompressed: Boolean = true
-  override val useBitManip: Boolean = true
+  override val useBitManip: Boolean = false
   override val useVector: Boolean = true
   val useSCIE: Boolean = false
   val useRVE: Boolean = false
@@ -143,43 +144,65 @@ class MeowV64Tile private (
 
   override lazy val module = new MeowV64TileModuleImp(this)
 
-  /** Setup AXI4 memory interface. THESE ARE CONSTANTS.
-    */
-  val portName = "meowv64-mem-port"
   val node = TLIdentityNode()
 
-  val dmemNode = TLClientNode(
+  // dcache port
+  val dcNode = TLClientNode(
     Seq(
       TLMasterPortParameters.v1(
-        clients =
-          Seq(TLMasterParameters.v1(name = portName, sourceId = IdRange(0, 1)))
+        clients = Seq(
+          TLMasterParameters.v1(name = "meowv64-dc", sourceId = IdRange(0, 1))
+        )
       )
     )
   )
 
-  val imemNode = TLClientNode(
+  tlMasterXbar.node := node := TLBuffer() := dcNode
+
+  // icache port
+  val icNode = TLClientNode(
     Seq(
       TLMasterPortParameters.v1(
-        clients =
-          Seq(TLMasterParameters.v1(name = portName, sourceId = IdRange(0, 1)))
+        clients = Seq(
+          TLMasterParameters.v1(name = "meowv64-ic", sourceId = IdRange(0, 1))
+        )
       )
     )
   )
 
-  tlMasterXbar.node := node := TLBuffer() := dmemNode
-  tlMasterXbar.node := node := TLBuffer() := imemNode
+  tlMasterXbar.node := node := TLBuffer() := icNode
+
+  // uncached port
+  val ucNode = TLClientNode(
+    Seq(
+      TLMasterPortParameters.v1(
+        clients = Seq(
+          TLMasterParameters.v1(name = "meowv64-uc", sourceId = IdRange(0, 1))
+        )
+      )
+    )
+  )
+
+  tlMasterXbar.node := node := TLBuffer() := ucNode
 
   def connectMeowV64Interrupts(
+      debug: Bool,
       meip: Bool,
       seip: Bool,
       mtip: Bool,
       msip: Bool
   ) {
     val (interrupts, _) = intSinkNode.in(0)
-    meip := interrupts(0)
-    seip := interrupts(1)
+    // 0 is debug req
+    debug := interrupts(0)
+    // 1 is msip
+    msip := interrupts(1)
+    // 2 is mtip
     mtip := interrupts(2)
-    msip := interrupts(3)
+    // 3 is meip
+    meip := interrupts(3)
+    // 4 is seip
+    seip := interrupts(4)
   }
 }
 
@@ -193,7 +216,34 @@ class MeowV64TileModuleImp(outer: MeowV64Tile)
     new Core()(outer.meowv64Params.core.coredef)
   )
 
+  // ic
+  // TODO
+  core.io.frontend.ic.stall := true.B
+  core.io.frontend.ic.data := 0.U
+
+  // dc
+  // TODO
+  core.io.frontend.dc.l1stall := true.B
+  core.io.frontend.dc.l2req := L1DCPort.L2Req.idle
+  core.io.frontend.dc.l2addr := 0.U
+  core.io.frontend.dc.l2data := 0.U
+
+  // uncached
+  // TODO
+  core.io.frontend.uc.stall := true.B
+  core.io.frontend.uc.rdata := 0.U
+
+  // debug mode code
+  // TODO
+  core.io.dmCode.stall := true.B
+  core.io.dmCode.data := 0.U
+
+  // time
+  // TODO
+  core.io.time := 0.U
+
   outer.connectMeowV64Interrupts(
+    core.io.dm.haltreq,
     core.io.int.meip,
     core.io.int.seip,
     core.io.int.mtip,
