@@ -12,7 +12,7 @@ all: VRiscVSystem
 $(VERILOG_SRCS):
 	cd ../../ && mill meowv64.runMain meowv64.Main $(CONFIG) -td $(CURRENT_DIR)
 
-VRiscVSystem: ../main.cpp $(VERILOG_SRCS)
+VRiscVSystem: ../standalone/main.cpp $(VERILOG_SRCS)
 	$(VERILATOR) $(VERILATOR_FLAGS) --cc $(VERILOG_SRCS) --exe $<
 	make -j8 -C obj_dir -f VRiscVSystem.mk VRiscVSystem
 	cp obj_dir/VRiscVSystem .
