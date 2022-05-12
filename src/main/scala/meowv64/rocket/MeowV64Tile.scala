@@ -78,15 +78,19 @@ case class MeowV64TileAttachParams(
 }
 
 case class MeowV64TileParams(
-    name: Option[String] = Some("meowv64_tile"),
-    hartId: Int = 0,
-    systemDef: SystemDef = new DefaultSystemDef
+    coredef: CoreDef,
+    name: Option[String] = Some("meowv64_tile")
 ) extends InstantiableTileParams[MeowV64Tile] {
   val core: MeowV64CoreParams = MeowV64CoreParams(
-    CoreDef.default(hartId, systemDef.INIT_VEC, systemDef.L2_LINE_BYTES)
+    coredef
   )
-  val icache: Option[ICacheParams] = Some(ICacheParams())
-  val dcache: Option[DCacheParams] = Some(DCacheParams())
+  val hartId: Int = coredef.HART_ID
+  val icache: Option[ICacheParams] = Some(
+    ICacheParams(nSets = coredef.L1I.LINE_PER_ASSOC, nWays = coredef.L1I.ASSOC)
+  )
+  val dcache: Option[DCacheParams] = Some(
+    DCacheParams(nSets = coredef.L1D.LINE_PER_ASSOC, nWays = coredef.L1D.ASSOC)
+  )
   val btb: Option[BTBParams] = Some(BTBParams())
   val beuAddr: Option[BigInt] = None
   val blockerCtrlAddr: Option[BigInt] = None
@@ -150,11 +154,22 @@ class MeowV64Tile private (
   val node = TLIdentityNode()
 
   // dcache port
+  val blockSize = meowv64Params.coredef.L1_LINE_BYTES
   val dcNode = TLClientNode(
     Seq(
       TLMasterPortParameters.v1(
         clients = Seq(
-          TLMasterParameters.v1(name = "meowv64-dc", sourceId = IdRange(0, 1))
+          TLMasterParameters.v2(
+            name = "meowv64-dc",
+            sourceId = IdRange(0, 1),
+            supports = TLSlaveToMasterTransferSizes(
+              probe = TransferSizes(blockSize, blockSize)
+            ),
+            emits = TLMasterToSlaveTransferSizes(
+              acquireT = TransferSizes(blockSize, blockSize),
+              acquireB = TransferSizes(blockSize, blockSize)
+            )
+          )
         )
       )
     )
@@ -264,17 +279,86 @@ class MeowV64TileModuleImp(outer: MeowV64Tile)
   ic.e.ready := true.B
 
   // dc
-  // TODO
+  val (dc, dc_edge) = outer.dcNode.out(0)
+  val s_dc_ready :: s_dc_read :: s_dc_modify :: s_dc_grant :: s_dc_grantack :: s_dc_writeback :: s_dc_probe :: s_dc_probeack :: Nil =
+    Enum(8)
+  val dc_state = RegInit(s_dc_ready)
+  val dc_grant_d = Reg(dc.d.bits.cloneType)
+  val dc_probe_b = Reg(dc.b.bits.cloneType)
+
+  dc.a.valid := false.B
+  dc.b.ready := false.B
+  dc.c.valid := false.B
+  dc.d.ready := false.B
+  dc.e.valid := false.B
+
   core.io.frontend.dc.l1stall := true.B
   core.io.frontend.dc.l2req := L1DCPort.L2Req.idle
   core.io.frontend.dc.l2addr := 0.U
   core.io.frontend.dc.l2data := 0.U
+  switch(dc_state) {
+    is(s_dc_ready) {
+      switch(core.io.frontend.dc.l1req) {
+        is(L1DCPort.L1Req.read) {
+          dc_state := s_dc_read
+        }
+        is(L1DCPort.L1Req.modify) {
+          dc_state := s_dc_modify
+        }
+      }
+      dc.b.ready := true.B
+      when(dc.b.fire) {
+        dc_state := s_dc_probe
+        dc_probe_b := dc.b.bits
+      }
+    }
+    is(s_dc_read, s_dc_modify) {
+      dc.a.valid := true.B
+      dc.a.bits := dc_edge
+        .AcquireBlock(
+          0.U,
+          core.io.frontend.dc.l1addr,
+          log2Ceil(coredef.L1_LINE_BYTES).U,
+          Mux(dc_state === s_dc_read, TLPermissions.NtoB, TLPermissions.NtoT)
+        )
+        ._2
+      when(dc.a.fire) {
+        dc_state := s_dc_grant
+      }
+    }
+    is(s_dc_grant) {
+      dc.d.ready := true.B
+      core.io.frontend.dc.l2data := dc.d.bits.data
+      when(dc.d.fire && dc.d.bits.opcode === TLMessages.GrantData) {
+        core.io.frontend.dc.l1stall := false.B
+        dc_state := s_dc_grantack
+        dc_grant_d := dc.d.bits
+      }
+    }
+    is(s_dc_grantack) {
+      dc.e.valid := true.B
+      dc.e.bits := dc_edge.GrantAck(dc_grant_d)
+      when(dc.e.fire) {
+        dc_state := s_dc_ready
+      }
+    }
+    is(s_dc_probe) {
+      core.io.frontend.dc.l2req := L1DCPort.L2Req.flush
+      core.io.frontend.dc.l2addr := dc.b.bits.address
+      when(~core.io.frontend.dc.l2stall) {
+        dc_state := s_dc_probeack
+      }
+    }
+    is(s_dc_probeack) {
+      dc.c.valid := true.B
+      dc.c.bits := dc_edge.ProbeAck(dc_probe_b, TLPermissions.NtoN)
+      when(dc.c.fire) {
+        dc_state := s_dc_ready
+      }
+    }
+  }
 
   // uncached
-  // TODO
-  core.io.frontend.uc.stall := true.B
-  core.io.frontend.uc.rdata := 0.U
-
   val (uc, uc_edge) = outer.ucNode.out(0)
   val uc_state = RegInit(s_ready)
   val uc_addr = Reg(UInt(coredef.XLEN.W))

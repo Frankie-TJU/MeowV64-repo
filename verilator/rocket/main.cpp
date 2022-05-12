@@ -958,8 +958,10 @@ int main(int argc, char **argv) {
     }
 
     top->eval();
-    if (tfp)
+    if (tfp) {
       tfp->dump(main_time);
+      tfp->flush();
+    }
     main_time += 5;
   }
   uint64_t elapsed_us = get_time_us() - begin;

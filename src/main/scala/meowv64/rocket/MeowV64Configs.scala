@@ -7,6 +7,7 @@ import freechips.rocketchip.subsystem.WithJtagDTM
 import freechips.rocketchip.subsystem.WithNoSlavePort
 import freechips.rocketchip.system.BaseConfig
 import meowv64.system.SingleCoreSystemDef
+import freechips.rocketchip.subsystem.WithCoherentBusTopology
 
 class WithMemoryBeatBytes(beatBytes: Int)
     extends Config((_, _, up) => { case MemoryBusKey =>
@@ -19,6 +20,6 @@ class MeowV64Config
         new WithMemoryBeatBytes(32) ++
         new WithJtagDTM ++
         new WithNoSlavePort ++
-        new WithIncoherentBusTopology ++
+        new WithCoherentBusTopology ++
         new BaseConfig
     )
