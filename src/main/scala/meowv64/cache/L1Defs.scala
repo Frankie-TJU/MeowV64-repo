@@ -140,11 +140,14 @@ object L1ICPort {
   }
 }
 
+object L1UCReq extends ChiselEnum {
+  val idle, read, write = Value
+}
+
 /** Uncached access
   */
 class L1UCPort(val opts: L1Opts) extends Bundle {
-  val read = Output(Bool())
-  val write = Output(Bool())
+  val req = Output(L1UCReq())
   val addr = Output(UInt(opts.ADDR_WIDTH.W))
   val len = Output(DCWriteLen())
   val wdata = Output(UInt(opts.XLEN.W))
@@ -157,8 +160,7 @@ object L1UCPort {
   def empty(opts: L1Opts): L1UCPort = {
     val port = Wire(Flipped(new L1UCPort(opts)))
     port := DontCare
-    port.read := false.B
-    port.write := false.B
+    port.req := L1UCReq.idle
 
     port
   }

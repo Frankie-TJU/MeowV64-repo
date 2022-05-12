@@ -12,12 +12,13 @@ import freechips.rocketchip.subsystem._
 import freechips.rocketchip.tile._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.util._
+import meowv64.cache.DCWriteLen
+import meowv64.cache.L1DCPort
+import meowv64.cache.L1UCReq
 import meowv64.core.Core
 import meowv64.core.CoreDef
 import meowv64.system.DefaultSystemDef
 import meowv64.system.SystemDef
-import meowv64.cache.L1DCPort
-import meowv64.cache.DCWriteLen
 
 case class MeowV64CoreParams(
     coredef: CoreDef
@@ -278,19 +279,24 @@ class MeowV64TileModuleImp(outer: MeowV64Tile)
   val uc_len = Reg(DCWriteLen())
   switch(uc_state) {
     is(s_ready) {
-      when(core.io.frontend.uc.read) {
-        uc_addr := core.io.frontend.uc.addr
-        uc_len := core.io.frontend.uc.len
-        uc_state := s_active
+      switch(core.io.frontend.uc.req) {
+        is(L1UCReq.read) {
 
-        uc_read := true.B
-      }.elsewhen(core.io.frontend.uc.write) {
-        uc_addr := core.io.frontend.uc.addr
-        uc_len := core.io.frontend.uc.len
-        uc_state := s_active
+          uc_addr := core.io.frontend.uc.addr
+          uc_len := core.io.frontend.uc.len
+          uc_state := s_active
 
-        uc_read := false.B
-        uc_wdata := core.io.frontend.uc.wdata
+          uc_read := true.B
+        }
+        is(L1UCReq.write) {
+
+          uc_addr := core.io.frontend.uc.addr
+          uc_len := core.io.frontend.uc.len
+          uc_state := s_active
+
+          uc_read := false.B
+          uc_wdata := core.io.frontend.uc.wdata
+        }
       }
     }
     is(s_active) {

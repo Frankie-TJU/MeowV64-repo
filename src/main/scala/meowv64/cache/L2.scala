@@ -284,7 +284,7 @@ class L2Cache(val opts: L2Opts) extends Module {
   for (r <- rdatas) r := 0.U
   stalls := VecInit(ops.map(op => op =/= L1Req.idle))
   for (uc <- directs) {
-    uc.stall := uc.read || uc.write
+    uc.stall := uc.req =/= L1UCReq.idle
     uc.rdata := DontCare
   }
 
@@ -998,7 +998,7 @@ class L2Cache(val opts: L2Opts) extends Module {
     }
   }.otherwise { // Is uncached
     val id = reqTarget - (opts.CORE_COUNT * 2).U
-    when(!directs(id).read || ucSent(reqTarget)) {
+    when(directs(id).req =/= L1UCReq.read || ucSent(reqTarget)) {
       stepRefiller(reqTarget)
 
       /** MMIO are handled in the write-back state machine because they are
@@ -1095,7 +1095,9 @@ class L2Cache(val opts: L2Opts) extends Module {
           wbState := L2WBState.writing
         }
       }.elsewhen(
-        VecInit(directs.map(d => d.write || d.read && isMMIO(d.addr))).asUInt
+        VecInit(
+          directs.map(d => d.req =/= L1UCReq.idle && isMMIO(d.addr))
+        ).asUInt
           .orR()
       ) {
         assert(ucWalkPtr === 0.U)
@@ -1145,7 +1147,7 @@ class L2Cache(val opts: L2Opts) extends Module {
         is(UCSendStage.idle) {
           val mmioMap = getMMIOMap(directs(ucWalkPtr).addr)
           val gotoMMIO = mmioMap.orR && (
-            directs(ucWalkPtr).read || directs(ucWalkPtr).write
+            directs(ucWalkPtr).req =/= L1UCReq.idle
           )
 
           // at most one
@@ -1153,7 +1155,7 @@ class L2Cache(val opts: L2Opts) extends Module {
             assert(PopCount(mmioMap) <= 1.U)
           }
 
-          pipeMMIOWrite := directs(ucWalkPtr).write
+          pipeMMIOWrite := directs(ucWalkPtr).req === L1UCReq.write
           pipeMMIOMap := mmioMap
           pipeUCAddr := directs(ucWalkPtr).addr
           pipeUCLen := directs(ucWalkPtr).len
@@ -1161,7 +1163,7 @@ class L2Cache(val opts: L2Opts) extends Module {
 
           when(gotoMMIO) {
             ucSendStage := UCSendStage.mmioReq
-          }.elsewhen(directs(ucWalkPtr).write) {
+          }.elsewhen(directs(ucWalkPtr).req === L1UCReq.write) {
             ucSendStage := UCSendStage.req
           }.otherwise {
             when(ucWalkPtr === (opts.CORE_COUNT - 1).U) {
@@ -1174,7 +1176,7 @@ class L2Cache(val opts: L2Opts) extends Module {
         }
 
         is(UCSendStage.req) {
-          assert(directs(ucWalkPtr).write)
+          assert(directs(ucWalkPtr).req === L1UCReq.write)
           axi.AWADDR := pipeUCAddr
           axi.AWBURST := AXI.Constants.Burst.INCR.U
           axi.AWLEN := 0.U

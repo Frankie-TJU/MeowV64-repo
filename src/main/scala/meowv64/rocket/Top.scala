@@ -2,7 +2,10 @@ package meowv64.rocket
 
 import chipsalliance.rocketchip.config.Parameters
 import chisel3._
+import chisel3.experimental.dataview.DataView
 import chisel3.experimental.dataview._
+import freechips.rocketchip.amba.axi4.AXI4Bundle
+import freechips.rocketchip.amba.axi4.AXI4BundleParameters
 import freechips.rocketchip.devices.debug.Debug
 import freechips.rocketchip.devices.debug.JtagDTMKey
 import freechips.rocketchip.devices.tilelink.BootROM
@@ -11,9 +14,6 @@ import freechips.rocketchip.diplomacy.LazyModule
 import freechips.rocketchip.jtag.JTAGIO
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.util._
-import chisel3.experimental.dataview.DataView
-import freechips.rocketchip.amba.axi4.AXI4Bundle
-import freechips.rocketchip.amba.axi4.AXI4BundleParameters
 
 // https://www.chisel-lang.org/chisel3/docs/explanations/dataview.html
 // use standard names

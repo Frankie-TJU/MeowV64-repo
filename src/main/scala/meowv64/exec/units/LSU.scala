@@ -615,8 +615,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   toMem.uncached.addr := current.addr
   toMem.uncached.wdata := current.data
   toMem.uncached.len := current.len
-  toMem.uncached.read := false.B
-  toMem.uncached.write := false.B
+  toMem.uncached.req := L1UCReq.idle
   release.valid := false.B
 
   // compute write back value from reader
@@ -812,7 +811,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
       is(DelayedMemOp.uncachedLoad) {
         retire.bits.info.wb := current.getLSB(toMem.uncached.rdata)
         when(release.ready) {
-          toMem.uncached.read := true.B
+          toMem.uncached.req := L1UCReq.read
           when(~toMem.uncached.stall) {
             retire.valid := true.B
             release.valid := true.B
@@ -903,7 +902,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
       }
       is(DelayedMemOp.uncachedStore) {
         when(release.ready) {
-          toMem.uncached.write := true.B
+          toMem.uncached.req := L1UCReq.write
           when(~toMem.uncached.stall) {
             release.valid := true.B
             advance := true.B
