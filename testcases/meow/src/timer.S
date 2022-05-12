@@ -7,6 +7,10 @@ _start:
   li ra, 0x100000
   li s0, 0x02004000
   li s1, 0x0200BFF8
+
+  csrr a0, mhartid
+  bnez a0, other_hart
+
   # Set mepc
   la t0, trap
   csrw mtvec, t0 # Because trap is 4-byte aligned, this also sets mode = direct
@@ -44,3 +48,6 @@ trap:
 
 fail:
   FAIL
+
+other_hart:
+  j other_hart
