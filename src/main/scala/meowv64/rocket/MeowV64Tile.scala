@@ -167,7 +167,9 @@ class MeowV64Tile private (
             ),
             emits = TLMasterToSlaveTransferSizes(
               acquireT = TransferSizes(blockSize, blockSize),
-              acquireB = TransferSizes(blockSize, blockSize)
+              acquireB = TransferSizes(blockSize, blockSize),
+              get = TransferSizes(blockSize, blockSize),
+              putFull = TransferSizes(blockSize, blockSize),
             )
           )
         )
