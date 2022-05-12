@@ -35,8 +35,8 @@ case class MeowV64CoreParams(
   val useRVE: Boolean = false
   val mulDiv: Option[MulDivParams] = Some(MulDivParams())
   val fpu: Option[FPUParams] = Some(FPUParams())
-  val fetchWidth: Int = 1
-  val decodeWidth: Int = 1
+  val fetchWidth: Int = 2
+  val decodeWidth: Int = 2
   val retireWidth: Int = 2
   val instBits: Int = if (useCompressed) 16 else 32
   val nLocalInterrupts: Int = 0
@@ -58,7 +58,11 @@ case class MeowV64CoreParams(
   val mtvecInit: Option[BigInt] = Some(BigInt(0))
   val mtvecWritable: Boolean = true
 
-  def lrscCycles: Int = 80
+  override def lrscCycles: Int = 80
+
+  override def vLen = 256
+
+  override def vMemDataBits = 256
 }
 
 case class MeowV64TileAttachParams(
