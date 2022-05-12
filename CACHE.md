@@ -34,3 +34,26 @@ L1 发起 read 的时候，L1 一定处在 I 状态。L2 会检查是否 hit，�
 核心写入 L1 的时候，如果出现了 miss，首先要选取 victim，发送 l1req.writeback，把 victim 写回。
 
 L1 发起 write 的时候，发送 l1req.modify 到 L2。
+
+## TileLink
+
+L1 发请求：
+
+1. read/modify，在 A channel 上发送 AcquireBlock（read 是 toB，modify 是 toT），在 D channel 上会收到 GrantData，这时候可以返回数据，并且在 E channel 上发送 GrantAck
+2. writeback，在 C channel 上发送 ReleaseData，在 D channel 上会收到 ReleaseAck
+
+L2 发请求：
+
+1. 在 B channel 上收到 Probe，转为 l2req=flush 或者 invalidate，在 C channel 上发送 ProbeAck/ProbeAckData
+
+分 channel：
+
+A channel：负责处理 l1req，发送 AcquireBlock
+
+B channel: 收到 Probe 的时候，发送 l2req
+
+C channel: Arbiter：1) 负责处理 l1req，发送 Release Data 2) 发送 ProbeAck
+
+D channel: 收到 ReleaseAck/GrantData 的时候，处理状态机
+
+E channel: 负责发送 GrantAck
