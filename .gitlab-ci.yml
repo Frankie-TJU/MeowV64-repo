@@ -39,8 +39,8 @@ verilator_single_core_test:
   script:
     - cd verilator/SingleCoreDef
     - make
-    - ../test.sh
-    - ../benchmark.sh
+    - ../standalone/test.sh
+    - ../standalone/benchmark.sh
 
 verilator_double_core_test:
   stage: test
@@ -50,5 +50,5 @@ verilator_double_core_test:
   script:
     - cd verilator/DoubleCoreDef
     - make
-    - ../test.sh
-    - ../benchmark.sh
+    - ../standalone/test.sh
+    - ../standalone/benchmark.sh
