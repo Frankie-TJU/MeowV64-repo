@@ -1,6 +1,7 @@
 package meowv64.rocket
 
 import chisel3._
+import chisel3.util._
 import freechips.rocketchip.config._
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.interrupts._
@@ -16,6 +17,7 @@ import meowv64.core.CoreDef
 import meowv64.system.DefaultSystemDef
 import meowv64.system.SystemDef
 import meowv64.cache.L1DCPort
+import meowv64.cache.DCWriteLen
 
 case class MeowV64CoreParams(
     coredef: CoreDef
@@ -212,14 +214,49 @@ class MeowV64TileModuleImp(outer: MeowV64Tile)
   Annotated.params(this, outer.meowv64Params)
 
   // connect the meowv64 core
+  val coredef = outer.meowv64Params.core.coredef
   val core = Module(
-    new Core()(outer.meowv64Params.core.coredef)
+    new Core()(coredef)
   )
 
+  val s_ready :: s_active :: s_inflight :: Nil = Enum(3)
+
   // ic
-  // TODO
-  core.io.frontend.ic.stall := true.B
-  core.io.frontend.ic.data := 0.U
+  val (ic, ic_edge) = outer.icNode.out(0)
+  val ic_state = RegInit(s_ready)
+  val ic_addr = Reg(UInt(coredef.XLEN.W))
+  switch(ic_state) {
+    is(s_ready) {
+      when(core.io.frontend.ic.read.valid) {
+        ic_addr := core.io.frontend.ic.read.bits
+        ic_state := s_active
+      }
+    }
+    is(s_active) {
+      when(ic.a.fire) {
+        ic_state := s_inflight
+      }
+    }
+    is(s_inflight) {
+      when(ic.d.fire) {
+        ic_state := s_ready
+      }
+    }
+  }
+
+  // a channel
+  ic.a.valid := ic_state === s_active && ~reset.asBool
+  ic.a.bits := ic_edge.Get(0.U, ic_addr, log2Ceil(coredef.L1_LINE_BYTES).U)._2
+
+  // d channel
+  ic.d.ready := true.B
+  core.io.frontend.ic.stall := ~ic.d.valid
+  core.io.frontend.ic.data := ic.d.bits.data
+
+  // unused
+  ic.b.valid := false.B
+  ic.c.ready := true.B
+  ic.e.ready := true.B
 
   // dc
   // TODO
@@ -232,6 +269,54 @@ class MeowV64TileModuleImp(outer: MeowV64Tile)
   // TODO
   core.io.frontend.uc.stall := true.B
   core.io.frontend.uc.rdata := 0.U
+
+  val (uc, uc_edge) = outer.ucNode.out(0)
+  val uc_state = RegInit(s_ready)
+  val uc_addr = Reg(UInt(coredef.XLEN.W))
+  val uc_read = Reg(Bool())
+  val uc_wdata = Reg(UInt(coredef.XLEN.W))
+  val uc_len = Reg(DCWriteLen())
+  switch(uc_state) {
+    is(s_ready) {
+      when(core.io.frontend.uc.read) {
+        uc_addr := core.io.frontend.uc.addr
+        uc_len := core.io.frontend.uc.len
+        uc_state := s_active
+
+        uc_read := true.B
+      }.elsewhen(core.io.frontend.uc.write) {
+        uc_addr := core.io.frontend.uc.addr
+        uc_len := core.io.frontend.uc.len
+        uc_state := s_active
+
+        uc_read := false.B
+        uc_wdata := core.io.frontend.uc.wdata
+      }
+    }
+    is(s_active) {
+      when(uc.a.fire) {
+        uc_state := s_inflight
+      }
+    }
+    is(s_inflight) {
+      when(uc.d.fire) {
+        uc_state := s_ready
+      }
+    }
+  }
+
+  // a channel
+  uc.a.valid := uc_state === s_active && ~reset.asBool
+  when(uc_read) {
+    uc.a.bits := uc_edge.Get(0.U, uc_addr, uc_len.asUInt)._2
+  }.otherwise {
+    uc.a.bits := uc_edge.Put(0.U, uc_addr, uc_len.asUInt, uc_wdata)._2
+  }
+
+  // d channel
+  uc.d.ready := true.B
+  core.io.frontend.uc.stall := ~uc.d.valid
+  core.io.frontend.uc.rdata := uc.d.bits.data
 
   // debug mode code
   // TODO
