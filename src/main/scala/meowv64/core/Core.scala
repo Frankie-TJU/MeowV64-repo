@@ -31,8 +31,8 @@ class CoreDebug(implicit val coredef: CoreDef) extends Bundle {
   val iqEmptyMask = UInt(coredef.ISSUE_QUEUES.length.W)
   val iqFullMask = UInt(coredef.ISSUE_QUEUES.length.W)
   val issueNum = UInt(log2Ceil(coredef.ISSUE_NUM + 1).W)
-  val issueNumBoundedByROBSize = Output(Bool())
-  val issueNumBoundedByLSQSize = Output(Bool())
+  val issueNumBoundedByROBSize = Bool()
+  val issueNumBoundedByLSQSize = Bool()
   val retireNum = UInt(log2Ceil(coredef.ISSUE_NUM + 1).W)
 }
 

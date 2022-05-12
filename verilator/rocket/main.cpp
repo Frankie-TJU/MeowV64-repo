@@ -972,7 +972,15 @@ int main(int argc, char **argv) {
   top->clock = 0;
   init();
 
+  const size_t MAX_IQ_COUNT = 4;
+  const size_t ISSUE_NUM = 2;
+  size_t iq_empty_cycle_count[MAX_IQ_COUNT] = {};
+  size_t iq_full_cycle_count[MAX_IQ_COUNT] = {};
   size_t cycles = 0;
+  size_t issue_num_bounded_by_rob_size = 0;
+  size_t issue_num_bounded_by_lsq_size = 0;
+  size_t issue_num[ISSUE_NUM + 1] = {};
+  size_t retire_num[ISSUE_NUM + 1] = {};
 
   fprintf(stderr, "> Simulation started\n");
   uint64_t begin = get_time_us();
@@ -982,6 +990,40 @@ int main(int argc, char **argv) {
     }
     if ((main_time % 10) == 0) {
       top->clock = 1;
+
+      // log per 10000 mcycle
+      if ((top->debug_0_mcycle % 10000) == 0 && top->debug_0_mcycle > 0 &&
+          progress) {
+        fprintf(stderr, "> mcycle: %ld\n", top->debug_0_mcycle);
+        fprintf(stderr, "> minstret: %ld\n", top->debug_0_minstret);
+        fprintf(stderr, "> pc: %lx\n", top->debug_0_pc);
+      }
+
+      if (top->debug_0_mcycle > 1000000 && !jtag) {
+        // do not timeout in jtag mode
+        fprintf(stderr, "> Timed out\n");
+        finished = true;
+        res = 1;
+      }
+
+      // accumulate rs free cycles
+      for (int i = 0; i < MAX_IQ_COUNT; i++) {
+        if ((top->debug_0_iqEmptyMask >> i) & 1) {
+          iq_empty_cycle_count[i]++;
+        }
+        if ((top->debug_0_iqFullMask >> i) & 1) {
+          iq_full_cycle_count[i]++;
+        }
+      }
+
+      if (top->debug_0_issueNumBoundedByROBSize) {
+        issue_num_bounded_by_rob_size++;
+      }
+      if (top->debug_0_issueNumBoundedByLSQSize) {
+        issue_num_bounded_by_lsq_size++;
+      }
+      issue_num[top->debug_0_issueNum]++;
+      retire_num[top->debug_0_retireNum]++;
 
       cycles++;
     }
@@ -1009,6 +1051,38 @@ int main(int argc, char **argv) {
   }
   uint64_t elapsed_us = get_time_us() - begin;
   fprintf(stderr, "> Simulation finished\n");
+  fprintf(stderr, "> mcycle: %ld\n", top->debug_0_mcycle);
+  fprintf(stderr, "> minstret: %ld\n", top->debug_0_minstret);
+  fprintf(stderr, "> IPC: %.2lf\n",
+          (double)top->debug_0_minstret / top->debug_0_mcycle);
+  fprintf(stderr, "> Simulation speed: %.2lf mcycle/s\n",
+          (double)top->debug_0_mcycle * 1000000 / elapsed_us);
+  fprintf(stderr, "> Issue queue empty cycle:");
+  for (int i = 0; i < MAX_IQ_COUNT; i++) {
+    fprintf(stderr, " %.2lf%%", iq_empty_cycle_count[i] * 100.0 / cycles);
+  }
+  fprintf(stderr, "\n");
+  fprintf(stderr, "> Issue queue full cycle:");
+  for (int i = 0; i < MAX_IQ_COUNT; i++) {
+    fprintf(stderr, " %.2lf%%", iq_full_cycle_count[i] * 100.0 / cycles);
+  }
+  fprintf(stderr, "\n");
+  fprintf(stderr, "> Cycles when issue num is bounded by ROB size: %.2lf%%\n",
+          issue_num_bounded_by_rob_size * 100.0 / cycles);
+  fprintf(stderr, "> Cycles when issue num is bounded by LSQ size: %.2lf%%\n",
+          issue_num_bounded_by_lsq_size * 100.0 / cycles);
+
+  fprintf(stderr, "> Issue Num:");
+  for (int i = 0; i <= ISSUE_NUM; i++) {
+    fprintf(stderr, " %d=%.2lf%%", i, issue_num[i] * 100.0 / cycles);
+  }
+  fprintf(stderr, "\n");
+
+  fprintf(stderr, "> Retire Num:");
+  for (int i = 0; i <= ISSUE_NUM; i++) {
+    fprintf(stderr, " %d=%.2lf%%", i, retire_num[i] * 100.0 / cycles);
+  }
+  fprintf(stderr, "\n");
 
   if (begin_signature && end_signature) {
     if (begin_signature_override) {

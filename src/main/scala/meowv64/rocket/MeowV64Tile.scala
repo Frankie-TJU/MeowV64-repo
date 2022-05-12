@@ -17,6 +17,7 @@ import meowv64.cache.L1DCPort
 import meowv64.cache.L1UCReq
 import meowv64.core.Core
 import meowv64.core.CoreDef
+import meowv64.core.CoreDebug
 
 case class MeowV64CoreParams(
     coredef: CoreDef
@@ -236,6 +237,10 @@ class MeowV64Tile private (
     // 4 is seip
     seip := interrupts(4)
   }
+
+  // expose debug
+  val customDebugSourceNode = BundleBridgeSource(() => new CoreDebug()(meowv64Params.coredef))
+  val customDebugNode: BundleBridgeOutwardNode[CoreDebug] = customDebugSourceNode
 }
 
 class MeowV64TileModuleImp(outer: MeowV64Tile)
@@ -449,4 +454,7 @@ class MeowV64TileModuleImp(outer: MeowV64Tile)
     core.io.int.mtip,
     core.io.int.msip
   )
+
+  // expose debug
+  outer.customDebugSourceNode.bundle := core.io.debug
 }

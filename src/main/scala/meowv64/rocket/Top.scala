@@ -14,6 +14,8 @@ import freechips.rocketchip.diplomacy.LazyModule
 import freechips.rocketchip.jtag.JTAGIO
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.util._
+import meowv64.core.CoreDebug
+import freechips.rocketchip.diplomacy.BundleBridgeNexusNode
 
 // https://www.chisel-lang.org/chisel3/docs/explanations/dataview.html
 // use standard names
@@ -145,6 +147,8 @@ class RiscVSystem(implicit val p: Parameters) extends Module {
     )
   )
   val jtag = IO(Flipped(new JTAGIO))
+  val debug = IO(target.debugIO.cloneType)
+  debug := target.debugIO
 
   // ndreset can reset all harts
   val childReset = reset.asBool | target.debug.map(_.ndreset).getOrElse(false.B)
@@ -188,6 +192,16 @@ class RocketTop(implicit p: Parameters)
   val bootROM = p(BootROMLocated(location)).map {
     BootROM.attach(_, this, CBUS)
   }
+
+  // expose debug
+  val traceNexus = BundleBridgeNexusNode[CoreDebug]()
+  val tileTraceNodes = tiles
+    .flatMap { case tile: MeowV64Tile =>
+      Some(tile)
+    }
+    .map { _.customDebugNode }
+
+  tileTraceNodes.foreach { traceNexus := _ }
 }
 
 class RocketTopModule(outer: RocketTop)
@@ -197,4 +211,15 @@ class RocketTopModule(outer: RocketTop)
     with DontTouch {
   lazy val mem_axi4 = outer.mem_axi4
   lazy val mmio_axi4 = outer.mmio_axi4
+
+  // wire custom debug signals
+  val customDebug = outer.traceNexus.in.map(_._1)
+  val debugIO = IO(
+    Output(
+      Vec(customDebug.length, customDebug(0).cloneType)
+    )
+  )
+  for (i <- 0 until customDebug.length) {
+    debugIO(i) := customDebug(i)
+  }
 }
