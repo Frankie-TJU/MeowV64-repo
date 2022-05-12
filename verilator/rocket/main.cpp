@@ -101,6 +101,9 @@ void init() {
 
   top->mmio_axi4_ARREADY = 0;
   top->mmio_axi4_RVALID = 0;
+
+  // external interrupt
+  top->interrupts = 0x3;
 }
 
 // step per clock fall

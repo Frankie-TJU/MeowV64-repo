@@ -231,6 +231,10 @@ class MeowV64TileModuleImp(outer: MeowV64Tile)
       when(core.io.frontend.ic.read.valid) {
         ic_addr := core.io.frontend.ic.read.bits
         ic_state := s_active
+
+        val offset =
+          core.io.frontend.ic.read.bits(log2Ceil(coredef.L1_LINE_BYTES) - 1, 0)
+        assert(offset === 0.U)
       }
     }
     is(s_active) {
@@ -295,7 +299,12 @@ class MeowV64TileModuleImp(outer: MeowV64Tile)
           uc_state := s_active
 
           uc_read := false.B
-          uc_wdata := core.io.frontend.uc.wdata
+
+          // handle offset in addr
+          val offset = core.io.frontend.uc
+            .addr(log2Ceil(coredef.L1_LINE_BYTES) - 1, 0)
+          val shift = offset << 3
+          uc_wdata := core.io.frontend.uc.wdata << shift
         }
       }
     }
