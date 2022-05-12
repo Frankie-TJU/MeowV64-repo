@@ -1,8 +1,10 @@
-  li sp, 0x88000000
-	li ra, 0x100000
+#include "common.h"
+
 .section .text
 .globl _start
 _start:
+  li sp, 0x88000000
+	li ra, 0x100000
   # Div by zero
   li a0, 0x19260817
   li a1, 0x0
@@ -57,6 +59,6 @@ _start:
   bne t0, a0, fail
   bne t1, zero, fail
 
-  jr ra
+  SUCCESS
 fail:
-  j fail
+  FAIL

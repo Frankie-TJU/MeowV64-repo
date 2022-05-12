@@ -1,4 +1,7 @@
-  .globl _start
+#include "common.h"
+
+.section .text
+.globl _start
 _start:
   csrr a0, mhartid
 
@@ -47,11 +50,9 @@ wait:
 
 .align 4
 die:
+  FAIL
   j die
 
 .align 4
 pass:
-  // Pass the test
-  li s0, 0x60000000
-  li t0, 1
-  sd t0, 0(s0)
+  SUCCESS

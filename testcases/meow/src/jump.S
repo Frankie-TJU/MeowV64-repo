@@ -1,8 +1,10 @@
-  li sp, 0x88000000
-	li ra, 0x100000
+#include "common.h"
+
 .section .text
 .globl _start
 _start:
+  li sp, 0x88000000
+	li ra, 0x100000
   li t0, 0x1
   j skip
   li t0, 0x2
@@ -11,6 +13,6 @@ skip:
 
   # Check
   bne t0, t1, fail
-  jr ra
+  SUCCESS
 fail:
-  j fail
+  FAIL

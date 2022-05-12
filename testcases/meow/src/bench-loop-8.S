@@ -1,3 +1,8 @@
+#include "common.h"
+
+.section .text
+.globl _start
+_start:
     li sp, 0x88000000
     li ra, 0x100000
     li t0, 0x00001000
@@ -10,4 +15,5 @@
     li t5, 4
     li t6, 5
     bne t0, zero, .LC0
-    jr ra
+    
+    SUCCESS

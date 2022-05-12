@@ -1,8 +1,9 @@
-  li sp, 0x88000000
-	li ra, 0x100000
+#include "common.h"
+
 .section .text
 .globl _start
-_start:
+  li sp, 0x88000000
+	li ra, 0x100000
   li t0, 0x10
   li t1, 0x5
   li t2, 0x1
@@ -13,6 +14,7 @@ loop:
 exit:
   li a0, 0x4
   bne t0, a0, fail
-  jr ra
+  
+  SUCCESS
 fail:
-  j fail
+  FAIL

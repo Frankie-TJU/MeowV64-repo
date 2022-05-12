@@ -1,3 +1,6 @@
+#include "common.h"
+
+.section .text
   li sp, 0x88000000
 	li ra, 0x100000
   j _start
@@ -9,7 +12,7 @@ tvec:
   addi t0, t0, 4
   csrrw zero, mepc, t0
   mret
-.section .text
+
 .globl _start
 _start:
   la t0, tvec
@@ -20,6 +23,6 @@ _start:
   addi a0, a0, 1
   li t0, 4
   bne a0, t0, fail
-  jr ra
+  SUCCESS
 fail:
-  j fail
+  FAIL

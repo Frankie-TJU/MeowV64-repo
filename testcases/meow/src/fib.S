@@ -1,3 +1,6 @@
+#include "common.h"
+
+.section .text
   # only one core
   csrr a0, mhartid
   bnez a0, end
@@ -104,4 +107,4 @@ _start:
   addi	sp,sp,32
 
 end:
-  jr	ra
+  SUCCESS
