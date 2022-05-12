@@ -19,10 +19,10 @@ print:
   lw	a5,-52(s0)
   sext.w	a5,a5
   bne	a5,zero,.L4
-  li	a5,268439552
+  li	a5,1610616832
   li	a4,48
   sb	a4,0(a5)
-  li	a5,268439552
+  li	a5,1610616832
   li	a4,10
   sb	a4,0(a5)
   fence	iorw,iorw
@@ -53,7 +53,7 @@ print:
   ld	a5,-24(s0)
   addi	a5,a5,-1
   sd	a5,-24(s0)
-  li	a5,268439552
+  li	a5,1610616832
   ld	a4,-24(s0)
   lbu	a4,0(a4)
   sb	a4,0(a5)
@@ -61,7 +61,7 @@ print:
   addi	a5,s0,-40
   ld	a4,-24(s0)
   bne	a4,a5,.L7
-  li	a5,268439552
+  li	a5,1610616832
   li	a4,10
   sb	a4,0(a5)
 .L8:

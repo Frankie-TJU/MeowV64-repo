@@ -2,7 +2,6 @@ package meowv64.rocket
 
 import freechips.rocketchip.config.Config
 import freechips.rocketchip.subsystem.MemoryBusKey
-import freechips.rocketchip.subsystem.WithIncoherentBusTopology
 import freechips.rocketchip.subsystem.WithJtagDTM
 import freechips.rocketchip.subsystem.WithNoSlavePort
 import freechips.rocketchip.system.BaseConfig

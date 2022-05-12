@@ -17,8 +17,6 @@ import meowv64.cache.L1DCPort
 import meowv64.cache.L1UCReq
 import meowv64.core.Core
 import meowv64.core.CoreDef
-import meowv64.system.DefaultSystemDef
-import meowv64.system.SystemDef
 
 case class MeowV64CoreParams(
     coredef: CoreDef
@@ -154,7 +152,7 @@ class MeowV64Tile private (
   val node = TLIdentityNode()
 
   // dcache port
-  val blockSize = meowv64Params.coredef.L1_LINE_BYTES
+  val lineSize = meowv64Params.coredef.L1_LINE_BYTES
   val dcNode = TLClientNode(
     Seq(
       TLMasterPortParameters.v1(
@@ -163,13 +161,13 @@ class MeowV64Tile private (
             name = "meowv64-dc",
             sourceId = IdRange(0, 1),
             supports = TLSlaveToMasterTransferSizes(
-              probe = TransferSizes(blockSize, blockSize)
+              probe = TransferSizes(lineSize, lineSize)
             ),
             emits = TLMasterToSlaveTransferSizes(
-              acquireT = TransferSizes(blockSize, blockSize),
-              acquireB = TransferSizes(blockSize, blockSize),
-              get = TransferSizes(blockSize, blockSize),
-              putFull = TransferSizes(blockSize, blockSize),
+              acquireT = TransferSizes(lineSize, lineSize),
+              acquireB = TransferSizes(lineSize, lineSize),
+              get = TransferSizes(lineSize, lineSize),
+              putFull = TransferSizes(lineSize, lineSize),
             )
           )
         )
@@ -184,7 +182,13 @@ class MeowV64Tile private (
     Seq(
       TLMasterPortParameters.v1(
         clients = Seq(
-          TLMasterParameters.v1(name = "meowv64-ic", sourceId = IdRange(0, 1))
+          TLMasterParameters.v2(
+            name = "meowv64-ic",
+            sourceId = IdRange(0, 1),
+            emits = TLMasterToSlaveTransferSizes(
+              get = TransferSizes(lineSize, lineSize),
+            )
+          )
         )
       )
     )
@@ -197,7 +201,15 @@ class MeowV64Tile private (
     Seq(
       TLMasterPortParameters.v1(
         clients = Seq(
-          TLMasterParameters.v1(name = "meowv64-uc", sourceId = IdRange(0, 1))
+          TLMasterParameters.v2(
+            name = "meowv64-uc",
+            sourceId = IdRange(0, 1),
+            emits = TLMasterToSlaveTransferSizes(
+              // from 1 to 8 bytes
+              get = TransferSizes(1, 8),
+              putFull = TransferSizes(1, 8),
+            )
+          )
         )
       )
     )
@@ -268,7 +280,7 @@ class MeowV64TileModuleImp(outer: MeowV64Tile)
 
   // a channel
   ic.a.valid := ic_state === s_active && ~reset.asBool
-  ic.a.bits := ic_edge.Get(0.U, ic_addr, log2Ceil(coredef.L1_LINE_BYTES).U)._2
+  ic.a.bits := ic_edge.Get(0.U, ic_addr, log2Ceil(outer.lineSize).U)._2
 
   // d channel
   ic.d.ready := true.B
@@ -320,7 +332,7 @@ class MeowV64TileModuleImp(outer: MeowV64Tile)
         .AcquireBlock(
           0.U,
           core.io.frontend.dc.l1addr,
-          log2Ceil(coredef.L1_LINE_BYTES).U,
+          log2Ceil(outer.lineSize).U,
           Mux(dc_state === s_dc_read, TLPermissions.NtoB, TLPermissions.NtoT)
         )
         ._2

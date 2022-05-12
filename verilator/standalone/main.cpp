@@ -75,6 +75,11 @@ const uint64_t AXI_DATA_BYTES = AXI_DATA_WIDTH / 8;
 uint64_t tohost_addr = 0x60000000;
 uint64_t fromhost_addr = 0x60000040;
 
+// serial
+// default at 0x60001000
+uint64_t serial_addr = 0x60001000;
+
+
 // signature generation for riscv-torture
 uint64_t begin_signature = 0;
 uint64_t begin_signature_override = 0;
@@ -123,7 +128,7 @@ void step() {
     top->io_axi_RVALID = 1;
     top->io_axi_RID = pending_read_id;
     mpz_class r_data;
-    if (pending_read_addr == 0x10001014) {
+    if (pending_read_addr == serial_addr + 0x14) {
       // serial lsr
       r_data = 1L << (32 + 5);
     } else {
@@ -231,7 +236,7 @@ void step() {
       }
 
       uint64_t input = wdata.get_ui();
-      if (pending_write_addr == 0x10001000) {
+      if (pending_write_addr == serial_addr) {
         // serial
         printf("%c", input & 0xFF);
         fflush(stdout);
