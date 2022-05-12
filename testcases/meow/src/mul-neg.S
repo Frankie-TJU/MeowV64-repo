@@ -1,8 +1,10 @@
-  li sp, 0x88000000
-	li ra, 0x100000
+#include "common.h"
+
 .section .text
 .globl _start
 _start:
+  li sp, 0x88000000
+	li ra, 0x100000
   # Computes 16!
   li a0, 1
   li a1, -1
@@ -15,6 +17,6 @@ loop:
 
   li a3, -1307674368000
   bne a3, a0, fail
-  jr ra
+  SUCCESS
 fail:
-  j fail
+  FAIL

@@ -12,7 +12,7 @@ _start:
 
   # Check
   bne a0, a1, fail
-  jr ra
+  SUCCESS
   
 fail:
   FAIL

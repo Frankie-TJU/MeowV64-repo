@@ -1,8 +1,10 @@
-  li sp, 0x88000000
-	li ra, 0x100000
+#include "common.h"
+
 .section .text
 .globl _start
 _start:
+  li sp, 0x88000000
+	li ra, 0x100000
   # TODO: setup mtvec
   # Setup paging
   la t0, BOOT_PAGE_TBL_SV48
@@ -69,7 +71,7 @@ LAST:
   nop
   nop
   nop
-  ret
+  SUCCESS
 
   .align 12
 BOOT_PAGE_TBL_SV48:

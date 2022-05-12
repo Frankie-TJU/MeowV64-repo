@@ -1,11 +1,13 @@
+#include "common.h"
 #define ITERATION 10
-	li ra, 0x100000
-  li s0, 0x90000000 // Memcpy from
-  li s1, 0x90001000 // Memcpy to
-  li s2, 0x1000     // Memcpy size
+
 .section .text
 .globl _start
 _start:
+	li ra, 0x100000
+  li s0, 0x88000000 // Memcpy from
+  li s1, 0x88001000 // Memcpy to
+  li s2, 0x1000     // Memcpy size
   csrr a0, mhartid
   bnez a0, other_hart
 
@@ -41,10 +43,10 @@ memcmp_loop:
   bne t0, t1, loop
 
   // end
-  jr ra
+  SUCCESS
 
 fail:
-  j fail
+  FAIL
 
 other_hart:
   // loop amoadd.w

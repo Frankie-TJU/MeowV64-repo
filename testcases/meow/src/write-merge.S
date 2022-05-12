@@ -1,8 +1,10 @@
-  li sp, 0x88000000
-	li ra, 0x100000
+#include "common.h"
+
 .section .text
 .globl _start
 _start:
+  li sp, 0x88000000
+	li ra, 0x100000
   li s0, 0x88000100
   li t0, 0x0123456789ABCDEF
 
@@ -18,6 +20,6 @@ _start:
   li t1, 0x0123FF67DDDDDDDD
   bne t0, t1, fail
 
-  jr ra
+  SUCCESS
 fail:
-  j fail
+  FAIL

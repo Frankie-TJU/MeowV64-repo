@@ -1,10 +1,12 @@
+#include "common.h"
+
+.section .text
+.globl _start
+_start:
   li sp, 0x88000000
   li ra, 0x100000
   li s0, 0x02004000
   li s1, 0x0200BFF8
-.section .text
-.globl _start
-_start:
   # Set mepc
   la t0, trap
   csrw mtvec, t0 # Because trap is 4-byte aligned, this also sets mode = direct
@@ -38,7 +40,7 @@ trap:
   la t1, spin
   bne t0, t1, fail
 
-  ret
+  SUCCESS
 
 fail:
-  j fail
+  FAIL
