@@ -379,6 +379,10 @@ class MeowV64TileModuleImp(outer: MeowV64Tile)
   val uc_read = Reg(Bool())
   val uc_wdata = Reg(UInt(coredef.XLEN.W))
   val uc_len = Reg(DCWriteLen())
+
+  val uc_offset = core.io.frontend.uc
+    .addr(log2Ceil(coredef.L1_LINE_BYTES) - 1, 0)
+  val uc_shift = uc_offset << 3
   switch(uc_state) {
     is(s_ready) {
       switch(core.io.frontend.uc.req) {
@@ -399,10 +403,7 @@ class MeowV64TileModuleImp(outer: MeowV64Tile)
           uc_read := false.B
 
           // handle offset in addr
-          val offset = core.io.frontend.uc
-            .addr(log2Ceil(coredef.L1_LINE_BYTES) - 1, 0)
-          val shift = offset << 3
-          uc_wdata := core.io.frontend.uc.wdata << shift
+          uc_wdata := core.io.frontend.uc.wdata << uc_shift
         }
       }
     }
@@ -429,7 +430,8 @@ class MeowV64TileModuleImp(outer: MeowV64Tile)
   // d channel
   uc.d.ready := true.B
   core.io.frontend.uc.stall := ~uc.d.valid
-  core.io.frontend.uc.rdata := uc.d.bits.data
+  // handle offset in addr
+  core.io.frontend.uc.rdata := uc.d.bits.data >> uc_shift
 
   // debug mode code
   // TODO

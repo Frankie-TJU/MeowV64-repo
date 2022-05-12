@@ -233,7 +233,6 @@ void step_mem() {
           }
 
           memory[addr] = muxed;
-          // printf("mem[%08x] = %09x\n", addr, muxed);
         }
       }
 
@@ -281,6 +280,15 @@ void step_mmio() {
     if (pending_read_addr == serial_addr + 0x14) {
       // serial lsr
       r_data = 1L << (32 + 5);
+    } else {
+      uint64_t aligned = (pending_read_addr / AXI_DATA_BYTES) * AXI_DATA_BYTES;
+      for (int i = 0; i < AXI_DATA_BYTES / sizeof(mem_t); i++) {
+        uint64_t addr = aligned + i * sizeof(mem_t);
+        mem_t r = memory[addr];
+        mpz_class res = r;
+        res <<= (i * (sizeof(mem_t) * 8));
+        r_data += res;
+      }
     }
 
     mpz_class mask = 1;
@@ -353,6 +361,38 @@ void step_mmio() {
       mpz_class wdata;
       mpz_import(wdata.get_mpz_t(), AXI_DATA_BYTES / 4, -1, 4, -1, 0,
                  top->mmio_axi4_WDATA);
+
+      uint64_t aligned = pending_write_addr / AXI_DATA_BYTES * AXI_DATA_BYTES;
+      for (int i = 0; i < AXI_DATA_BYTES / sizeof(mem_t); i++) {
+        uint64_t addr = aligned + i * sizeof(mem_t);
+
+        mpz_class local_wdata_mpz = wdata >> (i * (sizeof(mem_t) * 8));
+        mem_t local_wdata = local_wdata_mpz.get_ui();
+
+        uint64_t local_wstrb =
+            (top->mmio_axi4_WSTRB >> (i * sizeof(mem_t))) & 0xfL;
+
+        mpz_class local_mask_mpz = shifted_mask >> (i * sizeof(mem_t));
+        uint64_t local_mask = local_mask_mpz.get_ui() & 0xfL;
+        if (local_mask & local_wstrb) {
+          mem_t base = memory[addr];
+          mem_t input = local_wdata;
+          uint64_t be = local_mask & local_wstrb;
+
+          mem_t muxed = 0;
+          for (int i = 0; i < sizeof(mem_t); i++) {
+            mem_t sel;
+            if (((be >> i) & 1) == 1) {
+              sel = (input >> (i * 8)) & 0xff;
+            } else {
+              sel = (base >> (i * 8)) & 0xff;
+            }
+            muxed |= (sel << (i * 8));
+          }
+
+          memory[addr] = muxed;
+        }
+      }
 
       uint64_t input = wdata.get_ui();
       if (pending_write_addr == serial_addr) {
