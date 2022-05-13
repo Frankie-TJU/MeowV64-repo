@@ -67,8 +67,10 @@ struct jtag_vpi_cmd {
 
 int res = 0;
 
-const uint64_t AXI_DATA_WIDTH = 256;
-const uint64_t AXI_DATA_BYTES = AXI_DATA_WIDTH / 8;
+const uint64_t MEM_AXI_DATA_WIDTH = 256;
+const uint64_t MEM_AXI_DATA_BYTES = MEM_AXI_DATA_WIDTH / 8;
+const uint64_t MMIO_AXI_DATA_WIDTH = 64;
+const uint64_t MMIO_AXI_DATA_BYTES = MMIO_AXI_DATA_WIDTH / 8;
 
 // tohost/fromhost
 // default at 0x60000000
@@ -137,8 +139,8 @@ void step_mem() {
     top->mem_axi4_RID = pending_read_id;
     mpz_class r_data;
 
-    uint64_t aligned = (pending_read_addr / AXI_DATA_BYTES) * AXI_DATA_BYTES;
-    for (int i = 0; i < AXI_DATA_BYTES / sizeof(mem_t); i++) {
+    uint64_t aligned = (pending_read_addr / MEM_AXI_DATA_BYTES) * MEM_AXI_DATA_BYTES;
+    for (int i = 0; i < MEM_AXI_DATA_BYTES / sizeof(mem_t); i++) {
       uint64_t addr = aligned + i * sizeof(mem_t);
       mem_t r = memory[addr];
       mpz_class res = r;
@@ -151,7 +153,7 @@ void step_mem() {
     mask -= 1;
 
     mpz_class shifted_mask =
-        mask << ((pending_read_addr & (AXI_DATA_BYTES - 1)) * 8);
+        mask << ((pending_read_addr & (MEM_AXI_DATA_BYTES - 1)) * 8);
     r_data &= shifted_mask;
 
     // top->mem_axi4_RDATA = r_data & shifted_mask;
@@ -204,13 +206,13 @@ void step_mem() {
       mask -= 1;
 
       mpz_class shifted_mask = mask
-                               << (pending_write_addr & (AXI_DATA_BYTES - 1));
+                               << (pending_write_addr & (MEM_AXI_DATA_BYTES - 1));
       mpz_class wdata;
-      mpz_import(wdata.get_mpz_t(), AXI_DATA_BYTES / 4, -1, 4, -1, 0,
+      mpz_import(wdata.get_mpz_t(), MEM_AXI_DATA_BYTES / 4, -1, 4, -1, 0,
                  top->mem_axi4_WDATA);
 
-      uint64_t aligned = pending_write_addr / AXI_DATA_BYTES * AXI_DATA_BYTES;
-      for (int i = 0; i < AXI_DATA_BYTES / sizeof(mem_t); i++) {
+      uint64_t aligned = pending_write_addr / MEM_AXI_DATA_BYTES * MEM_AXI_DATA_BYTES;
+      for (int i = 0; i < MEM_AXI_DATA_BYTES / sizeof(mem_t); i++) {
         uint64_t addr = aligned + i * sizeof(mem_t);
 
         mpz_class local_wdata_mpz = wdata >> (i * (sizeof(mem_t) * 8));
@@ -285,8 +287,8 @@ void step_mmio() {
       // serial lsr
       r_data = 1L << (32 + 5);
     } else {
-      uint64_t aligned = (pending_read_addr / AXI_DATA_BYTES) * AXI_DATA_BYTES;
-      for (int i = 0; i < AXI_DATA_BYTES / sizeof(mem_t); i++) {
+      uint64_t aligned = (pending_read_addr / MMIO_AXI_DATA_BYTES) * MMIO_AXI_DATA_BYTES;
+      for (int i = 0; i < MMIO_AXI_DATA_BYTES / sizeof(mem_t); i++) {
         uint64_t addr = aligned + i * sizeof(mem_t);
         mem_t r = memory[addr];
         mpz_class res = r;
@@ -300,12 +302,12 @@ void step_mmio() {
     mask -= 1;
 
     mpz_class shifted_mask =
-        mask << ((pending_read_addr & (AXI_DATA_BYTES - 1)) * 8);
+        mask << ((pending_read_addr & (MMIO_AXI_DATA_BYTES - 1)) * 8);
     r_data &= shifted_mask;
 
     // top->mmio_axi4_RDATA = r_data & shifted_mask;
-    memset(top->mmio_axi4_RDATA, 0, sizeof(top->mmio_axi4_RDATA));
-    mpz_export(top->mmio_axi4_RDATA, NULL, -1, 4, -1, 0, r_data.get_mpz_t());
+    memset(&top->mmio_axi4_RDATA, 0, sizeof(top->mmio_axi4_RDATA));
+    mpz_export(&top->mmio_axi4_RDATA, NULL, -1, 4, -1, 0, r_data.get_mpz_t());
     top->mmio_axi4_RLAST = pending_read_len == 0;
 
     // RREADY might be stale without eval()
@@ -361,13 +363,13 @@ void step_mmio() {
       mask -= 1;
 
       mpz_class shifted_mask = mask
-                               << (pending_write_addr & (AXI_DATA_BYTES - 1));
+                               << (pending_write_addr & (MMIO_AXI_DATA_BYTES - 1));
       mpz_class wdata;
-      mpz_import(wdata.get_mpz_t(), AXI_DATA_BYTES / 4, -1, 4, -1, 0,
-                 top->mmio_axi4_WDATA);
+      mpz_import(wdata.get_mpz_t(), MMIO_AXI_DATA_BYTES / 4, -1, 4, -1, 0,
+                 &top->mmio_axi4_WDATA);
 
-      uint64_t aligned = pending_write_addr / AXI_DATA_BYTES * AXI_DATA_BYTES;
-      for (int i = 0; i < AXI_DATA_BYTES / sizeof(mem_t); i++) {
+      uint64_t aligned = pending_write_addr / MMIO_AXI_DATA_BYTES * MMIO_AXI_DATA_BYTES;
+      for (int i = 0; i < MMIO_AXI_DATA_BYTES / sizeof(mem_t); i++) {
         uint64_t addr = aligned + i * sizeof(mem_t);
 
         mpz_class local_wdata_mpz = wdata >> (i * (sizeof(mem_t) * 8));
@@ -428,7 +430,7 @@ void step_mmio() {
       } else if (pending_write_addr == fromhost_addr) {
         // write to fromhost
         // clear tohost
-        for (int i = 0; i < AXI_DATA_BYTES / sizeof(mem_t); i++) {
+        for (int i = 0; i < MMIO_AXI_DATA_BYTES / sizeof(mem_t); i++) {
           uint64_t addr = tohost_addr + i * sizeof(mem_t);
           memory[addr] = 0;
         }

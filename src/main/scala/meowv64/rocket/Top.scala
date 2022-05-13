@@ -30,9 +30,9 @@ class RiscVSystem(implicit val p: Parameters) extends Module {
   )
   val mmio_axi4 = IO(
     new StandardAXI4Bundle(
-      target.mem_axi4.head.params.addrBits,
-      target.mem_axi4.head.params.dataBits,
-      target.mem_axi4.head.params.idBits
+      target.mmio_axi4.head.params.addrBits,
+      target.mmio_axi4.head.params.dataBits,
+      target.mmio_axi4.head.params.idBits
     )
   )
   val jtag = IO(Flipped(new JTAGIO))
