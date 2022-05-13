@@ -133,6 +133,11 @@ class MeowV64TileLinkAdapterModuleImp(outer: MeowV64TileLinkAdapter)
   dc.d.ready := false.B
   dc.e.valid := false.B
 
+  frontend.dc.l1stall := true.B
+  frontend.dc.l2req := L1DCPort.L2Req.idle
+  frontend.dc.l2addr := 0.U
+  frontend.dc.l2data := 0.U
+
   // l1 req
   val s_l1_ready :: s_l1_read :: s_l1_modify :: s_l1_grant :: s_l1_grantack :: s_l1_writeback :: s_l1_releaseack :: Nil =
     Enum(7)
@@ -140,9 +145,8 @@ class MeowV64TileLinkAdapterModuleImp(outer: MeowV64TileLinkAdapter)
   val dc_grant_d = Reg(dc.d.bits.cloneType)
   val dc_l1_out_c = Wire(dc.c.cloneType)
   dc_l1_out_c.valid := false.B
-  dc_l1_out_c.bits := DontCare
+  dc_l1_out_c.bits := 0.U.asTypeOf(dc_l1_out_c.bits)
 
-  frontend.dc.l1stall := true.B
   switch(dc_l1_state) {
     is(s_l1_ready) {
       switch(frontend.dc.l1req) {
@@ -232,11 +236,7 @@ class MeowV64TileLinkAdapterModuleImp(outer: MeowV64TileLinkAdapter)
   val dc_probe_b = Reg(dc.b.bits.cloneType)
   val dc_l2_out_c = Wire(dc.c.cloneType)
   dc_l2_out_c.valid := false.B
-  dc_l2_out_c.bits := DontCare
-
-  frontend.dc.l2req := L1DCPort.L2Req.idle
-  frontend.dc.l2addr := DontCare
-  frontend.dc.l2data := DontCare
+  dc_l2_out_c.bits := 0.U.asTypeOf(dc_l2_out_c.bits)
   switch(dc_l2_state) {
     is(s_l2_ready) {
       dc.b.ready := true.B
