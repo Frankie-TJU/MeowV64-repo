@@ -119,7 +119,20 @@ void step_mem() {
   static uint64_t pending_read_len = 0;
   static uint64_t pending_read_size = 0;
 
-  if (pending_read) {
+  if (!pending_read) {
+    if (top->mem_axi4_ARVALID) {
+      top->mem_axi4_ARREADY = 1;
+      pending_read = true;
+      pending_read_id = top->mem_axi4_ARID;
+      pending_read_addr = top->mem_axi4_ARADDR;
+      pending_read_len = top->mem_axi4_ARLEN;
+      pending_read_size = top->mem_axi4_ARSIZE;
+    }
+
+    top->mem_axi4_RVALID = 0;
+  } else {
+    top->mem_axi4_ARREADY = 0;
+
     top->mem_axi4_RVALID = 1;
     top->mem_axi4_RID = pending_read_id;
     mpz_class r_data;
@@ -156,19 +169,6 @@ void step_mem() {
         pending_read_len--;
       }
     }
-  } else {
-    top->mem_axi4_RVALID = 0;
-  }
-
-  if (!pending_read && top->mem_axi4_ARVALID) {
-    top->mem_axi4_ARREADY = 1;
-    pending_read = true;
-    pending_read_id = top->mem_axi4_ARID;
-    pending_read_addr = top->mem_axi4_ARADDR;
-    pending_read_len = top->mem_axi4_ARLEN;
-    pending_read_size = top->mem_axi4_ARSIZE;
-  } else {
-    top->mem_axi4_ARREADY = 0;
   }
 
   // handle write
@@ -177,18 +177,23 @@ void step_mem() {
   static uint64_t pending_write_addr = 0;
   static uint64_t pending_write_len = 0;
   static uint64_t pending_write_size = 0;
-  if (!pending_write && top->mem_axi4_AWVALID) {
-    top->mem_axi4_AWREADY = 1;
-    pending_write = 1;
-    pending_write_addr = top->mem_axi4_AWADDR;
-    pending_write_len = top->mem_axi4_AWLEN;
-    pending_write_size = top->mem_axi4_AWSIZE;
-    pending_write_finished = 0;
-  } else {
+  static uint64_t pending_write_id = 0;
+  if (!pending_write) {
+    // idle
+    if (top->mem_axi4_AWVALID) {
+      top->mem_axi4_AWREADY = 1;
+      pending_write = true;
+      pending_write_addr = top->mem_axi4_AWADDR;
+      pending_write_len = top->mem_axi4_AWLEN;
+      pending_write_size = top->mem_axi4_AWSIZE;
+      pending_write_id = top->mem_axi4_AWID;
+      pending_write_finished = false;
+    }
+    top->mem_axi4_WREADY = 0;
+    top->mem_axi4_BVALID = 0;
+  } else if (!pending_write_finished) {
+    // writing
     top->mem_axi4_AWREADY = 0;
-  }
-
-  if (pending_write && !pending_write_finished) {
     top->mem_axi4_WREADY = 1;
 
     // WVALID might be stale without eval()
@@ -244,14 +249,15 @@ void step_mem() {
         pending_write_finished = true;
       }
     }
-  } else {
-    top->mem_axi4_WREADY = 0;
-  }
 
-  if (pending_write_finished) {
+    top->mem_axi4_BVALID = 0;
+  } else {
+    // finishing
+    top->mem_axi4_AWREADY = 0;
+    top->mem_axi4_WREADY = 0;
     top->mem_axi4_BVALID = 1;
     top->mem_axi4_BRESP = 0;
-    top->mem_axi4_BID = 0;
+    top->mem_axi4_BID = pending_write_id;
 
     // BREADY might be stale without eval()
     top->eval();
@@ -259,8 +265,6 @@ void step_mem() {
       pending_write = false;
       pending_write_finished = false;
     }
-  } else {
-    top->mem_axi4_BVALID = 0;
   }
 }
 
