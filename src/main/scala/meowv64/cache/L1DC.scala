@@ -801,6 +801,8 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
 
   // L2 Handler
   toL2.l2stall := false.B
+  toL2.l2valid := false.B
+  toL2.l2dirty := false.B
   val mainWriting = l1writing.asUInt().orR
   val lookupReady = !mainWriting && RegNext(toL2.l2stall && !mainWriting)
   // FIXME: impl this
@@ -812,6 +814,15 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
       (
         line.valid && line.tag === getTag(toL2.l2addr),
         line.data.asUInt()
+      )
+    )
+  )
+  val l2RDirty = MuxCase(
+    0.U,
+    lookups.map(line =>
+      (
+        line.valid && line.tag === getTag(toL2.l2addr),
+        line.dirty
       )
     )
   )
@@ -848,13 +859,13 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
         */
       toL2.l2stall := false.B
       val hitmask = VecInit(
-        lookups.map(lookup =>
-          lookup.valid && lookup.tag === getTag(toL2.l2addr)
-        )
+        lookups.map(line => line.valid && line.tag === getTag(toL2.l2addr))
       )
       writing := hitmask
       writingData := written
       writingAddr := getIndex(toL2.l2addr)
+      toL2.l2valid := hitmask.reduce(_ || _)
+      toL2.l2dirty := l2RDirty
 
       when(toL2.l2req === L2Req.invalidate && toL2.l2addr === reserved) {
         resValid := false.B

@@ -201,7 +201,8 @@ class L1DCPort(val opts: L1Opts) extends Bundle with L1Port {
   val l2addr = Input(UInt(opts.ADDR_WIDTH.W))
   val l2stall = Output(Bool())
   val l2data = Input(UInt((opts.TO_L2_TRANSFER_WIDTH).W))
-  // TODO: add a debug signal to show if L1 really has the entry
+  val l2valid = Output(Bool()) // if L1 has the entry
+  val l2dirty = Output(Bool()) // if the L1 entry was dirty
 
   override def getAddr: UInt = l1addr
   override def getReq = l1req

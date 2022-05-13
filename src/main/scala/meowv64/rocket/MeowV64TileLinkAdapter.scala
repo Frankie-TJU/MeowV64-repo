@@ -233,6 +233,9 @@ class MeowV64TileLinkAdapterModuleImp(outer: MeowV64TileLinkAdapter)
   val s_l2_ready :: s_l2_probe :: s_l2_probeack :: Nil =
     Enum(3)
   val dc_l2_state = RegInit(s_l2_ready)
+  val dc_l2_cache_valid = Reg(Bool())
+  val dc_l2_cache_dirty = Reg(Bool())
+  val dc_l2_cache_l1data = Reg(Bool())
   val dc_probe_b = Reg(dc.b.bits.cloneType)
   val dc_l2_out_c = Wire(dc.c.cloneType)
   dc_l2_out_c.valid := false.B
@@ -246,15 +249,67 @@ class MeowV64TileLinkAdapterModuleImp(outer: MeowV64TileLinkAdapter)
       }
     }
     is(s_l2_probe) {
-      frontend.dc.l2req := L1DCPort.L2Req.flush
+      when(dc_probe_b.param === TLPermissions.toN) {
+        // if toN, invalidate to I
+        frontend.dc.l2req := L1DCPort.L2Req.invalidate
+      }.elsewhen(dc_probe_b.param === TLPermissions.toB) {
+        // if toB, flush to S
+        frontend.dc.l2req := L1DCPort.L2Req.flush
+      }.otherwise {
+        // unsupported
+        assert(false.B);
+      }
+
       frontend.dc.l2addr := dc.b.bits.address
       when(~frontend.dc.l2stall) {
         dc_l2_state := s_l2_probeack
+        dc_l2_cache_valid := frontend.dc.l2valid
+        dc_l2_cache_dirty := frontend.dc.l2dirty
+        dc_l2_cache_l1data := frontend.dc.l1data
       }
     }
     is(s_l2_probeack) {
       dc_l2_out_c.valid := true.B
-      dc_l2_out_c.bits := dc_edge.ProbeAck(dc_probe_b, TLPermissions.NtoN)
+      val perm = WireInit(0.U(TLPermissions.cWidth.W))
+      when(dc_l2_cache_valid && dc_l2_cache_dirty) {
+        // M -> S/I
+        when(dc_probe_b.param === TLPermissions.toN) {
+          perm := TLPermissions.TtoN
+        }.elsewhen(dc_probe_b.param === TLPermissions.toB) {
+          perm := TLPermissions.TtoB
+        }.otherwise {
+          assert(false.B)
+        }
+
+        // ProbeAckData
+        dc_l2_out_c.bits := dc_edge.ProbeAck(
+          dc_probe_b,
+          perm,
+          dc_l2_cache_l1data
+        )
+      }.elsewhen(dc_l2_cache_valid && !dc_l2_cache_dirty) {
+        // S -> S/I
+        when(dc_probe_b.param === TLPermissions.toN) {
+          perm := TLPermissions.BtoN
+        }.elsewhen(dc_probe_b.param === TLPermissions.toB) {
+          perm := TLPermissions.BtoB
+        }.otherwise {
+          assert(false.B)
+        }
+
+        // ProbeAck
+        dc_l2_out_c.bits := dc_edge.ProbeAck(dc_probe_b, perm)
+      }.otherwise {
+        // I -> I
+        when(dc_probe_b.param === TLPermissions.toN) {
+          perm := TLPermissions.NtoN
+        }.otherwise {
+          assert(false.B)
+        }
+
+        // ProbeAck
+        dc_l2_out_c.bits := dc_edge.ProbeAck(dc_probe_b, perm)
+      }
       when(dc_l2_out_c.fire) {
         dc_l2_state := s_l2_ready
       }
