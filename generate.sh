@@ -13,4 +13,5 @@ mill meowv64.runMain firrtl.stage.FirrtlMain \
 	-i build/meowv64.rocket.MeowV64Config.fir \
 	-o meowv64.rocket.MeowV64Config.v \
 	-X verilog \
-	-faf build/meowv64.rocket.MeowV64Config.anno.json
+	-faf build/meowv64.rocket.MeowV64Config.anno.json \
+	-firw -gmv full
