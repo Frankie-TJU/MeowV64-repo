@@ -139,7 +139,8 @@ void step_mem() {
     top->mem_axi4_RID = pending_read_id;
     mpz_class r_data;
 
-    uint64_t aligned = (pending_read_addr / MEM_AXI_DATA_BYTES) * MEM_AXI_DATA_BYTES;
+    uint64_t aligned =
+        (pending_read_addr / MEM_AXI_DATA_BYTES) * MEM_AXI_DATA_BYTES;
     for (int i = 0; i < MEM_AXI_DATA_BYTES / sizeof(mem_t); i++) {
       uint64_t addr = aligned + i * sizeof(mem_t);
       mem_t r = memory[addr];
@@ -205,13 +206,14 @@ void step_mem() {
       mask <<= 1L << pending_write_size;
       mask -= 1;
 
-      mpz_class shifted_mask = mask
-                               << (pending_write_addr & (MEM_AXI_DATA_BYTES - 1));
+      mpz_class shifted_mask =
+          mask << (pending_write_addr & (MEM_AXI_DATA_BYTES - 1));
       mpz_class wdata;
       mpz_import(wdata.get_mpz_t(), MEM_AXI_DATA_BYTES / 4, -1, 4, -1, 0,
                  top->mem_axi4_WDATA);
 
-      uint64_t aligned = pending_write_addr / MEM_AXI_DATA_BYTES * MEM_AXI_DATA_BYTES;
+      uint64_t aligned =
+          pending_write_addr / MEM_AXI_DATA_BYTES * MEM_AXI_DATA_BYTES;
       for (int i = 0; i < MEM_AXI_DATA_BYTES / sizeof(mem_t); i++) {
         uint64_t addr = aligned + i * sizeof(mem_t);
 
@@ -279,7 +281,20 @@ void step_mmio() {
   static uint64_t pending_read_len = 0;
   static uint64_t pending_read_size = 0;
 
-  if (pending_read) {
+  if (!pending_read) {
+    if (top->mmio_axi4_ARVALID) {
+      top->mmio_axi4_ARREADY = 1;
+      pending_read = true;
+      pending_read_id = top->mmio_axi4_ARID;
+      pending_read_addr = top->mmio_axi4_ARADDR;
+      pending_read_len = top->mmio_axi4_ARLEN;
+      pending_read_size = top->mmio_axi4_ARSIZE;
+    }
+
+    top->mmio_axi4_RVALID = 0;
+  } else {
+    top->mmio_axi4_ARREADY = 0;
+
     top->mmio_axi4_RVALID = 1;
     top->mmio_axi4_RID = pending_read_id;
     mpz_class r_data;
@@ -287,7 +302,8 @@ void step_mmio() {
       // serial lsr
       r_data = 1L << (32 + 5);
     } else {
-      uint64_t aligned = (pending_read_addr / MMIO_AXI_DATA_BYTES) * MMIO_AXI_DATA_BYTES;
+      uint64_t aligned =
+          (pending_read_addr / MMIO_AXI_DATA_BYTES) * MMIO_AXI_DATA_BYTES;
       for (int i = 0; i < MMIO_AXI_DATA_BYTES / sizeof(mem_t); i++) {
         uint64_t addr = aligned + i * sizeof(mem_t);
         mem_t r = memory[addr];
@@ -320,19 +336,6 @@ void step_mmio() {
         pending_read_len--;
       }
     }
-  } else {
-    top->mmio_axi4_RVALID = 0;
-  }
-
-  if (!pending_read && top->mmio_axi4_ARVALID) {
-    top->mmio_axi4_ARREADY = 1;
-    pending_read = true;
-    pending_read_id = top->mmio_axi4_ARID;
-    pending_read_addr = top->mmio_axi4_ARADDR;
-    pending_read_len = top->mmio_axi4_ARLEN;
-    pending_read_size = top->mmio_axi4_ARSIZE;
-  } else {
-    top->mmio_axi4_ARREADY = 0;
   }
 
   // handle write
@@ -341,18 +344,21 @@ void step_mmio() {
   static uint64_t pending_write_addr = 0;
   static uint64_t pending_write_len = 0;
   static uint64_t pending_write_size = 0;
-  if (!pending_write && top->mmio_axi4_AWVALID) {
-    top->mmio_axi4_AWREADY = 1;
-    pending_write = 1;
-    pending_write_addr = top->mmio_axi4_AWADDR;
-    pending_write_len = top->mmio_axi4_AWLEN;
-    pending_write_size = top->mmio_axi4_AWSIZE;
-    pending_write_finished = 0;
-  } else {
+  static uint64_t pending_write_id = 0;
+  if (!pending_write) {
+    if (top->mmio_axi4_AWVALID) {
+      top->mmio_axi4_AWREADY = 1;
+      pending_write = 1;
+      pending_write_addr = top->mmio_axi4_AWADDR;
+      pending_write_len = top->mmio_axi4_AWLEN;
+      pending_write_size = top->mmio_axi4_AWSIZE;
+      pending_write_id = top->mmio_axi4_AWID;
+      pending_write_finished = 0;
+    }
+    top->mmio_axi4_WREADY = 0;
+    top->mmio_axi4_BVALID = 0;
+  } else if (!pending_write_finished) {
     top->mmio_axi4_AWREADY = 0;
-  }
-
-  if (pending_write && !pending_write_finished) {
     top->mmio_axi4_WREADY = 1;
 
     // WVALID might be stale without eval()
@@ -362,13 +368,14 @@ void step_mmio() {
       mask <<= 1L << pending_write_size;
       mask -= 1;
 
-      mpz_class shifted_mask = mask
-                               << (pending_write_addr & (MMIO_AXI_DATA_BYTES - 1));
+      mpz_class shifted_mask =
+          mask << (pending_write_addr & (MMIO_AXI_DATA_BYTES - 1));
       mpz_class wdata;
       mpz_import(wdata.get_mpz_t(), MMIO_AXI_DATA_BYTES / 4, -1, 4, -1, 0,
                  &top->mmio_axi4_WDATA);
 
-      uint64_t aligned = pending_write_addr / MMIO_AXI_DATA_BYTES * MMIO_AXI_DATA_BYTES;
+      uint64_t aligned =
+          pending_write_addr / MMIO_AXI_DATA_BYTES * MMIO_AXI_DATA_BYTES;
       for (int i = 0; i < MMIO_AXI_DATA_BYTES / sizeof(mem_t); i++) {
         uint64_t addr = aligned + i * sizeof(mem_t);
 
@@ -443,14 +450,15 @@ void step_mmio() {
         pending_write_finished = true;
       }
     }
-  } else {
-    top->mmio_axi4_WREADY = 0;
-  }
 
-  if (pending_write_finished) {
+    top->mmio_axi4_BVALID = 0;
+  } else {
+    // finishing
+    top->mmio_axi4_AWREADY = 0;
+    top->mmio_axi4_WREADY = 0;
     top->mmio_axi4_BVALID = 1;
     top->mmio_axi4_BRESP = 0;
-    top->mmio_axi4_BID = 0;
+    top->mmio_axi4_BID = pending_write_id;
 
     // BREADY might be stale without eval()
     top->eval();
@@ -458,8 +466,6 @@ void step_mmio() {
       pending_write = false;
       pending_write_finished = false;
     }
-  } else {
-    top->mmio_axi4_BVALID = 0;
   }
 }
 
