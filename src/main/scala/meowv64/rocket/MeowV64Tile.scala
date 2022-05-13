@@ -18,6 +18,7 @@ import meowv64.cache.L1UCReq
 import meowv64.core.Core
 import meowv64.core.CoreDef
 import meowv64.core.CoreDebug
+import meowv64.core.CoreFrontend
 
 case class MeowV64CoreParams(
     coredef: CoreDef
@@ -150,73 +151,13 @@ class MeowV64Tile private (
 
   override lazy val module = new MeowV64TileModuleImp(this)
 
+  // adapt custom interface to TileLink Cached
+  val adapter = LazyModule(new MeowV64TileLinkAdapter(meowv64Params.coredef))
+
   val node = TLIdentityNode()
-
-  // dcache port
-  val lineSize = meowv64Params.coredef.L1_LINE_BYTES
-  val dcNode = TLClientNode(
-    Seq(
-      TLMasterPortParameters.v1(
-        clients = Seq(
-          TLMasterParameters.v2(
-            name = "meowv64-dc",
-            sourceId = IdRange(0, 1),
-            supports = TLSlaveToMasterTransferSizes(
-              probe = TransferSizes(lineSize, lineSize)
-            ),
-            emits = TLMasterToSlaveTransferSizes(
-              acquireT = TransferSizes(lineSize, lineSize),
-              acquireB = TransferSizes(lineSize, lineSize),
-              get = TransferSizes(lineSize, lineSize),
-              putFull = TransferSizes(lineSize, lineSize),
-            )
-          )
-        )
-      )
-    )
-  )
-
-  tlMasterXbar.node := node := TLBuffer() := dcNode
-
-  // icache port
-  val icNode = TLClientNode(
-    Seq(
-      TLMasterPortParameters.v1(
-        clients = Seq(
-          TLMasterParameters.v2(
-            name = "meowv64-ic",
-            sourceId = IdRange(0, 1),
-            emits = TLMasterToSlaveTransferSizes(
-              get = TransferSizes(lineSize, lineSize),
-            )
-          )
-        )
-      )
-    )
-  )
-
-  tlMasterXbar.node := node := TLBuffer() := icNode
-
-  // uncached port
-  val ucNode = TLClientNode(
-    Seq(
-      TLMasterPortParameters.v1(
-        clients = Seq(
-          TLMasterParameters.v2(
-            name = "meowv64-uc",
-            sourceId = IdRange(0, 1),
-            emits = TLMasterToSlaveTransferSizes(
-              // from 1 to 8 bytes
-              get = TransferSizes(1, 8),
-              putFull = TransferSizes(1, 8),
-            )
-          )
-        )
-      )
-    )
-  )
-
-  tlMasterXbar.node := node := TLBuffer() := ucNode
+  tlMasterXbar.node := node := TLBuffer() := adapter.icNode
+  tlMasterXbar.node := node := TLBuffer() := adapter.dcNode
+  tlMasterXbar.node := node := TLBuffer() := adapter.ucNode
 
   def connectMeowV64Interrupts(
       debug: Bool,
@@ -239,8 +180,10 @@ class MeowV64Tile private (
   }
 
   // expose debug
-  val customDebugSourceNode = BundleBridgeSource(() => new CoreDebug()(meowv64Params.coredef))
-  val customDebugNode: BundleBridgeOutwardNode[CoreDebug] = customDebugSourceNode
+  val customDebugSourceNode =
+    BundleBridgeSource(() => new CoreDebug()(meowv64Params.coredef))
+  val customDebugNode: BundleBridgeOutwardNode[CoreDebug] =
+    customDebugSourceNode
 }
 
 class MeowV64TileModuleImp(outer: MeowV64Tile)
@@ -254,6 +197,100 @@ class MeowV64TileModuleImp(outer: MeowV64Tile)
     new Core()(coredef)
   )
 
+  // wire frontend io to adapter
+  core.io.frontend <> outer.adapter.module.frontend
+
+  // debug mode code
+  // TODO
+  core.io.dmCode.stall := true.B
+  core.io.dmCode.data := 0.U
+
+  // time
+  // TODO
+  core.io.time := 0.U
+
+  outer.connectMeowV64Interrupts(
+    core.io.dm.haltreq,
+    core.io.int.meip,
+    core.io.int.seip,
+    core.io.int.mtip,
+    core.io.int.msip
+  )
+
+  // expose debug
+  outer.customDebugSourceNode.bundle := core.io.debug
+}
+
+class MeowV64TileLinkAdapter(val coredef: CoreDef)(implicit p: Parameters)
+    extends LazyModule()(p) {
+  override lazy val module = new MeowV64TileLinkAdapterModuleImp(this)
+
+  // dcache port
+  val lineSize = coredef.L1_LINE_BYTES
+  val dcNode = TLClientNode(
+    Seq(
+      TLMasterPortParameters.v1(
+        clients = Seq(
+          TLMasterParameters.v2(
+            name = "meowv64-dc",
+            sourceId = IdRange(0, 1),
+            supports = TLSlaveToMasterTransferSizes(
+              probe = TransferSizes(lineSize, lineSize)
+            ),
+            emits = TLMasterToSlaveTransferSizes(
+              acquireT = TransferSizes(lineSize, lineSize),
+              acquireB = TransferSizes(lineSize, lineSize),
+              get = TransferSizes(lineSize, lineSize),
+              putFull = TransferSizes(lineSize, lineSize)
+            )
+          )
+        )
+      )
+    )
+  )
+
+  // icache port
+  val icNode = TLClientNode(
+    Seq(
+      TLMasterPortParameters.v1(
+        clients = Seq(
+          TLMasterParameters.v2(
+            name = "meowv64-ic",
+            sourceId = IdRange(0, 1),
+            emits = TLMasterToSlaveTransferSizes(
+              get = TransferSizes(lineSize, lineSize)
+            )
+          )
+        )
+      )
+    )
+  )
+
+  // uncached port
+  val ucNode = TLClientNode(
+    Seq(
+      TLMasterPortParameters.v1(
+        clients = Seq(
+          TLMasterParameters.v2(
+            name = "meowv64-uc",
+            sourceId = IdRange(0, 1),
+            emits = TLMasterToSlaveTransferSizes(
+              // from 1 to 8 bytes
+              get = TransferSizes(1, 8),
+              putFull = TransferSizes(1, 8)
+            )
+          )
+        )
+      )
+    )
+  )
+}
+
+class MeowV64TileLinkAdapterModuleImp(outer: MeowV64TileLinkAdapter)
+    extends LazyModuleImp(outer) {
+
+  val coredef = outer.coredef
+  val frontend = IO(Flipped(new CoreFrontend()(coredef)))
   val s_ready :: s_active :: s_inflight :: Nil = Enum(3)
 
   // ic
@@ -262,12 +299,12 @@ class MeowV64TileModuleImp(outer: MeowV64Tile)
   val ic_addr = Reg(UInt(coredef.XLEN.W))
   switch(ic_state) {
     is(s_ready) {
-      when(core.io.frontend.ic.read.valid) {
-        ic_addr := core.io.frontend.ic.read.bits
+      when(frontend.ic.read.valid) {
+        ic_addr := frontend.ic.read.bits
         ic_state := s_active
 
         val offset =
-          core.io.frontend.ic.read.bits(log2Ceil(coredef.L1_LINE_BYTES) - 1, 0)
+          frontend.ic.read.bits(log2Ceil(coredef.L1_LINE_BYTES) - 1, 0)
         assert(offset === 0.U)
       }
     }
@@ -289,8 +326,8 @@ class MeowV64TileModuleImp(outer: MeowV64Tile)
 
   // d channel
   ic.d.ready := true.B
-  core.io.frontend.ic.stall := ~ic.d.valid
-  core.io.frontend.ic.data := ic.d.bits.data
+  frontend.ic.stall := ~ic.d.valid
+  frontend.ic.data := ic.d.bits.data
 
   // unused
   ic.b.valid := false.B
@@ -311,13 +348,13 @@ class MeowV64TileModuleImp(outer: MeowV64Tile)
   dc.d.ready := false.B
   dc.e.valid := false.B
 
-  core.io.frontend.dc.l1stall := true.B
-  core.io.frontend.dc.l2req := L1DCPort.L2Req.idle
-  core.io.frontend.dc.l2addr := 0.U
-  core.io.frontend.dc.l2data := 0.U
+  frontend.dc.l1stall := true.B
+  frontend.dc.l2req := L1DCPort.L2Req.idle
+  frontend.dc.l2addr := 0.U
+  frontend.dc.l2data := 0.U
   switch(dc_state) {
     is(s_dc_ready) {
-      switch(core.io.frontend.dc.l1req) {
+      switch(frontend.dc.l1req) {
         is(L1DCPort.L1Req.read) {
           dc_state := s_dc_read
         }
@@ -336,7 +373,7 @@ class MeowV64TileModuleImp(outer: MeowV64Tile)
       dc.a.bits := dc_edge
         .AcquireBlock(
           0.U,
-          core.io.frontend.dc.l1addr,
+          frontend.dc.l1addr,
           log2Ceil(outer.lineSize).U,
           Mux(dc_state === s_dc_read, TLPermissions.NtoB, TLPermissions.NtoT)
         )
@@ -347,9 +384,9 @@ class MeowV64TileModuleImp(outer: MeowV64Tile)
     }
     is(s_dc_grant) {
       dc.d.ready := true.B
-      core.io.frontend.dc.l2data := dc.d.bits.data
+      frontend.dc.l2data := dc.d.bits.data
       when(dc.d.fire && dc.d.bits.opcode === TLMessages.GrantData) {
-        core.io.frontend.dc.l1stall := false.B
+        frontend.dc.l1stall := false.B
         dc_state := s_dc_grantack
         dc_grant_d := dc.d.bits
       }
@@ -362,9 +399,9 @@ class MeowV64TileModuleImp(outer: MeowV64Tile)
       }
     }
     is(s_dc_probe) {
-      core.io.frontend.dc.l2req := L1DCPort.L2Req.flush
-      core.io.frontend.dc.l2addr := dc.b.bits.address
-      when(~core.io.frontend.dc.l2stall) {
+      frontend.dc.l2req := L1DCPort.L2Req.flush
+      frontend.dc.l2addr := dc.b.bits.address
+      when(~frontend.dc.l2stall) {
         dc_state := s_dc_probeack
       }
     }
@@ -385,30 +422,30 @@ class MeowV64TileModuleImp(outer: MeowV64Tile)
   val uc_wdata = Reg(UInt(coredef.XLEN.W))
   val uc_len = Reg(DCWriteLen())
 
-  val uc_offset = core.io.frontend.uc
+  val uc_offset = frontend.uc
     .addr(log2Ceil(coredef.L1_LINE_BYTES) - 1, 0)
   val uc_shift = uc_offset << 3
   switch(uc_state) {
     is(s_ready) {
-      switch(core.io.frontend.uc.req) {
+      switch(frontend.uc.req) {
         is(L1UCReq.read) {
 
-          uc_addr := core.io.frontend.uc.addr
-          uc_len := core.io.frontend.uc.len
+          uc_addr := frontend.uc.addr
+          uc_len := frontend.uc.len
           uc_state := s_active
 
           uc_read := true.B
         }
         is(L1UCReq.write) {
 
-          uc_addr := core.io.frontend.uc.addr
-          uc_len := core.io.frontend.uc.len
+          uc_addr := frontend.uc.addr
+          uc_len := frontend.uc.len
           uc_state := s_active
 
           uc_read := false.B
 
           // handle offset in addr
-          uc_wdata := core.io.frontend.uc.wdata << uc_shift
+          uc_wdata := frontend.uc.wdata << uc_shift
         }
       }
     }
@@ -434,27 +471,7 @@ class MeowV64TileModuleImp(outer: MeowV64Tile)
 
   // d channel
   uc.d.ready := true.B
-  core.io.frontend.uc.stall := ~uc.d.valid
+  frontend.uc.stall := ~uc.d.valid
   // handle offset in addr
-  core.io.frontend.uc.rdata := uc.d.bits.data >> uc_shift
-
-  // debug mode code
-  // TODO
-  core.io.dmCode.stall := true.B
-  core.io.dmCode.data := 0.U
-
-  // time
-  // TODO
-  core.io.time := 0.U
-
-  outer.connectMeowV64Interrupts(
-    core.io.dm.haltreq,
-    core.io.int.meip,
-    core.io.int.seip,
-    core.io.int.mtip,
-    core.io.int.msip
-  )
-
-  // expose debug
-  outer.customDebugSourceNode.bundle := core.io.debug
+  frontend.uc.rdata := uc.d.bits.data >> uc_shift
 }
