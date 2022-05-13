@@ -103,6 +103,18 @@ object rocketChip extends CommonSbtModule {
     Seq("-deprecation", "-unchecked", "-Xsource:2.11")
 }
 
+object inclusiveCache extends CommonScalaModule {
+  override def millSourcePath =
+    os.pwd / "submodules" / "block-inclusivecache-sifive" / "design" / "craft" / "inclusivecache"
+
+  override def scalacPluginIvyDeps = super.scalacPluginIvyDeps() ++ Agg(
+    getVersion("chisel3-plugin")
+  )
+
+  override def moduleDeps =
+    super.moduleDeps ++ Seq(rocketChip)
+}
+
 object meowv64 extends CommonSbtModule with ScalafmtModule with ScalafixModule {
   override def millSourcePath = os.pwd
 
@@ -120,7 +132,8 @@ object meowv64 extends CommonSbtModule with ScalafmtModule with ScalafixModule {
     ivy"com.github.liancheng::organize-imports:0.5.0"
   )
 
-  override def moduleDeps = super.moduleDeps ++ Seq(hardfloat, cde, rocketChip)
+  override def moduleDeps =
+    super.moduleDeps ++ Seq(hardfloat, cde, rocketChip, inclusiveCache)
 
   object test
       extends Tests
