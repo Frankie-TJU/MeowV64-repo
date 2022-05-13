@@ -5,6 +5,8 @@ import chisel3.util._
 import freechips.rocketchip.config._
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.tilelink._
+import meowv64.core.CoreDef
+import meowv64.core.CoreFrontend
 import meowv64.cache.DCWriteLen
 import meowv64.cache.L1DCPort
 import meowv64.cache.L1UCReq
@@ -124,11 +126,6 @@ class MeowV64TileLinkAdapterModuleImp(outer: MeowV64TileLinkAdapter)
 
   // dc
   val (dc, dc_edge) = outer.dcNode.out(0)
-  val s_dc_ready :: s_dc_read :: s_dc_modify :: s_dc_grant :: s_dc_grantack :: s_dc_writeback :: s_dc_probe :: s_dc_probeack :: Nil =
-    Enum(8)
-  val dc_state = RegInit(s_dc_ready)
-  val dc_grant_d = Reg(dc.d.bits.cloneType)
-  val dc_probe_b = Reg(dc.b.bits.cloneType)
 
   dc.a.valid := false.B
   dc.b.ready := false.B
@@ -136,71 +133,136 @@ class MeowV64TileLinkAdapterModuleImp(outer: MeowV64TileLinkAdapter)
   dc.d.ready := false.B
   dc.e.valid := false.B
 
+  // l1 req
+  val s_l1_ready :: s_l1_read :: s_l1_modify :: s_l1_grant :: s_l1_grantack :: s_l1_writeback :: s_l1_releaseack :: Nil =
+    Enum(7)
+  val dc_l1_state = RegInit(s_l1_ready)
+  val dc_grant_d = Reg(dc.d.bits.cloneType)
+  val dc_l1_out_c = Wire(dc.c.cloneType)
+  dc_l1_out_c.valid := false.B
+  dc_l1_out_c.bits := DontCare
+
   frontend.dc.l1stall := true.B
-  frontend.dc.l2req := L1DCPort.L2Req.idle
-  frontend.dc.l2addr := 0.U
-  frontend.dc.l2data := 0.U
-  switch(dc_state) {
-    is(s_dc_ready) {
+  switch(dc_l1_state) {
+    is(s_l1_ready) {
       switch(frontend.dc.l1req) {
         is(L1DCPort.L1Req.read) {
-          dc_state := s_dc_read
+          dc_l1_state := s_l1_read
         }
         is(L1DCPort.L1Req.modify) {
-          dc_state := s_dc_modify
+          dc_l1_state := s_l1_modify
+        }
+        is(L1DCPort.L1Req.writeback) {
+          dc_l1_state := s_l1_writeback
         }
       }
-      dc.b.ready := true.B
-      when(dc.b.fire) {
-        dc_state := s_dc_probe
-        dc_probe_b := dc.b.bits
-      }
     }
-    is(s_dc_read, s_dc_modify) {
+    is(s_l1_read, s_l1_modify) {
+      // send AcquireBlock to retrieve a copy
+      // and wait for Grant
       dc.a.valid := true.B
       dc.a.bits := dc_edge
         .AcquireBlock(
           0.U,
           frontend.dc.l1addr,
           log2Ceil(outer.lineSize).U,
-          Mux(dc_state === s_dc_read, TLPermissions.NtoB, TLPermissions.NtoT)
+          Mux(dc_l1_state === s_l1_read, TLPermissions.NtoB, TLPermissions.NtoT)
         )
         ._2
       when(dc.a.fire) {
-        dc_state := s_dc_grant
+        dc_l1_state := s_l1_grant
       }
     }
-    is(s_dc_grant) {
-      dc.d.ready := true.B
+    is(s_l1_grant) {
+      // wait for Grant
+      // return data read to l1
       frontend.dc.l2data := dc.d.bits.data
-      when(dc.d.fire && dc.d.bits.opcode === TLMessages.GrantData) {
-        frontend.dc.l1stall := false.B
-        dc_state := s_dc_grantack
-        dc_grant_d := dc.d.bits
+      when(dc.d.bits.opcode === TLMessages.GrantData) {
+        dc.d.ready := true.B
+
+        when(dc.d.fire) {
+          frontend.dc.l1stall := false.B
+          dc_l1_state := s_l1_grantack
+          dc_grant_d := dc.d.bits
+        }
       }
     }
-    is(s_dc_grantack) {
+    is(s_l1_grantack) {
+      // send GrantAck
       dc.e.valid := true.B
       dc.e.bits := dc_edge.GrantAck(dc_grant_d)
       when(dc.e.fire) {
-        dc_state := s_dc_ready
+        dc_l1_state := s_l1_ready
       }
     }
-    is(s_dc_probe) {
-      frontend.dc.l2req := L1DCPort.L2Req.flush
-      frontend.dc.l2addr := dc.b.bits.address
-      when(~frontend.dc.l2stall) {
-        dc_state := s_dc_probeack
+    is(s_l1_writeback) {
+      // send ReleaseData
+      // writeback data(l1data)
+      dc_l1_out_c.valid := true.B
+      dc_l1_out_c.bits := dc_edge
+        .Release(
+          0.U,
+          frontend.dc.l1addr,
+          log2Ceil(coredef.L1_LINE_BYTES).U,
+          TLPermissions.TtoN,
+          frontend.dc.l1data
+        )
+        ._2
+      when(dc_l1_out_c.fire) {
+        dc_l1_state := s_l1_releaseack
       }
     }
-    is(s_dc_probeack) {
-      dc.c.valid := true.B
-      dc.c.bits := dc_edge.ProbeAck(dc_probe_b, TLPermissions.NtoN)
-      when(dc.c.fire) {
-        dc_state := s_dc_ready
+    is(s_l1_releaseack) {
+      // wait for ReleaseAck
+      when(dc.d.bits.opcode === TLMessages.ReleaseAck) {
+        dc.d.ready := true.B
+
+        when(dc.d.fire) {
+          frontend.dc.l1stall := false.B
+          dc_l1_state := s_l1_ready
+        }
       }
     }
   }
+
+  // l2 req
+  val s_l2_ready :: s_l2_probe :: s_l2_probeack :: Nil =
+    Enum(3)
+  val dc_l2_state = RegInit(s_l2_ready)
+  val dc_probe_b = Reg(dc.b.bits.cloneType)
+  val dc_l2_out_c = Wire(dc.c.cloneType)
+  dc_l2_out_c.valid := false.B
+  dc_l2_out_c.bits := DontCare
+
+  frontend.dc.l2req := L1DCPort.L2Req.idle
+  frontend.dc.l2addr := DontCare
+  frontend.dc.l2data := DontCare
+  switch(dc_l2_state) {
+    is(s_l2_ready) {
+      dc.b.ready := true.B
+      when(dc.b.fire) {
+        dc_l2_state := s_l2_probe
+        dc_probe_b := dc.b.bits
+      }
+    }
+    is(s_l2_probe) {
+      frontend.dc.l2req := L1DCPort.L2Req.flush
+      frontend.dc.l2addr := dc.b.bits.address
+      when(~frontend.dc.l2stall) {
+        dc_l2_state := s_l2_probeack
+      }
+    }
+    is(s_l2_probeack) {
+      dc_l2_out_c.valid := true.B
+      dc_l2_out_c.bits := dc_edge.ProbeAck(dc_probe_b, TLPermissions.NtoN)
+      when(dc_l2_out_c.fire) {
+        dc_l2_state := s_l2_ready
+      }
+    }
+  }
+
+  // arbiter for c channel
+  TLArbiter.robin(dc_edge, dc.c, dc_l1_out_c, dc_l2_out_c)
 
   // uncached
   val (uc, uc_edge) = outer.ucNode.out(0)
