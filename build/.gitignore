@@ -1,2 +1,5 @@
 *
 !.gitignore
+!*.dts
+!*.graphml
+!*.memmap.json
