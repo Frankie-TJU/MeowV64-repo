@@ -187,12 +187,16 @@ object L1UCPort {
   */
 class L1DCPort(val opts: L1Opts) extends Bundle with L1Port {
   // L1 -> L2 request
+  // read/modify: read data(l2data) & goto S/M states
+  // writeback: write data(l1data) & goto S state
   val l1req = Output(L1DCPort.L1Req())
   val l1addr = Output(UInt(opts.ADDR_WIDTH.W))
   val l1stall = Input(Bool())
   val l1data = Output(UInt((opts.TO_L2_TRANSFER_WIDTH).W))
 
   // L1 <- L2 request
+  // flush: write data(l1data) & goto S
+  // invalidate: goto I
   val l2req = Input(L1DCPort.L2Req())
   val l2addr = Input(UInt(opts.ADDR_WIDTH.W))
   val l2stall = Output(Bool())
