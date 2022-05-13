@@ -10,11 +10,12 @@ import meowv64.core.CoreDef
 /** Create multiple copies of a MeowV64 tile (and thus a core). Override with
   * the default mixins to control all params of the tiles.
   */
-class WithNMeowV64Cores(
+class WithMeowV64Cores(
     systemDef: SystemDef = new SingleCoreSystemDef,
     overrideIdOffset: Option[Int] = None
 ) extends Config((_, _, up) => {
       case CacheBlockBytes => systemDef.L2_LINE_BYTES
+      case MemoryBusKey => up(MemoryBusKey).copy(beatBytes = systemDef.L2_LINE_BYTES)
       case TilesLocated(InSubsystem) => {
         val prev = up(TilesLocated(InSubsystem))
         val idOffset = overrideIdOffset.getOrElse(prev.size)

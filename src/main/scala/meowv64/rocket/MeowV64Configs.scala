@@ -8,15 +8,9 @@ import freechips.rocketchip.system.BaseConfig
 import meowv64.system.SingleCoreSystemDef
 import freechips.rocketchip.subsystem.WithCoherentBusTopology
 
-class WithMemoryBeatBytes(beatBytes: Int)
-    extends Config((_, _, up) => { case MemoryBusKey =>
-      up(MemoryBusKey).copy(beatBytes = beatBytes)
-    })
-
 class MeowV64Config
     extends Config(
-      new WithNMeowV64Cores(new SingleCoreSystemDef) ++
-        new WithMemoryBeatBytes(32) ++
+      new WithMeowV64Cores(new SingleCoreSystemDef) ++
         new WithJtagDTM ++
         new WithNoSlavePort ++
         new WithCoherentBusTopology ++
