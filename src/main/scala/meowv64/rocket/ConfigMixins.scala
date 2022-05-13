@@ -1,12 +1,12 @@
 package meowv64.rocket
 
 import freechips.rocketchip.config.Config
+import freechips.rocketchip.diplomacy.DTSTimebase
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.tile._
+import meowv64.core.CoreDef
 import meowv64.system.SingleCoreSystemDef
 import meowv64.system.SystemDef
-import meowv64.core.CoreDef
-import freechips.rocketchip.diplomacy.DTSTimebase
 
 /** Create multiple copies of a MeowV64 tile (and thus a core). Override with
   * the default mixins to control all params of the tiles.
@@ -24,9 +24,9 @@ class WithMeowV64Cores(
       // Set to line bytes
       case CacheBlockBytes => systemDef.L2_LINE_BYTES
       case MemoryBusKey =>
-        up(MemoryBusKey).copy(beatBytes = systemDef.L2_LINE_BYTES)
+        up(MemoryBusKey).copy(beatBytes = 16)
       case SystemBusKey =>
-        up(SystemBusKey).copy(beatBytes = systemDef.L2_LINE_BYTES)
+        up(SystemBusKey).copy(beatBytes = 16)
       // MMIO 64 bits
       case ExtBus =>
         Some(

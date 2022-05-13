@@ -12,8 +12,8 @@ import freechips.rocketchip.tile._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.util._
 import meowv64.core.Core
-import meowv64.core.CoreDef
 import meowv64.core.CoreDebug
+import meowv64.core.CoreDef
 
 case class MeowV64CoreParams(
     coredef: CoreDef
@@ -148,10 +148,18 @@ class MeowV64Tile private (
   // adapt custom interface to TileLink Cached
   val adapter = LazyModule(new MeowV64TileLinkAdapter(meowv64Params.coredef))
 
+  // we use custom beatBytes from the client
   val node = TLIdentityNode()
-  tlMasterXbar.node := node := TLBuffer() := adapter.icNode
-  tlMasterXbar.node := node := TLBuffer() := adapter.dcNode
-  tlMasterXbar.node := node := TLBuffer() := adapter.ucNode
+  val innerBeatBytes = meowv64Params.coredef.L1_LINE_BYTES
+  tlMasterXbar.node := node := TLBuffer() := TLWidthWidget(
+    innerBeatBytes
+  ) := adapter.icNode
+  tlMasterXbar.node := node := TLBuffer() := TLWidthWidget(
+    innerBeatBytes
+  ) := adapter.dcNode
+  tlMasterXbar.node := node := TLBuffer() := TLWidthWidget(
+    innerBeatBytes
+  ) := adapter.ucNode
 
   def connectMeowV64Interrupts(
       debug: Bool,

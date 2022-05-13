@@ -48,10 +48,10 @@
 		compatible = "freechips,rocketchip-unknown-soc", "simple-bus";
 		ranges;
 		L2: cache-controller@2010000 {
-			cache-block-size = <64>;
+			cache-block-size = <32>;
 			cache-level = <2>;
 			cache-sets = <2048>;
-			cache-size = <1048576>;
+			cache-size = <524288>;
 			cache-unified;
 			compatible = "sifive,inclusivecache0", "cache";
 			next-level-cache = <&L10>;

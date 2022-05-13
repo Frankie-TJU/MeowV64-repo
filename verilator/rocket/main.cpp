@@ -67,7 +67,7 @@ struct jtag_vpi_cmd {
 
 int res = 0;
 
-const uint64_t MEM_AXI_DATA_WIDTH = 256;
+const uint64_t MEM_AXI_DATA_WIDTH = 128;
 const uint64_t MEM_AXI_DATA_BYTES = MEM_AXI_DATA_WIDTH / 8;
 const uint64_t MMIO_AXI_DATA_WIDTH = 64;
 const uint64_t MMIO_AXI_DATA_BYTES = MMIO_AXI_DATA_WIDTH / 8;
@@ -1058,6 +1058,7 @@ int main(int argc, char **argv) {
     top->eval();
     if (tfp) {
       tfp->dump(main_time);
+      // tfp->flush();
     }
     main_time += 5;
   }
