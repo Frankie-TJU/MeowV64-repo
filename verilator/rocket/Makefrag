@@ -9,11 +9,11 @@ VERILOG_SRCS = $(CONFIG).v plusarg_reader.v EICG_wrapper.v icDataArray_ext.v btb
 
 all: VRiscVSystem
 
-firrtl_black_box_result_files.f:
+firrtl_black_box_resource_files.f:
 	cd ../../ && CONFIG=$(CONFIG) ./generate.sh
 	cp ../../build/$(CONFIG)/$@ .
 
-%.v: firrtl_black_box_result_files.f
+%.v: firrtl_black_box_resource_files.f
 	cp ../../build/$(CONFIG)/$@ .
 
 VRiscVSystem: ../rocket/main.cpp $(VERILOG_SRCS)
