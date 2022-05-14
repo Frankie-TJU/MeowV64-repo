@@ -569,11 +569,11 @@ class L2Cache(val opts: L2Opts) extends Module {
       ).asUInt
       val hasDirty = (dirtyMap & ~UIntToOH(target)).asUInt.orR
       // M or S
-      val sharedMap =
+      val sharedDirtyMap =
         VecInit(lookups(pipeHitIdx).states.map(_ =/= L2DirState.vacant)).asUInt
-      val hasShared = (sharedMap & ~UIntToOH(target)).asUInt.orR
+      val hasSharedDirty = (sharedDirtyMap & ~UIntToOH(target)).asUInt.orR
 
-      when(!hasShared) {
+      when(!hasSharedDirty) {
         // all cores are in I
         assert(!misses(target))
 

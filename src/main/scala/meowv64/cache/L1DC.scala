@@ -842,6 +842,8 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
       // So we should be safe to just use l2Rdata here without checking
       toL2.l1data := l2Rdata
 
+      // flush: M/S -> S, I -> I
+      // invalidate: M/S/I -> I
       val written = Wire(new DLine(opts))
       written.data := l2Rdata.asTypeOf(written.data)
       written.tag := getTag(toL2.l2addr)
