@@ -1,5 +1,8 @@
 #define ITERATION 0x200
 
+.section .text
+.globl _start
+_start:
   // probe number of cores from CLINT
   li t1, 0x02000000 // CLINT address
   li t2, -1 // core count
@@ -23,12 +26,9 @@ clint_loop:
   li t0, 0x80000000
   add sp, sp, t0
 	li ra, 0x100000
-  li s0, 0x90000000 // Lock
-  li s1, 0x90000008 // Counter
-  li s2, 0x90000010 // Completed
-.section .text
-.globl _start
-_start:
+  li s0, 0x88000000 // Lock
+  li s1, 0x88000008 // Counter
+  li s2, 0x88000010 // Completed
   li t0, 0
   li t1, ITERATION
 
