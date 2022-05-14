@@ -134,9 +134,9 @@ class MeowV64TileLinkAdapterModuleImp(outer: MeowV64TileLinkAdapter)
   dc.e.valid := false.B
 
   frontend.dc.l1stall := true.B
+  frontend.dc.l1rdata := 0.U
   frontend.dc.l2req := L1DCPort.L2Req.idle
   frontend.dc.l2addr := 0.U
-  frontend.dc.l2data := 0.U
 
   // l1 req
   val s_l1_ready :: s_l1_read :: s_l1_modify :: s_l1_grant :: s_l1_grantack :: s_l1_writeback :: s_l1_releaseack :: Nil =
@@ -180,7 +180,7 @@ class MeowV64TileLinkAdapterModuleImp(outer: MeowV64TileLinkAdapter)
     is(s_l1_grant) {
       // wait for Grant
       // return data read to l1
-      frontend.dc.l2data := dc.d.bits.data
+      frontend.dc.l1rdata := dc.d.bits.data
       when(dc.d.bits.opcode === TLMessages.GrantData) {
         dc.d.ready := true.B
 
@@ -210,7 +210,7 @@ class MeowV64TileLinkAdapterModuleImp(outer: MeowV64TileLinkAdapter)
           frontend.dc.l1addr,
           log2Ceil(coredef.L1_LINE_BYTES).U,
           TLPermissions.TtoN,
-          frontend.dc.l1data
+          frontend.dc.l1wdata
         )
         ._2
       when(dc_l1_out_c.fire) {
@@ -236,7 +236,7 @@ class MeowV64TileLinkAdapterModuleImp(outer: MeowV64TileLinkAdapter)
   val dc_l2_state = RegInit(s_l2_ready)
   val dc_l2_cache_valid = Reg(Bool())
   val dc_l2_cache_dirty = Reg(Bool())
-  val dc_l2_cache_l1data = Reg(frontend.dc.l1data.cloneType)
+  val dc_l2_cache_wdata = Reg(frontend.dc.l2wdata.cloneType)
   val dc_probe_b = Reg(dc.b.bits.cloneType)
   val dc_l2_out_c = Wire(dc.c.cloneType)
   dc_l2_out_c.valid := false.B
@@ -266,7 +266,7 @@ class MeowV64TileLinkAdapterModuleImp(outer: MeowV64TileLinkAdapter)
         dc_l2_state := s_l2_probeack
         dc_l2_cache_valid := frontend.dc.l2valid
         dc_l2_cache_dirty := frontend.dc.l2dirty
-        dc_l2_cache_l1data := frontend.dc.l1data
+        dc_l2_cache_wdata := frontend.dc.l2wdata
       }
     }
     is(s_l2_probeack) {
@@ -286,7 +286,7 @@ class MeowV64TileLinkAdapterModuleImp(outer: MeowV64TileLinkAdapter)
         dc_l2_out_c.bits := dc_edge.ProbeAck(
           dc_probe_b,
           perm,
-          dc_l2_cache_l1data
+          dc_l2_cache_wdata
         )
       }.elsewhen(dc_l2_cache_valid && !dc_l2_cache_dirty) {
         // S -> S/I
@@ -302,7 +302,7 @@ class MeowV64TileLinkAdapterModuleImp(outer: MeowV64TileLinkAdapter)
         dc_l2_out_c.bits := dc_edge.ProbeAck(
           dc_probe_b,
           perm,
-          dc_l2_cache_l1data
+          dc_l2_cache_wdata
         )
       }.otherwise {
         when(dc_probe_b.param === TLPermissions.toN) {

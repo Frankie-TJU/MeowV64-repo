@@ -241,7 +241,7 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
   // assert((!w.write) || w.addr(IGNORED_WIDTH-1, 0) === 0.U)
   // The check for write is no longer true, because of AMO
 
-  toL2.l1data := 0.U
+  toL2.l1wdata := 0.U
   toL2.l1addr := 0.U
   toL2.l1req := L1Req.idle
 
@@ -519,7 +519,7 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
           opts.OFFSET_WIDTH.W
         )
         toL2.l1req := L1DCPort.L1Req.writeback
-        toL2.l1data := wlookups(victim).data.asUInt()
+        toL2.l1wdata := wlookups(victim).data.asUInt()
 
         val invalid = Wire(new DLine(opts))
         invalid := DontCare
@@ -544,7 +544,7 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
           opts.OFFSET_WIDTH.W
         )
         toL2.l1req := L1DCPort.L1Req.writeback
-        toL2.l1data := wlookups(victim).data.asUInt()
+        toL2.l1wdata := wlookups(victim).data.asUInt()
 
         val invalid = Wire(new DLine(opts))
         invalid := DontCare
@@ -579,17 +579,17 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
       written.valid := true.B
       written.dirty := state === MainState.wallocRefill
       written.tag := getTag(writtenAddr)
-      written.data := toL2.l2data.asTypeOf(written.data)
+      written.data := toL2.l1rdata.asTypeOf(written.data)
 
       when(state === MainState.wallocRefill) {
         written.data(getSublineIdx(waddr)) := MuxBE(
           wbuf(wbufHead).be,
           wbuf(wbufHead).sdata,
-          toL2.l2data.asTypeOf(written.data)(getSublineIdx(waddr))
+          toL2.l1rdata.asTypeOf(written.data)(getSublineIdx(waddr))
         )
 
         when(wbuf(wbufHead).isAMO) {
-          amoalu.io.rdata := toL2.l2data.asTypeOf(written.data)(
+          amoalu.io.rdata := toL2.l1rdata.asTypeOf(written.data)(
             getSublineIdx(waddr)
           )
           written.data(getSublineIdx(waddr)) := amoalu.io.muxed
@@ -803,12 +803,13 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
   toL2.l2stall := false.B
   toL2.l2valid := false.B
   toL2.l2dirty := false.B
+  toL2.l2wdata := 0.U
   val mainWriting = l1writing.asUInt().orR
   val lookupReady = !mainWriting && RegNext(toL2.l2stall && !mainWriting)
   // FIXME: impl this
   val resCancelDelay = RegInit(0.U(5.W)) // Up to 32
 
-  val l2Rdata = MuxCase(
+  val l2Wdata = MuxCase(
     0.U,
     lookups.map(line =>
       (
@@ -839,13 +840,13 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
     when(lookupReady) { // To generate only two rw ports
       // For flushes, hit is asserted
       // For invals, wdata is ignored
-      // So we should be safe to just use l2Rdata here without checking
-      toL2.l1data := l2Rdata
+      // So we should be safe to just use l2Wdata here without checking
+      toL2.l2wdata := l2Wdata
 
       // flush: M/S -> S, I -> I
       // invalidate: M/S/I -> I
       val written = Wire(new DLine(opts))
-      written.data := l2Rdata.asTypeOf(written.data)
+      written.data := l2Wdata.asTypeOf(written.data)
       written.tag := getTag(toL2.l2addr)
       written.dirty := false.B
       written.valid := toL2.l2req =/= L2Req.invalidate

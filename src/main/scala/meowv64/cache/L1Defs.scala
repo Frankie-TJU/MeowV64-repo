@@ -187,28 +187,29 @@ object L1UCPort {
   */
 class L1DCPort(val opts: L1Opts) extends Bundle with L1Port {
   // L1 -> L2 request
-  // read/modify: read data(l2data) & goto S/M states
-  // writeback: write data(l1data) & M -> I state
+  // read/modify: read data(l1rdata), I->S(read), I/S->M(modify)
+  // writeback: write data(l1wdata), M->I
   val l1req = Output(L1DCPort.L1Req())
   val l1addr = Output(UInt(opts.ADDR_WIDTH.W))
+  val l1wdata = Output(UInt((opts.TO_L2_TRANSFER_WIDTH).W))
   val l1stall = Input(Bool())
-  val l1data = Output(UInt((opts.TO_L2_TRANSFER_WIDTH).W))
+  val l1rdata = Input(UInt((opts.TO_L2_TRANSFER_WIDTH).W))
 
   // L1 <- L2 request
-  // flush: write data(l1data) & goto S
-  // invalidate: goto I
+  // flush: write data(l2wdata), M/S->S, I->I
+  // invalidate: M/S/I->I
   val l2req = Input(L1DCPort.L2Req())
   val l2addr = Input(UInt(opts.ADDR_WIDTH.W))
   val l2stall = Output(Bool())
-  val l2data = Input(UInt((opts.TO_L2_TRANSFER_WIDTH).W))
+  val l2wdata = Output(UInt((opts.TO_L2_TRANSFER_WIDTH).W))
   val l2valid = Output(Bool()) // if L1 has the entry
   val l2dirty = Output(Bool()) // if the L1 entry was dirty
 
   override def getAddr: UInt = l1addr
   override def getReq = l1req
   override def getStall: Bool = l1stall
-  override def getRdata: UInt = l2data
-  override def getWdata: UInt = l1data
+  override def getRdata: UInt = l1rdata
+  override def getWdata: UInt = l1wdata
 }
 
 object L1DCPort {
