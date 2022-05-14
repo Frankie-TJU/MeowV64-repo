@@ -39,10 +39,10 @@ verilator_single_core_test:
   script:
     - cd verilator/SingleCoreDef
     - make
-    - ../standalone/test.sh
-    - ../standalone/benchmark.sh
+    - ../common/test.sh
+    - ../common/benchmark.sh
 
-verilator_double_core_test:
+verilator_dual_core_test:
   stage: test
   dependencies: 
     - build
@@ -50,17 +50,16 @@ verilator_double_core_test:
   script:
     - cd verilator/DualCoreDef
     - make
-    - ../standalone/test.sh
-    - ../standalone/benchmark.sh
+    - ../common/test.sh
+    - ../common/benchmark.sh
 
-verilator_rocket_test:
+verilator_rocket_single_core_test:
   stage: test
   dependencies: 
     - build
   image: jiegec/meowv64
   script:
-    - ./generate.sh
-    - cd verilator/rocket
+    - cd verilator/SingleCoreConfig
     - make
-    - ./test.sh
-    - ./benchmark.sh
+    - ../common/test.sh
+    - ../common/benchmark.sh

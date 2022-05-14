@@ -5,9 +5,12 @@ GMPXX_CFLAGS = $(shell pkg-config --cflags gmpxx)
 GMPXX_LDFLAGS = $(shell pkg-config --libs gmpxx)
 VERILATOR_FLAGS = -Wno-fatal --trace-fst -CFLAGS "$(GMP_CFLAGS) $(GMPXX_CFLAGS)" -LDFLAGS "$(GMP_LDFLAGS) $(GMPXX_LDFLAGS)"
 CURRENT_DIR = $(shell pwd)
-VERILOG_SRCS = meowv64.rocket.MeowV64Config.v plusarg_reader.v EICG_wrapper.v icDataArray_ext.v btbEntries_ext.v cc_dir_ext.v cc_banks_0_ext.v
+VERILOG_SRCS = $(CONFIG).v plusarg_reader.v EICG_wrapper.v icDataArray_ext.v btbEntries_ext.v cc_dir_ext.v cc_banks_0_ext.v
 
 all: VRiscVSystem
+
+../../build/%.v:
+	cd ../../ && CONFIG=$(CONFIG) ./generate.sh
 
 %.v: ../../build/%.v
 	cp ../../build/$@ .
