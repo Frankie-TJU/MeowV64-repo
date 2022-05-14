@@ -15,7 +15,7 @@ class WithMeowV64Cores(
     systemDef: SystemDef = new SingleCoreSystemDef,
     overrideIdOffset: Option[Int] = None,
     frequency: BigInt = 1000000000
-) extends Config((_, _, up) => {
+) extends Config((site, _, up) => {
       case XLen => 64
       // 100MHz
       case PeripheryBusKey =>
@@ -37,6 +37,20 @@ class WithMeowV64Cores(
             idBits = 4
           )
         )
+      // Mem
+      case ExtMem =>
+        Some(
+          MemoryPortParams(
+            MasterPortParams(
+              base = BigInt("80000000", 16),
+              size = BigInt("80000000", 16),
+              beatBytes = site(MemoryBusKey).beatBytes,
+              idBits = 4
+            ),
+            1
+          )
+        )
+      // Tiles
       case TilesLocated(InSubsystem) => {
         val prev = up(TilesLocated(InSubsystem))
         val idOffset = overrideIdOffset.getOrElse(prev.size)
