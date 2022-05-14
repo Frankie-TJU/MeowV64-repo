@@ -52,3 +52,15 @@ verilator_double_core_test:
     - make
     - ../standalone/test.sh
     - ../standalone/benchmark.sh
+
+verilator_rocket_test:
+  stage: test
+  dependencies: 
+    - build
+  image: jiegec/meowv64
+  script:
+    - ./generate.sh
+    - cd verilator/rocket
+    - make
+    - ./test.sh
+    - ./benchmark.sh
