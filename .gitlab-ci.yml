@@ -63,3 +63,14 @@ verilator_rocket_single_core_test:
     - make
     - ../common/test.sh
     - ../common/benchmark.sh
+
+verilator_rocket_dual_core_test:
+  stage: test
+  dependencies: 
+    - build
+  image: jiegec/meowv64
+  script:
+    - cd verilator/DualCoreConfig
+    - make
+    - ../common/test.sh
+    - ../common/benchmark.sh

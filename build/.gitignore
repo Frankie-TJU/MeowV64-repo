@@ -1,5 +1,7 @@
-*
-!.gitignore
-!*.dts
-!*.graphml
+*.v
+*.json
 !*.memmap.json
+*.d
+*.fir
+*.plusArgs
+*.rom.conf

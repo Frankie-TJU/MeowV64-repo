@@ -9,11 +9,12 @@ VERILOG_SRCS = $(CONFIG).v plusarg_reader.v EICG_wrapper.v icDataArray_ext.v btb
 
 all: VRiscVSystem
 
-../../build/%.v:
+firrtl_black_box_result_files.f:
 	cd ../../ && CONFIG=$(CONFIG) ./generate.sh
+	cp ../../build/$(CONFIG)/$@ .
 
-%.v: ../../build/%.v
-	cp ../../build/$@ .
+%.v: firrtl_black_box_result_files.f
+	cp ../../build/$(CONFIG)/$@ .
 
 VRiscVSystem: ../rocket/main.cpp $(VERILOG_SRCS)
 	$(VERILATOR) $(VERILATOR_FLAGS) --top-module RiscVSystem --cc $(VERILOG_SRCS) --exe $<
@@ -21,4 +22,4 @@ VRiscVSystem: ../rocket/main.cpp $(VERILOG_SRCS)
 	cp obj_dir/VRiscVSystem .
 
 clean:
-	rm -rf $(VERILOG_SRCS) obj_dir
+	rm -rf $(VERILOG_SRCS) obj_dir *.f

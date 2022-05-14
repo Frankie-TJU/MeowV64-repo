@@ -1,17 +1,18 @@
 #!/bin/bash
 set -e
-mkdir -p build
-cp ./submodules/rocket-chip/src/main/resources/vsrc/EICG_wrapper.v build/
 CONFIG=${CONFIG:-meowv64.rocket.MeowV64SingleCoreConfig}
+DEST=build/${CONFIG}
+mkdir -p ${DEST}
+cp ./submodules/rocket-chip/src/main/resources/vsrc/EICG_wrapper.v ${DEST}
 mill meowv64.runMain \
 	freechips.rocketchip.system.Generator \
-	-td build \
+	-td ${DEST} \
 	-C ${CONFIG} \
 	-T meowv64.rocket.RiscVSystem
 mill meowv64.runMain firrtl.stage.FirrtlMain \
-	-td build \
-	-i build/${CONFIG}.fir \
+	-td ${DEST} \
+	-i ${DEST}/${CONFIG}.fir \
 	-o ${CONFIG}.v \
 	-X verilog \
-	-faf build/${CONFIG}.anno.json \
+	-faf ${DEST}/${CONFIG}.anno.json \
 	-firw -gmv full
