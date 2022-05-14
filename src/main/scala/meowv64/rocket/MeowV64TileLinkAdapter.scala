@@ -270,7 +270,14 @@ class MeowV64TileLinkAdapterModuleImp(outer: MeowV64TileLinkAdapter)
       }
     }
     is(s_l2_probeack) {
-      dc_l2_out_c.valid := true.B
+      // Release: A master should not issue a Release if there is a pending Grant on the block.
+      // Once the Release is issued, the master should not issue ProbeAcks, Acquires,
+      // or further Releases until it receives a ReleaseAck from the slave acknowledging completion of the writeback.
+      when(dc_l1_state === s_l1_writeback || dc_l1_state === s_l1_releaseack) {
+        dc_l2_out_c.valid := false.B
+      }.otherwise {
+        dc_l2_out_c.valid := true.B
+      }
       val perm = WireInit(0.U(TLPermissions.cWidth.W))
       when(dc_l2_cache_valid && dc_l2_cache_dirty) {
         // M -> S/I
