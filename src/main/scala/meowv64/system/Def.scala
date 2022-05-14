@@ -49,7 +49,7 @@ abstract class SystemDef(val coreCount: Int) {
       with PLICDef
 }
 
-class DefaultSystemDef extends SystemDef(coreCount = 2)
+class DefaultSystemDef extends SystemDef(coreCount = 1)
 
 class SingleCoreSystemDef extends SystemDef(coreCount = 1)
-class DoubleCoreSystemDef extends SystemDef(coreCount = 2)
+class DualCoreSystemDef extends SystemDef(coreCount = 2)

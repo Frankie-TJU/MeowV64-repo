@@ -4,7 +4,7 @@ RUN sed -i 's/deb.debian.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sources.li
 RUN sed -i 's/security.debian.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sources.list
 RUN apt update
 RUN apt install -y wget verilator iverilog curl
-RUN sh -c "curl -L https://github.com/com-lihaoyi/mill/releases/download/0.9.12/0.9.12 > /usr/local/bin/mill && chmod +x /usr/local/bin/mill"
+RUN sh -c "curl -L https://github.com/com-lihaoyi/mill/releases/download/0.10.2/0.10.2 > /usr/local/bin/mill && chmod +x /usr/local/bin/mill"
 RUN apt update
 RUN apt install -y openjdk-11-jdk
 RUN touch build.sc
@@ -15,3 +15,4 @@ RUN apt install -y zlib1g-dev
 RUN apt install -y libgmp-dev
 RUN apt install -y pkg-config
 RUN apt install -y z3
+RUN apt install -y git

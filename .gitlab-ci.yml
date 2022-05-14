@@ -48,7 +48,7 @@ verilator_double_core_test:
     - build
   image: jiegec/meowv64
   script:
-    - cd verilator/DoubleCoreDef
+    - cd verilator/DualCoreDef
     - make
     - ../standalone/test.sh
     - ../standalone/benchmark.sh
