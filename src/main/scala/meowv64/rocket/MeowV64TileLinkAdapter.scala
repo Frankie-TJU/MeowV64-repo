@@ -298,8 +298,12 @@ class MeowV64TileLinkAdapterModuleImp(outer: MeowV64TileLinkAdapter)
           assert(false.B)
         }
 
-        // ProbeAck
-        dc_l2_out_c.bits := dc_edge.ProbeAck(dc_probe_b, perm)
+        // ProbeAckData
+        dc_l2_out_c.bits := dc_edge.ProbeAck(
+          dc_probe_b,
+          perm,
+          dc_l2_cache_l1data
+        )
       }.otherwise {
         when(dc_probe_b.param === TLPermissions.toN) {
           // I -> I
