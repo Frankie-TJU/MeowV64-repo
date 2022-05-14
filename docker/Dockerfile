@@ -16,3 +16,4 @@ RUN apt install -y libgmp-dev
 RUN apt install -y pkg-config
 RUN apt install -y z3
 RUN apt install -y git
+RUN apt install -y device-tree-compiler
