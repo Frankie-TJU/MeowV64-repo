@@ -181,7 +181,8 @@ class MeowV64TileLinkAdapterModuleImp(outer: MeowV64TileLinkAdapter)
       // wait for Grant
       // return data read to l1
       frontend.dc.l1rdata := dc.d.bits.data
-      when(dc.d.bits.opcode === TLMessages.GrantData) {
+      // If valid is LOW, the receiver must not expect the control or data signals to be a syntactically correct TileLink beat.
+      when(dc.d.valid && dc.d.bits.opcode === TLMessages.GrantData) {
         dc.d.ready := true.B
 
         when(dc.d.fire) {
@@ -219,7 +220,8 @@ class MeowV64TileLinkAdapterModuleImp(outer: MeowV64TileLinkAdapter)
     }
     is(s_l1_releaseack) {
       // wait for ReleaseAck
-      when(dc.d.bits.opcode === TLMessages.ReleaseAck) {
+      // If valid is LOW, the receiver must not expect the control or data signals to be a syntactically correct TileLink beat.
+      when(dc.d.valid && dc.d.bits.opcode === TLMessages.ReleaseAck) {
         dc.d.ready := true.B
 
         when(dc.d.fire) {
