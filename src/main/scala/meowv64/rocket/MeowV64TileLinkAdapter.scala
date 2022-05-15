@@ -245,7 +245,12 @@ class MeowV64TileLinkAdapterModuleImp(outer: MeowV64TileLinkAdapter)
   dc_l2_out_c.bits := 0.U.asTypeOf(dc_l2_out_c.bits)
   switch(dc_l2_state) {
     is(s_l2_ready) {
-      dc.b.ready := true.B
+      // block outer Probes when Release is inflight
+      when(dc_l1_state === s_l1_writeback || dc_l1_state === s_l1_releaseack) {
+        dc.b.ready := false.B
+      }.otherwise {
+        dc.b.ready := true.B
+      }
       when(dc.b.fire) {
         dc_l2_state := s_l2_probe
         dc_probe_b := dc.b.bits
