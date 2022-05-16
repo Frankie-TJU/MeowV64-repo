@@ -36,8 +36,15 @@ class RiscVSystem(implicit val p: Parameters) extends Module {
     )
   )
   val jtag = IO(Flipped(new JTAGIO))
-  val debug = IO(target.customDebug.cloneType)
-  debug := target.customDebug
+
+  // expose custom debug interface if any
+  target.customDebug match {
+    case Some(customDebug) => {
+      val debug = IO(customDebug.cloneType)
+      debug := customDebug
+    }
+    case None =>
+  }
 
   // ndreset can reset all harts
   val childReset = reset.asBool | target.debug.map(_.ndreset).getOrElse(false.B)
@@ -85,8 +92,10 @@ class RocketTop(implicit p: Parameters)
   // expose debug
   val customDebugNexus = BundleBridgeNexusNode[CoreDebug]()
   val tileCustomDebugNodes = tiles
-    .flatMap { case tile: MeowV64Tile =>
-      Some(tile)
+    .flatMap {
+      case tile: MeowV64Tile =>
+        Some(tile)
+      case _ => None
     }
     .map { _.customDebugNode }
 
@@ -103,12 +112,20 @@ class RocketTopModule(outer: RocketTop)
 
   // wire custom debug signals
   val customDebugIO = outer.customDebugNexus.in.map(_._1)
-  val customDebug = IO(
-    Output(
-      Vec(customDebugIO.length, customDebugIO(0).cloneType)
+  val customDebug = if (customDebugIO.length > 0) {
+    val customDebug = IO(
+      Output(
+        Vec(customDebugIO.length, customDebugIO(0).cloneType)
+      )
     )
-  )
-  for (i <- 0 until customDebug.length) {
-    customDebug(i) := customDebugIO(i)
+
+    for (i <- 0 until customDebug.length) {
+      customDebug(i) := customDebugIO(i)
+    }
+
+    Some(customDebug)
+  } else {
+    None
   }
+
 }
