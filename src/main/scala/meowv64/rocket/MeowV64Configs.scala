@@ -12,6 +12,8 @@ import meowv64.system.DualCoreSystemDef
 import freechips.rocketchip.subsystem.WithNBigCores
 import freechips.rocketchip.subsystem.WithIncoherentBusTopology
 import freechips.rocketchip.subsystem.WithIncoherentTiles
+import freechips.rocketchip.subsystem.WithScratchpadsOnly
+import freechips.rocketchip.subsystem.RocketTilesKey
 
 class MeowV64BaseConfig
     extends Config(
@@ -58,6 +60,34 @@ class RocketDualCoreWithBroadcastHubConfig
 class RocketDualCoreWithIncoherentBusConfig
     extends Config(
       new WithNBigCores(2) ++
+        new WithJtagDTM ++
+        new WithNoSlavePort ++
+        new WithIncoherentBusTopology ++
+        new WithIncoherentTiles ++
+        new BaseConfig
+    )
+
+// adapted from WithScratchpadsOnly from rocket-chip
+class WithScratchpads(addr: Long)
+    extends Config((_, _, up) => { case RocketTilesKey =>
+      up(RocketTilesKey) map { r =>
+        r.copy(
+          core = r.core.copy(useVM = false),
+          dcache = r.dcache.map(
+            _.copy(
+              nSets = 256, // 16Kb scratchpad
+              nWays = 1,
+              scratch = Some(addr)
+            )
+          )
+        )
+      }
+    })
+
+class RocketSingleCoreWithScratchpad
+    extends Config(
+      new WithScratchpads(0x50000000L) ++
+        new WithNBigCores(1) ++
         new WithJtagDTM ++
         new WithNoSlavePort ++
         new WithIncoherentBusTopology ++
