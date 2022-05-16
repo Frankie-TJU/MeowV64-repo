@@ -53,3 +53,4 @@ class DefaultSystemDef extends SystemDef(coreCount = 1)
 
 class SingleCoreSystemDef extends SystemDef(coreCount = 1)
 class DualCoreSystemDef extends SystemDef(coreCount = 2)
+class HexaCoreSystemDef extends SystemDef(coreCount = 6)

@@ -1,19 +1,19 @@
 package meowv64.rocket
 
 import freechips.rocketchip.config.Config
+import freechips.rocketchip.subsystem.RocketTilesKey
+import freechips.rocketchip.subsystem.WithCacheBlockBytes
 import freechips.rocketchip.subsystem.WithCoherentBusTopology
 import freechips.rocketchip.subsystem.WithInclusiveCache
-import freechips.rocketchip.subsystem.WithJtagDTM
-import freechips.rocketchip.subsystem.WithNoSlavePort
-import freechips.rocketchip.system.BaseConfig
-import meowv64.system.SingleCoreSystemDef
-import freechips.rocketchip.subsystem.WithCacheBlockBytes
-import meowv64.system.DualCoreSystemDef
-import freechips.rocketchip.subsystem.WithNBigCores
 import freechips.rocketchip.subsystem.WithIncoherentBusTopology
 import freechips.rocketchip.subsystem.WithIncoherentTiles
-import freechips.rocketchip.subsystem.WithScratchpadsOnly
-import freechips.rocketchip.subsystem.RocketTilesKey
+import freechips.rocketchip.subsystem.WithJtagDTM
+import freechips.rocketchip.subsystem.WithNBigCores
+import freechips.rocketchip.subsystem.WithNoSlavePort
+import freechips.rocketchip.system.BaseConfig
+import meowv64.system.DualCoreSystemDef
+import meowv64.system.HexaCoreSystemDef
+import meowv64.system.SingleCoreSystemDef
 
 class MeowV64BaseConfig
     extends Config(
@@ -34,6 +34,12 @@ class MeowV64SingleCoreConfig
 class MeowV64DualCoreConfig
     extends Config(
       new WithMeowV64Cores(new DualCoreSystemDef) ++
+        new MeowV64BaseConfig
+    )
+
+class MeowV64HexaCoreConfig
+    extends Config(
+      new WithMeowV64Cores(new HexaCoreSystemDef) ++
         new MeowV64BaseConfig
     )
 
