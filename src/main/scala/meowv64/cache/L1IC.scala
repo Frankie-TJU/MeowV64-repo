@@ -4,7 +4,6 @@ import chisel3._
 import chisel3.experimental.ChiselEnum
 import chisel3.util._
 import chisel3.util.log2Ceil
-import meowv64.debug.DebugModule
 
 class CoreICPort(val opts: L1Opts) extends Bundle {
   val read = Flipped(Decoupled(UInt(opts.ADDR_WIDTH.W)))
@@ -20,14 +19,16 @@ object S2State extends ChiselEnum {
 // TODO: Use sram ip
 class L1IC(opts: L1Opts) extends Module {
   val toCPU = IO(new CoreICPort(opts))
+  // cached load
   val toL2 = IO(new L1ICPort(opts))
-  val toDM = IO(new L1ICPort(opts))
+  // uncached inst
+  val toUI = IO(new L1ICPort(opts))
 
   toCPU.data := DontCare
   toL2.read.bits := DontCare
   toL2.read.valid := false.B
-  toDM.read.bits := DontCare
-  toDM.read.valid := false.B
+  toUI.read.bits := DontCare
+  toUI.read.valid := false.B
 
   val IGNORED_WIDTH = log2Ceil(opts.TO_CORE_TRANSFER_BYTES)
 
@@ -77,8 +78,7 @@ class L1IC(opts: L1Opts) extends Module {
   def getTag(addr: UInt) = opts.getTag(addr)
   def toAligned(addr: UInt) =
     getTag(addr) ## getIndex(addr) ## 0.U(opts.OFFSET_WIDTH.W)
-  def addrInDM(addr: UInt) =
-    (DebugModule.DM_CODE_REGION_START).U <= addr && addr < (DebugModule.DM_CODE_REGION_START + DebugModule.DM_CODE_REGION_SIZE).U
+  def isUncached(addr: UInt) = addr < BigInt("80000000", 16).U
 
   // Stage 1, tag fetch, data fetch
   val pipeRead = RegInit(false.B)
@@ -190,13 +190,13 @@ class L1IC(opts: L1Opts) extends Module {
       // arbiter between L2 and DM
       val addr = toAligned(pipeAddr)
       toL2.read.bits := addr
-      toDM.read.bits := addr
+      toUI.read.bits := addr
       val stall = Wire(Bool())
       val data = Wire(UInt((opts.TO_L2_TRANSFER_WIDTH).W))
-      when(addrInDM(addr)) {
-        toDM.read.valid := true.B
-        stall := toDM.stall
-        data := toDM.data
+      when(isUncached(addr)) {
+        toUI.read.valid := true.B
+        stall := toUI.stall
+        data := toUI.data
       }.otherwise {
         toL2.read.valid := true.B
         stall := toL2.stall

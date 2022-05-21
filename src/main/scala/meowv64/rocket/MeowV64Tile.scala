@@ -202,10 +202,10 @@ class MeowV64TileModuleImp(outer: MeowV64Tile)
   // wire frontend io to adapter
   core.io.frontend <> outer.adapter.module.frontend
 
-  // debug mode code
+  // uncached code
   // TODO
-  core.io.dmCode.stall := true.B
-  core.io.dmCode.data := 0.U
+  core.io.frontend.ui.stall := true.B
+  core.io.frontend.ui.data := 0.U
 
   // time
   // TODO

@@ -86,13 +86,15 @@ class RiscVSystem(implicit val sDef: SystemDef = new DefaultSystemDef)
     cores(idx).io.dm <> dm.io.core(idx)
   }
   l2.mmio(2) <> dm.io.toL2
+
+  // access uncached code from debug module
   val arbiter = Module(new RRArbiter(UInt(sDef.PADDR_WIDTH.W), sDef.CORE_COUNT))
   for (idx <- (0 until sDef.CORE_COUNT)) {
-    cores(idx).io.dmCode.stall := ~arbiter.io.in(idx).ready
-    arbiter.io.in(idx).valid := cores(idx).io.dmCode.read.valid
-    arbiter.io.in(idx).bits := cores(idx).io.dmCode.read.bits
+    cores(idx).io.frontend.ui.stall := ~arbiter.io.in(idx).ready
+    arbiter.io.in(idx).valid := cores(idx).io.frontend.ui.read.valid
+    arbiter.io.in(idx).bits := cores(idx).io.frontend.ui.read.bits
 
-    cores(idx).io.dmCode.data := dm.io.toL1I.data
+    cores(idx).io.frontend.ui.data := dm.io.toL1I.data
   }
   dm.io.toL1I.read.valid := arbiter.io.out.valid
   dm.io.toL1I.read.bits := arbiter.io.out.bits

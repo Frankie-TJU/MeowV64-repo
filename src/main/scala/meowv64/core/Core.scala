@@ -17,8 +17,13 @@ class CoreInt extends Bundle {
 }
 
 class CoreFrontend(implicit val coredef: CoreDef) extends Bundle {
+  // icache
   val ic = new L1ICPort(coredef.L1I)
+  // dcache
   val dc = new L1DCPort(coredef.L1D)
+  // uncached inst
+  val ui = new L1ICPort(coredef.L1I)
+  // uncached data
   val uc = new L1UCPort(coredef.L1D)
 }
 
@@ -55,8 +60,6 @@ class Core(implicit val coredef: CoreDef) extends Module {
     val time = Input(UInt(64.W))
 
     val dm = new CoreToDebugModule
-    // access code in debug module
-    val dmCode = new L1ICPort(coredef.L1I)
 
     // Debug
     val debug = Output(new CoreDebug)
@@ -75,7 +78,7 @@ class Core(implicit val coredef: CoreDef) extends Module {
   val l1d = Module(new L1DC(coredef.L1D))
 
   l1i.toL2 <> io.frontend.ic
-  l1i.toDM <> io.dmCode
+  l1i.toUI <> io.frontend.ui
   l1d.toL2 <> io.frontend.dc
 
   // TODO: attach DTLB
