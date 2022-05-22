@@ -148,6 +148,18 @@ class MeowV64Tile private (
   // adapt custom interface to TileLink Cached
   val adapter = LazyModule(new MeowV64TileLinkAdapter(meowv64Params.coredef))
 
+  // buffets
+  val buffets = LazyModule(
+    new Buffets(
+      BuffetsConfig(
+        memoryBase = 0x5000000L,
+        memorySize = 0x10000L,
+        configBase = 0x58000000L,
+        beatBytes = 32
+      )
+    )
+  )
+
   // we use custom beatBytes from the client
   val node = TLIdentityNode()
   val innerBeatBytes = meowv64Params.coredef.L1_LINE_BYTES
@@ -159,10 +171,19 @@ class MeowV64Tile private (
   ) := adapter.dcNode
   tlMasterXbar.node := node := TLBuffer() := TLWidthWidget(
     innerBeatBytes
-  ) := adapter.ucNode
+  ) := adapter.uiNode
+
+  // create local crossbar for buffets
+  // share port with uncached to reduce clash
+  val xbar = LazyModule(new TLXbar())
+  xbar.node := adapter.ucNode
+  xbar.node := buffets.masterNode
+  buffets.slaveNode := xbar.node
+  buffets.registerNode := xbar.node
+
   tlMasterXbar.node := node := TLBuffer() := TLWidthWidget(
     innerBeatBytes
-  ) := adapter.uiNode
+  ) := xbar.node
 
   def connectMeowV64Interrupts(
       debug: Bool,
