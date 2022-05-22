@@ -427,5 +427,5 @@ class MeowV64TileLinkAdapterModuleImp(outer: MeowV64TileLinkAdapter)
   frontend.uc.rdata := uc.d.bits.data >> uc_shift
 
   // uncached inst
-  connectIC(frontend.ui, outer.icNode)
+  connectIC(frontend.ui, outer.uiNode)
 }
