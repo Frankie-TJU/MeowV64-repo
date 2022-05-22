@@ -27,17 +27,18 @@ class L1ICacheTest(dut: L1IC, seed: Long, len: Int) {
 
   var cnt = 0
 
-  val addrs: Seq[Option[Int]] = Seq.fill(len)({
+  val addrs: Seq[Option[Long]] = Seq.fill(len)({
     val en = rng.nextBoolean()
-    val addr = ((math.abs(rng.nextInt()) % L1ICacheTest.RAM_SIZE) >> 2) << 2
+    val addr = ((math.abs(rng.nextLong()) % L1ICacheTest.RAM_SIZE) >> 2) << 2
 
     if (en) {
-      Some(addr)
+      // move to cached region
+      Some(addr + 0x80000000L)
     } else {
       None
     }
   })
-  val ref = new HashMap[Int, BigInt]()
+  val ref = new HashMap[Long, BigInt]()
 
   // Populate ref
   for (addr <- addrs) {
@@ -53,7 +54,7 @@ class L1ICacheTest(dut: L1IC, seed: Long, len: Int) {
       // println("Cycle: " + i)
       dut.toCPU.read.valid.poke(addrs(cnt).isDefined.B)
       dut.toCPU.read.bits.poke(
-        (addrs(cnt).getOrElse(rng.nextInt().abs % L1ICacheTest.RAM_SIZE)).U
+        (addrs(cnt).getOrElse(rng.nextLong().abs % L1ICacheTest.RAM_SIZE)).U
       )
 
       if (dut.toCPU.read.ready.peek.litToBoolean == true) {
@@ -100,7 +101,7 @@ class L1ICacheTest(dut: L1IC, seed: Long, len: Int) {
         if (heldCycles == Some(0)) {
           dut.toL2.stall.poke(false.B)
 
-          val addr = dut.toL2.read.bits.peek.litValue.toInt
+          val addr = dut.toL2.read.bits.peek.litValue.toLong
           var data = BigInt(0)
           for (i <- (0 until 4)) {
             val added = addr + i * 4;
