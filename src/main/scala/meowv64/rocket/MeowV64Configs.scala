@@ -4,6 +4,7 @@ import freechips.rocketchip.config.Config
 import freechips.rocketchip.subsystem.RocketTilesKey
 import freechips.rocketchip.subsystem.WithCacheBlockBytes
 import freechips.rocketchip.subsystem.WithCoherentBusTopology
+import freechips.rocketchip.subsystem.WithDebugSBA
 import freechips.rocketchip.subsystem.WithInclusiveCache
 import freechips.rocketchip.subsystem.WithIncoherentBusTopology
 import freechips.rocketchip.subsystem.WithIncoherentTiles
@@ -21,6 +22,7 @@ class MeowV64BaseConfig
         new WithNoSlavePort ++
         new WithInclusiveCache ++
         new WithCoherentBusTopology ++
+        new WithDebugSBA ++
         new BaseConfig ++
         new WithCacheBlockBytes(32)
     )
