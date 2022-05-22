@@ -488,6 +488,8 @@ abstract class CoreDef {
     */
   def FLOAT_TYPES: Seq[FloatType] = Seq(FloatS, FloatD)
 
+  val IN_ROCKET_SYSTEM: Boolean = false
+
   object L1I
       extends {
         val ADDR_WIDTH: Int = outer.PADDR_WIDTH
@@ -520,11 +522,12 @@ abstract class CoreDef {
 
 // TODO: moves into MulticoreDef
 object CoreDef {
-  def default(id: Int, initVec: BigInt, cacheLineBytes: Int) = {
+  def default(id: Int, initVec: BigInt, cacheLineBytes: Int, inRocketSystem: Boolean = false) = {
     new CoreDef {
       override val HART_ID = id
       override val INIT_VEC = initVec
       override val L1_LINE_BYTES: Int = cacheLineBytes
+      override val IN_ROCKET_SYSTEM: Boolean = inRocketSystem
     }
   }
 }

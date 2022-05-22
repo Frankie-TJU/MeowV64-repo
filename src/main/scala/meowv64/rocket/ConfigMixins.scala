@@ -60,8 +60,9 @@ class WithMeowV64Cores(
               coredef = CoreDef
                 .default(
                   id = i + idOffset,
-                  systemDef.INIT_VEC,
-                  systemDef.L2_LINE_BYTES
+                  initVec = systemDef.INIT_VEC,
+                  cacheLineBytes = systemDef.L2_LINE_BYTES,
+                  inRocketSystem = true
                 )
             ),
             crossingParams = RocketCrossingParams()

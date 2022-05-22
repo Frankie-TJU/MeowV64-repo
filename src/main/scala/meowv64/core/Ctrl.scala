@@ -517,18 +517,35 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
   tvec := tvecBase(coredef.XLEN - 1, 2) ## 0.U(2.W)
   when(enterDebugMode) {
     // enter debug mode:
-    // vector = start
-    tvec := DebugModule.DM_CODE_REGION_START.U
+    if (coredef.IN_ROCKET_SYSTEM) {
+      // 0x800 debugEntry
+      tvec := 0x800.U
+    } else {
+      // vector = start
+      tvec := DebugModule.DM_CODE_REGION_START.U
+    }
   }.elsewhen(debugMode) {
     // exception in debug mode
     when(br.req.ex === ExReq.ex && br.req.exType === ExType.BREAKPOINT) {
       // if ebreak in debug mode
-      // vector = start + 0x4
-      tvec := (DebugModule.DM_CODE_REGION_START + 0x4).U
+
+      if (coredef.IN_ROCKET_SYSTEM) {
+        // 0x800 debugEntry
+        tvec := 0x800.U
+      } else {
+        // vector = start + 0x4
+        tvec := (DebugModule.DM_CODE_REGION_START + 0x4).U
+      }
     }.otherwise {
       // other exceptions in debug mode
-      // vector = start + 0x8
-      tvec := (DebugModule.DM_CODE_REGION_START + 0x8).U
+
+      if (coredef.IN_ROCKET_SYSTEM) {
+        // 0x808 debugException
+        tvec := 0x808.U
+      } else {
+        // vector = start + 0x8
+        tvec := (DebugModule.DM_CODE_REGION_START + 0x8).U
+      }
     }
   }.elsewhen(intFired && tvecBase(1, 0) === 1.U) {
     // Vectored trap
