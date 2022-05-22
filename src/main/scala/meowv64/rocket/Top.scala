@@ -4,7 +4,6 @@ import chipsalliance.rocketchip.config.Parameters
 import chisel3._
 import chisel3.experimental.dataview._
 import freechips.rocketchip.devices.debug.Debug
-import freechips.rocketchip.devices.debug.JtagDTMKey
 import freechips.rocketchip.devices.tilelink.BootROM
 import freechips.rocketchip.devices.tilelink.BootROMLocated
 import freechips.rocketchip.diplomacy.BundleBridgeNexusNode
@@ -56,9 +55,13 @@ class RiscVSystem(implicit val p: Parameters) extends Module {
   systemJtag.jtag.TMS := jtag.TMS
   systemJtag.jtag.TDI := jtag.TDI
   jtag.TDO := systemJtag.jtag.TDO
-  systemJtag.mfr_id := p(JtagDTMKey).idcodeManufId.U(11.W)
-  systemJtag.part_number := p(JtagDTMKey).idcodePartNum.U(16.W)
-  systemJtag.version := p(JtagDTMKey).idcodeVersion.U(4.W)
+  //systemJtag.mfr_id := p(JtagDTMKey).idcodeManufId.U(11.W)
+  //systemJtag.part_number := p(JtagDTMKey).idcodePartNum.U(16.W)
+  //systemJtag.version := p(JtagDTMKey).idcodeVersion.U(4.W)
+  // custom idcode
+  systemJtag.mfr_id := 0.U
+  systemJtag.part_number := 0x2222.U
+  systemJtag.version := 1.U
   // MUST use async reset here
   // otherwise the internal logic(e.g. TLXbar) might not function
   // if reset deasserted before TCK rises
