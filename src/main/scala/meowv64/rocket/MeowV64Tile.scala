@@ -160,6 +160,9 @@ class MeowV64Tile private (
   tlMasterXbar.node := node := TLBuffer() := TLWidthWidget(
     innerBeatBytes
   ) := adapter.ucNode
+  tlMasterXbar.node := node := TLBuffer() := TLWidthWidget(
+    innerBeatBytes
+  ) := adapter.uiNode
 
   def connectMeowV64Interrupts(
       debug: Bool,
@@ -201,11 +204,6 @@ class MeowV64TileModuleImp(outer: MeowV64Tile)
 
   // wire frontend io to adapter
   core.io.frontend <> outer.adapter.module.frontend
-
-  // uncached code
-  // TODO
-  core.io.frontend.ui.stall := true.B
-  core.io.frontend.ui.data := 0.U
 
   // time
   // TODO

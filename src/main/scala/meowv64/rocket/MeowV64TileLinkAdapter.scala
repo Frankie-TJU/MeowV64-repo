@@ -10,6 +10,7 @@ import meowv64.cache.L1DCPort
 import meowv64.cache.L1UCReq
 import meowv64.core.CoreDef
 import meowv64.core.CoreFrontend
+import meowv64.cache.L1ICPort
 
 class MeowV64TileLinkAdapter(val coredef: CoreDef)(implicit p: Parameters)
     extends LazyModule()(p) {
@@ -56,7 +57,7 @@ class MeowV64TileLinkAdapter(val coredef: CoreDef)(implicit p: Parameters)
     )
   )
 
-  // uncached port
+  // uncached data port
   val ucNode = TLClientNode(
     Seq(
       TLMasterPortParameters.v1(
@@ -74,6 +75,23 @@ class MeowV64TileLinkAdapter(val coredef: CoreDef)(implicit p: Parameters)
       )
     )
   )
+
+  // uncached inst port
+  val uiNode = TLClientNode(
+    Seq(
+      TLMasterPortParameters.v1(
+        clients = Seq(
+          TLMasterParameters.v2(
+            name = "meowv64-ui",
+            sourceId = IdRange(0, 1),
+            emits = TLMasterToSlaveTransferSizes(
+              get = TransferSizes(lineSize, lineSize)
+            )
+          )
+        )
+      )
+    )
+  )
 }
 
 class MeowV64TileLinkAdapterModuleImp(outer: MeowV64TileLinkAdapter)
@@ -83,48 +101,53 @@ class MeowV64TileLinkAdapterModuleImp(outer: MeowV64TileLinkAdapter)
   val frontend = IO(Flipped(new CoreFrontend()(coredef)))
   val s_ready :: s_active :: s_inflight :: Nil = Enum(3)
 
-  // ic
-  val (ic, ic_edge) = outer.icNode.out(0)
-  val ic_state = RegInit(s_ready)
-  val ic_addr = Reg(UInt(coredef.XLEN.W))
-  switch(ic_state) {
-    is(s_ready) {
-      when(frontend.ic.read.valid) {
-        ic_addr := frontend.ic.read.bits
-        ic_state := s_active
+  // connect L1ICPort to TileLInk
+  def connectIC(port: L1ICPort, node: TLClientNode) = {
+    val (ic, ic_edge) = node.out(0)
+    val ic_state = RegInit(s_ready)
+    val ic_addr = Reg(UInt(coredef.XLEN.W))
+    switch(ic_state) {
+      is(s_ready) {
+        when(port.read.valid) {
+          ic_addr := port.read.bits
+          ic_state := s_active
 
-        val offset =
-          frontend.ic.read.bits(log2Ceil(coredef.L1_LINE_BYTES) - 1, 0)
-        assert(offset === 0.U)
+          val offset =
+            port.read.bits(log2Ceil(coredef.L1_LINE_BYTES) - 1, 0)
+          assert(offset === 0.U)
+        }
+      }
+      is(s_active) {
+        when(ic.a.fire) {
+          ic_state := s_inflight
+        }
+      }
+      is(s_inflight) {
+        when(ic.d.fire) {
+          ic_state := s_ready
+        }
       }
     }
-    is(s_active) {
-      when(ic.a.fire) {
-        ic_state := s_inflight
-      }
-    }
-    is(s_inflight) {
-      when(ic.d.fire) {
-        ic_state := s_ready
-      }
-    }
+
+    // a channel
+    ic.a.valid := ic_state === s_active && ~reset.asBool
+    ic.a.bits := ic_edge.Get(0.U, ic_addr, log2Ceil(outer.lineSize).U)._2
+
+    // d channel
+    ic.d.ready := true.B
+    port.stall := ~ic.d.valid
+    port.data := ic.d.bits.data
+
+    // unused
+    ic.b.valid := false.B
+    ic.c.ready := true.B
+    ic.e.ready := true.B
   }
 
-  // a channel
-  ic.a.valid := ic_state === s_active && ~reset.asBool
-  ic.a.bits := ic_edge.Get(0.U, ic_addr, log2Ceil(outer.lineSize).U)._2
+  // icache
+  connectIC(frontend.ic, outer.icNode)
 
-  // d channel
-  ic.d.ready := true.B
-  frontend.ic.stall := ~ic.d.valid
-  frontend.ic.data := ic.d.bits.data
-
-  // unused
-  ic.b.valid := false.B
-  ic.c.ready := true.B
-  ic.e.ready := true.B
-
-  // dc
+  // dcache
   val (dc, dc_edge) = outer.dcNode.out(0)
 
   dc.a.valid := false.B
@@ -342,7 +365,7 @@ class MeowV64TileLinkAdapterModuleImp(outer: MeowV64TileLinkAdapter)
   // arbiter for c channel
   TLArbiter.robin(dc_edge, dc.c, dc_l1_out_c, dc_l2_out_c)
 
-  // uncached
+  // uncached data
   val (uc, uc_edge) = outer.ucNode.out(0)
   val uc_state = RegInit(s_ready)
   val uc_addr = Reg(UInt(coredef.XLEN.W))
@@ -402,4 +425,7 @@ class MeowV64TileLinkAdapterModuleImp(outer: MeowV64TileLinkAdapter)
   frontend.uc.stall := ~uc.d.valid
   // handle offset in addr
   frontend.uc.rdata := uc.d.bits.data >> uc_shift
+
+  // uncached inst
+  connectIC(frontend.ui, outer.icNode)
 }
