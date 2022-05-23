@@ -13,6 +13,32 @@ import meowv64.exec._
 
 class VectorFMAExt(implicit val coredef: CoreDef) extends Bundle {
   // stage 0 to stage 1:
+  val op = MixedVec(for (float <- coredef.FLOAT_TYPES) yield {
+    Vec(
+      coredef.VLEN / float.width,
+      UInt(2.W)
+    )
+  })
+  val a = MixedVec(for (float <- coredef.FLOAT_TYPES) yield {
+    Vec(
+      coredef.VLEN / float.width,
+      UInt(float.widthHardfloat.W)
+    )
+  })
+  val b = MixedVec(for (float <- coredef.FLOAT_TYPES) yield {
+    Vec(
+      coredef.VLEN / float.width,
+      UInt(float.widthHardfloat.W)
+    )
+  })
+  val c = MixedVec(for (float <- coredef.FLOAT_TYPES) yield {
+    Vec(
+      coredef.VLEN / float.width,
+      UInt(float.widthHardfloat.W)
+    )
+  })
+
+  // stage 1 to stage 2:
   val toPostMul = MixedVec(for (float <- coredef.FLOAT_TYPES) yield {
     Vec(
       coredef.VLEN / float.width,
@@ -38,7 +64,7 @@ class VectorFMAExt(implicit val coredef: CoreDef) extends Bundle {
     )
   })
 
-  // stage 1 to stage 2:
+  // stage 2 to stage 3:
   val mulAddResult = MixedVec(for (float <- coredef.FLOAT_TYPES) yield {
     Vec(
       coredef.VLEN / float.width,
@@ -46,7 +72,7 @@ class VectorFMAExt(implicit val coredef: CoreDef) extends Bundle {
     )
   })
 
-  // stage 2 to stage 3:
+  // stage 3 to stage 4:
   val rawOut = MixedVec(for (float <- coredef.FLOAT_TYPES) yield {
     Vec(
       coredef.VLEN / float.width,
@@ -60,12 +86,13 @@ class VectorFMAExt(implicit val coredef: CoreDef) extends Bundle {
     )
   })
 
+  // final
   val res = UInt(coredef.VLEN.W)
   val fflags = UInt(5.W)
 }
 
 class VectorFMA(override implicit val coredef: CoreDef)
-    extends ExecUnit(3, new VectorFMAExt, coredef.REG_VEC)
+    extends ExecUnit(4, new VectorFMAExt, coredef.REG_VEC)
     with WithVState {
 
   val vState = IO(Input(new VState()))
@@ -110,7 +137,8 @@ class VectorFMA(override implicit val coredef: CoreDef)
       when(curFloat === float.fmt) {
         for (lane <- 0 until lanes) {
           if (stage == 0) {
-            // step 1: collect op and operands
+            // stage 0
+            // collect op and operands
             // a * b + c
             val a = WireInit(0.U(float.widthHardfloat.W))
             val b = WireInit(0.U(float.widthHardfloat.W))
@@ -215,21 +243,26 @@ class VectorFMA(override implicit val coredef: CoreDef)
               }
             }
 
-            // step 2: preMul
+            state.op(idx)(lane) := op
+            state.a(idx)(lane) := a
+            state.b(idx)(lane) := b
+            state.c(idx)(lane) := c
+          } else if (stage == 1) {
+            // stage 1
+            val lastState = ext.get
             val preMul =
               Module(new MulAddRecFNToRaw_preMul(float.exp, float.sig))
             preMul.suggestName(s"preMul_${float.name}")
-            preMul.io.op := op
-            preMul.io.a := a
-            preMul.io.b := b
-            preMul.io.c := c
+            preMul.io.op := lastState.op(idx)(lane)
+            preMul.io.a := lastState.a(idx)(lane)
+            preMul.io.b := lastState.b(idx)(lane)
+            preMul.io.c := lastState.c(idx)(lane)
 
             state.toPostMul(idx)(lane) := preMul.io.toPostMul
             state.mulAddA(idx)(lane) := preMul.io.mulAddA
             state.mulAddB(idx)(lane) := preMul.io.mulAddB
             state.mulAddC(idx)(lane) := preMul.io.mulAddC
-
-          } else if (stage == 1) {
+          } else if (stage == 2) {
             // stage 2
             val lastState = ext.get
 
@@ -239,7 +272,7 @@ class VectorFMA(override implicit val coredef: CoreDef)
 
             state.toPostMul(idx)(lane) := lastState.toPostMul(idx)(lane)
             state.mulAddResult(idx)(lane) := mulAddResult
-          } else if (stage == 2) {
+          } else if (stage == 3) {
             // stage 3: post mul
             val lastState = ext.get
 
