@@ -53,19 +53,5 @@ class Buffets(config: BuffetsConfig)(implicit p: Parameters)
     beatBytes = config.beatBytes
   )
 
-  // to memory
-  val masterNode = TLClientNode(
-    Seq(
-      TLMasterPortParameters.v1(
-        clients = Seq(
-          TLMasterParameters.v2(
-            name = "buffets-master",
-            sourceId = IdRange(0, 1)
-          )
-        )
-      )
-    )
-  )
-
   lazy val module = new LazyModuleImp(this) {}
 }

@@ -159,6 +159,14 @@ class MeowV64Tile private (
       )
     )
   )
+  val addrGen = LazyModule(
+    new AddressGeneration(
+      AddressGenerationConfig(
+        configBase = 0x59000000L,
+        beatBytes = 32
+      )
+    )
+  )
 
   // we use custom beatBytes from the client
   val node = TLIdentityNode()
@@ -173,13 +181,14 @@ class MeowV64Tile private (
     innerBeatBytes
   ) := adapter.uiNode
 
-  // create local crossbar for buffets
+  // create local crossbar for buffets & addrgen
   // share port with uncached to reduce clash
   val xbar = LazyModule(new TLXbar())
   xbar.node := adapter.ucNode
-  xbar.node := buffets.masterNode
+  xbar.node := addrGen.masterNode
   buffets.slaveNode := xbar.node
   buffets.registerNode := xbar.node
+  addrGen.registerNode := xbar.node
 
   tlMasterXbar.node := node := TLBuffer() := TLWidthWidget(
     innerBeatBytes

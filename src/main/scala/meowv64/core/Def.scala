@@ -522,7 +522,12 @@ abstract class CoreDef {
 
 // TODO: moves into MulticoreDef
 object CoreDef {
-  def default(id: Int, initVec: BigInt, cacheLineBytes: Int, inRocketSystem: Boolean = false) = {
+  def default(
+      id: Int,
+      initVec: BigInt,
+      cacheLineBytes: Int,
+      inRocketSystem: Boolean = false
+  ) = {
     new CoreDef {
       override val HART_ID = id
       override val INIT_VEC = initVec
