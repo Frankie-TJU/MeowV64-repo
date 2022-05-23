@@ -38,7 +38,7 @@ class VectorFloatRedSum(implicit val coredef: CoreDef)
   for ((float, idx) <- coredef.FLOAT_TYPES.zipWithIndex) {
     val lanes = coredef.VLEN / float.width()
 
-    val currentValue = Reg(UInt(float.widthHardfloat.W))
+    val currentValueHF = Reg(UInt(float.widthHardfloat.W))
     val currentFFlags = Reg(UInt(5.W))
     val currentRs2ElementsHF = Reg(Vec(lanes, UInt(float.widthHardfloat.W)))
     when(busy) {
@@ -51,7 +51,7 @@ class VectorFloatRedSum(implicit val coredef: CoreDef)
         val a = WireInit(0.U(float.widthHardfloat.W))
         val b = WireInit(0.U(float.widthHardfloat.W))
         // currentValue + vs2[progress]
-        a := currentValue
+        a := currentValueHF
 
         when(
           currentInstr.instr.instr.readVm() && ~currentInstr.vmval(progress)
@@ -71,17 +71,18 @@ class VectorFloatRedSum(implicit val coredef: CoreDef)
         adder.io.roundingMode := 0.U
         adder.io.detectTininess := hardfloat.consts.tininess_afterRounding
 
-        currentValue := adder.io.out
+        currentValueHF := adder.io.out
         currentFFlags := currentFFlags | adder.io.exceptionFlags
 
         progress := progress + 1.U
 
+        // one cycle delay for hardfloat conversion
         // only set lane 0 of vd
-        rs3Elements(0) := float.fromHardfloat(adder.io.out)
+        rs3Elements(0) := float.fromHardfloat(currentValueHF)
         io.retirement.wb := Cat(rs3Elements.reverse)
         io.retirement.updateFFlags := true.B
-        io.retirement.fflags := currentFFlags | adder.io.exceptionFlags
-        when(progress + 1.U === vState.vl) {
+        io.retirement.fflags := currentFFlags
+        when(progress === vState.vl) {
           io.retiredInstr.instr.valid := true.B
           busy := false.B
           io.stall := false.B
@@ -99,7 +100,7 @@ class VectorFloatRedSum(implicit val coredef: CoreDef)
       rs2Elements := io.next.rs2val.asTypeOf(rs2Elements)
 
       // convert ieee to hardfloat
-      currentValue := float.toHardfloat(rs1Elements(0))
+      currentValueHF := float.toHardfloat(rs1Elements(0))
       for (i <- 0 until lanes) {
         currentRs2ElementsHF(i) := float.toHardfloat(rs2Elements(i))
       }
