@@ -1,21 +1,15 @@
 package meowv64.rocket
 
-import chisel3._
-import chisel3.util._
-import freechips.rocketchip.diplomacy.LazyModule
 import chipsalliance.rocketchip.config.Parameters
-import freechips.rocketchip.diplomacy.LazyModuleImp
-import freechips.rocketchip.tilelink.TLManagerNode
-import freechips.rocketchip.tilelink.TLSlavePortParameters
-import freechips.rocketchip.tilelink.TLSlaveParameters
 import freechips.rocketchip.diplomacy.AddressSet
-import freechips.rocketchip.diplomacy.TransferSizes
-import freechips.rocketchip.tilelink.TLRegisterNode
+import freechips.rocketchip.diplomacy.LazyModule
+import freechips.rocketchip.diplomacy.LazyModuleImp
 import freechips.rocketchip.diplomacy.SimpleDevice
-import freechips.rocketchip.tilelink.TLClientNode
-import freechips.rocketchip.tilelink.TLMasterPortParameters
-import freechips.rocketchip.tilelink.TLMasterParameters
-import freechips.rocketchip.diplomacy.IdRange
+import freechips.rocketchip.diplomacy.TransferSizes
+import freechips.rocketchip.tilelink.TLManagerNode
+import freechips.rocketchip.tilelink.TLRegisterNode
+import freechips.rocketchip.tilelink.TLSlaveParameters
+import freechips.rocketchip.tilelink.TLSlavePortParameters
 
 case class BuffetsConfig(
     memoryBase: BigInt,

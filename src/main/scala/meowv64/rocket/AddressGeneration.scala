@@ -1,20 +1,20 @@
 package meowv64.rocket
 
+import chipsalliance.rocketchip.config.Parameters
 import chisel3._
 import chisel3.experimental.ChiselEnum
+import freechips.rocketchip.diplomacy.AddressSet
+import freechips.rocketchip.diplomacy.IdRange
 import freechips.rocketchip.diplomacy.LazyModule
 import freechips.rocketchip.diplomacy.LazyModuleImp
-import chipsalliance.rocketchip.config.Parameters
 import freechips.rocketchip.diplomacy.SimpleDevice
-import freechips.rocketchip.tilelink.TLRegisterNode
-import freechips.rocketchip.diplomacy.AddressSet
-import freechips.rocketchip.tilelink.TLClientNode
-import freechips.rocketchip.tilelink.TLMasterPortParameters
-import freechips.rocketchip.tilelink.TLMasterParameters
-import freechips.rocketchip.diplomacy.IdRange
-import freechips.rocketchip.regmapper.RegFieldGroup
 import freechips.rocketchip.regmapper.RegField
 import freechips.rocketchip.regmapper.RegFieldDesc
+import freechips.rocketchip.regmapper.RegFieldGroup
+import freechips.rocketchip.tilelink.TLClientNode
+import freechips.rocketchip.tilelink.TLMasterParameters
+import freechips.rocketchip.tilelink.TLMasterPortParameters
+import freechips.rocketchip.tilelink.TLRegisterNode
 
 case class AddressGenerationConfig(
     configBase: BigInt,

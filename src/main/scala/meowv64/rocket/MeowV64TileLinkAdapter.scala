@@ -7,10 +7,10 @@ import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.tilelink._
 import meowv64.cache.DCWriteLen
 import meowv64.cache.L1DCPort
+import meowv64.cache.L1ICPort
 import meowv64.cache.L1UCReq
 import meowv64.core.CoreDef
 import meowv64.core.CoreFrontend
-import meowv64.cache.L1ICPort
 
 class MeowV64TileLinkAdapter(val coredef: CoreDef)(implicit p: Parameters)
     extends LazyModule()(p) {
