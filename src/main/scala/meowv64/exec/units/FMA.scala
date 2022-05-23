@@ -28,6 +28,11 @@ class FMAExt(implicit val coredef: CoreDef) extends Bundle {
   })
 
   // stage 1 to stage 2
+  val mulAddResult = MixedVec(for (float <- coredef.FLOAT_TYPES) yield {
+    UInt((float.sig() * 2 + 1).W)
+  })
+
+  // stage 2 to stage 3
   val rawOut = MixedVec(for (float <- coredef.FLOAT_TYPES) yield {
     new RawFloat(float.exp, float.sig + 2)
   })
@@ -40,17 +45,19 @@ class FMAExt(implicit val coredef: CoreDef) extends Bundle {
   val fflags = UInt(5.W)
 }
 
-/** 2 stage FMA.
+/** 3 stage FMA.
   *
-  * Cycle 1: convert to hardfloat, preMul
+  * Cycle 0: convert to hardfloat, preMul
   *
-  * Cycle 2: mulAdd, postMul
+  * Cycle 1: mulAdd
+  *
+  * Cycle 2: postMul
   *
   * Cycle 3: round, convert to ieee
   */
 class FMA(override implicit val coredef: CoreDef)
     extends ExecUnit(
-      2,
+      3,
       new FMAExt,
       coredef.REG_FLOAT
     ) {
@@ -63,6 +70,7 @@ class FMA(override implicit val coredef: CoreDef)
     for ((float, idx) <- coredef.FLOAT_TYPES.zipWithIndex) {
       when(pipe.instr.instr.fmt === float.fmt) {
         if (stage == 0) {
+          // stage 0
           // step 1: collect op and operands
           // a * b + c
           val a = WireInit(0.U(float.widthHardfloat.W))
@@ -151,25 +159,31 @@ class FMA(override implicit val coredef: CoreDef)
           state.mulAddB(idx) := preMul.io.mulAddB
           state.mulAddC(idx) := preMul.io.mulAddC
         } else if (stage == 1) {
-          // second stage
+          // stage 1
           val lastState = ext.get
 
           val mulAddResult =
             (lastState.mulAddA(idx) * lastState.mulAddB(idx)) +& lastState
               .mulAddC(idx)
 
+          state.toPostMul(idx) := lastState.toPostMul(idx)
+          state.mulAddResult(idx) := mulAddResult
+        } else if (stage == 2) {
+          // stage 2
+          val lastState = ext.get
+
           val postMul =
             Module(new MulAddRecFNToRaw_postMul(float.exp, float.sig))
           postMul.suggestName(s"postMul_${float.name}")
           postMul.io.fromPreMul := lastState.toPostMul(idx)
-          postMul.io.mulAddResult := mulAddResult
+          postMul.io.mulAddResult := lastState.mulAddResult(idx)
           // TODO
           postMul.io.roundingMode := 0.U
 
           state.rawOut(idx) := postMul.io.rawOut
           state.invalidExc(idx) := postMul.io.invalidExc
-        } else if (stage == 2) {
-          // third stage
+        } else if (stage == 3) {
+          // stage 3
           val lastState = ext.get
 
           // rounding
