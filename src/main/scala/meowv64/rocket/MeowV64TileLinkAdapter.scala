@@ -161,10 +161,16 @@ class MeowV64TileLinkAdapterModuleImp(outer: MeowV64TileLinkAdapter)
   frontend.dc.l2req := L1DCPort.L2Req.idle
   frontend.dc.l2addr := 0.U
 
-  // l1 req
+  // state for l1 & l2
   val s_l1_ready :: s_l1_read :: s_l1_modify :: s_l1_grant :: s_l1_grantack :: s_l1_writeback :: s_l1_releaseack :: Nil =
     Enum(7)
   val dc_l1_state = RegInit(s_l1_ready)
+
+  val s_l2_ready :: s_l2_probe :: s_l2_probeack :: Nil =
+    Enum(3)
+  val dc_l2_state = RegInit(s_l2_ready)
+
+  // l1 req
   val dc_grant_d = Reg(dc.d.bits.cloneType)
   val dc_l1_out_c = Wire(dc.c.cloneType)
   dc_l1_out_c.valid := false.B
@@ -180,7 +186,10 @@ class MeowV64TileLinkAdapterModuleImp(outer: MeowV64TileLinkAdapter)
           dc_l1_state := s_l1_modify
         }
         is(L1DCPort.L1Req.writeback) {
-          dc_l1_state := s_l1_writeback
+          // do not l1.writeback & l2.flush in the same cycle
+          when(dc_l2_state === s_l2_ready) {
+            dc_l1_state := s_l1_writeback
+          }
         }
       }
     }
@@ -256,9 +265,6 @@ class MeowV64TileLinkAdapterModuleImp(outer: MeowV64TileLinkAdapter)
   }
 
   // l2 req
-  val s_l2_ready :: s_l2_probe :: s_l2_probeack :: Nil =
-    Enum(3)
-  val dc_l2_state = RegInit(s_l2_ready)
   val dc_l2_cache_valid = Reg(Bool())
   val dc_l2_cache_dirty = Reg(Bool())
   val dc_l2_cache_wdata = Reg(frontend.dc.l2wdata.cloneType)
