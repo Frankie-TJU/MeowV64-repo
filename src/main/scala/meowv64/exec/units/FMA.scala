@@ -10,6 +10,8 @@ import hardfloat.RoundRawFNToRecFN
 import meowv64.core.CoreDef
 import meowv64.exec._
 import meowv64.instr.Decoder
+import chisel3.util.experimental.decode.TruthTable
+import chisel3.util.experimental.decode.decoder
 
 class FMAExt(implicit val coredef: CoreDef) extends Bundle {
   // intermediate
@@ -66,6 +68,67 @@ class FMA(override implicit val coredef: CoreDef)
     val state = Wire(new FMAExt)
     state := DontCare
 
+    // decode table
+    // a = rs1valHF, _, _, oneHF
+    // b = rs1valHF, rs2valHF, _, _
+    // c = _, rs2valHF, rs3valHF, zeroHF
+    val aSel = Wire(UInt(2.W))
+    val bSel = Wire(UInt(2.W))
+    val cSel = Wire(UInt(2.W))
+    val neg = WireInit(false.B)
+    val sign = WireInit(false.B)
+
+    val Y = BitPat("b1")
+    val N = BitPat("b0")
+
+    val RS1 = BitPat("b00")
+    val RS2 = BitPat("b01")
+    val RS3 = BitPat("b10")
+    // special
+    val SPL = BitPat("b11")
+
+    val default: List[BitPat] =
+      List(
+        BitPat("b??"),
+        BitPat("b??"),
+        BitPat("b??"),
+        BitPat("b?"),
+        BitPat("b?")
+      )
+    val table: Array[(BitPat, List[BitPat])] =
+      Array(
+        // op ## funct5
+        // a, b, c, neg, sign
+        // fmadd: rs1 * rs2 + rs3
+        BitPat("b10000?????") -> List(RS1, RS2, RS3, N, N),
+        // fmsub: rs1 * rs2 - rs3
+        BitPat("b10001?????") -> List(RS1, RS2, RS3, N, Y),
+        // fnmsub: - (rs1 * rs2 - rs3)
+        BitPat("b10010?????") -> List(RS1, RS2, RS3, Y, N),
+        // fnmadd: - (rs1 * rs2 + rs3)
+        BitPat("b10011?????") -> List(RS1, RS2, RS3, Y, Y),
+        // fadd: 1 * rs1 + rs2
+        BitPat("b1010000000") -> List(SPL, RS1, RS2, N, N),
+        // fsub: 1 * rs1 - rs2
+        BitPat("b1010000001") -> List(SPL, RS1, RS2, N, Y),
+        // fmul: rs1 * rs2 + 0
+        BitPat("b1010000010") -> List(RS1, RS2, SPL, N, N)
+      )
+    val signals = Seq(aSel, bSel, cSel, neg, sign)
+
+    for ((signal, i) <- signals.zipWithIndex) {
+      val truthTable =
+        TruthTable(
+          table.map({ case (k, v) => (k, v(i)) }),
+          default = default(i)
+        )
+
+      // println(truthTable)
+      signal := decoder
+        .qmc(Cat(pipe.instr.instr.op, pipe.instr.instr.funct5), truthTable)
+        .asTypeOf(signal)
+    }
+
     // loop over floating point types
     for ((float, idx) <- coredef.FLOAT_TYPES.zipWithIndex) {
       when(pipe.instr.instr.fmt === float.fmt) {
@@ -85,10 +148,29 @@ class FMA(override implicit val coredef: CoreDef)
           val rs2valHF = float.toHardfloat(rs2val)
           val rs3valHF = float.toHardfloat(rs3val)
           val oneHF = float.oneHardfloat()
+          // the signedness of 0 is rs1 ^ rs2
+          val zeroHF = (rs1val(float.width() - 1) ^
+            rs2val(float.width() - 1)) << float.width()
 
-          val neg = WireInit(false.B)
-          val sign = WireInit(false.B)
           val op = Cat(neg, sign)
+
+          a := MuxLookup(
+            aSel,
+            rs1valHF,
+            Seq(3.U -> oneHF)
+          )
+          b := MuxLookup(
+            bSel,
+            rs1valHF,
+            Seq(1.U -> rs2valHF)
+          )
+          c := MuxLookup(
+            cSel,
+            rs2valHF,
+            Seq(2.U -> rs3valHF, 3.U -> zeroHF)
+          )
+
+          /*
           switch(pipe.instr.instr.op) {
             is(Decoder.Op("MADD").ident) {
               // rs1 * rs2 + rs3
@@ -144,6 +226,7 @@ class FMA(override implicit val coredef: CoreDef)
               }
             }
           }
+          */
 
           // step 2: preMul
           val preMul = Module(new MulAddRecFNToRaw_preMul(float.exp, float.sig))
