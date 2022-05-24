@@ -178,8 +178,11 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
 
   def isUncached(addr: UInt) = addr < BigInt("80000000", 16).U
 
-  val hasNext = issue.instr.valid // TODO: merge into rs.instr
-  val next = WireInit(issue.instr.bits)
+  // add pipeline stage because TLB has long comb path
+  val stagedInst = Queue(issue.instr, entries = 1, pipe = false, flow = true, flush = Some(flush))
+
+  val hasNext = stagedInst.valid // TODO: merge into rs.instr
+  val next = WireInit(stagedInst.bits)
 
   // FIXME: ValidIO resp
   val toMem = IO(new Bundle {
@@ -267,7 +270,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   val tlbRequestModify = WireDefault(false.B)
   tlb.satp := satp
   tlb.ptw <> ptw
-  tlb.query.req.valid := requiresTranslate && issue.instr.valid && !fenceLike
+  tlb.query.req.valid := requiresTranslate && hasNext && !fenceLike
   tlb.query.req.bits.isModify := tlbRequestModify
   tlb.query.req.bits.mode := tlbMode
   tlb.flush := tlbRst
@@ -414,7 +417,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
     l1pass := true.B
   }
 
-  issue.instr.ready := l1pass
+  stagedInst.ready := l1pass
 
   // set hasMem in rob
   // for side effects
@@ -438,7 +441,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   }
 
   // save state to lsq
-  when(issue.instr.fire) {
+  when(stagedInst.fire) {
     val lsqEntry = queue(next.lsqIndex)
 
     lsqEntry.instr := next.instr.instr
