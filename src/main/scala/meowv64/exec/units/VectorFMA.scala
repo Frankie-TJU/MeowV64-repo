@@ -10,6 +10,8 @@ import hardfloat.RoundRawFNToRecFN
 import meowv64.core.CoreDef
 import meowv64.core.VState
 import meowv64.exec._
+import chisel3.util.experimental.decode.TruthTable
+import chisel3.util.experimental.decode.decoder
 
 class VectorFMAExt(implicit val coredef: CoreDef) extends Bundle {
   // stage 0 to stage 1:
@@ -107,6 +109,75 @@ class VectorFMA(override implicit val coredef: CoreDef)
 
     val curFloat = vState.vtype.floatFmt
 
+    // decode table
+    // a = oneHF, rs1valHF
+    // b = rs1valHF, rs2valHF, rs3valHF
+    // c = rs1valHF, rs2valHF, rs3valHF, zeroHF
+    val aSel = Wire(Bool())
+    val bSel = Wire(UInt(2.W))
+    val cSel = Wire(UInt(2.W))
+    val neg = WireInit(false.B)
+    val sign = WireInit(false.B)
+
+    val Y = BitPat("b1")
+    val N = BitPat("b0")
+
+    val RS1 = BitPat("b00")
+    val RS2 = BitPat("b01")
+    val RS3 = BitPat("b10")
+    val ZERO = BitPat("b11")
+
+    val default: List[BitPat] =
+      List(
+        BitPat("b?"),
+        BitPat("b??"),
+        BitPat("b??"),
+        BitPat("b?"),
+        BitPat("b?")
+      )
+    val table: Array[(BitPat, List[BitPat])] =
+      Array(
+        // a, b, c, neg, sign
+        // vfadd: 1 * rs1 + rs2
+        BitPat("b000000") -> List(N, RS1, RS2, N, N),
+        // vfsub: 1 * rs2 - rs1
+        BitPat("b000010") -> List(N, RS2, RS1, N, Y),
+        // vfmul: rs1 * rs2 + 0
+        BitPat("b100100") -> List(Y, RS2, ZERO, N, N),
+        // vfrsub: 1 * rs1 - rs2
+        BitPat("b100111") -> List(N, RS1, RS2, N, Y),
+        // vfmadd: rs1 * rs3 + rs2
+        BitPat("b101000") -> List(Y, RS3, RS2, N, N),
+        // vfnmadd: -(rs1 * rs3) - rs2
+        BitPat("b101001") -> List(Y, RS3, RS2, Y, Y),
+        // vfmsub: rs1 * rs3 - rs2
+        BitPat("b101010") -> List(Y, RS3, RS2, N, Y),
+        // vfnmsub: -(rs1 * rs3) + rs2
+        BitPat("b101011") -> List(Y, RS3, RS2, Y, N),
+        // vfmacc: rs1 * rs2 + rs3
+        BitPat("b101100") -> List(Y, RS2, RS3, N, N),
+        // vfnmacc: -(rs1 * rs2) - rs3
+        BitPat("b101101") -> List(Y, RS2, RS3, Y, Y),
+        // vfmsac: rs1 * rs2 - rs3
+        BitPat("b101110") -> List(Y, RS2, RS3, N, Y),
+        // vfnmsac: -(rs1 * rs2) + rs3
+        BitPat("b101111") -> List(Y, RS2, RS3, Y, N)
+      )
+    val signals = Seq(aSel, bSel, cSel, neg, sign)
+
+    for ((signal, i) <- signals.zipWithIndex) {
+      val truthTable =
+        TruthTable(
+          table.map({ case (k, v) => (k, v(i)) }),
+          default = default(i)
+        )
+
+      // println(truthTable)
+      signal := decoder
+        .qmc(pipe.instr.instr.funct6, truthTable)
+        .asTypeOf(signal)
+    }
+
     // loop over floating point types
     for ((float, idx) <- coredef.FLOAT_TYPES.zipWithIndex) {
       val lanes = coredef.VLEN / float.width()
@@ -155,93 +226,18 @@ class VectorFMA(override implicit val coredef: CoreDef)
               (BigInt(1) << (float.exp + float.sig - 1))
                 .U(float.widthHardfloat.W)
 
-            val neg = WireInit(false.B)
-            val sign = WireInit(false.B)
             val op = Cat(neg, sign)
-            switch(pipe.instr.instr.funct6) {
-              is(0x00.U) {
-                // vfadd: 1 * rs1 + rs2
-                a := oneHF
-                b := rs1valHF
-                c := rs2valHF
-              }
-              is(0x02.U) {
-                // vfsub: 1 * rs2 - rs1
-                a := oneHF
-                b := rs2valHF
-                c := rs1valHF
-                sign := true.B
-              }
-              is(0x24.U) {
-                // vfmul: rs1 * rs2 + 0
-                a := rs1valHF
-                b := rs2valHF
-                c := 0.U
-              }
-              is(0x27.U) {
-                // vfrsub: 1 * rs1 - rs2
-                a := oneHF
-                b := rs1valHF
-                c := rs2valHF
-                sign := true.B
-              }
-              is(0x28.U) {
-                // vfmadd: rs1 * rs3 + rs2
-                a := rs1valHF
-                b := rs3valHF
-                c := rs2valHF
-              }
-              is(0x29.U) {
-                // vfnmadd: -(rs1 * rs3) - rs2
-                a := rs1valHF
-                b := rs3valHF
-                c := rs2valHF
-                neg := true.B
-                sign := true.B
-              }
-              is(0x2a.U) {
-                // vfmsub: rs1 * rs3 - rs2
-                a := rs1valHF
-                b := rs3valHF
-                c := rs2valHF
-                sign := true.B
-              }
-              is(0x2b.U) {
-                // vfnmsub: -(rs1 * rs3) + rs2
-                a := rs1valHF
-                b := rs3valHF
-                c := rs2valHF
-                neg := true.B
-              }
-              is(0x2c.U) {
-                // vfmacc: rs1 * rs2 + rs3
-                a := rs1valHF
-                b := rs2valHF
-                c := rs3valHF
-              }
-              is(0x2d.U) {
-                // vfnmacc: -(rs1 * rs2) - rs3
-                a := rs1valHF
-                b := rs2valHF
-                c := rs3valHF
-                neg := true.B
-                sign := true.B
-              }
-              is(0x2e.U) {
-                // vfmsac: rs1 * rs2 - rs3
-                a := rs1valHF
-                b := rs2valHF
-                c := rs3valHF
-                sign := true.B
-              }
-              is(0x2f.U) {
-                // vfnmsac: -(rs1 * rs2) + rs3
-                a := rs1valHF
-                b := rs2valHF
-                c := rs3valHF
-                neg := true.B
-              }
-            }
+            a := Mux(aSel, rs1valHF, oneHF)
+            b := MuxLookup(
+              bSel,
+              rs1valHF,
+              Seq(1.U -> rs2valHF, 2.U -> rs3valHF)
+            )
+            c := MuxLookup(
+              cSel,
+              rs1valHF,
+              Seq(1.U -> rs2valHF, 2.U -> rs3valHF, 3.U -> 0.U)
+            )
 
             state.op(idx)(lane) := op
             state.a(idx)(lane) := a
