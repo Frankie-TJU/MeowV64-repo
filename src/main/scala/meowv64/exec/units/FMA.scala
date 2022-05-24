@@ -16,6 +16,20 @@ import chisel3.util.experimental.decode.decoder
 class FMAExt(implicit val coredef: CoreDef) extends Bundle {
   // intermediate
   // stage 0 to stage 1
+  val op = MixedVec(for (float <- coredef.FLOAT_TYPES) yield {
+    UInt(2.W)
+  })
+  val a = MixedVec(for (float <- coredef.FLOAT_TYPES) yield {
+    UInt(float.widthHardfloat.W)
+  })
+  val b = MixedVec(for (float <- coredef.FLOAT_TYPES) yield {
+    UInt(float.widthHardfloat.W)
+  })
+  val c = MixedVec(for (float <- coredef.FLOAT_TYPES) yield {
+    UInt(float.widthHardfloat.W)
+  })
+
+  // stage 1 to stage 2
   val toPostMul = MixedVec(for (float <- coredef.FLOAT_TYPES) yield {
     new MulAddRecFN_interIo(float.exp, float.sig)
   })
@@ -29,12 +43,12 @@ class FMAExt(implicit val coredef: CoreDef) extends Bundle {
     UInt((float.sig() * 2).W)
   })
 
-  // stage 1 to stage 2
+  // stage 2 to stage 3
   val mulAddResult = MixedVec(for (float <- coredef.FLOAT_TYPES) yield {
     UInt((float.sig() * 2 + 1).W)
   })
 
-  // stage 2 to stage 3
+  // stage 3 to stage 4
   val rawOut = MixedVec(for (float <- coredef.FLOAT_TYPES) yield {
     new RawFloat(float.exp, float.sig + 2)
   })
@@ -49,17 +63,19 @@ class FMAExt(implicit val coredef: CoreDef) extends Bundle {
 
 /** 3 stage FMA.
   *
-  * Cycle 0: convert to hardfloat, preMul
+  * Cycle 0: convert to hardfloat
   *
-  * Cycle 1: mulAdd
+  * Cycle 1: preMul
   *
-  * Cycle 2: postMul
+  * Cycle 2: mulAdd
   *
-  * Cycle 3: round, convert to ieee
+  * Cycle 3: postMul
+  *
+  * Cycle 4: round, convert to ieee
   */
 class FMA(override implicit val coredef: CoreDef)
     extends ExecUnit(
-      3,
+      4,
       new FMAExt,
       coredef.REG_FLOAT
     ) {
@@ -170,79 +186,26 @@ class FMA(override implicit val coredef: CoreDef)
             Seq(2.U -> rs3valHF, 3.U -> zeroHF)
           )
 
-          /*
-          switch(pipe.instr.instr.op) {
-            is(Decoder.Op("MADD").ident) {
-              // rs1 * rs2 + rs3
-              a := rs1valHF
-              b := rs2valHF
-              c := rs3valHF
-            }
-            is(Decoder.Op("MSUB").ident) {
-              // rs1 * rs2 - rs3
-              sign := true.B
-              a := rs1valHF
-              b := rs2valHF
-              c := rs3valHF
-            }
-            is(Decoder.Op("NMSUB").ident) {
-              // - (rs1 * rs2 - rs3)
-              neg := true.B
-              a := rs1valHF
-              b := rs2valHF
-              c := rs3valHF
-            }
-            is(Decoder.Op("NMADD").ident) {
-              // - (rs1 * rs2 + rs3)
-              neg := true.B
-              sign := true.B
-              a := rs1valHF
-              b := rs2valHF
-              c := rs3valHF
-            }
-            is(Decoder.Op("OP-FP").ident) {
-              switch(pipe.instr.instr.funct5) {
-                is(Decoder.FP_FUNC("FADD")) {
-                  // 1 * rs1 + rs2
-                  a := oneHF
-                  b := rs1valHF
-                  c := rs2valHF
-                }
-                is(Decoder.FP_FUNC("FSUB")) {
-                  // 1 * rs1 - rs2
-                  sign := true.B
-                  a := oneHF
-                  b := rs1valHF
-                  c := rs2valHF
-                }
-                is(Decoder.FP_FUNC("FMUL")) {
-                  // rs1 * rs2 + 0
-                  a := rs1valHF
-                  b := rs2valHF
-                  // the signedness of 0 is rs1 ^ rs2
-                  c := (rs1val(float.width() - 1) ^
-                    rs2val(float.width() - 1)) << float.width()
-                }
-              }
-            }
-          }
-          */
-
-          // step 2: preMul
+          state.op(idx) := op
+          state.a(idx) := a
+          state.b(idx) := b
+          state.c(idx) := c
+        } else if (stage == 1) {
+          // stage 1
+          val lastState = ext.get
           val preMul = Module(new MulAddRecFNToRaw_preMul(float.exp, float.sig))
           preMul.suggestName(s"preMul_${float.name}")
-          preMul.io.op := op
-          preMul.io.a := a
-          preMul.io.b := b
-          preMul.io.c := c
+          preMul.io.op := lastState.op(idx)
+          preMul.io.a := lastState.a(idx)
+          preMul.io.b := lastState.b(idx)
+          preMul.io.c := lastState.c(idx)
 
           state.toPostMul(idx) := preMul.io.toPostMul
-
           state.mulAddA(idx) := preMul.io.mulAddA
           state.mulAddB(idx) := preMul.io.mulAddB
           state.mulAddC(idx) := preMul.io.mulAddC
-        } else if (stage == 1) {
-          // stage 1
+        } else if (stage == 2) {
+          // stage 2
           val lastState = ext.get
 
           val mulAddResult =
@@ -251,8 +214,8 @@ class FMA(override implicit val coredef: CoreDef)
 
           state.toPostMul(idx) := lastState.toPostMul(idx)
           state.mulAddResult(idx) := mulAddResult
-        } else if (stage == 2) {
-          // stage 2
+        } else if (stage == 3) {
+          // stage 3
           val lastState = ext.get
 
           val postMul =
@@ -265,8 +228,8 @@ class FMA(override implicit val coredef: CoreDef)
 
           state.rawOut(idx) := postMul.io.rawOut
           state.invalidExc(idx) := postMul.io.invalidExc
-        } else if (stage == 3) {
-          // stage 3
+        } else if (stage == 4) {
+          // stage 4
           val lastState = ext.get
 
           // rounding
