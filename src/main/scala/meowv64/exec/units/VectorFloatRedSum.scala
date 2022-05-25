@@ -41,6 +41,7 @@ class VectorFloatRedSum(implicit val coredef: CoreDef)
     val currentValueHF = Reg(UInt(float.widthHardfloat.W))
     val currentFFlags = Reg(UInt(5.W))
     val currentRs2ElementsHF = Reg(Vec(lanes, UInt(float.widthHardfloat.W)))
+    val currentAdderB = Reg(UInt(float.widthHardfloat.W))
     when(busy) {
       val rs3Elements = Wire(
         Vec(lanes, UInt(float.width.W))
@@ -52,15 +53,19 @@ class VectorFloatRedSum(implicit val coredef: CoreDef)
         val b = WireInit(0.U(float.widthHardfloat.W))
         // currentValue + vs2[progress]
         a := currentValueHF
+        b := currentAdderB
 
+        // compute next b
         when(
-          currentInstr.instr.instr.readVm() && ~currentInstr.vmval(progress)
+          currentInstr.instr.instr.readVm() && ~currentInstr.vmval(
+            progress + 1.U
+          )
         ) {
           // masked off, do not update
           // TODO: skip this element instead
-          b := 0.U
+          currentAdderB := 0.U
         }.otherwise {
-          b := currentRs2ElementsHF(progress)
+          currentAdderB := currentRs2ElementsHF(progress + 1.U)
         }
 
         val adder = Module(new AddRecFN(float.exp(), float.sig()))
@@ -105,6 +110,17 @@ class VectorFloatRedSum(implicit val coredef: CoreDef)
         currentRs2ElementsHF(i) := float.toHardfloat(rs2Elements(i))
       }
       currentFFlags := 0.U
+
+      // progress = 0
+      when(
+        io.next.instr.instr.readVm() && ~io.next.vmval(0)
+      ) {
+        // masked off, do not update
+        // TODO: skip this element instead
+        currentAdderB := 0.U
+      }.otherwise {
+        currentAdderB := float.toHardfloat(rs2Elements(0))
+      }
     }
   }
 
