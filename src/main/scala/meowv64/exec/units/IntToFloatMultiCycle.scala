@@ -33,7 +33,7 @@ class IntToFloatMultiCycleExt(implicit val coredef: CoreDef) extends Bundle {
   * FCVT.D.L, FCVT.D.LU, FCVT.S.LU
   */
 class IntToFloatMultiCycle(override implicit val coredef: CoreDef)
-    extends ExecUnit(1, new IntToFloatMultiCycleExt, coredef.REG_FLOAT) {
+    extends ExecUnit(2, new IntToFloatMultiCycleExt, coredef.REG_FLOAT) {
 
   def map(
       stage: Int,
