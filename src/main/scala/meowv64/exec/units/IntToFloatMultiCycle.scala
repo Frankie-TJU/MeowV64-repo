@@ -56,6 +56,8 @@ class IntToFloatMultiCycle(override implicit val coredef: CoreDef)
         when(pipe.instr.instr.fmt === float.fmt) {
           if (stage == 0) {
             // stage 0: prepare input
+            ext.signedIn(idx) := false.B
+            ext.in(idx) := pipe.rs1val
             when(pipe.instr.instr.rs2 === 0.U) {
               // FCVT.D.W/FCVT.S.W
               // convert 32-bit int to 32/64-bit float
