@@ -84,29 +84,6 @@ class FloatDivSqrt(implicit val coredef: CoreDef)
     is(FloatDivSqrtState.sIdle) {
       io.stall := false.B
 
-      when(io.next.valid) {
-        // convert to hardfloat
-        rs1valHF :=
-          recFNFromFN(floatType.exp, floatType.sig, io.next.rs1val)
-        rs2valHF :=
-          recFNFromFN(floatType.exp, floatType.sig, io.next.rs2val)
-
-        // convert single to double
-        when(io.next.instr.instr.fmt === FloatS.fmt) {
-          rs1valHF := single2double(
-            recFNFromFN(FloatS.exp, FloatS.sig, io.next.rs1val(31, 0))
-          )
-          rs2valHF := single2double(
-            recFNFromFN(FloatS.exp, FloatS.sig, io.next.rs2val(31, 0))
-          )
-        }
-
-        sqrtOp := io.next.instr.instr.funct5 === Decoder.FP_FUNC("FSQRT")
-
-        currentInstr := io.next
-
-        state := FloatDivSqrtState.sReq
-      }
     }
 
     is(FloatDivSqrtState.sReq) {
@@ -132,6 +109,7 @@ class FloatDivSqrt(implicit val coredef: CoreDef)
     }
 
     is(FloatDivSqrtState.sDone) {
+      io.stall := false.B
       val res = Wire(UInt(coredef.XLEN.W))
 
       when(currentInstr.instr.instr.fmt === FloatS.fmt) {
@@ -156,6 +134,30 @@ class FloatDivSqrt(implicit val coredef: CoreDef)
 
       state := FloatDivSqrtState.sIdle
     }
+  }
+
+  when(!io.stall && io.next.valid) {
+    // convert to hardfloat
+    rs1valHF :=
+      recFNFromFN(floatType.exp, floatType.sig, io.next.rs1val)
+    rs2valHF :=
+      recFNFromFN(floatType.exp, floatType.sig, io.next.rs2val)
+
+    // convert single to double
+    when(io.next.instr.instr.fmt === FloatS.fmt) {
+      rs1valHF := single2double(
+        recFNFromFN(FloatS.exp, FloatS.sig, io.next.rs1val(31, 0))
+      )
+      rs2valHF := single2double(
+        recFNFromFN(FloatS.exp, FloatS.sig, io.next.rs2val(31, 0))
+      )
+    }
+
+    sqrtOp := io.next.instr.instr.funct5 === Decoder.FP_FUNC("FSQRT")
+
+    currentInstr := io.next
+
+    state := FloatDivSqrtState.sReq
   }
 
   when(io.flush) {
