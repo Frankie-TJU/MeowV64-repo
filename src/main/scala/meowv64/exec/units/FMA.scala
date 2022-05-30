@@ -2,6 +2,8 @@ package meowv64.exec.units
 
 import chisel3._
 import chisel3.util._
+import chisel3.util.experimental.decode.TruthTable
+import chisel3.util.experimental.decode.decoder
 import hardfloat.MulAddRecFNToRaw_postMul
 import hardfloat.MulAddRecFNToRaw_preMul
 import hardfloat.MulAddRecFN_interIo
@@ -9,14 +11,11 @@ import hardfloat.RawFloat
 import hardfloat.RoundRawFNToRecFN
 import meowv64.core.CoreDef
 import meowv64.exec._
-import meowv64.instr.Decoder
-import chisel3.util.experimental.decode.TruthTable
-import chisel3.util.experimental.decode.decoder
 
 class FMAExt(implicit val coredef: CoreDef) extends Bundle {
   // intermediate
   // stage 0 to stage 1
-  val op = MixedVec(for (float <- coredef.FLOAT_TYPES) yield {
+  val op = MixedVec(for (_ <- coredef.FLOAT_TYPES) yield {
     UInt(2.W)
   })
   val a = MixedVec(for (float <- coredef.FLOAT_TYPES) yield {

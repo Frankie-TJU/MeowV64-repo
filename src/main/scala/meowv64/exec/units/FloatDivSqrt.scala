@@ -1,39 +1,36 @@
 package meowv64.exec.units
 
 import chisel3._
+import chisel3.experimental.ChiselEnum
+import chisel3.util.Cat
+import chisel3.util._
+import chisel3.util.log2Ceil
+import hardfloat.RawFloat
 import hardfloat.RecFNToRecFN
-import hardfloat.fNFromRecFN
-import hardfloat.recFNFromFN
+import hardfloat.RoundRawFNToRecFN
 import hardfloat.consts.divSqrtOpt_twoBitsPerCycle
+import hardfloat.fNFromRecFN
+import hardfloat.isSigNaNRawFloat
+import hardfloat.rawFloatFromRecFN
+import hardfloat.recFNFromFN
 import meowv64.core.CoreDef
 import meowv64.core.FloatD
 import meowv64.core.FloatS
 import meowv64.exec._
 import meowv64.instr.Decoder
-import hardfloat.RawFloat
-import chisel3.util.log2Ceil
-import hardfloat.isSigNaNRawFloat
-import chisel3.util.Cat
-import hardfloat.rawFloatFromRecFN
-import hardfloat.RoundRawFNToRecFN
 
-class FloatDivSqrtExt(implicit val coredef: CoreDef) extends Bundle {
-  // result
-  val res = UInt(coredef.XLEN.W)
-  val fflags = UInt(5.W)
+object FloatDivSqrtState extends ChiselEnum {
+  var sIdle, sReq, sResp, sDone = Value
 }
 
-class FloatDivSqrt(override implicit val coredef: CoreDef)
-    extends ExecUnit(
-      1,
-      new FloatDivSqrtExt,
-      coredef.REG_FLOAT
-    ) {
+class FloatDivSqrt(implicit val coredef: CoreDef)
+    extends Module
+    with ExecUnitInt {
+  val regInfo = coredef.REG_FLOAT
+  val DEPTH = 1
+  val io = IO(new ExecUnitPort(regInfo))
 
-  val idle = RegInit(true.B)
-  // if flush occurred when there are inflight instructions
-  // the result will be silently ignored by UnitSel
-  // and the unit will wait for last instruction to complete
+  val state = RegInit(FloatDivSqrtState.sIdle)
 
   def single2double(n: UInt) = {
     val convS2D = Module(
@@ -70,91 +67,99 @@ class FloatDivSqrt(override implicit val coredef: CoreDef)
   div_sqrt.io.detectTininess := hardfloat.consts.tininess_afterRounding
   div_sqrt.io.sqrtOp := false.B
   div_sqrt.io.roundingMode := 0.U
+  div_sqrt.io.flush := io.flush
 
-  // stalls
-  // pipeline flow if: 1. idle 2. output is valid
-  val outValid = div_sqrt.io.outValid_div || div_sqrt.io.outValid_sqrt
-  val flow = idle || outValid
-  val stall = ~flow
-  val fire = io.next.instr.valid && flow && div_sqrt.io.inReady
+  val currentInstr = Reg(new PipeInstr(regInfo))
+  val rs1valHF = Reg(UInt(floatType.widthHardfloat.W))
+  val rs2valHF = Reg(UInt(floatType.widthHardfloat.W))
+  val resHF = Reg(UInt(floatType.widthHardfloat.W))
+  val fflags = Reg(UInt(5.W))
+  val sqrtOp = Reg(Bool())
 
-  def map(
-      stage: Int,
-      pipe: PipeInstr,
-      ext: Option[FloatDivSqrtExt]
-  ): (FloatDivSqrtExt, Bool) = {
-    val state = Wire(new FloatDivSqrtExt)
-    state := DontCare
+  io.stall := true.B
+  io.retiredInstr := currentInstr
+  io.retiredInstr.instr.valid := false.B
+  io.retirement := RetireInfo.vacant(regInfo)
+  switch(state) {
+    is(FloatDivSqrtState.sIdle) {
+      io.stall := false.B
 
-    if (stage == 0) {
-      // stage 0: Input
-      // convert to hardfloat
-      val floatType = FloatD
-      val rs1valHF = WireInit(
-        recFNFromFN(floatType.exp, floatType.sig, pipe.rs1val)
-      )
-      val rs2valHF = WireInit(
-        recFNFromFN(floatType.exp, floatType.sig, pipe.rs2val)
-      )
+      when(io.next.valid) {
+        // convert to hardfloat
+        rs1valHF :=
+          recFNFromFN(floatType.exp, floatType.sig, io.next.rs1val)
+        rs2valHF :=
+          recFNFromFN(floatType.exp, floatType.sig, io.next.rs2val)
 
-      // convert single to double
-      when(pipe.instr.instr.fmt === FloatS.fmt) {
-        rs1valHF := single2double(
-          recFNFromFN(FloatS.exp, FloatS.sig, pipe.rs1val(31, 0))
-        )
-        rs2valHF := single2double(
-          recFNFromFN(FloatS.exp, FloatS.sig, pipe.rs2val(31, 0))
-        )
+        // convert single to double
+        when(io.next.instr.instr.fmt === FloatS.fmt) {
+          rs1valHF := single2double(
+            recFNFromFN(FloatS.exp, FloatS.sig, io.next.rs1val(31, 0))
+          )
+          rs2valHF := single2double(
+            recFNFromFN(FloatS.exp, FloatS.sig, io.next.rs2val(31, 0))
+          )
+        }
+
+        sqrtOp := io.next.instr.instr.funct5 === Decoder.FP_FUNC("FSQRT")
+
+        currentInstr := io.next
+
+        state := FloatDivSqrtState.sReq
       }
+    }
 
+    is(FloatDivSqrtState.sReq) {
       div_sqrt.io.a := rs1valHF
       div_sqrt.io.b := rs2valHF
 
-      div_sqrt.io.inValid := fire
-      when(fire) {
-        idle := false.B
-      }
+      div_sqrt.io.inValid := true.B
       div_sqrt.io.roundingMode := false.B
       div_sqrt.io.detectTininess := hardfloat.consts.tininess_afterRounding
-      div_sqrt.io.sqrtOp := pipe.instr.instr.funct5 === Decoder.FP_FUNC("FSQRT")
-    } else {
-      // stage 1: Output
-      when(pipe.instr.instr.fmt === FloatS.fmt) {
+      div_sqrt.io.sqrtOp := sqrtOp
+
+      when(div_sqrt.io.inReady) {
+        state := FloatDivSqrtState.sResp
+      }
+    }
+
+    is(FloatDivSqrtState.sResp) {
+      when(div_sqrt.io.outValid_div || div_sqrt.io.outValid_sqrt) {
+        resHF := div_sqrt.io.out
+        fflags := div_sqrt.io.exceptionFlags
+        state := FloatDivSqrtState.sDone
+      }
+    }
+
+    is(FloatDivSqrtState.sDone) {
+      val res = Wire(UInt(coredef.XLEN.W))
+
+      when(currentInstr.instr.instr.fmt === FloatS.fmt) {
         // convert double to single and NaN-box
-        state.res := FloatS.box(
+        res := FloatS.box(
           fNFromRecFN(
             FloatS.exp,
             FloatS.sig,
-            double2single(div_sqrt.io.out)
+            double2single(resHF)
           ),
           coredef.XLEN
         )
       }.otherwise {
-        state.res := fNFromRecFN(floatType.exp, floatType.sig, div_sqrt.io.out)
+        res := fNFromRecFN(floatType.exp, floatType.sig, resHF)
       }
-      state.fflags := div_sqrt.io.exceptionFlags
+
+      io.retiredInstr.instr.valid := true.B
+
+      io.retirement.wb := res
+      io.retirement.updateFFlags := true.B
+      io.retirement.fflags := fflags
+
+      state := FloatDivSqrtState.sIdle
     }
-
-    (state, stall)
   }
 
-  def finalize(pipe: PipeInstr, ext: FloatDivSqrtExt): RetireInfo = {
-    val info = WireDefault(RetireInfo.vacant(regInfo))
-    // result
-    info.wb := ext.res.asUInt
-
-    // fflags
-    info.updateFFlags := true.B
-    info.fflags := ext.fflags
-
-    info
-  }
-
-  init()
-
-  // move this here, otherwise it might be missed
-  when(outValid && ~fire) {
-    idle := true.B
+  when(io.flush) {
+    state := FloatDivSqrtState.sIdle
   }
 }
 
@@ -178,6 +183,7 @@ class DivSqrtRawFN_small(expWidth: Int, sigWidth: Int, options: Int)
     val a = Input(new RawFloat(expWidth, sigWidth))
     val b = Input(new RawFloat(expWidth, sigWidth))
     val roundingMode = Input(UInt(3.W))
+    val flush = Input(Bool())
     /*--------------------------------------------------------------------
      *--------------------------------------------------------------------*/
     val rawOutValid_div = Output(Bool())
@@ -413,6 +419,12 @@ class DivSqrtRawFN_small(expWidth: Int, sigWidth: Int, options: Int)
   io.rawOut.sExp := sExp_Z
   io.rawOut.sig := sigX_Z << 1 | notZeroRem_Z
 
+  // add flush logic
+  when(io.flush) {
+    cycleNum := 0.U
+    inReady := true.B
+    rawOutValid := false.B
+  }
 }
 
 /*----------------------------------------------------------------------------
@@ -429,6 +441,7 @@ class DivSqrtRecFNToRaw_small(expWidth: Int, sigWidth: Int, options: Int)
     val a = Input(UInt((expWidth + sigWidth + 1).W))
     val b = Input(UInt((expWidth + sigWidth + 1).W))
     val roundingMode = Input(UInt(3.W))
+    val flush = Input(Bool())
     /*--------------------------------------------------------------------
      *--------------------------------------------------------------------*/
     val rawOutValid_div = Output(Bool())
@@ -448,6 +461,7 @@ class DivSqrtRecFNToRaw_small(expWidth: Int, sigWidth: Int, options: Int)
   divSqrtRawFN.io.a := rawFloatFromRecFN(expWidth, sigWidth, io.a)
   divSqrtRawFN.io.b := rawFloatFromRecFN(expWidth, sigWidth, io.b)
   divSqrtRawFN.io.roundingMode := io.roundingMode
+  divSqrtRawFN.io.flush := io.flush
 
   io.rawOutValid_div := divSqrtRawFN.io.rawOutValid_div
   io.rawOutValid_sqrt := divSqrtRawFN.io.rawOutValid_sqrt
@@ -473,6 +487,7 @@ class DivSqrtRecFN_small(expWidth: Int, sigWidth: Int, options: Int)
     val b = Input(UInt((expWidth + sigWidth + 1).W))
     val roundingMode = Input(UInt(3.W))
     val detectTininess = Input(UInt(1.W))
+    val flush = Input(Bool())
     /*--------------------------------------------------------------------
      *--------------------------------------------------------------------*/
     val outValid_div = Output(Bool())
@@ -492,6 +507,7 @@ class DivSqrtRecFN_small(expWidth: Int, sigWidth: Int, options: Int)
   divSqrtRecFNToRaw.io.a := io.a
   divSqrtRecFNToRaw.io.b := io.b
   divSqrtRecFNToRaw.io.roundingMode := io.roundingMode
+  divSqrtRecFNToRaw.io.flush := io.flush
 
   //------------------------------------------------------------------------
   //------------------------------------------------------------------------

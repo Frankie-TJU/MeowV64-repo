@@ -179,7 +179,13 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   def isUncached(addr: UInt) = addr < BigInt("80000000", 16).U
 
   // add pipeline stage because TLB has long comb path
-  val stagedInst = Queue(issue.instr, entries = 1, pipe = false, flow = true, flush = Some(flush))
+  val stagedInst = Queue(
+    issue.instr,
+    entries = 1,
+    pipe = false,
+    flow = true,
+    flush = Some(flush)
+  )
 
   val hasNext = stagedInst.valid // TODO: merge into rs.instr
   val next = WireInit(stagedInst.bits)

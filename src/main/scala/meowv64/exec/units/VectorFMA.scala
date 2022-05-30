@@ -2,6 +2,8 @@ package meowv64.exec.units
 
 import chisel3._
 import chisel3.util._
+import chisel3.util.experimental.decode.TruthTable
+import chisel3.util.experimental.decode.decoder
 import hardfloat.MulAddRecFNToRaw_postMul
 import hardfloat.MulAddRecFNToRaw_preMul
 import hardfloat.MulAddRecFN_interIo
@@ -10,8 +12,6 @@ import hardfloat.RoundRawFNToRecFN
 import meowv64.core.CoreDef
 import meowv64.core.VState
 import meowv64.exec._
-import chisel3.util.experimental.decode.TruthTable
-import chisel3.util.experimental.decode.decoder
 
 class VectorFMAExt(implicit val coredef: CoreDef) extends Bundle {
   // stage 0 to stage 1:
