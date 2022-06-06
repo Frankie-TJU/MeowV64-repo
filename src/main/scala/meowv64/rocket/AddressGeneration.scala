@@ -2,6 +2,7 @@ package meowv64.rocket
 
 import chipsalliance.rocketchip.config.Parameters
 import chisel3._
+import chisel3.util._
 import chisel3.experimental.ChiselEnum
 import freechips.rocketchip.diplomacy.AddressSet
 import freechips.rocketchip.diplomacy.IdRange
@@ -29,7 +30,7 @@ object AddressGeneration {
 }
 
 object AddressGenerationState extends ChiselEnum {
-  val sIdle = Value
+  val sIdle, sWorking = Value
 }
 
 class AddressGeneration(config: AddressGenerationConfig)(implicit p: Parameters)
@@ -90,5 +91,13 @@ class AddressGeneration(config: AddressGenerationConfig)(implicit p: Parameters)
         false
       )
     )
+
+    switch(state) {
+      is(AddressGenerationState.sIdle) {
+        when(control(0)) {
+          state := AddressGenerationState.sWorking
+        }
+      }
+    }
   }
 }
