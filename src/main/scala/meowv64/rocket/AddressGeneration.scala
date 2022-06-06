@@ -25,8 +25,8 @@ case class AddressGenerationConfig(
 
 object AddressGeneration {
   def STATUS = 0x00
-  def CONTROL = 0x10
-  def INSTS = 0x20
+  def CONTROL = 0x20
+  def INSTS = 0x40
 }
 
 object AddressGenerationState extends ChiselEnum {

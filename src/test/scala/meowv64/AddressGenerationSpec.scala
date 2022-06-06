@@ -1,5 +1,6 @@
 package meowv64
 
+import chisel3._
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import chiseltest._
@@ -16,6 +17,7 @@ import freechips.rocketchip.tilelink.TLMasterPortParameters
 import freechips.rocketchip.tilelink.TLMasterParameters
 import freechips.rocketchip.diplomacy.IdRange
 import meowv64.rocket.MeowV64BaseConfig
+import freechips.rocketchip.tilelink.TLMessages
 
 class AddressGenerationTestHarness(implicit p: Parameters) extends LazyModule {
   val beatBytes = 32
@@ -50,9 +52,15 @@ class AddressGenerationTestHarness(implicit p: Parameters) extends LazyModule {
   xbar.node := dut.masterNode
   xbar.node := externalNode
 
-  lazy val module = new LazyModuleImp(this) {
-    externalNode.makeIOs()
-  }
+  lazy val module = new AddressGenerationTestHarnessModuleImp(this)
+}
+
+class AddressGenerationTestHarnessModuleImp(
+    outer: AddressGenerationTestHarness
+) extends LazyModuleImp(outer) {
+  val external_io = outer.externalNode.makeIOs()
+
+  val (external, external_edge) = outer.externalNode.out(0)
 }
 
 class AddressGenerationSpec
@@ -68,6 +76,26 @@ class AddressGenerationSpec
       LazyModule(new AddressGenerationTestHarness()).module
     )
       .withAnnotations(Simulator.getAnnotations()) { dut =>
+        dut.clock.step(16)
+        val tl = dut.external_io(0)
+
+        tl.a.bits.opcode.poke(TLMessages.PutFullData)
+        tl.a.bits.param.poke(0.U)
+        tl.a.bits.size.poke(2.U)
+        tl.a.bits.source.poke(0.U)
+        tl.a.bits.address.poke(0x60000020L.U)
+        tl.a.bits.mask.poke(BigInt("f", 16))
+        tl.a.bits.data.poke(1.U)
+        tl.a.bits.corrupt.poke(0.U)
+        tl.a.valid.poke(true.B)
+        tl.d.ready.poke(true.B)
+        dut.clock.step()
+
+        while (tl.a.ready.peek.litToBoolean == false) {
+          dut.clock.step()
+        }
+        tl.a.valid.poke(false.B)
+
         dut.clock.step(16)
       }
   }
