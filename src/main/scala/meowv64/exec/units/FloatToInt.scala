@@ -46,7 +46,7 @@ class FloatToInt(override implicit val coredef: CoreDef)
 
     when(
       pipe.instr.instr.funct5 === Decoder.FP_FUNC(
-        "FMV.X.H/D/W"
+        "FMV.X.H/W/D"
       ) && pipe.instr.instr.funct3 === 0.U
     ) {
       when(pipe.instr.instr.funct7(1, 0) === FloatS.fmt) {

@@ -171,9 +171,9 @@ object Decoder {
     "FCMP" -> "10100",
     "FLOAT2INT" -> "11000",
     "INT2FLOAT" -> "11010",
-    "FMV.X.H/D/W" -> "11100",
+    "FMV.X.H/W/D" -> "11100",
     "FCLASS" -> "11100",
-    "FMV.D/W.X" -> "11110"
+    "FMV.H/W/D.X" -> "11110"
   ).mapValues(Integer.parseInt(_, 2).U(5.W))
 
   val VP_FUNC: Map[String, UInt] = Map(

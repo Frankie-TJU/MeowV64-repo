@@ -5,6 +5,7 @@ import meowv64.core.CoreDef
 import meowv64.core.FloatS
 import meowv64.exec._
 import meowv64.instr.Decoder
+import meowv64.core.FloatH
 
 class IntToFloatExt(implicit val coredef: CoreDef) extends Bundle {
   val res = UInt(coredef.XLEN.W)
@@ -30,13 +31,17 @@ class IntToFloat(override implicit val coredef: CoreDef)
 
     when(
       pipe.instr.instr.funct5 === Decoder.FP_FUNC(
-        "FMV.D/W.X"
+        "FMV.H/W/D.X"
       ) && pipe.instr.instr.funct3 === 0.U
     ) {
-      when(pipe.instr.instr.funct7(1, 0) === 0.U) {
+      when(pipe.instr.instr.funct7(1, 0) === FloatS.fmt) {
         // fmv.w.x
         // nan boxing
         ext.res := FloatS.box(pipe.rs1val(31, 0), coredef.XLEN)
+      }.elsewhen(pipe.instr.instr.funct7(1, 0) === FloatH.fmt) {
+        // fmv.h.x
+        // nan boxing
+        ext.res := FloatH.box(pipe.rs1val(15, 0), coredef.XLEN)
       }.otherwise {
         // fmv.d.x
         ext.res := pipe.rs1val
