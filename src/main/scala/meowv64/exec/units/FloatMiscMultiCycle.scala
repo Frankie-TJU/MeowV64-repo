@@ -138,8 +138,8 @@ class FloatMiscMultiCycle(override implicit val coredef: CoreDef)
           Decoder.FP_FUNC("FLOAT2FLOAT")
       ) {
         // convert float to float
-        when(pipe.instr.instr.rs2(1, 0) === FloatD.fmt) {
-          when(pipe.instr.instr.funct7(1, 0) === FloatS.fmt) {
+        when(pipe.instr.instr.funct7(1, 0) === FloatD.fmt) {
+          when(pipe.instr.instr.rs2(1, 0) === FloatS.fmt) {
             // FCVT.D.S
             // single precision to double precision
             // widening
@@ -157,7 +157,7 @@ class FloatMiscMultiCycle(override implicit val coredef: CoreDef)
 
             ext.res := fNFromRecFN(FloatD.exp(), FloatD.sig(), convS2D.io.out)
             ext.fflags := convS2D.io.exceptionFlags
-          }.elsewhen(pipe.instr.instr.funct7(1, 0) === FloatH.fmt) {
+          }.elsewhen(pipe.instr.instr.rs2(1, 0) === FloatH.fmt) {
             // FCVT.D.H
             // half precision to double precision
             // widening
@@ -176,8 +176,8 @@ class FloatMiscMultiCycle(override implicit val coredef: CoreDef)
             ext.res := fNFromRecFN(FloatD.exp(), FloatD.sig(), convH2D.io.out)
             ext.fflags := convH2D.io.exceptionFlags
           }
-        }.elsewhen(pipe.instr.instr.rs2(1, 0) === FloatS.fmt) {
-          when(pipe.instr.instr.funct7(1, 0) === FloatD.fmt) {
+        }.elsewhen(pipe.instr.instr.funct7(1, 0) === FloatS.fmt) {
+          when(pipe.instr.instr.rs2(1, 0) === FloatD.fmt) {
             // FCVT.S.D
             // double precision to single precision
             val convD2S = Module(
@@ -199,7 +199,7 @@ class FloatMiscMultiCycle(override implicit val coredef: CoreDef)
               coredef.XLEN
             )
             ext.fflags := convD2S.io.exceptionFlags
-          }.elsewhen(pipe.instr.instr.funct7(1, 0) === FloatH.fmt) {
+          }.elsewhen(pipe.instr.instr.rs2(1, 0) === FloatH.fmt) {
             // FCVT.S.H
             // half precision to single precision
             val convH2S = Module(
@@ -222,8 +222,8 @@ class FloatMiscMultiCycle(override implicit val coredef: CoreDef)
             )
             ext.fflags := convH2S.io.exceptionFlags
           }
-        }.elsewhen(pipe.instr.instr.rs2(1, 0) === FloatH.fmt) {
-          when(pipe.instr.instr.funct7(1, 0) === FloatD.fmt) {
+        }.elsewhen(pipe.instr.instr.funct7(1, 0) === FloatH.fmt) {
+          when(pipe.instr.instr.rs2(1, 0) === FloatD.fmt) {
             // FCVT.H.D
             // double precision to half precision
             val convD2H = Module(
@@ -245,7 +245,7 @@ class FloatMiscMultiCycle(override implicit val coredef: CoreDef)
               coredef.XLEN
             )
             ext.fflags := convD2H.io.exceptionFlags
-          }.elsewhen(pipe.instr.instr.funct7(1, 0) === FloatS.fmt) {
+          }.elsewhen(pipe.instr.instr.rs2(1, 0) === FloatS.fmt) {
             // FCVT.H.S
             // single precision to half precision
             val convS2H = Module(
