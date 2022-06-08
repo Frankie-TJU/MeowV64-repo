@@ -18,6 +18,7 @@ import meowv64.core.FloatD
 import meowv64.core.FloatS
 import meowv64.exec._
 import meowv64.instr.Decoder
+import meowv64.core.FloatH
 
 object FloatDivSqrtState extends ChiselEnum {
   var sIdle, sReq, sResp, sDone = Value
@@ -42,6 +43,16 @@ class FloatDivSqrt(implicit val coredef: CoreDef)
     convS2D.io.out
   }
 
+  def half2double(n: UInt) = {
+    val convH2D = Module(
+      new RecFNToRecFN(FloatH.exp, FloatH.sig, FloatD.exp, FloatD.sig)
+    )
+    convH2D.io.in := n
+    convH2D.io.detectTininess := hardfloat.consts.tininess_afterRounding
+    convH2D.io.roundingMode := 0.U
+    convH2D.io.out
+  }
+
   def double2single(n: UInt) = {
     val convD2S = Module(
       new RecFNToRecFN(FloatD.exp, FloatD.sig, FloatS.exp, FloatS.sig)
@@ -50,6 +61,16 @@ class FloatDivSqrt(implicit val coredef: CoreDef)
     convD2S.io.detectTininess := hardfloat.consts.tininess_afterRounding
     convD2S.io.roundingMode := 0.U
     convD2S.io.out
+  }
+
+  def double2half(n: UInt) = {
+    val convD2H = Module(
+      new RecFNToRecFN(FloatD.exp, FloatD.sig, FloatH.exp, FloatH.sig)
+    )
+    convD2H.io.in := n
+    convD2H.io.detectTininess := hardfloat.consts.tininess_afterRounding
+    convD2H.io.roundingMode := 0.U
+    convD2H.io.out
   }
 
   val floatType = FloatD
@@ -122,6 +143,16 @@ class FloatDivSqrt(implicit val coredef: CoreDef)
           ),
           coredef.XLEN
         )
+      }.elsewhen(currentInstr.instr.instr.fmt === FloatH.fmt) {
+        // convert double to half and NaN-box
+        res := FloatH.box(
+          fNFromRecFN(
+            FloatH.exp,
+            FloatH.sig,
+            double2half(resHF)
+          ),
+          coredef.XLEN
+        )
       }.otherwise {
         res := fNFromRecFN(floatType.exp, floatType.sig, resHF)
       }
@@ -143,13 +174,21 @@ class FloatDivSqrt(implicit val coredef: CoreDef)
     rs2valHF :=
       recFNFromFN(floatType.exp, floatType.sig, io.next.rs2val)
 
-    // convert single to double
     when(io.next.instr.instr.fmt === FloatS.fmt) {
+      // convert single to double
       rs1valHF := single2double(
         recFNFromFN(FloatS.exp, FloatS.sig, io.next.rs1val(31, 0))
       )
       rs2valHF := single2double(
         recFNFromFN(FloatS.exp, FloatS.sig, io.next.rs2val(31, 0))
+      )
+    }.elsewhen(io.next.instr.instr.fmt === FloatH.fmt) {
+      // convert half to double
+      rs1valHF := half2double(
+        recFNFromFN(FloatH.exp, FloatH.sig, io.next.rs1val(15, 0))
+      )
+      rs2valHF := half2double(
+        recFNFromFN(FloatH.exp, FloatH.sig, io.next.rs2val(15, 0))
       )
     }
 
