@@ -225,7 +225,7 @@ object DecodeInfo {
       FMAX_S    -> List(Y, N, Y, float, Y, float, Y, float, N, XX, N, floatMiscMultiCycle, IQT.float),
       FCVT_W_S  -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, N, floatToIntMultiCycle, IQT.float),
       FCVT_WU_S -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, N, floatToIntMultiCycle, IQT.float),
-      FMV_X_W   -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, N, floatToIntMultiCycle, IQT.float),
+      FMV_X_W   -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, N, floatToInt, IQT.float),
       FEQ_S     -> List(Y, N, Y, integer, Y, float, Y, float, N, XX, N, floatToIntMultiCycle, IQT.float),
       FLT_S     -> List(Y, N, Y, integer, Y, float, Y, float, N, XX, N, floatToIntMultiCycle, IQT.float),
       FLE_S     -> List(Y, N, Y, integer, Y, float, Y, float, N, XX, N, floatToIntMultiCycle, IQT.float),
