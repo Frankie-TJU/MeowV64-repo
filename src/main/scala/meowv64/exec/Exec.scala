@@ -207,6 +207,8 @@ class Exec(implicit val coredef: CoreDef) extends Module {
                   Module(new FloatDivSqrt).suggestName("FloatDivSqrt")
                 case ExecUnitType.floatToInt =>
                   Module(new FloatToInt).suggestName("FloatToInt")
+                case ExecUnitType.floatToIntMultiCycle =>
+                  Module(new FloatToIntMultiCycle).suggestName("FloatToIntMultiCycle")
                 case ExecUnitType.lsu => {
                   // this is actually float to mem
                   if (unit.regType == RegType.float) {

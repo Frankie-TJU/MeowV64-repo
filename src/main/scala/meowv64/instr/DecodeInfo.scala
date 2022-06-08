@@ -12,7 +12,8 @@ object ExecUnitType extends ChiselEnum {
   val alu, branch, bypass, csr         = Value
   val intToFloat, intToFloatMultiCycle = Value
   val div, mul                         = Value
-  val fma, floatToInt, floatDivSqrt    = Value
+  val fma, floatDivSqrt                = Value
+  val floatToInt, floatToIntMultiCycle = Value
   val floatMisc, floatMiscMultiCycle   = Value
   val vectorAlu, vectorMul             = Value
   val vectorFma, vectorFloatRedSum     = Value
@@ -222,20 +223,20 @@ object DecodeInfo {
       FSGNJX_S  -> List(Y, N, Y, float, Y, float, Y, float, N, XX, N, floatMisc, IQT.float),
       FMIN_S    -> List(Y, N, Y, float, Y, float, Y, float, N, XX, N, floatMiscMultiCycle, IQT.float),
       FMAX_S    -> List(Y, N, Y, float, Y, float, Y, float, N, XX, N, floatMiscMultiCycle, IQT.float),
-      FCVT_W_S  -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, N, floatToInt, IQT.float),
-      FCVT_WU_S -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, N, floatToInt, IQT.float),
-      FMV_X_W   -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, N, floatToInt, IQT.float),
-      FEQ_S     -> List(Y, N, Y, integer, Y, float, Y, float, N, XX, N, floatToInt, IQT.float),
-      FLT_S     -> List(Y, N, Y, integer, Y, float, Y, float, N, XX, N, floatToInt, IQT.float),
-      FLE_S     -> List(Y, N, Y, integer, Y, float, Y, float, N, XX, N, floatToInt, IQT.float),
+      FCVT_W_S  -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, N, floatToIntMultiCycle, IQT.float),
+      FCVT_WU_S -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, N, floatToIntMultiCycle, IQT.float),
+      FMV_X_W   -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, N, floatToIntMultiCycle, IQT.float),
+      FEQ_S     -> List(Y, N, Y, integer, Y, float, Y, float, N, XX, N, floatToIntMultiCycle, IQT.float),
+      FLT_S     -> List(Y, N, Y, integer, Y, float, Y, float, N, XX, N, floatToIntMultiCycle, IQT.float),
+      FLE_S     -> List(Y, N, Y, integer, Y, float, Y, float, N, XX, N, floatToIntMultiCycle, IQT.float),
       FCLASS_S  -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, N, floatToInt, IQT.float),
       FCVT_S_W  -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, N, intToFloatMultiCycle, IQT.int),
       FCVT_S_WU -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, N, intToFloatMultiCycle, IQT.int),
       FMV_W_X   -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, N, intToFloat, IQT.int),
 
       // RV64F Standard Extension (in addition to RV32F)
-      FCVT_L_S  -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, N, floatToInt, IQT.float),
-      FCVT_LU_S -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, N, floatToInt, IQT.float),
+      FCVT_L_S  -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, N, floatToIntMultiCycle, IQT.float),
+      FCVT_LU_S -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, N, floatToIntMultiCycle, IQT.float),
       FCVT_S_L  -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, N, intToFloatMultiCycle, IQT.int),
       FCVT_S_LU -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, N, intToFloatMultiCycle, IQT.int),
 
@@ -258,18 +259,18 @@ object DecodeInfo {
       FMAX_D    -> List(Y, N, Y, float, Y, float, Y, float, N, XX, N, floatMiscMultiCycle, IQT.float),
       FCVT_S_D  -> List(Y, N, Y, float, Y, float, N, XX, N, XX, N, floatMiscMultiCycle, IQT.float),
       FCVT_D_S  -> List(Y, N, Y, float, Y, float, N, XX, N, XX, N, floatMiscMultiCycle, IQT.float),
-      FEQ_D     -> List(Y, N, Y, integer, Y, float, Y, float, N, XX, N, floatToInt, IQT.float),
-      FLT_D     -> List(Y, N, Y, integer, Y, float, Y, float, N, XX, N, floatToInt, IQT.float),
-      FLE_D     -> List(Y, N, Y, integer, Y, float, Y, float, N, XX, N, floatToInt, IQT.float),
+      FEQ_D     -> List(Y, N, Y, integer, Y, float, Y, float, N, XX, N, floatToIntMultiCycle, IQT.float),
+      FLT_D     -> List(Y, N, Y, integer, Y, float, Y, float, N, XX, N, floatToIntMultiCycle, IQT.float),
+      FLE_D     -> List(Y, N, Y, integer, Y, float, Y, float, N, XX, N, floatToIntMultiCycle, IQT.float),
       FCLASS_D  -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, N, floatToInt, IQT.float),
-      FCVT_W_D  -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, N, floatToInt, IQT.float),
-      FCVT_WU_D -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, N, floatToInt, IQT.float),
+      FCVT_W_D  -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, N, floatToIntMultiCycle, IQT.float),
+      FCVT_WU_D -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, N, floatToIntMultiCycle, IQT.float),
       FCVT_D_W  -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, N, intToFloatMultiCycle, IQT.int),
       FCVT_D_WU -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, N, intToFloatMultiCycle, IQT.int),
 
       // RV64D Standard Extension (in addition to RV32D)
-      FCVT_L_D  -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, N, floatToInt, IQT.float),
-      FCVT_LU_D -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, N, floatToInt, IQT.float),
+      FCVT_L_D  -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, N, floatToIntMultiCycle, IQT.float),
+      FCVT_LU_D -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, N, floatToIntMultiCycle, IQT.float),
       FMV_X_D   -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, N, floatToInt, IQT.float),
       FCVT_D_L  -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, N, intToFloatMultiCycle, IQT.int),
       FCVT_D_LU -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, N, intToFloatMultiCycle, IQT.int),
@@ -298,20 +299,20 @@ object DecodeInfo {
       FCVT_H_D  -> List(Y, N, Y, float, Y, float, N, XX, N, XX, N, floatMiscMultiCycle, IQT.float),
       FCVT_Q_H  -> List(Y, N, Y, float, Y, float, N, XX, N, XX, N, floatMiscMultiCycle, IQT.float),
       FCVT_H_Q  -> List(Y, N, Y, float, Y, float, N, XX, N, XX, N, floatMiscMultiCycle, IQT.float),
-      FEQ_H     -> List(Y, N, Y, integer, Y, float, Y, float, N, XX, N, floatToInt, IQT.float),
-      FLT_H     -> List(Y, N, Y, integer, Y, float, Y, float, N, XX, N, floatToInt, IQT.float),
-      FLE_H     -> List(Y, N, Y, integer, Y, float, Y, float, N, XX, N, floatToInt, IQT.float),
+      FEQ_H     -> List(Y, N, Y, integer, Y, float, Y, float, N, XX, N, floatToIntMultiCycle, IQT.float),
+      FLT_H     -> List(Y, N, Y, integer, Y, float, Y, float, N, XX, N, floatToIntMultiCycle, IQT.float),
+      FLE_H     -> List(Y, N, Y, integer, Y, float, Y, float, N, XX, N, floatToIntMultiCycle, IQT.float),
       FCLASS_H  -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, N, floatToInt, IQT.float),
-      FCVT_W_H  -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, N, floatToInt, IQT.float),
-      FCVT_WU_H -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, N, floatToInt, IQT.float),
+      FCVT_W_H  -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, N, floatToIntMultiCycle, IQT.float),
+      FCVT_WU_H -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, N, floatToIntMultiCycle, IQT.float),
       FCVT_H_W  -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, N, intToFloatMultiCycle, IQT.int),
       FCVT_H_WU -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, N, intToFloatMultiCycle, IQT.int),
       FMV_X_H   -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, N, floatToInt, IQT.float),
       FMV_H_X   -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, N, intToFloat, IQT.int),
 
       // RV64Zfh Standard Extension (in addition to RV32Zfh)
-      FCVT_L_H  -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, N, floatToInt, IQT.float),
-      FCVT_LU_H -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, N, floatToInt, IQT.float),
+      FCVT_L_H  -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, N, floatToIntMultiCycle, IQT.float),
+      FCVT_LU_H -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, N, floatToIntMultiCycle, IQT.float),
       FCVT_H_L  -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, N, intToFloatMultiCycle, IQT.int),
       FCVT_H_LU -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, N, intToFloatMultiCycle, IQT.int),
 
