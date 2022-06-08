@@ -2,8 +2,8 @@ package meowv64.rocket
 
 import chipsalliance.rocketchip.config.Parameters
 import chisel3._
-import chisel3.util._
 import chisel3.experimental.ChiselEnum
+import chisel3.util._
 import freechips.rocketchip.diplomacy.AddressSet
 import freechips.rocketchip.diplomacy.IdRange
 import freechips.rocketchip.diplomacy.LazyModule

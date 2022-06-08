@@ -653,6 +653,9 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   ) {
     // nan boxing
     switch(current.instr.funct3) {
+      is(Decoder.MEM_WIDTH_FUNC("H")) {
+        result := Fill(48, 1.U) ## shifted(15, 0)
+      }
       is(Decoder.MEM_WIDTH_FUNC("W")) {
         result := Fill(32, 1.U) ## shifted(31, 0)
       }

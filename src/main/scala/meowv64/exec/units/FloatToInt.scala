@@ -5,6 +5,8 @@ import chisel3.util._
 import hardfloat.CompareRecFN
 import hardfloat.RecFNToIN
 import meowv64.core.CoreDef
+import meowv64.core.FloatH
+import meowv64.core.FloatS
 import meowv64.exec._
 import meowv64.instr.Decoder
 
@@ -44,14 +46,19 @@ class FloatToInt(override implicit val coredef: CoreDef)
 
     when(
       pipe.instr.instr.funct5 === Decoder.FP_FUNC(
-        "FMV.X.D/W"
+        "FMV.X.H/D/W"
       ) && pipe.instr.instr.funct3 === 0.U
     ) {
-      when(pipe.instr.instr.funct7(1, 0) === 0.U) {
+      when(pipe.instr.instr.funct7(1, 0) === FloatS.fmt) {
         // fmv.x.w
         // sign extension
         // do not consider nan boxing here
         ext.res := Fill(32, pipe.rs1val(31)) ## pipe.rs1val(31, 0)
+      }.elsewhen(pipe.instr.instr.funct7(1, 0) === FloatH.fmt) {
+        // fmv.x.h
+        // sign extension
+        // do not consider nan boxing here
+        ext.res := Fill(48, pipe.rs1val(15)) ## pipe.rs1val(15, 0)
       }.otherwise {
         // fmv.x.d
         ext.res := pipe.rs1val
