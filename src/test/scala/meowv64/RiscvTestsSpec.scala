@@ -39,7 +39,8 @@ class RiscvTestsSpec
       "rv64ud",
       "rv64si",
       "rv64mi",
-      "rv64uv"
+      "rv64uv",
+      "rv64uzfh"
     )
   ) {
     it should s"run ${prefix} testcases successfully" in {

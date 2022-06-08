@@ -275,6 +275,46 @@ object DecodeInfo {
       FCVT_D_LU -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, N, intToFloatMultiCycle, IQT.int),
       FMV_D_X   -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, N, intToFloat, IQT.int),
 
+      // RV32Zfh Standard Extension
+      FLH       -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, N, lsu, IQT.mem),
+      FSH       -> List(Y, N, N, XX, Y, integer, Y, float, N, XX, N, lsu, IQT.floatMem),
+      FMADD_H   -> List(Y, N, Y, float, Y, float, Y, float, Y, float, N, fma, IQT.float),
+      FMSUB_H   -> List(Y, N, Y, float, Y, float, Y, float, Y, float, N, fma, IQT.float),
+      FNMADD_H  -> List(Y, N, Y, float, Y, float, Y, float, Y, float, N, fma, IQT.float),
+      FNMSUB_H  -> List(Y, N, Y, float, Y, float, Y, float, Y, float, N, fma, IQT.float),
+      FADD_H    -> List(Y, N, Y, float, Y, float, Y, float, N, XX, N, fma, IQT.float),
+      FSUB_H    -> List(Y, N, Y, float, Y, float, Y, float, N, XX, N, fma, IQT.float),
+      FMUL_H    -> List(Y, N, Y, float, Y, float, Y, float, N, XX, N, fma, IQT.float),
+      FDIV_H    -> List(Y, N, Y, float, Y, float, Y, float, N, XX, N, floatDivSqrt, IQT.float),
+      FSQRT_H   -> List(Y, N, Y, float, Y, float, N, XX, N, XX, N, floatDivSqrt, IQT.float),
+      FSGNJ_H   -> List(Y, N, Y, float, Y, float, Y, float, N, XX, N, floatMisc, IQT.float),
+      FSGNJN_H  -> List(Y, N, Y, float, Y, float, Y, float, N, XX, N, floatMisc, IQT.float),
+      FSGNJX_H  -> List(Y, N, Y, float, Y, float, Y, float, N, XX, N, floatMisc, IQT.float),
+      FMIN_H    -> List(Y, N, Y, float, Y, float, Y, float, N, XX, N, floatMiscMultiCycle, IQT.float),
+      FMAX_H    -> List(Y, N, Y, float, Y, float, Y, float, N, XX, N, floatMiscMultiCycle, IQT.float),
+      FCVT_S_H  -> List(Y, N, Y, float, Y, float, N, XX, N, XX, N, floatMiscMultiCycle, IQT.float),
+      FCVT_H_S  -> List(Y, N, Y, float, Y, float, N, XX, N, XX, N, floatMiscMultiCycle, IQT.float),
+      FCVT_D_H  -> List(Y, N, Y, float, Y, float, N, XX, N, XX, N, floatMiscMultiCycle, IQT.float),
+      FCVT_H_D  -> List(Y, N, Y, float, Y, float, N, XX, N, XX, N, floatMiscMultiCycle, IQT.float),
+      FCVT_Q_H  -> List(Y, N, Y, float, Y, float, N, XX, N, XX, N, floatMiscMultiCycle, IQT.float),
+      FCVT_H_Q  -> List(Y, N, Y, float, Y, float, N, XX, N, XX, N, floatMiscMultiCycle, IQT.float),
+      FEQ_H     -> List(Y, N, Y, integer, Y, float, Y, float, N, XX, N, floatToInt, IQT.float),
+      FLT_H     -> List(Y, N, Y, integer, Y, float, Y, float, N, XX, N, floatToInt, IQT.float),
+      FLE_H     -> List(Y, N, Y, integer, Y, float, Y, float, N, XX, N, floatToInt, IQT.float),
+      FCLASS_H  -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, N, floatToInt, IQT.float),
+      FCVT_W_H  -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, N, floatToInt, IQT.float),
+      FCVT_WU_H -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, N, floatToInt, IQT.float),
+      FCVT_H_W  -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, N, intToFloatMultiCycle, IQT.int),
+      FCVT_H_WU -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, N, intToFloatMultiCycle, IQT.int),
+      FMV_X_H   -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, N, floatToInt, IQT.float),
+      FMV_H_X   -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, N, intToFloat, IQT.int),
+
+      // RV64Zfh Standard Extension (in addition to RV32Zfh)
+      FCVT_L_H  -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, N, floatToInt, IQT.float),
+      FCVT_LU_H -> List(Y, N, Y, integer, Y, float, N, XX, N, XX, N, floatToInt, IQT.float),
+      FCVT_H_L  -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, N, intToFloatMultiCycle, IQT.int),
+      FCVT_H_LU -> List(Y, N, Y, float, Y, integer, N, XX, N, XX, N, intToFloatMultiCycle, IQT.int),
+
       // Trap-Return Instructions
       URET -> List(Y, N, N, XX, N, XX, N, XX, N, XX, N, branch, IQT.int),
       SRET -> List(Y, N, N, XX, N, XX, N, XX, N, XX, N, branch, IQT.int),
@@ -674,6 +714,48 @@ object Instructions {
   val FCVT_D_L  = BitPat("b110100100010?????????????1010011")
   val FCVT_D_LU = BitPat("b110100100011?????????????1010011")
   val FMV_D_X   = BitPat("b111100100000?????000?????1010011")
+
+  // RV32Zfh Standard Extension
+  val FLH = BitPat("b?????????????????001?????0000111")
+  val FSH = BitPat("b?????????????????001?????0100111")
+
+  val FMADD_H  = BitPat("b?????10??????????????????1000011")
+  val FMSUB_H  = BitPat("b?????10??????????????????1000111")
+  val FNMSUB_H = BitPat("b?????10??????????????????1001011")
+  val FNMADD_H = BitPat("b?????10??????????????????1001111")
+
+  val FADD_H    = BitPat("b0000010??????????????????1010011")
+  val FSUB_H    = BitPat("b0000110??????????????????1010011")
+  val FMUL_H    = BitPat("b0001010??????????????????1010011")
+  val FDIV_H    = BitPat("b0001110??????????????????1010011")
+  val FSQRT_H   = BitPat("b010111000000?????????????1010011")
+  val FSGNJ_H   = BitPat("b0010010??????????000?????1010011")
+  val FSGNJN_H  = BitPat("b0010010??????????001?????1010011")
+  val FSGNJX_H  = BitPat("b0010010??????????010?????1010011")
+  val FMIN_H    = BitPat("b0010110??????????000?????1010011")
+  val FMAX_H    = BitPat("b0010110??????????001?????1010011")
+  val FCVT_S_H  = BitPat("b010000000010?????????????1010011")
+  val FCVT_H_S  = BitPat("b010001000000?????????????1010011")
+  val FCVT_D_H  = BitPat("b010000100010?????????????1010011")
+  val FCVT_H_D  = BitPat("b010001000001?????????????1010011")
+  val FCVT_Q_H  = BitPat("b010001100010?????????????1010011")
+  val FCVT_H_Q  = BitPat("b010001000011?????????????1010011")
+  val FEQ_H     = BitPat("b1010010??????????010?????1010011")
+  val FLT_H     = BitPat("b1010010??????????001?????1010011")
+  val FLE_H     = BitPat("b1010010??????????000?????1010011")
+  val FCLASS_H  = BitPat("b111001000000?????001?????1010011")
+  val FCVT_W_H  = BitPat("b110001000000?????????????1010011")
+  val FCVT_WU_H = BitPat("b110001000001?????????????1010011")
+  val FMV_X_H   = BitPat("b111001000000?????000?????1010011")
+  val FCVT_H_W  = BitPat("b110101000000?????????????1010011")
+  val FCVT_H_WU = BitPat("b110101000001?????????????1010011")
+  val FMV_H_X   = BitPat("b111101000000?????000?????1010011")
+
+  // RV64Zfh Standard Extension (in addition to RV32Zfh)
+  val FCVT_L_H  = BitPat("b110001000010?????????????1010011")
+  val FCVT_LU_H = BitPat("b110001000011?????????????1010011")
+  val FCVT_H_L  = BitPat("b110101000010?????????????1010011")
+  val FCVT_H_LU = BitPat("b110101000011?????????????1010011")
 
   // Privileged Spec
   // Trap-Return Instructions

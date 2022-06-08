@@ -486,7 +486,7 @@ abstract class CoreDef {
 
   /** List of supported float types
     */
-  def FLOAT_TYPES: Seq[FloatType] = Seq(FloatS, FloatD)
+  def FLOAT_TYPES: Seq[FloatType] = Seq(FloatH, FloatS, FloatD)
 
   val IN_ROCKET_SYSTEM: Boolean = false
 
