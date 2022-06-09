@@ -15,10 +15,10 @@ import hardfloat.rawFloatFromRecFN
 import hardfloat.recFNFromFN
 import meowv64.core.CoreDef
 import meowv64.core.FloatD
+import meowv64.core.FloatH
 import meowv64.core.FloatS
 import meowv64.exec._
 import meowv64.instr.Decoder
-import meowv64.core.FloatH
 
 object FloatDivSqrtState extends ChiselEnum {
   var sIdle, sReq, sResp, sDone = Value

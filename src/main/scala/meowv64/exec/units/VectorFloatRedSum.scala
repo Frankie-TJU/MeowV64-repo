@@ -3,7 +3,9 @@ package meowv64.exec.units
 import chisel3._
 import chisel3.util.Cat
 import chisel3.util.log2Ceil
-import hardfloat.AddRecFN
+import hardfloat.AddRawFN
+import hardfloat.RoundRawFNToRecFN
+import hardfloat.rawFloatFromRecFN
 import meowv64.core.CoreDef
 import meowv64.core.VState
 import meowv64.exec.ExecUnitInt
@@ -24,6 +26,8 @@ class VectorFloatRedSum(implicit val coredef: CoreDef)
   val currentInstr = Reg(new PipeInstr(regInfo))
   val busy = RegInit(false.B)
   val progress = Reg(UInt(log2Ceil(coredef.VLEN / 16 + 1).W))
+  // add or round in this cycle
+  val add = Reg(Bool())
 
   io.stall := busy
   io.retiredInstr := currentInstr
@@ -68,18 +72,27 @@ class VectorFloatRedSum(implicit val coredef: CoreDef)
           currentAdderB := currentRs2ElementsHF(progress + 1.U)
         }
 
-        val adder = Module(new AddRecFN(float.exp(), float.sig()))
-        adder.suggestName(s"addRecFN_${float.name}")
+        val adder = Module(new AddRawFN(float.exp(), float.sig()))
+        adder.suggestName(s"addRawFN_${float.name}")
         adder.io.subOp := false.B
-        adder.io.a := a
-        adder.io.b := b
+        adder.io.a := rawFloatFromRecFN(float.exp(), float.sig(), a)
+        adder.io.b := rawFloatFromRecFN(float.exp(), float.sig(), b)
         adder.io.roundingMode := 0.U
-        adder.io.detectTininess := hardfloat.consts.tininess_afterRounding
 
-        currentValueHF := adder.io.out
-        currentFFlags := currentFFlags | adder.io.exceptionFlags
+        val round = Module(new RoundRawFNToRecFN(float.exp(), float.sig(), 0))
+        round.io.invalidExc := RegNext(adder.io.invalidExc)
+        round.io.infiniteExc := false.B
+        round.io.in := RegNext(adder.io.rawOut)
+        round.io.roundingMode := 0.U
+        round.io.detectTininess := hardfloat.consts.tininess_afterRounding
 
-        progress := progress + 1.U
+        // one cycle add, another cycle round
+        add := ~add
+        when(~add) {
+          currentValueHF := round.io.out
+          currentFFlags := currentFFlags | round.io.exceptionFlags
+          progress := progress + 1.U
+        }
 
         // one cycle delay for hardfloat conversion
         // only set lane 0 of vd
@@ -128,6 +141,7 @@ class VectorFloatRedSum(implicit val coredef: CoreDef)
     currentInstr := io.next
     busy := true.B
     progress := 0.U
+    add := true.B
   }
 
   when(io.flush) {
