@@ -11,13 +11,19 @@ class VectorALUExt(implicit val coredef: CoreDef) extends Bundle {
   val res = UInt(coredef.VLEN.W)
 
   val rs1Elements = MixedVec(
-    coredef.INT_TYPES.map({ case (_, width) => UInt(width.W) })
+    coredef.INT_TYPES.map({ case (_, width) =>
+      Vec(coredef.VLEN / width, UInt(width.W))
+    })
   )
   val rs2Elements = MixedVec(
-    coredef.INT_TYPES.map({ case (_, width) => UInt(width.W) })
+    coredef.INT_TYPES.map({ case (_, width) =>
+      Vec(coredef.VLEN / width, UInt(width.W))
+    })
   )
   val rs3Elements = MixedVec(
-    coredef.INT_TYPES.map({ case (_, width) => UInt(width.W) })
+    coredef.INT_TYPES.map({ case (_, width) =>
+      Vec(coredef.VLEN / width, UInt(width.W))
+    })
   )
 }
 
@@ -32,9 +38,10 @@ class VectorALU(override implicit val coredef: CoreDef)
       last_ext: Option[VectorALUExt]
   ): (VectorALUExt, Bool) = {
     val ext = Wire(new VectorALUExt)
+    ext := DontCare
     ext.res := 0.U
 
-    for ((sew, width) <- coredef.INT_TYPES) {
+    for (((sew, width), idx) <- coredef.INT_TYPES.zipWithIndex) {
       val lanes = coredef.VLEN / width
       val simm = Wire(SInt(width.W))
       simm := pipe.instr.instr.simm5()
@@ -48,14 +55,14 @@ class VectorALU(override implicit val coredef: CoreDef)
         rs2Elements := pipe.rs2val.asTypeOf(rs2Elements)
         val rs3Elements = Wire(Vec(lanes, UInt(width.W)))
         rs3Elements := pipe.rs3val.asTypeOf(rs3Elements)
-        ext.rs1Elements := rs1Elements
-        ext.rs2Elements := rs2Elements
-        ext.rs3Elements := rs3Elements
+        ext.rs1Elements(idx) := rs1Elements
+        ext.rs2Elements(idx) := rs2Elements
+        ext.rs3Elements(idx) := rs3Elements
       } else {
         // stage 1: compute
-        val rs1Elements = last_ext.get.rs1Elements
-        val rs2Elements = last_ext.get.rs2Elements
-        val rs3Elements = last_ext.get.rs3Elements
+        val rs1Elements = last_ext.get.rs1Elements(idx)
+        val rs2Elements = last_ext.get.rs2Elements(idx)
+        val rs3Elements = last_ext.get.rs3Elements(idx)
 
         when(vState.vtype.vsew === sew.U) {
           switch(pipe.instr.instr.funct6) {
