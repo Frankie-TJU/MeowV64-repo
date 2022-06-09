@@ -496,6 +496,10 @@ abstract class CoreDef {
     */
   def FLOAT_TYPES: Seq[FloatType] = Seq(FloatH, FloatS, FloatD)
 
+  /** List of supported integer types (sew, width)
+    */
+  def INT_TYPES: Seq[(Int, Int)] = Seq((0, 8), (1, 16), (2, 32), (3, 64))
+
   val IN_ROCKET_SYSTEM: Boolean = false
 
   object L1I
