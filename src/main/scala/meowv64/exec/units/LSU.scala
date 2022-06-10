@@ -867,15 +867,14 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
       is(DelayedMemOp.vectorStore) {
         val WIDTH = coredef.L1D.TO_CORE_TRANSFER_WIDTH
         assert(vectorBeats <= 2.U)
+        val vectorStoreAddr = Reg(UInt(coredef.PADDR_WIDTH.W))
         when(vectorWriteReqIndex === 0.U) {
           // first beat
           toMem.writer.req.bits.addr := current.addr
           toMem.writer.req.bits.wdata := current.data
         }.otherwise {
-          toMem.writer.req.bits.addr :=
-            (current.addr(coredef.PADDR_WIDTH - 1, IGNORED_WIDTH) ##
-              0.U(IGNORED_WIDTH.W)) +
-              (vectorWriteReqIndex << IGNORED_WIDTH)
+          // improve timing
+          toMem.writer.req.bits.addr := vectorStoreAddr
 
           // shift vectorData
           toMem.writer.req.bits.wdata := current.data >>
@@ -904,6 +903,12 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
           toMem.writer.req.valid := true.B
           when(toMem.writer.req.fire) {
             vectorWriteReqIndex := vectorWriteReqIndex + 1.U
+
+            // compute next store addr
+            vectorStoreAddr :=
+              (current.addr(coredef.PADDR_WIDTH - 1, IGNORED_WIDTH) ##
+                0.U(IGNORED_WIDTH.W)) +
+                ((vectorWriteReqIndex + 1.U) << IGNORED_WIDTH)
             when(vectorWriteReqIndex === vectorBeats - 1.U) {
               release.valid := true.B
               advance := true.B
