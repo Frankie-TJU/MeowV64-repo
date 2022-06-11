@@ -449,7 +449,8 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
   csr.dscratch1 <> CSRPort.fromReg(coredef.XLEN, dscratch1)
 
   // Interrupts
-  val intMask: UInt = (ie.asUInt & ip.asUInt())
+  // only low 12 bits are valid
+  val intMask: UInt = (ie.asUInt & ip.asUInt())(11, 0)
   val intCause = PriorityEncoder(intMask)
   val intDeleg = priv =/= PrivLevel.M && mideleg(intCause)
   val intEnabled = Mux(
