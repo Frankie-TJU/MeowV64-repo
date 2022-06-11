@@ -756,7 +756,8 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
             )
           )
           // TODO: how to handle masked off elements?
-          val offset = WireInit((current.index >> shift) & mask)
+          val offset =
+            WireInit((current.index >> shift)(coredef.XLEN - 1, 0) & mask)
           toMem.reader.req.bits.addr := current.addr +% offset
         }
         toMem.reader.req.valid := vectorReadReqIndex =/= vectorBeats
