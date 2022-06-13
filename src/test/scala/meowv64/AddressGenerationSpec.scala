@@ -79,22 +79,34 @@ class AddressGenerationSpec
         dut.clock.step(16)
         val tl = dut.external_io(0)
 
-        tl.a.bits.opcode.poke(TLMessages.PutFullData)
-        tl.a.bits.param.poke(0.U)
-        tl.a.bits.size.poke(2.U)
-        tl.a.bits.source.poke(0.U)
-        tl.a.bits.address.poke(0x60000020L.U)
-        tl.a.bits.mask.poke(BigInt("f", 16))
-        tl.a.bits.data.poke(1.U)
-        tl.a.bits.corrupt.poke(0.U)
-        tl.a.valid.poke(true.B)
-        tl.d.ready.poke(true.B)
-        dut.clock.step()
-
-        while (tl.a.ready.peek.litToBoolean == false) {
+        def write(addr: BigInt, data: BigInt) = {
+          tl.a.bits.opcode.poke(TLMessages.PutFullData)
+          tl.a.bits.param.poke(0.U)
+          tl.a.bits.size.poke(2.U)
+          tl.a.bits.source.poke(0.U)
+          tl.a.bits.address.poke(addr.U)
+          var mask = BigInt("f", 16)
+          mask = mask << (addr.toInt % 0x20)
+          tl.a.bits.mask.poke(mask)
+          tl.a.bits.data.poke(data.U)
+          tl.a.bits.corrupt.poke(0.U)
+          tl.a.valid.poke(true.B)
+          tl.d.ready.poke(true.B)
           dut.clock.step()
+
+          while (tl.a.ready.peek.litToBoolean == false) {
+            dut.clock.step()
+          }
+          tl.a.valid.poke(false.B)
         }
-        tl.a.valid.poke(false.B)
+
+        val base = 0x60000000L
+
+        write(base + AddressGeneration.ITERATIONS, 8)
+        write(base + AddressGeneration.INSTS, 0x1000)
+        write(base + AddressGeneration.INSTS + 0x4, 0x1000)
+        write(base + AddressGeneration.INSTS + 0x8, 0x1000)
+        write(base + AddressGeneration.CONTROL, 1)
 
         dut.clock.step(16)
       }
