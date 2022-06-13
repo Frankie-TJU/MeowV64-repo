@@ -85,10 +85,13 @@ class AddressGenerationSpec
           tl.a.bits.size.poke(2.U)
           tl.a.bits.source.poke(0.U)
           tl.a.bits.address.poke(addr.U)
+          val beatBytes = 0x20
+
           var mask = BigInt("f", 16)
-          mask = mask << (addr.toInt % 0x20)
+          mask = mask << (addr.toInt % beatBytes)
           tl.a.bits.mask.poke(mask)
-          tl.a.bits.data.poke(data.U)
+          tl.a.bits.data.poke((data << ((addr.toInt % beatBytes) * 8)).U)
+
           tl.a.bits.corrupt.poke(0.U)
           tl.a.valid.poke(true.B)
           tl.d.ready.poke(true.B)
@@ -103,8 +106,10 @@ class AddressGenerationSpec
         val base = 0x60000000L
 
         write(base + AddressGeneration.ITERATIONS, 8)
+        // strided
         write(base + AddressGeneration.INSTS, 0x1000)
-        write(base + AddressGeneration.INSTS + 0x4, 0x1000)
+        // addr
+        write(base + AddressGeneration.INSTS + 0x4, 0x0000)
         write(base + AddressGeneration.INSTS + 0x8, 0x1000)
         write(base + AddressGeneration.CONTROL, 1)
 

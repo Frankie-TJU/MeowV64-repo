@@ -53,10 +53,9 @@ class AddressGenerationInflight(config: AddressGenerationConfig)
   val valid = Bool()
   val req = Bool()
   val op = AddressGenerationOp()
-  // memory read: from=base + stride * iteration, length=bytes
-  val base = UInt(config.addrWidth.W)
+  // current request
+  val reqAddr = UInt(config.addrWidth.W)
   val bytes = UInt(config.bytesWidth.W)
-  val stride = UInt(config.strideWidth.W)
 }
 
 object AddressGenerationInflight {
@@ -65,9 +64,8 @@ object AddressGenerationInflight {
     res.valid := false.B
     res.req := false.B
     res.op := AddressGenerationOp.STRIDED
-    res.base := 0.U
+    res.reqAddr := 0.U
     res.bytes := 0.U
-    res.stride := 0.U
     res
   }
 }
@@ -182,9 +180,9 @@ class AddressGeneration(config: AddressGenerationConfig)(implicit p: Parameters)
             inflights(tail).valid := true.B
             inflights(tail).req := true.B
             inflights(tail).op := AddressGenerationOp.safe(currentOpcode)._1
-            inflights(tail).base := arg1 ## arg2
+            val base = arg1 ## arg2
             inflights(tail).bytes := currentBytes
-            inflights(tail).stride := currentStride
+            inflights(tail).reqAddr := base + currentStride * currentIteration
             tail := tail + 1.U
             currentInstIndex := currentInstIndex + 3.U
           }
@@ -204,7 +202,7 @@ class AddressGeneration(config: AddressGenerationConfig)(implicit p: Parameters)
     when(reqMask.reduce(_ || _)) {
       val inflight = inflights(reqIndex)
 
-      master.a.bits := master_edge.Get(reqIndex, inflight.base, 5.U)._2
+      master.a.bits := master_edge.Get(reqIndex, inflight.reqAddr, 5.U)._2
       master.a.valid := true.B
       when(master.a.fire) {
         inflight.req := false.B
@@ -215,7 +213,14 @@ class AddressGeneration(config: AddressGenerationConfig)(implicit p: Parameters)
     master.d.ready := true.B
     when(master.d.fire) {
       val inflight = inflights(master.d.bits.source)
-      inflight.req := true.B
+      inflight.valid := false.B
+    }
+
+    when(head =/= tail) {
+      val inflight = inflights(head)
+      when(!inflight.valid) {
+        head := head +% 1.U
+      }
     }
   }
 }
