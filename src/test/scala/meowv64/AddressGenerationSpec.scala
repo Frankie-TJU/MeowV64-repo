@@ -108,6 +108,7 @@ class AddressGenerationSpec
             dut.clock.step()
           }
           tl.a.valid.poke(false.B)
+          dut.clock.step()
         }
 
         val base = 0x60000000L
@@ -115,12 +116,12 @@ class AddressGenerationSpec
         dut.egress.ready.poke(true.B)
 
         // write some data to memory
-        //write(0x1000, 0x1234)
-        //write(0x1004, 0x5678)
+        write(0x1000, 0x1234)
+        write(0x1004, 0x5678)
 
         write(base + AddressGeneration.ITERATIONS, 8)
         // strided
-        val stride = 32
+        val stride = 8
         val bytes = 8
         val config = (stride << AddressGeneration.CONFIG_STRIDE) | (bytes << AddressGeneration.CONFIG_BYTES)
         write(base + AddressGeneration.INSTS, config)

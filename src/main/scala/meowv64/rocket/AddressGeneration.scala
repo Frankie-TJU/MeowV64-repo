@@ -276,6 +276,7 @@ class AddressGenerationModuleImp(outer: AddressGeneration)
     val recvBytes = (1.U << master.d.bits.size)
     val newRecv = inflight.recv + recvBytes
     inflight.recv := newRecv
+    inflight.data := master.d.bits.data
 
     when(inflight.bytes <= newRecv) {
       // done
