@@ -107,8 +107,11 @@ class AddressGenerationSpec
 
         write(base + AddressGeneration.ITERATIONS, 8)
         // strided
-        write(base + AddressGeneration.INSTS, 0x1000)
-        // addr
+        val stride = 32
+        val bytes = 8
+        val config = (stride << AddressGeneration.CONFIG_STRIDE) | (bytes << AddressGeneration.CONFIG_BYTES)
+        write(base + AddressGeneration.INSTS, config)
+        // addr = 0x00001000
         write(base + AddressGeneration.INSTS + 0x4, 0x0000)
         write(base + AddressGeneration.INSTS + 0x8, 0x1000)
         write(base + AddressGeneration.CONTROL, 1)

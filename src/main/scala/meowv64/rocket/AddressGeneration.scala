@@ -26,18 +26,24 @@ case class AddressGenerationConfig(
     maxIterations: Int = 32,
     maxInflights: Int = 4,
     addrWidth: Int = 64,
-    bytesWidth: Int = 5,
-    strideWidth: Int = 5
+    bytesWidth: Int = 7,
+    strideWidth: Int = 8
 ) {
   // power of two
   assert((maxInflights & (maxInflights - 1)) == 0)
 }
 
 object AddressGeneration {
+  // addresses
   def STATUS = 0x00
   def CONTROL = 0x20
   def ITERATIONS = 0x40
   def INSTS = 0x60
+
+  // config
+  def CONFIG_OPCODE = 31
+  def CONFIG_BYTES = 20
+  def CONFIG_STRIDE = 0
 }
 
 object AddressGenerationState extends ChiselEnum {
@@ -51,21 +57,33 @@ object AddressGenerationOp extends ChiselEnum {
 class AddressGenerationInflight(config: AddressGenerationConfig)
     extends Bundle {
   val valid = Bool()
-  val req = Bool()
+
+  // params
   val op = AddressGenerationOp()
-  // current request
-  val reqAddr = UInt(config.addrWidth.W)
   val bytes = UInt(config.bytesWidth.W)
+
+  // progress
+  val recv = UInt(config.bytesWidth.W)
+
+  // current TileLink request
+  val req = Bool()
+  val reqAddr = UInt(config.addrWidth.W)
+  val reqLgSize = UInt(log2Ceil(config.beatBytes).W)
 }
 
 object AddressGenerationInflight {
   def empty(config: AddressGenerationConfig) = {
     val res = Wire(new AddressGenerationInflight(config))
     res.valid := false.B
-    res.req := false.B
+
     res.op := AddressGenerationOp.STRIDED
-    res.reqAddr := 0.U
     res.bytes := 0.U
+
+    res.recv := 0.U
+
+    res.req := false.B
+    res.reqAddr := 0.U
+    res.reqLgSize := 0.U
     res
   }
 }
@@ -163,8 +181,8 @@ class AddressGeneration(config: AddressGenerationConfig)(implicit p: Parameters)
         val arg1 = configInsts(currentInstIndex + 1.U)
         val arg2 = configInsts(currentInstIndex + 2.U)
         val currentOpcode = currentInst(31, 31)
-        val currentBytes = currentInst(29, 20)
-        val currentStride = currentInst(19, 0)
+        val currentBytes = currentInst(AddressGeneration.CONFIG_BYTES + config.bytesWidth, AddressGeneration.CONFIG_BYTES)
+        val currentStride = currentInst(AddressGeneration.CONFIG_STRIDE + config.strideWidth, AddressGeneration.CONFIG_STRIDE)
         val full = tail +% 1.U === head
         when(currentInst === 0.U) {
           // next loop
@@ -178,11 +196,25 @@ class AddressGeneration(config: AddressGenerationConfig)(implicit p: Parameters)
         }.otherwise {
           when(~full) {
             inflights(tail).valid := true.B
-            inflights(tail).req := true.B
+
+            // params
             inflights(tail).op := AddressGenerationOp.safe(currentOpcode)._1
             val base = arg1 ## arg2
             inflights(tail).bytes := currentBytes
+
+            // progress
+            inflights(tail).recv := 0.U
+
+            // initial TileLink request
+            inflights(tail).req := true.B
             inflights(tail).reqAddr := base + currentStride * currentIteration
+            // ceil currentBytes up
+            when(currentBytes <= config.beatBytes.U) {
+              inflights(tail).reqLgSize := Log2(currentBytes - 1.U) + 1.U
+            }.otherwise {
+              inflights(tail).reqLgSize := log2Ceil(config.beatBytes).U
+            }
+
             tail := tail + 1.U
             currentInstIndex := currentInstIndex + 3.U
           }
@@ -202,7 +234,7 @@ class AddressGeneration(config: AddressGenerationConfig)(implicit p: Parameters)
     when(reqMask.reduce(_ || _)) {
       val inflight = inflights(reqIndex)
 
-      master.a.bits := master_edge.Get(reqIndex, inflight.reqAddr, 5.U)._2
+      master.a.bits := master_edge.Get(reqIndex, inflight.reqAddr, inflight.reqLgSize)._2
       master.a.valid := true.B
       when(master.a.fire) {
         inflight.req := false.B
@@ -213,7 +245,18 @@ class AddressGeneration(config: AddressGenerationConfig)(implicit p: Parameters)
     master.d.ready := true.B
     when(master.d.fire) {
       val inflight = inflights(master.d.bits.source)
-      inflight.valid := false.B
+      val recvBytes = (1.U << master.d.bits.size)
+      val newRecv = inflight.recv + recvBytes
+      inflight.recv := newRecv
+
+      when(inflight.bytes <= newRecv) {
+        // done
+        inflight.valid := false.B
+      }.otherwise {
+        // next beat
+        inflight.req := true.B
+        inflight.reqAddr := inflight.reqAddr + recvBytes
+      }
     }
 
     when(head =/= tail) {
