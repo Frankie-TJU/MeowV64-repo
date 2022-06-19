@@ -18,15 +18,18 @@ import freechips.rocketchip.tilelink.TLMasterParameters
 import freechips.rocketchip.diplomacy.IdRange
 import meowv64.rocket.MeowV64BaseConfig
 import freechips.rocketchip.tilelink.TLMessages
+import meowv64.rocket.AddressGenerationEgress
+import chisel3.util.Decoupled
 
 class AddressGenerationTestHarness(implicit p: Parameters) extends LazyModule {
   val beatBytes = 32
-  val dut = LazyModule(
-    new AddressGeneration(
+  val config = 
       AddressGenerationConfig(
         configBase = BigInt(0x60000000L),
         beatBytes = beatBytes
       )
+  val dut = LazyModule(
+    new AddressGeneration(config
     )
   )
   val xbar = LazyModule(new TLXbar)
@@ -61,6 +64,9 @@ class AddressGenerationTestHarnessModuleImp(
   val external_io = outer.externalNode.makeIOs()
 
   val (external, external_edge) = outer.externalNode.out(0)
+
+  val egress = IO(outer.dut.module.egress.cloneType)
+  egress <> outer.dut.module.egress
 }
 
 class AddressGenerationSpec
@@ -84,8 +90,9 @@ class AddressGenerationSpec
           tl.a.bits.param.poke(0.U)
           tl.a.bits.size.poke(2.U)
           tl.a.bits.source.poke(0.U)
-          tl.a.bits.address.poke(addr.U)
+
           val beatBytes = 0x20
+          tl.a.bits.address.poke(addr.U)
 
           var mask = BigInt("f", 16)
           mask = mask << (addr.toInt % beatBytes)
@@ -104,6 +111,12 @@ class AddressGenerationSpec
         }
 
         val base = 0x60000000L
+
+        dut.egress.ready.poke(true.B)
+
+        // write some data to memory
+        //write(0x1000, 0x1234)
+        //write(0x1004, 0x5678)
 
         write(base + AddressGeneration.ITERATIONS, 8)
         // strided
