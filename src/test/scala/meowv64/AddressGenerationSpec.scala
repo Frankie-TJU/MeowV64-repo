@@ -97,7 +97,7 @@ class AddressGenerationSpec
           var mask = BigInt("f", 16)
           mask = mask << (addr.toInt % beatBytes)
           tl.a.bits.mask.poke(mask)
-          tl.a.bits.data.poke((data << ((addr.toInt % beatBytes) * 8)).U)
+          tl.a.bits.data.poke((data << ((addr.toInt % beatBytes).toInt * 8)).U)
 
           tl.a.bits.corrupt.poke(0.U)
           tl.a.valid.poke(true.B)
@@ -115,37 +115,77 @@ class AddressGenerationSpec
 
         dut.egress.ready.poke(true.B)
 
-        // write some data to memory
-        write(0x1000, 0x12345678)
-        write(0x1004, 0x56781234)
-
-        write(base + AddressGeneration.ITERATIONS, 8)
         // strided
-        val stride = 8
-        val bytes = 8
-        val config =
-          (stride << AddressGeneration.CONFIG_STRIDE) | (bytes << AddressGeneration.CONFIG_BYTES)
-        write(base + AddressGeneration.INSTS, config)
-        // addr = 0x00001000
-        write(base + AddressGeneration.INSTS + 0x4, 0x0000)
-        write(base + AddressGeneration.INSTS + 0x8, 0x1000)
-        write(base + AddressGeneration.ITERATIONS, 1)
-        // start
-        write(base + AddressGeneration.CONTROL, 1)
+        if (true) {
+          // write some data to memory
+          write(0x1000, 0x12345678)
+          write(0x1004, 0x56781234)
 
-        fork {
-          dut.egress.ready.poke(true.B)
-          while(!dut.egress.valid.peek.litToBoolean) {
-            dut.clock.step()
-          }
+          // strided
+          val stride = 8
+          val bytes = 8
+          val config =
+            (stride << AddressGeneration.CONFIG_STRIDE) | (bytes << AddressGeneration.CONFIG_BYTES)
+          write(base + AddressGeneration.INSTS, config)
+          // addr = 0x00001000
+          write(base + AddressGeneration.INSTS + 0x4, 0x0000)
+          write(base + AddressGeneration.INSTS + 0x8, 0x1000)
+          write(base + AddressGeneration.ITERATIONS, 1)
+          // start
+          write(base + AddressGeneration.CONTROL, 1)
 
-          dut.egress.valid.expect(true.B)
-          val data = dut.egress.bits.data.peekInt()
-          assert(data == BigInt("5678123412345678", 16))
-          dut.egress.bits.lenMinus1.expect(7.U)
-        }.joinAndStep(dut.clock)
+          fork {
+            dut.egress.ready.poke(true.B)
+            while (!dut.egress.valid.peek.litToBoolean) {
+              dut.clock.step()
+            }
 
-        dut.clock.step(16)
+            dut.egress.valid.expect(true.B)
+            val data = dut.egress.bits.data.peekInt()
+            assert(data == BigInt("5678123412345678", 16))
+            dut.egress.bits.lenMinus1.expect(7.U)
+          }.joinAndStep(dut.clock)
+
+          dut.clock.step(16)
+        }
+
+        // indexed
+        if (true) {
+          // write some data to memory
+          write(0x2000, 0x4)
+          write(0x2004, 0x8)
+
+          val opcode: Long = 1
+          val stride: Long = 8
+          val bytes: Long = 8
+          val config: Long =
+            (opcode << AddressGeneration.CONFIG_OPCODE) |
+              (stride << AddressGeneration.CONFIG_STRIDE) | (bytes << AddressGeneration.CONFIG_BYTES)
+          write(base + AddressGeneration.INSTS, config)
+          // addr = 0x00002000
+          write(base + AddressGeneration.INSTS + 0x4, 0x0000)
+          write(base + AddressGeneration.INSTS + 0x8, 0x2000)
+          // indexedBase = 0x00003000
+          write(base + AddressGeneration.INSTS + 0xc, 0x0000)
+          write(base + AddressGeneration.INSTS + 0x10, 0x3000)
+          write(base + AddressGeneration.ITERATIONS, 1)
+          // start
+          write(base + AddressGeneration.CONTROL, 1)
+
+          fork {
+            dut.egress.ready.poke(true.B)
+            while (!dut.egress.valid.peek.litToBoolean) {
+              dut.clock.step()
+            }
+
+            dut.egress.valid.expect(true.B)
+            val data = dut.egress.bits.data.peekInt()
+            //assert(data == BigInt("5678123412345678", 16))
+            dut.egress.bits.lenMinus1.expect(7.U)
+          }.joinAndStep(dut.clock)
+
+          dut.clock.step(16)
+        }
       }
   }
 }

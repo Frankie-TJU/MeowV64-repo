@@ -101,8 +101,9 @@ object AddressGenerationInflight {
   }
 }
 
-class AddressGeneration(val config: AddressGenerationConfig)(implicit p: Parameters)
-    extends LazyModule {
+class AddressGeneration(val config: AddressGenerationConfig)(implicit
+    p: Parameters
+) extends LazyModule {
 
   // configuration
   val device = new SimpleDevice("addrgen", Seq("custom,addrgen"))
@@ -310,13 +311,16 @@ class AddressGenerationModuleImp(outer: AddressGeneration)
     }.otherwise {
       // indexed
       when(!inflight.gotIndex) {
+        inflight.gotIndex := true.B
+
         // first indexed access
         inflight.req := true.B
-        inflight.reqAddr := inflight.reqAddr + master.d.bits.data(31, 0)
+        inflight.reqAddr := inflight.indexedBase + master.d.bits.data(31, 0)
+        inflight.reqLgSize := 2.U
       }.otherwise {
         when(inflight.bytes <= newRecv) {
           inflight.req := true.B
-          inflight.reqAddr := inflight.reqAddr + recvBytes
+          inflight.reqAddr := inflight.indexedBase + master.d.bits.data(31, 0)
         }.otherwise {
           // next beat
           inflight.done := true.B
