@@ -62,10 +62,12 @@ class AddressGenerationInflight(config: AddressGenerationConfig)
   // params
   val op = AddressGenerationOp()
   val bytes = UInt(config.bytesWidth.W)
+  val indexedBase = UInt(config.addrWidth.W)
 
   // progress
   val recv = UInt(config.bytesWidth.W)
   val data = UInt(((1 << config.bytesWidth) * 8).W)
+  val gotIndex = Bool()
 
   // current TileLink request
   val req = Bool()
@@ -86,9 +88,11 @@ object AddressGenerationInflight {
 
     res.op := AddressGenerationOp.STRIDED
     res.bytes := 0.U
+    res.indexedBase := 0.U
 
     res.recv := 0.U
     res.data := 0.U
+    res.gotIndex := false.B
 
     res.req := false.B
     res.reqAddr := 0.U
@@ -198,6 +202,8 @@ class AddressGenerationModuleImp(outer: AddressGeneration)
       val currentInst = configInsts(currentInstIndex)
       val arg1 = configInsts(currentInstIndex + 1.U)
       val arg2 = configInsts(currentInstIndex + 2.U)
+      val arg3 = configInsts(currentInstIndex + 3.U)
+      val arg4 = configInsts(currentInstIndex + 4.U)
       val currentOpcode = currentInst(31, 31)
       val currentBytes = currentInst(
         AddressGeneration.CONFIG_BYTES + config.bytesWidth - 1,
@@ -224,9 +230,12 @@ class AddressGenerationModuleImp(outer: AddressGeneration)
           inflights(tail).done := false.B
 
           // params
-          inflights(tail).op := AddressGenerationOp.safe(currentOpcode)._1
-          val base = arg1 ## arg2
+          val op = AddressGenerationOp.safe(currentOpcode)._1
+          inflights(tail).op := op
           inflights(tail).bytes := currentBytes
+          val base = arg1 ## arg2
+          val indexedBase = arg3 ## arg4
+          inflights(tail).indexedBase := indexedBase
 
           // progress
           inflights(tail).recv := 0.U
@@ -234,15 +243,25 @@ class AddressGenerationModuleImp(outer: AddressGeneration)
           // initial TileLink request
           inflights(tail).req := true.B
           inflights(tail).reqAddr := base + currentStride * currentIteration
-          // ceil currentBytes up
-          when(currentBytes <= config.beatBytes.U) {
-            inflights(tail).reqLgSize := Log2(currentBytes - 1.U) + 1.U
+          when(op === AddressGenerationOp.STRIDED) {
+            // strided
+            // ceil currentBytes up
+            when(currentBytes <= config.beatBytes.U) {
+              inflights(tail).reqLgSize := Log2(currentBytes - 1.U) + 1.U
+            }.otherwise {
+              inflights(tail).reqLgSize := log2Ceil(config.beatBytes).U
+            }
           }.otherwise {
+            // indexed
             inflights(tail).reqLgSize := log2Ceil(config.beatBytes).U
           }
 
           tail := tail + 1.U
-          currentInstIndex := currentInstIndex + 3.U
+          when(op === AddressGenerationOp.STRIDED) {
+            currentInstIndex := currentInstIndex + 3.U
+          }.otherwise {
+            currentInstIndex := currentInstIndex + 5.U
+          }
         }
       }
     }
@@ -278,13 +297,31 @@ class AddressGenerationModuleImp(outer: AddressGeneration)
     inflight.recv := newRecv
     inflight.data := master.d.bits.data
 
-    when(inflight.bytes <= newRecv) {
-      // done
-      inflight.done := true.B
+    when(inflight.op === AddressGenerationOp.STRIDED) {
+      // strided
+      when(inflight.bytes <= newRecv) {
+        // done
+        inflight.done := true.B
+      }.otherwise {
+        // next beat
+        inflight.req := true.B
+        inflight.reqAddr := inflight.reqAddr + recvBytes
+      }
     }.otherwise {
-      // next beat
-      inflight.req := true.B
-      inflight.reqAddr := inflight.reqAddr + recvBytes
+      // indexed
+      when(!inflight.gotIndex) {
+        // first indexed access
+        inflight.req := true.B
+        inflight.reqAddr := inflight.reqAddr + master.d.bits.data(31, 0)
+      }.otherwise {
+        when(inflight.bytes <= newRecv) {
+          inflight.req := true.B
+          inflight.reqAddr := inflight.reqAddr + recvBytes
+        }.otherwise {
+          // next beat
+          inflight.done := true.B
+        }
+      }
     }
   }
 
