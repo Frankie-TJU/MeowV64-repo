@@ -76,7 +76,7 @@ class AddressGenerationInflight(config: AddressGenerationConfig)
 }
 
 class AddressGenerationEgress(config: AddressGenerationConfig) extends Bundle {
-  val data = UInt(config.beatBytes.W)
+  val data = UInt((config.beatBytes * 8).W)
   val lenMinus1 = UInt(log2Ceil(config.beatBytes).W)
 }
 
@@ -335,7 +335,7 @@ class AddressGenerationModuleImp(outer: AddressGeneration)
     when(inflight.done) {
       egress.valid := true.B
       egress.bits.data := inflight.data
-      egress.bits.lenMinus1 := inflight.bytes
+      egress.bits.lenMinus1 := inflight.bytes - 1.U
       when(egress.fire) {
         inflight.valid := false.B
         head := head +% 1.U

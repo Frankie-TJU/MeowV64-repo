@@ -20,17 +20,17 @@ import meowv64.rocket.MeowV64BaseConfig
 import freechips.rocketchip.tilelink.TLMessages
 import meowv64.rocket.AddressGenerationEgress
 import chisel3.util.Decoupled
+import scala.collection.mutable.ArrayBuffer
 
 class AddressGenerationTestHarness(implicit p: Parameters) extends LazyModule {
   val beatBytes = 32
-  val config = 
-      AddressGenerationConfig(
-        configBase = BigInt(0x60000000L),
-        beatBytes = beatBytes
-      )
-  val dut = LazyModule(
-    new AddressGeneration(config
+  val config =
+    AddressGenerationConfig(
+      configBase = BigInt(0x60000000L),
+      beatBytes = beatBytes
     )
+  val dut = LazyModule(
+    new AddressGeneration(config)
   )
   val xbar = LazyModule(new TLXbar)
   val ram = LazyModule(
@@ -59,7 +59,7 @@ class AddressGenerationTestHarness(implicit p: Parameters) extends LazyModule {
 }
 
 class AddressGenerationTestHarnessModuleImp(
-    outer: AddressGenerationTestHarness
+    val outer: AddressGenerationTestHarness
 ) extends LazyModuleImp(outer) {
   val external_io = outer.externalNode.makeIOs()
 
@@ -116,19 +116,34 @@ class AddressGenerationSpec
         dut.egress.ready.poke(true.B)
 
         // write some data to memory
-        write(0x1000, 0x1234)
-        write(0x1004, 0x5678)
+        write(0x1000, 0x12345678)
+        write(0x1004, 0x56781234)
 
         write(base + AddressGeneration.ITERATIONS, 8)
         // strided
         val stride = 8
         val bytes = 8
-        val config = (stride << AddressGeneration.CONFIG_STRIDE) | (bytes << AddressGeneration.CONFIG_BYTES)
+        val config =
+          (stride << AddressGeneration.CONFIG_STRIDE) | (bytes << AddressGeneration.CONFIG_BYTES)
         write(base + AddressGeneration.INSTS, config)
         // addr = 0x00001000
         write(base + AddressGeneration.INSTS + 0x4, 0x0000)
         write(base + AddressGeneration.INSTS + 0x8, 0x1000)
+        write(base + AddressGeneration.ITERATIONS, 1)
+        // start
         write(base + AddressGeneration.CONTROL, 1)
+
+        fork {
+          dut.egress.ready.poke(true.B)
+          while(!dut.egress.valid.peek.litToBoolean) {
+            dut.clock.step()
+          }
+
+          dut.egress.valid.expect(true.B)
+          val data = dut.egress.bits.data.peekInt()
+          assert(data == BigInt("5678123412345678", 16))
+          dut.egress.bits.lenMinus1.expect(7.U)
+        }.joinAndStep(dut.clock)
 
         dut.clock.step(16)
       }
