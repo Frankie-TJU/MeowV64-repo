@@ -18,9 +18,6 @@ import freechips.rocketchip.tilelink.TLMasterParameters
 import freechips.rocketchip.diplomacy.IdRange
 import meowv64.rocket.MeowV64BaseConfig
 import freechips.rocketchip.tilelink.TLMessages
-import meowv64.rocket.AddressGenerationEgress
-import chisel3.util.Decoupled
-import scala.collection.mutable.ArrayBuffer
 
 class AddressGenerationTestHarness(implicit p: Parameters) extends LazyModule {
   val beatBytes = 32
@@ -121,7 +118,7 @@ class AddressGenerationSpec
           write(0x1000, 0x12345678)
           write(0x1004, 0x56781234)
 
-          // strided
+          // strided read 8 bytes
           val stride = 8
           val bytes = 8
           val config =
@@ -152,12 +149,20 @@ class AddressGenerationSpec
         // indexed
         if (true) {
           // write some data to memory
-          write(0x2000, 0x4)
+          // index
+          write(0x2000, 0xc)
           write(0x2004, 0x8)
+          write(0x2008, 0x4)
+          write(0x200c, 0x0)
+          // value
+          write(0x3000, 0x0)
+          write(0x3004, 0x1)
+          write(0x3008, 0x2)
+          write(0x300c, 0x3)
 
           val opcode: Long = 1
           val stride: Long = 8
-          val bytes: Long = 8
+          val bytes: Long = 16
           val config: Long =
             (opcode << AddressGeneration.CONFIG_OPCODE) |
               (stride << AddressGeneration.CONFIG_STRIDE) | (bytes << AddressGeneration.CONFIG_BYTES)
@@ -180,8 +185,8 @@ class AddressGenerationSpec
 
             dut.egress.valid.expect(true.B)
             val data = dut.egress.bits.data.peekInt()
-            //assert(data == BigInt("5678123412345678", 16))
-            dut.egress.bits.lenMinus1.expect(7.U)
+            assert(data == BigInt("00000003000000020000000100000000", 16))
+            dut.egress.bits.lenMinus1.expect(15.U)
           }.joinAndStep(dut.clock)
 
           dut.clock.step(16)

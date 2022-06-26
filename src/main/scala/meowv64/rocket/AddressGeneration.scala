@@ -67,6 +67,7 @@ class AddressGenerationInflight(config: AddressGenerationConfig)
   // progress
   val recv = UInt(config.bytesWidth.W)
   val data = UInt(((1 << config.bytesWidth) * 8).W)
+  val index = UInt(((1 << config.bytesWidth) * 8).W)
   val gotIndex = Bool()
 
   // current TileLink request
@@ -92,6 +93,7 @@ object AddressGenerationInflight {
 
     res.recv := 0.U
     res.data := 0.U
+    res.index := 0.U
     res.gotIndex := false.B
 
     res.req := false.B
@@ -296,7 +298,6 @@ class AddressGenerationModuleImp(outer: AddressGeneration)
     val recvBytes = (1.U << master.d.bits.size)
     val newRecv = inflight.recv + recvBytes
     inflight.recv := newRecv
-    inflight.data := master.d.bits.data
 
     when(inflight.op === AddressGenerationOp.STRIDED) {
       // strided
@@ -308,16 +309,19 @@ class AddressGenerationModuleImp(outer: AddressGeneration)
         inflight.req := true.B
         inflight.reqAddr := inflight.reqAddr + recvBytes
       }
+      inflight.data := master.d.bits.data
     }.otherwise {
       // indexed
       when(!inflight.gotIndex) {
         inflight.gotIndex := true.B
+        inflight.index := master.d.bits.data
 
         // first indexed access
         inflight.req := true.B
         inflight.reqAddr := inflight.indexedBase + master.d.bits.data(31, 0)
         inflight.reqLgSize := 2.U
       }.otherwise {
+        inflight.data := master.d.bits.data
         when(inflight.bytes <= newRecv) {
           inflight.req := true.B
           inflight.reqAddr := inflight.indexedBase + master.d.bits.data(31, 0)
