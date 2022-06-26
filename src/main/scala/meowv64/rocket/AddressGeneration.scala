@@ -76,9 +76,9 @@ class AddressGenerationInflight(config: AddressGenerationConfig)
   val reqLgSize = UInt(log2Ceil(config.beatBytes).W)
 }
 
-class AddressGenerationEgress(config: AddressGenerationConfig) extends Bundle {
-  val data = UInt((config.beatBytes * 8).W)
-  val lenMinus1 = UInt(log2Ceil(config.beatBytes).W)
+class AddressGenerationEgress(beatBytes: Int) extends Bundle {
+  val data = UInt((beatBytes * 8).W)
+  val lenMinus1 = UInt(log2Ceil(beatBytes).W)
 }
 
 object AddressGenerationInflight {
@@ -140,7 +140,7 @@ class AddressGenerationModuleImp(outer: AddressGeneration)
     extends LazyModuleImp(outer) {
   val config = outer.config
 
-  val egress = IO(Decoupled(new AddressGenerationEgress(config)))
+  val egress = IO(Decoupled(new AddressGenerationEgress(config.beatBytes)))
 
   val configInsts = RegInit(VecInit.fill(config.configInstWords)(0.U(32.W)))
   val currentInstIndex = RegInit(0.U(log2Up(config.configInstWords).W))
