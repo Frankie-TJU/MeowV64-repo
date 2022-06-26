@@ -13,6 +13,9 @@ import freechips.rocketchip.tilelink.TLSlavePortParameters
 import chisel3.util._
 import chisel3._
 import chisel3.experimental.ChiselEnum
+import freechips.rocketchip.tilelink.TLMessages
+import freechips.rocketchip.regmapper.RegFieldDesc
+import freechips.rocketchip.regmapper.RegField
 
 case class BuffetsConfig(
     memoryBase: BigInt,
@@ -57,6 +60,13 @@ object BuffetsState extends ChiselEnum {
   val sIdle, sReading, sWriting, sShrinking, sPushing = Value
 }
 
+object Buffets {
+  // addresses
+  def HEAD = 0x00
+  def TAIL = 0x20
+  def EMPTY = 0x40
+}
+
 class BuffetsModuleImp(outer: Buffets) extends LazyModuleImp(outer) {
   val config = outer.config
   val egress = IO(
@@ -91,14 +101,51 @@ class BuffetsModuleImp(outer: Buffets) extends LazyModuleImp(outer) {
   val tail = RegInit(0.U(log2Ceil(config.memorySize).W))
   val empty = RegInit(config.memorySize.U(log2Ceil(config.memorySize + 1).W))
 
+  outer.registerNode.regmap(
+    Buffets.HEAD -> Seq(
+      RegField(
+        head.getWidth,
+        head,
+        RegFieldDesc("head", "head pointer")
+      )
+    ),
+    Buffets.TAIL -> Seq(
+      RegField(
+        tail.getWidth,
+        tail,
+        RegFieldDesc("tail", "tail pointer")
+      )
+    ),
+    Buffets.EMPTY -> Seq(
+      RegField(
+        empty.getWidth,
+        empty,
+        RegFieldDesc("empty", "empty entries")
+      )
+    )
+  )
+
   val state = RegInit(BuffetsState.sIdle)
 
   val (slave, slave_edge) = outer.slaveNode.out(0)
 
+  egress.ready := false.B
+  slave.a.ready := false.B
   switch(state) {
     is(BuffetsState.sIdle) {
-      egress.ready := true.B
-      slave.a.ready := true.B
+      when(egress.valid) {
+        egress.ready := true.B
+        state := BuffetsState.sPushing
+      }.elsewhen(slave.a.valid) {
+        slave.a.ready := true.B
+        when(slave.a.bits.opcode === TLMessages.Get) {
+          state := BuffetsState.sReading
+        }.elsewhen(slave.a.bits.opcode === TLMessages.PutFullData) {
+          state := BuffetsState.sWriting
+        }.otherwise {
+          assert(false.B)
+        }
+      }
     }
     is(BuffetsState.sReading) {}
     is(BuffetsState.sWriting) {}
