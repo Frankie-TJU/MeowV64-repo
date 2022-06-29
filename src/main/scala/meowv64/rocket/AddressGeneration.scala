@@ -9,15 +9,15 @@ import freechips.rocketchip.diplomacy.IdRange
 import freechips.rocketchip.diplomacy.LazyModule
 import freechips.rocketchip.diplomacy.LazyModuleImp
 import freechips.rocketchip.diplomacy.SimpleDevice
+import freechips.rocketchip.diplomacy.TransferSizes
 import freechips.rocketchip.regmapper.RegField
 import freechips.rocketchip.regmapper.RegFieldDesc
 import freechips.rocketchip.regmapper.RegFieldGroup
 import freechips.rocketchip.tilelink.TLClientNode
 import freechips.rocketchip.tilelink.TLMasterParameters
 import freechips.rocketchip.tilelink.TLMasterPortParameters
-import freechips.rocketchip.tilelink.TLRegisterNode
 import freechips.rocketchip.tilelink.TLMasterToSlaveTransferSizes
-import freechips.rocketchip.diplomacy.TransferSizes
+import freechips.rocketchip.tilelink.TLRegisterNode
 
 case class AddressGenerationConfig(
     configBase: BigInt,
@@ -78,7 +78,7 @@ class AddressGenerationInflight(config: AddressGenerationConfig)
 
 class AddressGenerationEgress(beatBytes: Int) extends Bundle {
   val data = UInt((beatBytes * 8).W)
-  val lenMinus1 = UInt(log2Ceil(beatBytes).W)
+  val len = UInt(log2Ceil(beatBytes + 1).W)
 }
 
 object AddressGenerationInflight {
@@ -336,14 +336,14 @@ class AddressGenerationModuleImp(outer: AddressGeneration)
   // egress
   egress.valid := false.B
   egress.bits.data := 0.U
-  egress.bits.lenMinus1 := 0.U
+  egress.bits.len := 0.U
 
   when(head =/= tail) {
     val inflight = inflights(head)
     when(inflight.done) {
       egress.valid := true.B
       egress.bits.data := inflight.data
-      egress.bits.lenMinus1 := inflight.bytes - 1.U
+      egress.bits.len := inflight.bytes
       when(egress.fire) {
         inflight.valid := false.B
         head := head +% 1.U
