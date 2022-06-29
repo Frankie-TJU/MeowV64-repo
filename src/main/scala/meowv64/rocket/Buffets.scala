@@ -57,7 +57,7 @@ class Buffets(val config: BuffetsConfig)(implicit p: Parameters)
 }
 
 object BuffetsState extends ChiselEnum {
-  val sIdle, sReading, sWriting, sShrinking, sPushing = Value
+  val sIdle, sReading, sWriting, sPushing = Value
 }
 
 object Buffets {
@@ -105,6 +105,7 @@ class BuffetsModuleImp(outer: Buffets) extends LazyModuleImp(outer) {
   val empty = RegInit(config.memorySize.U(log2Ceil(config.memorySize + 1).W))
 
   val shrinkIO = Decoupled(UInt(log2Ceil(config.memorySize + 1).W))
+  shrinkIO.ready := false.B
 
   outer.registerNode.regmap(
     Buffets.HEAD -> Seq(
@@ -163,6 +164,13 @@ class BuffetsModuleImp(outer: Buffets) extends LazyModuleImp(outer) {
         tail := tail + egress.bits.len
         size := size + egress.bits.len
         empty := empty - egress.bits.len
+      }.elsewhen(shrinkIO.valid) {
+        shrinkIO.ready := true.B
+
+        val shrink = shrinkIO.bits
+        head := head + shrink
+        size := size - shrink
+        empty := empty + shrink
       }.elsewhen(req.valid) {
         // accept when ready
         val offset = req.bits.address(log2Ceil(config.memorySize) - 1, 0)
@@ -185,12 +193,6 @@ class BuffetsModuleImp(outer: Buffets) extends LazyModuleImp(outer) {
     is(BuffetsState.sWriting) {
       enable := true.B
       write := true.B
-    }
-    is(BuffetsState.sShrinking) {
-      val shrink = 0.U
-      head := head + shrink
-      size := size - shrink
-      empty := empty + shrink
     }
     is(BuffetsState.sPushing) {
       // save pushData
