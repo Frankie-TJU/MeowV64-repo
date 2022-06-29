@@ -57,7 +57,7 @@ class Buffets(val config: BuffetsConfig)(implicit p: Parameters)
 }
 
 object BuffetsState extends ChiselEnum {
-  val sIdle, sReading, sWriting, sPushing = Value
+  val sIdle, sReading, sReadDone, sWriting, sWriteDone, sPushing = Value
 }
 
 object Buffets {
@@ -189,10 +189,28 @@ class BuffetsModuleImp(outer: Buffets) extends LazyModuleImp(outer) {
     is(BuffetsState.sReading) {
       enable := true.B
       write := false.B
+      state := BuffetsState.sReadDone
+    }
+    is(BuffetsState.sReadDone) {
+      slave.d.valid := true.B
+      slave.d.bits.data := readData
+
+      when(slave.d.ready) {
+        state := BuffetsState.sIdle
+      }
     }
     is(BuffetsState.sWriting) {
       enable := true.B
       write := true.B
+      state := BuffetsState.sWriteDone
+    }
+    is(BuffetsState.sWriteDone) {
+      slave.d.valid := true.B
+      slave.d.bits.data := readData
+
+      when(slave.d.ready) {
+        state := BuffetsState.sIdle
+      }
     }
     is(BuffetsState.sPushing) {
       // save pushData
