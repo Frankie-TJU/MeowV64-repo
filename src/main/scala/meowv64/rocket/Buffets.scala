@@ -159,6 +159,8 @@ class BuffetsModuleImp(outer: Buffets) extends LazyModuleImp(outer) {
 
   egress.ready := false.B
   req.ready := false.B
+  slave.a.ready := false.B
+  slave.d.valid := false.B
   switch(state) {
     is(BuffetsState.sIdle) {
       when(egress.valid) {
