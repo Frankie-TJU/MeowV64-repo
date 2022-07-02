@@ -13,8 +13,8 @@
 			clock-frequency = <0>;
 			compatible = "meow,meowv64", "riscv";
 			d-cache-block-size = <32>;
-			d-cache-sets = <128>;
-			d-cache-size = <8192>;
+			d-cache-sets = <32>;
+			d-cache-size = <2048>;
 			d-tlb-sets = <1>;
 			d-tlb-size = <32>;
 			device_type = "cpu";

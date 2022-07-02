@@ -88,7 +88,11 @@ class BuffetsModuleImp(outer: Buffets) extends LazyModuleImp(outer) {
   val addr = Wire(UInt(log2Up(words).W))
   val readData = Wire(UInt((config.beatBytes * 8).W))
   val writeData = Wire(UInt((config.beatBytes * 8).W))
-  readData := DontCare
+
+  readData := 0.U
+  writeData := 0.U
+  addr := 0.U
+
   when(enable) {
     val port = data(addr)
     when(write) {
@@ -104,7 +108,7 @@ class BuffetsModuleImp(outer: Buffets) extends LazyModuleImp(outer) {
   val size = RegInit(0.U(log2Ceil(config.memorySize + 1).W))
   val empty = RegInit(config.memorySize.U(log2Ceil(config.memorySize + 1).W))
 
-  val shrinkIO = Decoupled(UInt(log2Ceil(config.memorySize + 1).W))
+  val shrinkIO = Wire(Decoupled(UInt(log2Ceil(config.memorySize + 1).W)))
   shrinkIO.ready := false.B
 
   outer.registerNode.regmap(
@@ -147,7 +151,7 @@ class BuffetsModuleImp(outer: Buffets) extends LazyModuleImp(outer) {
 
   val state = RegInit(BuffetsState.sIdle)
 
-  val (slave, slave_edge) = outer.slaveNode.out(0)
+  val (slave, slave_edge) = outer.slaveNode.in(0)
 
   val req = Queue(slave.a)
   val pushData = Reg(UInt((config.beatBytes * 8).W))
