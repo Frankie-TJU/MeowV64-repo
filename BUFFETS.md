@@ -36,9 +36,9 @@ Instructions:
 1. each instruction is 32 bit wide
 2. CONFIG + ARGUMENTS
 3. CONFIG:
-	1. [31]: opcode, 0=strided, 1=indexed
-	2. [30:20]: bytes
-	3. [19:0]: stride
+	1. \[31\]: opcode, 0=strided, 1=indexed
+	2. \[30:20\]: bytes
+	3. \[19:0\]: stride
 4. ARGUMENTS:
 	1. strided: baseHigh, baseLow
 	2. indexed: baseHigh, baseLow, indexedBaseHigh, indexedBaseLow
