@@ -109,7 +109,8 @@ class BuffetsModuleImp(outer: Buffets) extends LazyModuleImp(outer) {
   val empty = RegInit(config.memorySize.U(log2Ceil(config.memorySize + 1).W))
 
   val shrinkIO = Wire(Decoupled(UInt(log2Ceil(config.memorySize + 1).W)))
-  shrinkIO.ready := false.B
+  val shrinkQueue = Queue(shrinkIO)
+  shrinkQueue.ready := false.B
 
   outer.registerNode.regmap(
     Buffets.HEAD -> Seq(
@@ -168,10 +169,10 @@ class BuffetsModuleImp(outer: Buffets) extends LazyModuleImp(outer) {
         tail := tail + egress.bits.len
         size := size + egress.bits.len
         empty := empty - egress.bits.len
-      }.elsewhen(shrinkIO.valid) {
-        shrinkIO.ready := true.B
+      }.elsewhen(shrinkQueue.valid) {
+        shrinkQueue.ready := true.B
 
-        val shrink = shrinkIO.bits
+        val shrink = shrinkQueue.bits
         head := head + shrink
         size := size - shrink
         empty := empty + shrink
