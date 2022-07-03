@@ -23,7 +23,7 @@ case class AddressGenerationConfig(
     configBase: BigInt,
     beatBytes: Int,
     configInstWords: Int = 16,
-    maxIterations: Int = 32,
+    maxIterations: Int = 1024,
     maxInflights: Int = 4,
     addrWidth: Int = 64,
     bytesWidth: Int = 5,

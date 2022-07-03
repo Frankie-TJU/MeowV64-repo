@@ -376,7 +376,7 @@ class MeowV64TileLinkAdapterModuleImp(outer: MeowV64TileLinkAdapter)
   val uc_state = RegInit(s_ready)
   val uc_addr = Reg(UInt(coredef.XLEN.W))
   val uc_read = Reg(Bool())
-  val uc_wdata = Reg(UInt(coredef.XLEN.W))
+  val uc_wdata = Reg(uc.d.bits.data.cloneType)
   val uc_len = Reg(DCWriteLen())
 
   val uc_offset = frontend.uc
