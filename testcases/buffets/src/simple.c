@@ -30,5 +30,9 @@ int main()
   ADDRGEN_INSTS[2] = addr;
   *ADDRGEN_ITERATIONS = 100;
   *ADDRGEN_CONTROL = 1;
+
+  for (int i = 0;i < 100;i++) {
+
+  }
   return 0;
 }

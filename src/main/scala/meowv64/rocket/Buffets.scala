@@ -155,7 +155,7 @@ class BuffetsModuleImp(outer: Buffets) extends LazyModuleImp(outer) {
   val (slave, slave_edge) = outer.slaveNode.in(0)
 
   val req = Queue(slave.a)
-  val pushData = Reg(UInt((config.beatBytes * 8).W))
+  val newData = Reg(UInt((config.beatBytes * 8).W))
 
   ingress.ready := false.B
   req.ready := false.B
@@ -166,7 +166,7 @@ class BuffetsModuleImp(outer: Buffets) extends LazyModuleImp(outer) {
       when(ingress.valid) {
         ingress.ready := true.B
         state := BuffetsState.sPushing
-        pushData := ingress.bits.data
+        newData := ingress.bits.data
 
         tail := tail + ingress.bits.len
         size := size + ingress.bits.len
@@ -209,6 +209,7 @@ class BuffetsModuleImp(outer: Buffets) extends LazyModuleImp(outer) {
     is(BuffetsState.sWriting) {
       enable := true.B
       write := true.B
+      writeData := newData
       state := BuffetsState.sWriteDone
     }
     is(BuffetsState.sWriteDone) {
@@ -221,6 +222,9 @@ class BuffetsModuleImp(outer: Buffets) extends LazyModuleImp(outer) {
     }
     is(BuffetsState.sPushing) {
       // save pushData
+      enable := true.B
+      write := true.B
+      writeData := newData
       state := BuffetsState.sIdle
     }
   }
