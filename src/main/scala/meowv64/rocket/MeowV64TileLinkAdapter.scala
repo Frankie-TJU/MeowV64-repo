@@ -408,7 +408,12 @@ class MeowV64TileLinkAdapterModuleImp(outer: MeowV64TileLinkAdapter)
     }
     is(s_active) {
       when(uc.a.fire) {
-        uc_state := s_inflight
+        when(!uc.d.fire) {
+          uc_state := s_inflight
+        }.otherwise {
+          // same cycle
+          uc_state := s_ready
+        }
       }
     }
     is(s_inflight) {
