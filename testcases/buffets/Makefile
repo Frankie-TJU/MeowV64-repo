@@ -1,7 +1,7 @@
 SRCS:=$(wildcard src/*.c)
 BINS:=$(patsubst src/%.c,bin/%.bin,$(SRCS))
-LINKEDS:=$(patsubst src/%.c,bin/%.bin.linked,$(SRCS))
-ASSEMBLED:=$(patsubst src/%.c,bin/%.bin.assembled,$(SRCS))
+LINKEDS:=$(patsubst src/%.c,bin/%.linked,$(SRCS))
+ASSEMBLED:=$(patsubst src/%.c,bin/%.assembled,$(SRCS))
 HEXS:=$(patsubst src/%.c,hex/%.hex,$(SRCS))
 DUMPS:=$(patsubst src/%.c,dump/%.S,$(SRCS))
 
@@ -9,7 +9,7 @@ PREFIX ?= riscv64-unknown-elf-
 
 .PHONY: list all clean
 
-all: $(BINS) $(HEXS) $(DUMPS)
+all: $(BINS) $(HEXS) $(DUMPS) $(ASSEMBLED) $(LINKEDS)
 
 bin/common.assembled: common/init.S Makefile
 	mkdir -p bin
@@ -17,7 +17,7 @@ bin/common.assembled: common/init.S Makefile
 
 bin/%.assembled: src/%.c common/init.S Makefile
 	mkdir -p bin
-	$(PREFIX)gcc -c $< -march=rv64imafdc_zicsr_zifencei -o $@
+	$(PREFIX)gcc -mcmodel=medany -c $< -march=rv64imafdc_zicsr_zifencei -o $@
 
 bin/%.linked: bin/%.assembled bin/common.assembled
 	$(PREFIX)ld $^ -T common/linker.lds -o $@
