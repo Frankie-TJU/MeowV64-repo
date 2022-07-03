@@ -71,7 +71,7 @@ object Buffets {
 
 class BuffetsModuleImp(outer: Buffets) extends LazyModuleImp(outer) {
   val config = outer.config
-  val egress = IO(
+  val ingress = IO(
     Flipped(Decoupled(new AddressGenerationEgress(config.beatBytes)))
   )
 
@@ -157,20 +157,20 @@ class BuffetsModuleImp(outer: Buffets) extends LazyModuleImp(outer) {
   val req = Queue(slave.a)
   val pushData = Reg(UInt((config.beatBytes * 8).W))
 
-  egress.ready := false.B
+  ingress.ready := false.B
   req.ready := false.B
   slave.a.ready := false.B
   slave.d.valid := false.B
   switch(state) {
     is(BuffetsState.sIdle) {
-      when(egress.valid) {
-        egress.ready := true.B
+      when(ingress.valid) {
+        ingress.ready := true.B
         state := BuffetsState.sPushing
-        pushData := egress.bits.data
+        pushData := ingress.bits.data
 
-        tail := tail + egress.bits.len
-        size := size + egress.bits.len
-        empty := empty - egress.bits.len
+        tail := tail + ingress.bits.len
+        size := size + ingress.bits.len
+        empty := empty - ingress.bits.len
       }.elsewhen(shrinkQueue.valid) {
         shrinkQueue.ready := true.B
 

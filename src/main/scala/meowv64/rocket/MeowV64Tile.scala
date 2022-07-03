@@ -249,4 +249,7 @@ class MeowV64TileModuleImp(outer: MeowV64Tile)
 
   // expose debug
   outer.customDebugSourceNode.bundle := core.io.debug
+
+  // connect addr gen and buffets
+  outer.addrGen.module.egress <> outer.buffets.module.ingress
 }
