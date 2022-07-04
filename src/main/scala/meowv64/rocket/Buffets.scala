@@ -163,10 +163,10 @@ class BuffetsModuleImp(outer: Buffets) extends LazyModuleImp(outer) {
   val req = Queue(slave.a)
   val newData = Reg(UInt((config.beatBytes * 8).W))
   val pushLen = Reg(UInt(log2Ceil(config.beatBytes + 1).W))
+  val currentReq = Reg(slave.a.bits.cloneType)
 
   ingress.ready := false.B
   req.ready := false.B
-  slave.a.ready := false.B
   slave.d.valid := false.B
   switch(state) {
     is(BuffetsState.sIdle) {
@@ -190,6 +190,7 @@ class BuffetsModuleImp(outer: Buffets) extends LazyModuleImp(outer) {
         val offset = req.bits.address(log2Ceil(config.memorySize) - 1, 0)
         when(offset + (1.U << req.bits.size) <= size) {
           req.ready := true.B
+          currentReq := req.bits
           when(req.bits.opcode === TLMessages.Get) {
             state := BuffetsState.sReading
           }.elsewhen(req.bits.opcode === TLMessages.PutFullData) {
@@ -207,7 +208,7 @@ class BuffetsModuleImp(outer: Buffets) extends LazyModuleImp(outer) {
     }
     is(BuffetsState.sReadDone) {
       slave.d.valid := true.B
-      slave.d.bits.data := readData.asTypeOf(slave.d.bits.data)
+      slave.d.bits := slave_edge.AccessAck(currentReq, readData.asTypeOf(slave.d.bits.data))
 
       when(slave.d.ready) {
         state := BuffetsState.sIdle
@@ -221,6 +222,7 @@ class BuffetsModuleImp(outer: Buffets) extends LazyModuleImp(outer) {
     }
     is(BuffetsState.sWriteDone) {
       slave.d.valid := true.B
+      slave.d.bits := slave_edge.AccessAck(currentReq)
 
       when(slave.d.ready) {
         state := BuffetsState.sIdle

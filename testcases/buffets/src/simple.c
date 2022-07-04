@@ -31,8 +31,9 @@ int main()
   *ADDRGEN_ITERATIONS = 100;
   *ADDRGEN_CONTROL = 1;
 
+  // read data from buffets
   for (int i = 0;i < 100;i++) {
-
+    uint32_t data = BUFFETS_DATA[i];
   }
   return 0;
 }
