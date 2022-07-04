@@ -79,24 +79,30 @@ class BuffetsModuleImp(outer: Buffets) extends LazyModuleImp(outer) {
 
   val data = SyncReadMem(
     words,
-    UInt((config.beatBytes * 8).W)
+    Vec(config.beatBytes, UInt(8.W))
   )
 
   // memory port
   val enable = WireInit(false.B)
   val write = WireInit(false.B)
   val addr = Wire(UInt(log2Up(words).W))
-  val readData = Wire(UInt((config.beatBytes * 8).W))
-  val writeData = Wire(UInt((config.beatBytes * 8).W))
+  val readData = Wire(Vec(config.beatBytes, UInt(8.W)))
+  val writeData = Wire(Vec(config.beatBytes, UInt(8.W)))
+  val writeMask = Wire(Vec(config.beatBytes, Bool()))
 
-  readData := 0.U
-  writeData := 0.U
+  readData := 0.U.asTypeOf(readData)
+  writeData := 0.U.asTypeOf(writeData)
+  writeMask := 0.U.asTypeOf(writeMask)
   addr := 0.U
 
   when(enable) {
     val port = data(addr)
     when(write) {
-      port := writeData
+      for (i <- 0 until config.beatBytes) {
+        when(writeMask(i)) {
+          port(i) := writeData(i)
+        }
+      }
     }.otherwise {
       readData := port
     }
@@ -156,6 +162,7 @@ class BuffetsModuleImp(outer: Buffets) extends LazyModuleImp(outer) {
 
   val req = Queue(slave.a)
   val newData = Reg(UInt((config.beatBytes * 8).W))
+  val pushLen = Reg(UInt(log2Ceil(config.beatBytes + 1).W))
 
   ingress.ready := false.B
   req.ready := false.B
@@ -200,7 +207,7 @@ class BuffetsModuleImp(outer: Buffets) extends LazyModuleImp(outer) {
     }
     is(BuffetsState.sReadDone) {
       slave.d.valid := true.B
-      slave.d.bits.data := readData
+      slave.d.bits.data := readData.asTypeOf(slave.d.bits.data)
 
       when(slave.d.ready) {
         state := BuffetsState.sIdle
@@ -209,12 +216,11 @@ class BuffetsModuleImp(outer: Buffets) extends LazyModuleImp(outer) {
     is(BuffetsState.sWriting) {
       enable := true.B
       write := true.B
-      writeData := newData
+      writeData := newData.asTypeOf(writeData)
       state := BuffetsState.sWriteDone
     }
     is(BuffetsState.sWriteDone) {
       slave.d.valid := true.B
-      slave.d.bits.data := readData
 
       when(slave.d.ready) {
         state := BuffetsState.sIdle
@@ -224,7 +230,15 @@ class BuffetsModuleImp(outer: Buffets) extends LazyModuleImp(outer) {
       // save pushData
       enable := true.B
       write := true.B
-      writeData := newData
+      writeData := newData.asTypeOf(writeData)
+
+      // compute mask
+      for (i <- 0 until config.beatBytes) {
+        when(i.U < pushLen) {
+          writeMask(i) := true.B
+        }
+      }
+
       state := BuffetsState.sIdle
     }
   }
