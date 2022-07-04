@@ -298,6 +298,8 @@ class AddressGenerationModuleImp(outer: AddressGeneration)
     val recvBytes = (1.U << master.d.bits.size)
     val newRecv = inflight.recv + recvBytes
     inflight.recv := newRecv
+    val offset = inflight.reqAddr(log2Up(config.beatBytes)-1, 0)
+    val shift = offset << 3.U
 
     when(inflight.op === AddressGenerationOp.STRIDED) {
       // strided
@@ -309,7 +311,7 @@ class AddressGenerationModuleImp(outer: AddressGeneration)
         inflight.req := true.B
         inflight.reqAddr := inflight.reqAddr + recvBytes
       }
-      inflight.data := master.d.bits.data
+      inflight.data := master.d.bits.data >> shift
     }.otherwise {
       // indexed
       when(!inflight.gotIndex) {
@@ -321,7 +323,7 @@ class AddressGenerationModuleImp(outer: AddressGeneration)
         inflight.reqAddr := inflight.indexedBase + master.d.bits.data(31, 0)
         inflight.reqLgSize := 2.U
       }.otherwise {
-        inflight.data := master.d.bits.data
+        inflight.data := master.d.bits.data >> shift
         when(inflight.bytes <= newRecv) {
           inflight.req := true.B
           inflight.reqAddr := inflight.indexedBase + master.d.bits.data(31, 0)
