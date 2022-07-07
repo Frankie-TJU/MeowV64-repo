@@ -1,7 +1,7 @@
 { pkgs ? import (fetchTarball "https://github.com/NixOS/nixpkgs/archive/0ea7a8f1b939d74e5df8af9a8f7342097cdf69eb.tar.gz") {}
 }:
 
-pkgs.pkgsCross.riscv64.mkShell {
+pkgs.pkgsCross.riscv64-embedded.mkShell {
   # native
   nativeBuildInputs = with pkgs; [
     # Scala
@@ -19,15 +19,12 @@ pkgs.pkgsCross.riscv64.mkShell {
   ];
 
   buildInputs = with pkgs; [
-    # Testcases
-    musl
-
     # Simulation
     zlib
     gmp
   ];
-  # for riscv64-unknown-linux-gnu-gcc
-  TARGET = "riscv64-unknown-linux-gnu";
-  PREFIX = "riscv64-unknown-linux-gnu-";
+  # for riscv64-none-elf-gcc
+  TARGET = "riscv64-none-elf";
+  PREFIX = "riscv64-none-elf-";
 }
 
