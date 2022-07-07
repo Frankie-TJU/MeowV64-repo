@@ -208,7 +208,10 @@ class BuffetsModuleImp(outer: Buffets) extends LazyModuleImp(outer) {
     }
     is(BuffetsState.sReadDone) {
       slave.d.valid := true.B
-      slave.d.bits := slave_edge.AccessAck(currentReq, readData.asTypeOf(slave.d.bits.data))
+      slave.d.bits := slave_edge.AccessAck(
+        currentReq,
+        readData.asTypeOf(slave.d.bits.data)
+      )
 
       when(slave.d.ready) {
         state := BuffetsState.sIdle
