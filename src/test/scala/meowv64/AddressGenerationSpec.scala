@@ -185,7 +185,7 @@ class AddressGenerationSpec
 
             dut.egress.valid.expect(true.B)
             val data = dut.egress.bits.data.peekInt()
-            assert(data == BigInt("00000003000000020000000100000000", 16))
+            assert(data == BigInt("00000000000000010000000200000003", 16))
             dut.egress.bits.len.expect(16.U)
           }.joinAndStep(dut.clock)
 

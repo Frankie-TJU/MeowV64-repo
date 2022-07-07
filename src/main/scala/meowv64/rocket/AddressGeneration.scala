@@ -321,15 +321,17 @@ class AddressGenerationModuleImp(outer: AddressGeneration)
         // first indexed access
         inflight.req := true.B
         inflight.reqAddr := inflight.indexedBase + master.d.bits.data(31, 0)
-        inflight.reqLgSize := 2.U
+        inflight.reqLgSize := 2.U // 4 bytes
+        inflight.recv := 0.U
       }.otherwise {
         inflight.data := master.d.bits.data >> shift
         when(inflight.bytes <= newRecv) {
-          inflight.req := true.B
-          inflight.reqAddr := inflight.indexedBase + master.d.bits.data(31, 0)
+          // done
+          inflight.done := true.B
         }.otherwise {
           // next beat
-          inflight.done := true.B
+          inflight.req := true.B
+          inflight.reqAddr := inflight.indexedBase + master.d.bits.data(31, 0)
         }
       }
     }
