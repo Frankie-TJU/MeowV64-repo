@@ -2,6 +2,7 @@ obj_dir
 VRiscVSystem
 *.vcd
 *.fst
+*.fst.hier
 *.sig
 *.v
 *.anno.json
