@@ -19,6 +19,9 @@ pkgs.pkgsCross.riscv64.mkShell {
   ];
 
   buildInputs = with pkgs; [
+    # Testcases
+    musl
+
     # Simulation
     zlib
     gmp
