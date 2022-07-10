@@ -175,9 +175,6 @@ class BuffetsModuleImp(outer: Buffets) extends LazyModuleImp(outer) {
         pushLen := ingress.bits.len
         newData := ingress.bits.data
 
-        tail := tail + ingress.bits.len
-        size := size + ingress.bits.len
-        empty := empty - ingress.bits.len
       }.elsewhen(shrinkQueue.valid) {
         shrinkQueue.ready := true.B
 
@@ -235,15 +232,20 @@ class BuffetsModuleImp(outer: Buffets) extends LazyModuleImp(outer) {
       // save pushData
       enable := true.B
       write := true.B
-      writeData := newData.asTypeOf(writeData)
 
       // compute mask
+      // TODO: cross line pushing
+      val tailInLine = tail(log2Ceil(config.beatBytes) - 1, 0)
       for (i <- 0 until config.beatBytes) {
-        when(i.U < pushLen) {
+        when(tailInLine <= i.U && i.U < tailInLine + pushLen) {
           writeMask(i) := true.B
         }
       }
+      writeData := (newData << (tailInLine << 3.U)).asTypeOf(writeData)
 
+      tail := tail + pushLen
+      size := size + ingress.bits.len
+      empty := empty - pushLen
       state := BuffetsState.sIdle
     }
   }

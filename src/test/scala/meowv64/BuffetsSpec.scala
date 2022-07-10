@@ -113,7 +113,8 @@ class BuffetsSpec extends AnyFlatSpec with Matchers with ChiselScalatestTester {
           dut.clock.step()
           tl.d.ready.poke(false.B)
 
-          data = data >> ((addr.toInt % beatBytes).toInt * 8)
+          data = data >> ((addr % beatBytes).toInt * 8)
+          data = data & 0xFFFFFFFFL
 
           data
         }
