@@ -249,7 +249,7 @@ class BuffetsModuleImp(outer: Buffets) extends LazyModuleImp(outer) {
       writeData := (newData << (tailInLine << 3.U)).asTypeOf(writeData)
 
       tail := tail + pushLen
-      size := size + ingress.bits.len
+      size := size + pushLen
       empty := empty - pushLen
       state := BuffetsState.sIdle
     }
