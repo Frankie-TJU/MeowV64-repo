@@ -10,10 +10,8 @@ import chipsalliance.rocketchip.config.Parameters
 import meowv64.rocket.Buffets
 import meowv64.rocket.BuffetsConfig
 import meowv64.rocket.AddressGenerationEgress
-import freechips.rocketchip.diplomacy.AddressSet
 import freechips.rocketchip.diplomacy.LazyModuleImp
 import freechips.rocketchip.tilelink.TLXbar
-import freechips.rocketchip.tilelink.TLRAM
 import freechips.rocketchip.tilelink.TLClientNode
 import freechips.rocketchip.tilelink.TLMasterPortParameters
 import freechips.rocketchip.tilelink.TLMasterParameters
@@ -68,10 +66,7 @@ class BuffetsTestHarnessModuleImp(
   outer.dut.module.ingress <> ingress
 }
 
-class BuffetsSpec
-    extends AnyFlatSpec
-    with Matchers
-    with ChiselScalatestTester {
+class BuffetsSpec extends AnyFlatSpec with Matchers with ChiselScalatestTester {
   behavior of "Buffets"
 
   implicit val p: Parameters = new MeowV64BaseConfig()
@@ -84,8 +79,11 @@ class BuffetsSpec
         dut.clock.step(16)
         val tl = dut.external_io(0)
 
-        def write(addr: BigInt, data: BigInt) = {
-          tl.a.bits.opcode.poke(TLMessages.PutFullData)
+        tl.a.valid.poke(false.B)
+        tl.d.ready.poke(false.B)
+
+        def read(addr: BigInt): BigInt = {
+          tl.a.bits.opcode.poke(TLMessages.Get)
           tl.a.bits.param.poke(0.U)
           tl.a.bits.size.poke(2.U)
           tl.a.bits.source.poke(0.U)
@@ -94,25 +92,57 @@ class BuffetsSpec
           tl.a.bits.address.poke(addr.U)
 
           var mask = BigInt("f", 16)
-          mask = mask << (addr.toInt % beatBytes)
+          mask = mask << (addr % beatBytes).toInt
           tl.a.bits.mask.poke(mask)
-          tl.a.bits.data.poke((data << ((addr.toInt % beatBytes).toInt * 8)).U)
 
           tl.a.bits.corrupt.poke(0.U)
           tl.a.valid.poke(true.B)
-          tl.d.ready.poke(true.B)
-          dut.clock.step()
 
           while (tl.a.ready.peek.litToBoolean == false) {
             dut.clock.step()
           }
-          tl.a.valid.poke(false.B)
+
           dut.clock.step()
+          tl.a.valid.poke(false.B)
+
+          tl.d.ready.poke(true.B)
+          while (tl.d.valid.peek.litToBoolean == false) {
+            dut.clock.step()
+          }
+          var data = tl.d.bits.data.peek.litValue
+          dut.clock.step()
+          tl.d.ready.poke(false.B)
+
+          data = data >> ((addr.toInt % beatBytes).toInt * 8)
+
+          data
         }
 
-        val base = 0x60000000L
+        def pushData(data: BigInt, len: Int) {
+          dut.ingress.bits.data.poke(data.U)
+          dut.ingress.bits.len.poke(len.U)
+          dut.ingress.valid.poke(true.B)
+
+          while (dut.ingress.ready.peek.litToBoolean == false) {
+            dut.clock.step()
+          }
+          dut.clock.step()
+
+          dut.ingress.valid.poke(false.B)
+        }
+
+        val base = 0x80000000L
 
         dut.ingress.valid.poke(false.B)
+
+        pushData(0x12345678, 4)
+        pushData(0x11112222, 4)
+        pushData(0x3333444455556666L, 8)
+
+        assert(read(base) == 0x12345678L)
+        assert(read(base + 0x4) == 0x11112222L)
+        assert(read(base + 0x8) == 0x55556666L)
+        assert(read(base + 0xc) == 0x33334444L)
       }
   }
 }
