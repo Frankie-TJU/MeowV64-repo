@@ -15,8 +15,8 @@ uint32_t data[100];
 int main()
 {
   // prepare data
-  int n = 100;
-  for (int i = 0; i < 100; i++)
+  int n = 10;
+  for (int i = 0; i < n; i++)
   {
     data[i] = i;
   }
@@ -28,12 +28,15 @@ int main()
   uint64_t addr = (uint64_t)&data[0];
   ADDRGEN_INSTS[1] = addr >> 32;
   ADDRGEN_INSTS[2] = addr;
-  *ADDRGEN_ITERATIONS = 100;
+  *ADDRGEN_ITERATIONS = n;
   *ADDRGEN_CONTROL = 1;
 
   // read data from buffets
-  for (int i = 0;i < 100;i++) {
+  uint32_t sum = 0;
+  for (int i = 0; i < n; i++)
+  {
     uint32_t data = BUFFETS_DATA[i];
+    sum += data;
   }
-  return 0;
+  return sum == n * (n - 1) / 2;
 }
