@@ -201,6 +201,10 @@ class BuffetsModuleImp(outer: Buffets) extends LazyModuleImp(outer) {
     is(BuffetsState.sReading) {
       enable := true.B
       write := false.B
+      addr := currentReq.address(
+        log2Ceil(config.memorySize) - 1,
+        log2Ceil(config.beatBytes)
+      )
       state := BuffetsState.sReadDone
     }
     is(BuffetsState.sReadDone) {
@@ -236,6 +240,7 @@ class BuffetsModuleImp(outer: Buffets) extends LazyModuleImp(outer) {
       // compute mask
       // TODO: cross line pushing
       val tailInLine = tail(log2Ceil(config.beatBytes) - 1, 0)
+      addr := tail(tail.getWidth - 1, log2Ceil(config.beatBytes))
       for (i <- 0 until config.beatBytes) {
         when(tailInLine <= i.U && i.U < tailInLine + pushLen) {
           writeMask(i) := true.B

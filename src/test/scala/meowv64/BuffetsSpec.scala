@@ -24,7 +24,7 @@ class BuffetsTestHarness(implicit p: Parameters) extends LazyModule {
   val config =
     BuffetsConfig(
       memoryBase = BigInt(0x80000000L),
-      memorySize = BigInt(32),
+      memorySize = BigInt(64),
       configBase = BigInt(0x60000000L),
       beatBytes = beatBytes
     )

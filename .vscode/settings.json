@@ -255,6 +255,7 @@
 	"files.associations": {
 		"dataset1.h": "c",
 		"util.h": "c",
-		"stdlib.h": "c"
+		"stdlib.h": "c",
+		"cstdio": "c"
 	}
 }
