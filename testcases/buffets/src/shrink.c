@@ -28,7 +28,7 @@ int main()
     uint32_t data = BUFFETS_DATA[0];
     sum += data;
     // shrink
-    BUFFETS_BASE[0] = 4;
+    *BUFFETS_SHRINK = 4;
   }
   return sum == N * (N - 1) / 2;
 }
