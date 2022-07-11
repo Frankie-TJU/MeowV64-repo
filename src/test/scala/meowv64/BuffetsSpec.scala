@@ -82,6 +82,32 @@ class BuffetsSpec extends AnyFlatSpec with Matchers with ChiselScalatestTester {
         tl.a.valid.poke(false.B)
         tl.d.ready.poke(false.B)
 
+        def write(addr: BigInt, data: BigInt) = {
+          tl.a.bits.opcode.poke(TLMessages.PutFullData)
+          tl.a.bits.param.poke(0.U)
+          tl.a.bits.size.poke(2.U)
+          tl.a.bits.source.poke(0.U)
+
+          val beatBytes = 0x20
+          tl.a.bits.address.poke(addr.U)
+
+          var mask = BigInt("f", 16)
+          mask = mask << (addr.toInt % beatBytes)
+          tl.a.bits.mask.poke(mask)
+          tl.a.bits.data.poke((data << ((addr.toInt % beatBytes).toInt * 8)).U)
+
+          tl.a.bits.corrupt.poke(0.U)
+          tl.a.valid.poke(true.B)
+          tl.d.ready.poke(true.B)
+          dut.clock.step()
+
+          while (tl.a.ready.peek.litToBoolean == false) {
+            dut.clock.step()
+          }
+          tl.a.valid.poke(false.B)
+          dut.clock.step()
+        }
+
         def read(addr: BigInt): BigInt = {
           tl.a.bits.opcode.poke(TLMessages.Get)
           tl.a.bits.param.poke(0.U)
@@ -140,10 +166,16 @@ class BuffetsSpec extends AnyFlatSpec with Matchers with ChiselScalatestTester {
         pushData(0x11112222, 4)
         pushData(0x3333444455556666L, 8)
 
-        assert(read(base) == 0x12345678L)
+        assert(read(base + 0x0) == 0x12345678L)
         assert(read(base + 0x4) == 0x11112222L)
         assert(read(base + 0x8) == 0x55556666L)
         assert(read(base + 0xc) == 0x33334444L)
+
+        // shrink
+        write(0x60000000 + Buffets.SHRINK, 0x4)
+        assert(read(base + 0x0) == 0x11112222L)
+        assert(read(base + 0x4) == 0x55556666L)
+        assert(read(base + 0x8) == 0x33334444L)
       }
   }
 }
