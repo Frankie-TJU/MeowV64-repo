@@ -135,7 +135,7 @@ class SRAM1RWMaskedMem(
 
   // create a larger sram
   private val innerWidth =
-    (maskGran + blockType.width - 1) / blockType.width * blockType.width
+    (width + blockType.width - 1) / blockType.width * blockType.width
 
   val sram = Module(
     new SRAM1RWMaskedMemInner(
