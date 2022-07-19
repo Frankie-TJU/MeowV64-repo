@@ -4,6 +4,8 @@ import chisel3._
 import chisel3.util._
 import chisel3.stage.ChiselStage
 import chisel3.stage.ChiselGeneratorAnnotation
+import firrtl.stage.RunFirrtlTransformAnnotation
+import firrtl.options.Dependency
 
 // `depth` elements
 // each element has `width` bits
@@ -162,7 +164,9 @@ object SRAM1RWMem extends App {
           SRAM1RWBlockType.SRAM1RW_16_128,
           "data_ext"
         )
-      )
+      ),
+      RunFirrtlTransformAnnotation(Dependency(PrefixModulesPass)),
+      ModulePrefix("data_ext", "SRAM1RWMem"),
     )
   )
   new ChiselStage().execute(
@@ -176,7 +180,9 @@ object SRAM1RWMem extends App {
           SRAM1RWBlockType.SRAM1RW_16_128,
           "cc_dir_ext"
         )
-      )
+      ),
+      RunFirrtlTransformAnnotation(Dependency(PrefixModulesPass)),
+      ModulePrefix("cc_dir_ext", "SRAM1RWMem"),
     )
   )
 }

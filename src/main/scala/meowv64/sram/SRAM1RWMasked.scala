@@ -172,7 +172,9 @@ object SRAM1RWMaskedMem extends App {
           SRAM1RWMaskedBlockType.SRAM1RWMasked_64_128,
           "data_ext"
         )
-      )
+      ),
+      RunFirrtlTransformAnnotation(Dependency(PrefixModulesPass)),
+      ModulePrefix("data_ext", "SRAM1RWMaskedMem"),
     )
   )
   new ChiselStage().execute(
@@ -188,7 +190,7 @@ object SRAM1RWMaskedMem extends App {
         )
       ),
       RunFirrtlTransformAnnotation(Dependency(PrefixModulesPass)),
-      ModulePrefix("cc_dir_ext"),
+      ModulePrefix("cc_dir_ext", "SRAM1RWMaskedMem"),
     )
   )
 }
