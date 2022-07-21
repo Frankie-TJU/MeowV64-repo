@@ -114,19 +114,21 @@ class SRAM1R1WMemInner(
   }
 
   // select read data
-  val lastReadBlockAddr = RegNext(readBlockAddr)
-  private val readData = Wire(Vec(widthConcat, UInt(blockType.width.W)))
-  for ((data, i) <- readData zipWithIndex) {
-    val dataToSelect = for ((block, j) <- sramArray(i) zipWithIndex) yield {
-      (
-        lastReadBlockAddr === j.asUInt,
-        block.io.QA
-      )
+  withClock(R0_clk) {
+    val lastReadBlockAddr = RegNext(readBlockAddr)
+    val readData = Wire(Vec(widthConcat, UInt(blockType.width.W)))
+    for ((data, i) <- readData zipWithIndex) {
+      val dataToSelect = for ((block, j) <- sramArray(i) zipWithIndex) yield {
+        (
+          lastReadBlockAddr === j.asUInt,
+          RegNext(block.io.QA)
+        )
+      }
+      data := Mux1H(dataToSelect)
     }
-    data := Mux1H(dataToSelect)
-  }
 
-  R0_data := readData.asUInt
+    R0_data := readData.asUInt
+  }
 }
 
 // use several sram blocks to create a `width` x `depth` sram
