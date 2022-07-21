@@ -121,7 +121,7 @@ class SRAM1R1WMemInner(
       val dataToSelect = for ((block, j) <- sramArray(i) zipWithIndex) yield {
         (
           lastReadBlockAddr === j.asUInt,
-          RegNext(block.io.QA)
+          block.io.QA
         )
       }
       data := Mux1H(dataToSelect)
