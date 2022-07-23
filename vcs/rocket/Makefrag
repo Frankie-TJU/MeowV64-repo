@@ -1,0 +1,19 @@
+VCS = vcs
+VCS_FLAGS = -full64
+CURRENT_DIR = $(shell pwd)
+VERILOG_SRCS = $(CONFIG).v plusarg_reader.v EICG_wrapper.v icDataArray_ext.v btbEntries_ext.v cc_dir_ext.v cc_banks_0_ext.v data_ext.v
+
+all: simv
+
+firrtl_black_box_resource_files.f:
+	cd ../../ && CONFIG=$(CONFIG) ./generate.sh
+	cp ../../build/$(CONFIG)/$@ .
+
+%.v: firrtl_black_box_resource_files.f
+	cp ../../build/$(CONFIG)/$@ .
+
+simv: ../rocket/top.sv $(VERILOG_SRCS)
+	vcs $(VCS_FLAGS) $^
+
+clean:
+	rm -rf $(VERILOG_SRCS) obj_dir
