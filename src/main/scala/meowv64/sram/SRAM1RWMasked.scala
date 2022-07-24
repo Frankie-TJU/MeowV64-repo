@@ -179,20 +179,22 @@ object SRAM1RWMaskedMem extends App {
       ModulePrefix("data_ext", "SRAM1RWMaskedMem")
     )
   )
-  new ChiselStage().execute(
-    Array("-X", "verilog", "-o", s"cc_dir_ext.v"),
-    Seq(
-      ChiselGeneratorAnnotation(() =>
-        new SRAM1RWMaskedMem(
-          152,
-          2048,
-          19,
-          SRAM1RWMaskedBlockType.SRAM1RWMasked_64_128,
-          "cc_dir_ext"
-        )
-      ),
-      RunFirrtlTransformAnnotation(Dependency(PrefixModulesPass)),
-      ModulePrefix("cc_dir_ext", "SRAM1RWMaskedMem")
+  for (width <- Seq(152, 192)) {
+    new ChiselStage().execute(
+      Array("-X", "verilog", "-o", s"cc_dir_${width}_ext.v"),
+      Seq(
+        ChiselGeneratorAnnotation(() =>
+          new SRAM1RWMaskedMem(
+            width,
+            2048,
+            width / 8,
+            SRAM1RWMaskedBlockType.SRAM1RWMasked_64_128,
+            "cc_dir_ext"
+          )
+        ),
+        RunFirrtlTransformAnnotation(Dependency(PrefixModulesPass)),
+        ModulePrefix("cc_dir_ext", "SRAM1RWMaskedMem")
+      )
     )
-  )
+  }
 }

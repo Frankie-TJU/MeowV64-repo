@@ -5,7 +5,7 @@
 	#size-cells = <1>;
 	compatible = "freechips,rocketchip-unknown-dev";
 	model = "freechips,rocketchip-unknown";
-	L25: cpus {
+	L37: cpus {
 		#address-cells = <1>;
 		#size-cells = <0>;
 		timebase-frequency = <1000000000>;
@@ -13,8 +13,8 @@
 			clock-frequency = <0>;
 			compatible = "meow,meowv64", "riscv";
 			d-cache-block-size = <32>;
-			d-cache-sets = <128>;
-			d-cache-size = <8192>;
+			d-cache-sets = <32>;
+			d-cache-size = <2048>;
 			d-tlb-sets = <1>;
 			d-tlb-size = <32>;
 			device_type = "cpu";
@@ -37,12 +37,12 @@
 				interrupt-controller;
 			};
 		};
-		L6: cpu@1 {
+		L8: cpu@1 {
 			clock-frequency = <0>;
 			compatible = "meow,meowv64", "riscv";
 			d-cache-block-size = <32>;
-			d-cache-sets = <128>;
-			d-cache-size = <8192>;
+			d-cache-sets = <32>;
+			d-cache-size = <2048>;
 			d-tlb-sets = <1>;
 			d-tlb-size = <32>;
 			device_type = "cpu";
@@ -59,18 +59,18 @@
 			status = "okay";
 			timebase-frequency = <1000000000>;
 			tlb-split;
-			L5: interrupt-controller {
+			L7: interrupt-controller {
 				#interrupt-cells = <1>;
 				compatible = "riscv,cpu-intc";
 				interrupt-controller;
 			};
 		};
-		L8: cpu@2 {
+		L12: cpu@2 {
 			clock-frequency = <0>;
 			compatible = "meow,meowv64", "riscv";
 			d-cache-block-size = <32>;
-			d-cache-sets = <128>;
-			d-cache-size = <8192>;
+			d-cache-sets = <32>;
+			d-cache-size = <2048>;
 			d-tlb-sets = <1>;
 			d-tlb-size = <32>;
 			device_type = "cpu";
@@ -87,18 +87,18 @@
 			status = "okay";
 			timebase-frequency = <1000000000>;
 			tlb-split;
-			L7: interrupt-controller {
+			L11: interrupt-controller {
 				#interrupt-cells = <1>;
 				compatible = "riscv,cpu-intc";
 				interrupt-controller;
 			};
 		};
-		L10: cpu@3 {
+		L16: cpu@3 {
 			clock-frequency = <0>;
 			compatible = "meow,meowv64", "riscv";
 			d-cache-block-size = <32>;
-			d-cache-sets = <128>;
-			d-cache-size = <8192>;
+			d-cache-sets = <32>;
+			d-cache-size = <2048>;
 			d-tlb-sets = <1>;
 			d-tlb-size = <32>;
 			device_type = "cpu";
@@ -115,18 +115,18 @@
 			status = "okay";
 			timebase-frequency = <1000000000>;
 			tlb-split;
-			L9: interrupt-controller {
+			L15: interrupt-controller {
 				#interrupt-cells = <1>;
 				compatible = "riscv,cpu-intc";
 				interrupt-controller;
 			};
 		};
-		L12: cpu@4 {
+		L20: cpu@4 {
 			clock-frequency = <0>;
 			compatible = "meow,meowv64", "riscv";
 			d-cache-block-size = <32>;
-			d-cache-sets = <128>;
-			d-cache-size = <8192>;
+			d-cache-sets = <32>;
+			d-cache-size = <2048>;
 			d-tlb-sets = <1>;
 			d-tlb-size = <32>;
 			device_type = "cpu";
@@ -143,18 +143,18 @@
 			status = "okay";
 			timebase-frequency = <1000000000>;
 			tlb-split;
-			L11: interrupt-controller {
+			L19: interrupt-controller {
 				#interrupt-cells = <1>;
 				compatible = "riscv,cpu-intc";
 				interrupt-controller;
 			};
 		};
-		L14: cpu@5 {
+		L24: cpu@5 {
 			clock-frequency = <0>;
 			compatible = "meow,meowv64", "riscv";
 			d-cache-block-size = <32>;
-			d-cache-sets = <128>;
-			d-cache-size = <8192>;
+			d-cache-sets = <32>;
+			d-cache-size = <2048>;
 			d-tlb-sets = <1>;
 			d-tlb-size = <32>;
 			device_type = "cpu";
@@ -171,18 +171,18 @@
 			status = "okay";
 			timebase-frequency = <1000000000>;
 			tlb-split;
-			L13: interrupt-controller {
+			L23: interrupt-controller {
 				#interrupt-cells = <1>;
 				compatible = "riscv,cpu-intc";
 				interrupt-controller;
 			};
 		};
 	};
-	L20: memory@80000000 {
+	L32: memory@80000000 {
 		device_type = "memory";
 		reg = <0x80000000 0x80000000>;
 	};
-	L24: soc {
+	L36: soc {
 		#address-cells = <1>;
 		#size-cells = <1>;
 		compatible = "freechips,rocketchip-unknown-soc", "simple-bus";
@@ -194,21 +194,21 @@
 			cache-size = <524288>;
 			cache-unified;
 			compatible = "sifive,inclusivecache0", "cache";
-			next-level-cache = <&L20>;
+			next-level-cache = <&L32>;
 			reg = <0x2010000 0x1000>;
 			reg-names = "control";
 			sifive,mshr-count = <22>;
 		};
-		L16: clint@2000000 {
+		L28: clint@2000000 {
 			compatible = "riscv,clint0";
-			interrupts-extended = <&L3 3 &L3 7 &L5 3 &L5 7 &L7 3 &L7 7 &L9 3 &L9 7 &L11 3 &L11 7 &L13 3 &L13 7>;
+			interrupts-extended = <&L3 3 &L3 7 &L7 3 &L7 7 &L11 3 &L11 7 &L15 3 &L15 7 &L19 3 &L19 7 &L23 3 &L23 7>;
 			reg = <0x2000000 0x10000>;
 			reg-names = "control";
 		};
-		L17: debug-controller@0 {
+		L29: debug-controller@0 {
 			compatible = "sifive,debug-013", "riscv,debug-013";
 			debug-attach = "jtag";
-			interrupts-extended = <&L3 65535 &L5 65535 &L7 65535 &L9 65535 &L11 65535 &L13 65535>;
+			interrupts-extended = <&L3 65535 &L7 65535 &L11 65535 &L15 65535 &L19 65535 &L23 65535>;
 			reg = <0x0 0x1000>;
 			reg-names = "control";
 		};
@@ -216,27 +216,27 @@
 			compatible = "sifive,error0";
 			reg = <0x3000 0x1000>;
 		};
-		L19: external-interrupts {
-			interrupt-parent = <&L15>;
+		L31: external-interrupts {
+			interrupt-parent = <&L27>;
 			interrupts = <1 2>;
 		};
-		L15: interrupt-controller@c000000 {
+		L27: interrupt-controller@c000000 {
 			#interrupt-cells = <1>;
 			compatible = "riscv,plic0";
 			interrupt-controller;
-			interrupts-extended = <&L3 11 &L3 9 &L5 11 &L5 9 &L7 11 &L7 9 &L9 11 &L9 9 &L11 11 &L11 9 &L13 11 &L13 9>;
+			interrupts-extended = <&L3 11 &L3 9 &L7 11 &L7 9 &L11 11 &L11 9 &L15 11 &L15 9 &L19 11 &L19 9 &L23 11 &L23 9>;
 			reg = <0xc000000 0x4000000>;
 			reg-names = "control";
 			riscv,max-priority = <3>;
 			riscv,ndev = <2>;
 		};
-		L21: mmio-port-axi4@60000000 {
+		L33: mmio-port-axi4@60000000 {
 			#address-cells = <1>;
 			#size-cells = <1>;
 			compatible = "simple-bus";
 			ranges = <0x60000000 0x60000000 0x20000000>;
 		};
-		L22: rom@10000 {
+		L34: rom@10000 {
 			compatible = "sifive,rom0";
 			reg = <0x10000 0x10000>;
 			reg-names = "mem";
