@@ -246,16 +246,11 @@ class AddressGenerationModuleImp(outer: AddressGeneration)
           // initial TileLink request
           inflights(tail).req := true.B
           inflights(tail).reqAddr := base + currentStride * currentIteration
-          when(op === AddressGenerationOp.STRIDED) {
-            // strided
-            // ceil currentBytes up
-            when(currentBytes <= config.beatBytes.U) {
-              inflights(tail).reqLgSize := Log2(currentBytes - 1.U) + 1.U
-            }.otherwise {
-              inflights(tail).reqLgSize := log2Ceil(config.beatBytes).U
-            }
+
+          // ceil currentBytes up
+          when(currentBytes <= config.beatBytes.U) {
+            inflights(tail).reqLgSize := Log2(currentBytes - 1.U) + 1.U
           }.otherwise {
-            // indexed
             inflights(tail).reqLgSize := log2Ceil(config.beatBytes).U
           }
 
