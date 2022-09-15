@@ -36,16 +36,18 @@ class RiscVSystem(implicit val p: Parameters) extends Module {
   require(target.mmio_axi4.size == 1)
 
   val interrupts = IO(Input(UInt(p(NExtTopInterrupts).W)))
+  assert(target.mem_axi4.head.params.addrBits == 33)
   val mem_axi4 = IO(
     new StandardAXI4Bundle(
-      target.mem_axi4.head.params.addrBits,
+      32, // force 32 bits addr
       target.mem_axi4.head.params.dataBits,
       target.mem_axi4.head.params.idBits
     )
   )
+  assert(target.mmio_axi4.head.params.addrBits == 34)
   val mmio_axi4 = IO(
     new StandardAXI4Bundle(
-      target.mmio_axi4.head.params.addrBits,
+      32, // force 32 bits addr
       target.mmio_axi4.head.params.dataBits,
       target.mmio_axi4.head.params.idBits
     )
@@ -89,6 +91,13 @@ class RiscVSystem(implicit val p: Parameters) extends Module {
   Debug.connectDebugClockAndReset(target.debug, clock)
 
   mem_axi4 <> target.mem_axi4.head.viewAs[StandardAXI4Bundle]
+  // toggle msb
+  // [0x80000000, 0x100000000] -> [0x00000000, 0x800000000]
+  // [0x100000000, 0x180000000] -> [0x80000000, 0x100000000]
+  val mask = BigInt("80000000", 16).U
+  mem_axi4.ARADDR := target.mem_axi4.head.ar.bits.addr ^ mask
+  mem_axi4.AWADDR := target.mem_axi4.head.aw.bits.addr ^ mask
+
   mmio_axi4 <> target.mmio_axi4.head.viewAs[StandardAXI4Bundle]
 
   target.interrupts := interrupts

@@ -594,20 +594,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[32, 32]
-acquireB = TransferSizes[32, 32]
-arithmetic = TransferSizes[1, 16]
-logical = TransferSizes[1, 16]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[1, 32]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[32, 32]
 acquireB = TransferSizes[32, 32]
 arithmetic = TransferSizes[1, 16]
@@ -633,7 +620,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x180000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x200000000, 0xffffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -1617,20 +1604,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[32, 32]
-acquireB = TransferSizes[32, 32]
-arithmetic = TransferSizes[1, 16]
-logical = TransferSizes[1, 16]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[1, 32]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[32, 32]
 acquireB = TransferSizes[32, 32]
 arithmetic = TransferSizes[1, 16]
@@ -1656,7 +1630,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x180000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x200000000, 0xffffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -1826,20 +1800,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[32, 32]
-acquireB = TransferSizes[32, 32]
-arithmetic = TransferSizes[1, 16]
-logical = TransferSizes[1, 16]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[1, 32]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[32, 32]
 acquireB = TransferSizes[32, 32]
 arithmetic = TransferSizes[1, 16]
@@ -1865,7 +1826,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x180000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x200000000, 0xffffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -2131,20 +2092,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[32, 32]
-acquireB = TransferSizes[32, 32]
-arithmetic = TransferSizes[1, 16]
-logical = TransferSizes[1, 16]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[1, 32]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[32, 32]
 acquireB = TransferSizes[32, 32]
 arithmetic = TransferSizes[1, 16]
@@ -2170,7 +2118,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x180000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x200000000, 0xffffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -2298,20 +2246,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[32, 32]
-acquireB = TransferSizes[32, 32]
-arithmetic = TransferSizes[1, 16]
-logical = TransferSizes[1, 16]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[1, 32]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[32, 32]
 acquireB = TransferSizes[32, 32]
 arithmetic = TransferSizes[1, 16]
@@ -2337,7 +2272,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x180000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x200000000, 0xffffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -2473,20 +2408,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[32, 32]
-acquireB = TransferSizes[32, 32]
-arithmetic = TransferSizes[1, 16]
-logical = TransferSizes[1, 16]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[1, 32]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[32, 32]
 acquireB = TransferSizes[32, 32]
 arithmetic = TransferSizes[1, 16]
@@ -2512,7 +2434,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x180000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x200000000, 0xffffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -2640,20 +2562,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[32, 32]
-acquireB = TransferSizes[32, 32]
-arithmetic = TransferSizes[1, 16]
-logical = TransferSizes[1, 16]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[1, 32]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[32, 32]
 acquireB = TransferSizes[32, 32]
 arithmetic = TransferSizes[1, 16]
@@ -2679,7 +2588,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x180000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x200000000, 0xffffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -2956,20 +2865,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[32, 32]
-acquireB = TransferSizes[32, 32]
-arithmetic = TransferSizes[1, 16]
-logical = TransferSizes[1, 16]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[1, 32]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[32, 32]
 acquireB = TransferSizes[32, 32]
 arithmetic = TransferSizes[1, 16]
@@ -2995,7 +2891,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x180000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x200000000, 0xffffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -3148,20 +3044,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[32, 32]
-acquireB = TransferSizes[32, 32]
-arithmetic = TransferSizes[1, 16]
-logical = TransferSizes[1, 16]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[1, 32]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[32, 32]
 acquireB = TransferSizes[32, 32]
 arithmetic = TransferSizes[1, 16]
@@ -3187,7 +3070,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x180000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x200000000, 0xffffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -3337,20 +3220,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[32, 32]
-acquireB = TransferSizes[32, 32]
-arithmetic = TransferSizes[1, 16]
-logical = TransferSizes[1, 16]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[1, 32]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[32, 32]
 acquireB = TransferSizes[32, 32]
 arithmetic = TransferSizes[1, 16]
@@ -3376,7 +3246,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x180000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x200000000, 0xffffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -3498,20 +3368,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[32, 32]
-acquireB = TransferSizes[32, 32]
-arithmetic = TransferSizes[1, 16]
-logical = TransferSizes[1, 16]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[1, 32]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[32, 32]
 acquireB = TransferSizes[32, 32]
 arithmetic = TransferSizes[1, 16]
@@ -3537,7 +3394,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x180000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x200000000, 0xffffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -3651,20 +3508,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[32, 32]
-acquireB = TransferSizes[32, 32]
-arithmetic = TransferSizes[1, 16]
-logical = TransferSizes[1, 16]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[1, 32]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[32, 32]
 acquireB = TransferSizes[32, 32]
 arithmetic = TransferSizes[1, 16]
@@ -3690,7 +3534,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x180000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x200000000, 0xffffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -3812,20 +3656,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[32, 32]
-acquireB = TransferSizes[32, 32]
-arithmetic = TransferSizes[1, 16]
-logical = TransferSizes[1, 16]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[1, 32]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[32, 32]
 acquireB = TransferSizes[32, 32]
 arithmetic = TransferSizes[1, 16]
@@ -3851,7 +3682,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x180000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x200000000, 0xffffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -3965,20 +3796,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[32, 32]
-acquireB = TransferSizes[32, 32]
-arithmetic = TransferSizes[1, 16]
-logical = TransferSizes[1, 16]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[1, 32]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[32, 32]
 acquireB = TransferSizes[32, 32]
 arithmetic = TransferSizes[1, 16]
@@ -4004,7 +3822,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x180000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x200000000, 0xffffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -4126,20 +3944,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[32, 32]
-acquireB = TransferSizes[32, 32]
-arithmetic = TransferSizes[1, 16]
-logical = TransferSizes[1, 16]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[1, 32]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[32, 32]
 acquireB = TransferSizes[32, 32]
 arithmetic = TransferSizes[1, 16]
@@ -4165,7 +3970,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x180000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x200000000, 0xffffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -4279,20 +4084,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[32, 32]
-acquireB = TransferSizes[32, 32]
-arithmetic = TransferSizes[1, 16]
-logical = TransferSizes[1, 16]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[1, 32]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[32, 32]
 acquireB = TransferSizes[32, 32]
 arithmetic = TransferSizes[1, 16]
@@ -4318,7 +4110,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x180000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x200000000, 0xffffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -4440,20 +4232,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[32, 32]
-acquireB = TransferSizes[32, 32]
-arithmetic = TransferSizes[1, 16]
-logical = TransferSizes[1, 16]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[1, 32]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[32, 32]
 acquireB = TransferSizes[32, 32]
 arithmetic = TransferSizes[1, 16]
@@ -4479,7 +4258,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x180000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x200000000, 0xffffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -4593,20 +4372,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[32, 32]
-acquireB = TransferSizes[32, 32]
-arithmetic = TransferSizes[1, 16]
-logical = TransferSizes[1, 16]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[1, 32]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[32, 32]
 acquireB = TransferSizes[32, 32]
 arithmetic = TransferSizes[1, 16]
@@ -4632,7 +4398,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x180000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x200000000, 0xffffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -4754,20 +4520,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[32, 32]
-acquireB = TransferSizes[32, 32]
-arithmetic = TransferSizes[1, 16]
-logical = TransferSizes[1, 16]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[1, 32]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[32, 32]
 acquireB = TransferSizes[32, 32]
 arithmetic = TransferSizes[1, 16]
@@ -4793,7 +4546,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x180000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x200000000, 0xffffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -4907,20 +4660,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[32, 32]
-acquireB = TransferSizes[32, 32]
-arithmetic = TransferSizes[1, 16]
-logical = TransferSizes[1, 16]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[1, 32]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[32, 32]
 acquireB = TransferSizes[32, 32]
 arithmetic = TransferSizes[1, 16]
@@ -4946,7 +4686,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x180000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x200000000, 0xffffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -5068,20 +4808,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[32, 32]
-acquireB = TransferSizes[32, 32]
-arithmetic = TransferSizes[1, 16]
-logical = TransferSizes[1, 16]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[1, 32]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[32, 32]
 acquireB = TransferSizes[32, 32]
 arithmetic = TransferSizes[1, 16]
@@ -5107,7 +4834,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x180000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x200000000, 0xffffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -5221,20 +4948,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[32, 32]
-acquireB = TransferSizes[32, 32]
-arithmetic = TransferSizes[1, 16]
-logical = TransferSizes[1, 16]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[1, 32]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[32, 32]
 acquireB = TransferSizes[32, 32]
 arithmetic = TransferSizes[1, 16]
@@ -5260,7 +4974,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x180000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x200000000, 0xffffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -5421,20 +5135,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[32, 32]
-acquireB = TransferSizes[32, 32]
-arithmetic = TransferSizes[1, 16]
-logical = TransferSizes[1, 16]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[1, 32]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[32, 32]
 acquireB = TransferSizes[32, 32]
 arithmetic = TransferSizes[1, 16]
@@ -5460,7 +5161,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x180000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x200000000, 0xffffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -5756,20 +5457,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[32, 32]
-acquireB = TransferSizes[32, 32]
-arithmetic = TransferSizes[1, 16]
-logical = TransferSizes[1, 16]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[1, 32]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[32, 32]
 acquireB = TransferSizes[32, 32]
 arithmetic = TransferSizes[1, 16]
@@ -5795,7 +5483,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x180000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x200000000, 0xffffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -5953,20 +5641,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[32, 32]
-acquireB = TransferSizes[32, 32]
-arithmetic = TransferSizes[1, 16]
-logical = TransferSizes[1, 16]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[1, 32]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[32, 32]
 acquireB = TransferSizes[32, 32]
 arithmetic = TransferSizes[1, 16]
@@ -5992,7 +5667,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x180000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x200000000, 0xffffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -6111,20 +5786,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[32, 32]
-acquireB = TransferSizes[32, 32]
-arithmetic = TransferSizes[1, 16]
-logical = TransferSizes[1, 16]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[1, 32]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[32, 32]
 acquireB = TransferSizes[32, 32]
 arithmetic = TransferSizes[1, 16]
@@ -6150,7 +5812,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x180000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x200000000, 0xffffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -6269,20 +5931,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[32, 32]
-acquireB = TransferSizes[32, 32]
-arithmetic = TransferSizes[1, 16]
-logical = TransferSizes[1, 16]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[1, 32]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[32, 32]
 acquireB = TransferSizes[32, 32]
 arithmetic = TransferSizes[1, 16]
@@ -6308,7 +5957,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x180000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x200000000, 0xffffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -6567,20 +6216,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[32, 32]
-acquireB = TransferSizes[32, 32]
-arithmetic = TransferSizes[1, 16]
-logical = TransferSizes[1, 16]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[1, 32]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[32, 32]
 acquireB = TransferSizes[32, 32]
 arithmetic = TransferSizes[1, 16]
@@ -6606,7 +6242,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x180000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x200000000, 0xffffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -6720,20 +6356,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[32, 32]
-acquireB = TransferSizes[32, 32]
-arithmetic = TransferSizes[1, 16]
-logical = TransferSizes[1, 16]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[1, 32]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[32, 32]
 acquireB = TransferSizes[32, 32]
 arithmetic = TransferSizes[1, 16]
@@ -6759,7 +6382,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x180000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x200000000, 0xffffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -6870,20 +6493,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[32, 32]
-acquireB = TransferSizes[32, 32]
-arithmetic = TransferSizes[1, 16]
-logical = TransferSizes[1, 16]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[1, 32]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[32, 32]
 acquireB = TransferSizes[32, 32]
 arithmetic = TransferSizes[1, 16]
@@ -6909,7 +6519,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x180000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x200000000, 0xffffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -7020,20 +6630,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[32, 32]
-acquireB = TransferSizes[32, 32]
-arithmetic = TransferSizes[1, 16]
-logical = TransferSizes[1, 16]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[1, 32]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[32, 32]
 acquireB = TransferSizes[32, 32]
 arithmetic = TransferSizes[1, 16]
@@ -7059,7 +6656,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x180000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x200000000, 0xffffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -7184,20 +6781,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[32, 32]
-acquireB = TransferSizes[32, 32]
-arithmetic = TransferSizes[1, 16]
-logical = TransferSizes[1, 16]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[1, 32]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[32, 32]
 acquireB = TransferSizes[32, 32]
 arithmetic = TransferSizes[1, 16]
@@ -7223,7 +6807,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x180000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x200000000, 0xffffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -7304,20 +6888,7 @@ Slave Port Beatbytes = 16
 Slave Port MinLatency = 1
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[0, 0]
-acquireB = TransferSizes[0, 0]
-arithmetic = TransferSizes[0, 0]
-logical = TransferSizes[0, 0]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[0, 0]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -7353,20 +6924,7 @@ Slave Port Beatbytes = 16
 Slave Port MinLatency = 1
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[0, 0]
-acquireB = TransferSizes[0, 0]
-arithmetic = TransferSizes[0, 0]
-logical = TransferSizes[0, 0]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[0, 0]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -7421,20 +6979,7 @@ Slave Port Beatbytes = 16
 Slave Port MinLatency = 1
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[0, 0]
-acquireB = TransferSizes[0, 0]
-arithmetic = TransferSizes[0, 0]
-logical = TransferSizes[0, 0]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[0, 0]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -7470,20 +7015,7 @@ Slave Port Beatbytes = 16
 Slave Port MinLatency = 1
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[1, 32]
-acquireB = TransferSizes[1, 32]
-arithmetic = TransferSizes[0, 0]
-logical = TransferSizes[0, 0]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[0, 0]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[1, 32]
 acquireB = TransferSizes[1, 32]
 arithmetic = TransferSizes[0, 0]
@@ -7580,20 +7112,7 @@ Slave Port Beatbytes = 16
 Slave Port MinLatency = 2
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[32, 32]
-acquireB = TransferSizes[32, 32]
-arithmetic = TransferSizes[1, 16]
-logical = TransferSizes[1, 16]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[1, 32]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[32, 32]
 acquireB = TransferSizes[32, 32]
 arithmetic = TransferSizes[1, 16]
@@ -7671,20 +7190,7 @@ Slave Port Beatbytes = 16
 Slave Port MinLatency = 2
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[32, 32]
-acquireB = TransferSizes[32, 32]
-arithmetic = TransferSizes[1, 16]
-logical = TransferSizes[1, 16]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[1, 32]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[32, 32]
 acquireB = TransferSizes[32, 32]
 arithmetic = TransferSizes[1, 16]
@@ -7780,20 +7286,7 @@ Slave Port Beatbytes = 16
 Slave Port MinLatency = 1
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[1, 32]
-acquireB = TransferSizes[1, 32]
-arithmetic = TransferSizes[0, 0]
-logical = TransferSizes[0, 0]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[0, 0]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[1, 32]
 acquireB = TransferSizes[1, 32]
 arithmetic = TransferSizes[0, 0]
@@ -7871,20 +7364,7 @@ Slave Port Beatbytes = 16
 Slave Port MinLatency = 2
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[32, 32]
-acquireB = TransferSizes[32, 32]
-arithmetic = TransferSizes[1, 16]
-logical = TransferSizes[1, 16]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[1, 32]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[32, 32]
 acquireB = TransferSizes[32, 32]
 arithmetic = TransferSizes[1, 16]
@@ -8043,20 +7523,7 @@ Slave Port Beatbytes = 16
 Slave Port MinLatency = 1
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[0, 0]
-acquireB = TransferSizes[0, 0]
-arithmetic = TransferSizes[0, 0]
-logical = TransferSizes[0, 0]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[0, 0]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -8092,20 +7559,7 @@ Slave Port Beatbytes = 16
 Slave Port MinLatency = 1
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[0, 0]
-acquireB = TransferSizes[0, 0]
-arithmetic = TransferSizes[0, 0]
-logical = TransferSizes[0, 0]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[0, 0]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -8149,20 +7603,7 @@ Slave Port Beatbytes = 16
 Slave Port MinLatency = 1
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[0, 0]
-acquireB = TransferSizes[0, 0]
-arithmetic = TransferSizes[0, 0]
-logical = TransferSizes[0, 0]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[0, 0]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -8198,20 +7639,7 @@ Slave Port Beatbytes = 16
 Slave Port MinLatency = 1
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[0, 0]
-acquireB = TransferSizes[0, 0]
-arithmetic = TransferSizes[0, 0]
-logical = TransferSizes[0, 0]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[0, 0]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -11551,20 +10979,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[32, 32]
-acquireB = TransferSizes[32, 32]
-arithmetic = TransferSizes[1, 16]
-logical = TransferSizes[1, 16]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[1, 32]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[32, 32]
 acquireB = TransferSizes[32, 32]
 arithmetic = TransferSizes[1, 16]
@@ -11590,7 +11005,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x180000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x200000000, 0xffffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -11704,20 +11119,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[32, 32]
-acquireB = TransferSizes[32, 32]
-arithmetic = TransferSizes[1, 16]
-logical = TransferSizes[1, 16]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[1, 32]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[32, 32]
 acquireB = TransferSizes[32, 32]
 arithmetic = TransferSizes[1, 16]
@@ -11743,7 +11145,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x180000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x200000000, 0xffffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -11867,20 +11269,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[32, 32]
-acquireB = TransferSizes[32, 32]
-arithmetic = TransferSizes[1, 16]
-logical = TransferSizes[1, 16]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[1, 32]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[32, 32]
 acquireB = TransferSizes[32, 32]
 arithmetic = TransferSizes[1, 16]
@@ -11906,7 +11295,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x180000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x200000000, 0xffffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -12020,20 +11409,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[32, 32]
-acquireB = TransferSizes[32, 32]
-arithmetic = TransferSizes[1, 16]
-logical = TransferSizes[1, 16]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[1, 32]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[32, 32]
 acquireB = TransferSizes[32, 32]
 arithmetic = TransferSizes[1, 16]
@@ -12059,7 +11435,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x180000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x200000000, 0xffffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -12294,7 +11670,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x180000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x200000000, 0xffffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -12413,7 +11789,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x180000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x200000000, 0xffffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -12639,20 +12015,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[32, 32]
-acquireB = TransferSizes[32, 32]
-arithmetic = TransferSizes[1, 16]
-logical = TransferSizes[1, 16]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[1, 32]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[32, 32]
 acquireB = TransferSizes[32, 32]
 arithmetic = TransferSizes[1, 16]
@@ -12678,7 +12041,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x180000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x200000000, 0xffffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -12792,20 +12155,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[32, 32]
-acquireB = TransferSizes[32, 32]
-arithmetic = TransferSizes[1, 16]
-logical = TransferSizes[1, 16]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[1, 32]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[32, 32]
 acquireB = TransferSizes[32, 32]
 arithmetic = TransferSizes[1, 16]
@@ -12831,7 +12181,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x180000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x200000000, 0xffffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -13316,20 +12666,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[32, 32]
-acquireB = TransferSizes[32, 32]
-arithmetic = TransferSizes[1, 16]
-logical = TransferSizes[1, 16]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[1, 32]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[32, 32]
 acquireB = TransferSizes[32, 32]
 arithmetic = TransferSizes[1, 16]
@@ -13355,7 +12692,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x180000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x200000000, 0xffffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -13522,20 +12859,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[32, 32]
-acquireB = TransferSizes[32, 32]
-arithmetic = TransferSizes[1, 16]
-logical = TransferSizes[1, 16]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[1, 32]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[32, 32]
 acquireB = TransferSizes[32, 32]
 arithmetic = TransferSizes[1, 16]
@@ -13561,7 +12885,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x180000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x200000000, 0xffffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -13675,20 +12999,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[32, 32]
-acquireB = TransferSizes[32, 32]
-arithmetic = TransferSizes[1, 16]
-logical = TransferSizes[1, 16]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[1, 32]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[32, 32]
 acquireB = TransferSizes[32, 32]
 arithmetic = TransferSizes[1, 16]
@@ -13714,7 +13025,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x180000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x200000000, 0xffffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -13881,20 +13192,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[32, 32]
-acquireB = TransferSizes[32, 32]
-arithmetic = TransferSizes[1, 16]
-logical = TransferSizes[1, 16]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[1, 32]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[32, 32]
 acquireB = TransferSizes[32, 32]
 arithmetic = TransferSizes[1, 16]
@@ -13920,7 +13218,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x180000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x200000000, 0xffffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -14202,20 +13500,7 @@ Slave Port Beatbytes = 16
 Slave Port MinLatency = 2
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[32, 32]
-acquireB = TransferSizes[32, 32]
-arithmetic = TransferSizes[1, 16]
-logical = TransferSizes[1, 16]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[1, 32]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[32, 32]
 acquireB = TransferSizes[32, 32]
 arithmetic = TransferSizes[1, 16]
@@ -14331,7 +13616,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x180000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x200000000, 0xffffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -14445,20 +13730,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[32, 32]
-acquireB = TransferSizes[32, 32]
-arithmetic = TransferSizes[1, 16]
-logical = TransferSizes[1, 16]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[1, 32]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[32, 32]
 acquireB = TransferSizes[32, 32]
 arithmetic = TransferSizes[1, 16]
@@ -14484,7 +13756,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x180000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x200000000, 0xffffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -14651,20 +13923,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x80000000, 0x7fffffff))
-supports = acquireT = TransferSizes[32, 32]
-acquireB = TransferSizes[32, 32]
-arithmetic = TransferSizes[1, 16]
-logical = TransferSizes[1, 16]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 32]
-putPartial = TransferSizes[1, 32]
-hint = TransferSizes[1, 32]
-
-
-
-Slave Name = target
-Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff))
 supports = acquireT = TransferSizes[32, 32]
 acquireB = TransferSizes[32, 32]
 arithmetic = TransferSizes[1, 16]
@@ -14690,7 +13949,7 @@ hint = TransferSizes[0, 0]
 
 
 Slave Name = target
-Slave Address = List(AddressSet(0x180000000, 0x7fffffff))
+Slave Address = List(AddressSet(0x200000000, 0xffffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]

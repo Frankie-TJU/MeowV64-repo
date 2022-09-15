@@ -22,16 +22,9 @@ class WithCustomMemPort
     extends Config((site, _, _) => { case CustomExtMem =>
       Seq(
         MasterPortParams(
-          // 0x8000_0000 ~ 0x10000_0000
+          // 0x8000_0000 ~ 0x2_0000_0000
           base = BigInt("80000000", 16),
-          size = BigInt("80000000", 16),
-          beatBytes = site(MemoryBusKey).beatBytes,
-          idBits = 4
-        ),
-        MasterPortParams(
-          // 0x1_000_0000 ~ 0x1_8000_0000
-          base = BigInt("100000000", 16),
-          size = BigInt("80000000", 16),
+          size = BigInt("180000000", 16),
           beatBytes = site(MemoryBusKey).beatBytes,
           idBits = 4
         )
@@ -39,7 +32,7 @@ class WithCustomMemPort
     })
 
 class WithCustomMMIOPort
-    extends Config((site, _, _) => { case CustomExtBus =>
+    extends Config((_, _, _) => { case CustomExtBus =>
       Seq(
         MasterPortParams(
           // 0x6000_0000 ~ 0x8000_0000
@@ -49,9 +42,9 @@ class WithCustomMMIOPort
           idBits = 4
         ),
         MasterPortParams(
-          // 0x1_800_0000 ~ 0x2_0000_0000
-          base = BigInt("180000000", 16),
-          size = BigInt("80000000", 16),
+          // 0x2_000_0000 ~ 0x3_0000_0000
+          base = BigInt("200000000", 16),
+          size = BigInt("100000000", 16),
           beatBytes = 8,
           idBits = 4
         )
