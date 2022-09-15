@@ -619,6 +619,19 @@ hint = TransferSizes[0, 0]
 
 
 
+Slave Name = target
+Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+supports = acquireT = TransferSizes[0, 0]
+acquireB = TransferSizes[0, 0]
+arithmetic = TransferSizes[0, 0]
+logical = TransferSizes[0, 0]
+get = TransferSizes[1, 32]
+putFull = TransferSizes[1, 256]
+putPartial = TransferSizes[1, 256]
+hint = TransferSizes[0, 0]
+
+
+
 
 ---------------------------------------------
 
@@ -1616,6 +1629,19 @@ hint = TransferSizes[0, 0]
 
 
 
+Slave Name = target
+Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+supports = acquireT = TransferSizes[0, 0]
+acquireB = TransferSizes[0, 0]
+arithmetic = TransferSizes[0, 0]
+logical = TransferSizes[0, 0]
+get = TransferSizes[1, 32]
+putFull = TransferSizes[1, 256]
+putPartial = TransferSizes[1, 256]
+hint = TransferSizes[0, 0]
+
+
+
 
 ---------------------------------------------
 
@@ -1788,6 +1814,19 @@ hint = TransferSizes[1, 32]
 
 Slave Name = target
 Slave Address = List(AddressSet(0x60000000, 0x1fffffff))
+supports = acquireT = TransferSizes[0, 0]
+acquireB = TransferSizes[0, 0]
+arithmetic = TransferSizes[0, 0]
+logical = TransferSizes[0, 0]
+get = TransferSizes[1, 32]
+putFull = TransferSizes[1, 256]
+putPartial = TransferSizes[1, 256]
+hint = TransferSizes[0, 0]
+
+
+
+Slave Name = target
+Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -2078,6 +2117,19 @@ hint = TransferSizes[0, 0]
 
 
 
+Slave Name = target
+Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+supports = acquireT = TransferSizes[0, 0]
+acquireB = TransferSizes[0, 0]
+arithmetic = TransferSizes[0, 0]
+logical = TransferSizes[0, 0]
+get = TransferSizes[1, 32]
+putFull = TransferSizes[1, 256]
+putPartial = TransferSizes[1, 256]
+hint = TransferSizes[0, 0]
+
+
+
 
 ---------------------------------------------
 
@@ -2208,6 +2260,19 @@ hint = TransferSizes[1, 32]
 
 Slave Name = target
 Slave Address = List(AddressSet(0x60000000, 0x1fffffff))
+supports = acquireT = TransferSizes[0, 0]
+acquireB = TransferSizes[0, 0]
+arithmetic = TransferSizes[0, 0]
+logical = TransferSizes[0, 0]
+get = TransferSizes[1, 32]
+putFull = TransferSizes[1, 256]
+putPartial = TransferSizes[1, 256]
+hint = TransferSizes[0, 0]
+
+
+
+Slave Name = target
+Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -2368,6 +2433,19 @@ hint = TransferSizes[0, 0]
 
 
 
+Slave Name = target
+Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+supports = acquireT = TransferSizes[0, 0]
+acquireB = TransferSizes[0, 0]
+arithmetic = TransferSizes[0, 0]
+logical = TransferSizes[0, 0]
+get = TransferSizes[1, 32]
+putFull = TransferSizes[1, 256]
+putPartial = TransferSizes[1, 256]
+hint = TransferSizes[0, 0]
+
+
+
 
 ---------------------------------------------
 
@@ -2498,6 +2576,19 @@ hint = TransferSizes[1, 32]
 
 Slave Name = target
 Slave Address = List(AddressSet(0x60000000, 0x1fffffff))
+supports = acquireT = TransferSizes[0, 0]
+acquireB = TransferSizes[0, 0]
+arithmetic = TransferSizes[0, 0]
+logical = TransferSizes[0, 0]
+get = TransferSizes[1, 32]
+putFull = TransferSizes[1, 256]
+putPartial = TransferSizes[1, 256]
+hint = TransferSizes[0, 0]
+
+
+
+Slave Name = target
+Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -2799,6 +2890,19 @@ hint = TransferSizes[0, 0]
 
 
 
+Slave Name = target
+Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+supports = acquireT = TransferSizes[0, 0]
+acquireB = TransferSizes[0, 0]
+arithmetic = TransferSizes[0, 0]
+logical = TransferSizes[0, 0]
+get = TransferSizes[1, 32]
+putFull = TransferSizes[1, 256]
+putPartial = TransferSizes[1, 256]
+hint = TransferSizes[0, 0]
+
+
+
 
 ---------------------------------------------
 
@@ -2954,6 +3058,19 @@ hint = TransferSizes[1, 32]
 
 Slave Name = target
 Slave Address = List(AddressSet(0x60000000, 0x1fffffff))
+supports = acquireT = TransferSizes[0, 0]
+acquireB = TransferSizes[0, 0]
+arithmetic = TransferSizes[0, 0]
+logical = TransferSizes[0, 0]
+get = TransferSizes[1, 32]
+putFull = TransferSizes[1, 256]
+putPartial = TransferSizes[1, 256]
+hint = TransferSizes[0, 0]
+
+
+
+Slave Name = target
+Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -3128,6 +3245,19 @@ hint = TransferSizes[0, 0]
 
 
 
+Slave Name = target
+Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+supports = acquireT = TransferSizes[0, 0]
+acquireB = TransferSizes[0, 0]
+arithmetic = TransferSizes[0, 0]
+logical = TransferSizes[0, 0]
+get = TransferSizes[1, 32]
+putFull = TransferSizes[1, 256]
+putPartial = TransferSizes[1, 256]
+hint = TransferSizes[0, 0]
+
+
+
 , 
 </data>
                         </node>
@@ -3263,6 +3393,19 @@ hint = TransferSizes[0, 0]
 
 
 
+Slave Name = target
+Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+supports = acquireT = TransferSizes[0, 0]
+acquireB = TransferSizes[0, 0]
+arithmetic = TransferSizes[0, 0]
+logical = TransferSizes[0, 0]
+get = TransferSizes[1, 32]
+putFull = TransferSizes[1, 256]
+putPartial = TransferSizes[1, 256]
+hint = TransferSizes[0, 0]
+
+
+
 
 ---------------------------------------------
 
@@ -3379,6 +3522,19 @@ hint = TransferSizes[1, 32]
 
 Slave Name = target
 Slave Address = List(AddressSet(0x60000000, 0x1fffffff))
+supports = acquireT = TransferSizes[0, 0]
+acquireB = TransferSizes[0, 0]
+arithmetic = TransferSizes[0, 0]
+logical = TransferSizes[0, 0]
+get = TransferSizes[1, 32]
+putFull = TransferSizes[1, 256]
+putPartial = TransferSizes[1, 256]
+hint = TransferSizes[0, 0]
+
+
+
+Slave Name = target
+Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -3525,6 +3681,19 @@ hint = TransferSizes[0, 0]
 
 
 
+Slave Name = target
+Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+supports = acquireT = TransferSizes[0, 0]
+acquireB = TransferSizes[0, 0]
+arithmetic = TransferSizes[0, 0]
+logical = TransferSizes[0, 0]
+get = TransferSizes[1, 32]
+putFull = TransferSizes[1, 256]
+putPartial = TransferSizes[1, 256]
+hint = TransferSizes[0, 0]
+
+
+
 
 ---------------------------------------------
 
@@ -3641,6 +3810,19 @@ hint = TransferSizes[1, 32]
 
 Slave Name = target
 Slave Address = List(AddressSet(0x60000000, 0x1fffffff))
+supports = acquireT = TransferSizes[0, 0]
+acquireB = TransferSizes[0, 0]
+arithmetic = TransferSizes[0, 0]
+logical = TransferSizes[0, 0]
+get = TransferSizes[1, 32]
+putFull = TransferSizes[1, 256]
+putPartial = TransferSizes[1, 256]
+hint = TransferSizes[0, 0]
+
+
+
+Slave Name = target
+Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -3787,6 +3969,19 @@ hint = TransferSizes[0, 0]
 
 
 
+Slave Name = target
+Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+supports = acquireT = TransferSizes[0, 0]
+acquireB = TransferSizes[0, 0]
+arithmetic = TransferSizes[0, 0]
+logical = TransferSizes[0, 0]
+get = TransferSizes[1, 32]
+putFull = TransferSizes[1, 256]
+putPartial = TransferSizes[1, 256]
+hint = TransferSizes[0, 0]
+
+
+
 
 ---------------------------------------------
 
@@ -3903,6 +4098,19 @@ hint = TransferSizes[1, 32]
 
 Slave Name = target
 Slave Address = List(AddressSet(0x60000000, 0x1fffffff))
+supports = acquireT = TransferSizes[0, 0]
+acquireB = TransferSizes[0, 0]
+arithmetic = TransferSizes[0, 0]
+logical = TransferSizes[0, 0]
+get = TransferSizes[1, 32]
+putFull = TransferSizes[1, 256]
+putPartial = TransferSizes[1, 256]
+hint = TransferSizes[0, 0]
+
+
+
+Slave Name = target
+Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -4049,6 +4257,19 @@ hint = TransferSizes[0, 0]
 
 
 
+Slave Name = target
+Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+supports = acquireT = TransferSizes[0, 0]
+acquireB = TransferSizes[0, 0]
+arithmetic = TransferSizes[0, 0]
+logical = TransferSizes[0, 0]
+get = TransferSizes[1, 32]
+putFull = TransferSizes[1, 256]
+putPartial = TransferSizes[1, 256]
+hint = TransferSizes[0, 0]
+
+
+
 
 ---------------------------------------------
 
@@ -4165,6 +4386,19 @@ hint = TransferSizes[1, 32]
 
 Slave Name = target
 Slave Address = List(AddressSet(0x60000000, 0x1fffffff))
+supports = acquireT = TransferSizes[0, 0]
+acquireB = TransferSizes[0, 0]
+arithmetic = TransferSizes[0, 0]
+logical = TransferSizes[0, 0]
+get = TransferSizes[1, 32]
+putFull = TransferSizes[1, 256]
+putPartial = TransferSizes[1, 256]
+hint = TransferSizes[0, 0]
+
+
+
+Slave Name = target
+Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -4311,6 +4545,19 @@ hint = TransferSizes[0, 0]
 
 
 
+Slave Name = target
+Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+supports = acquireT = TransferSizes[0, 0]
+acquireB = TransferSizes[0, 0]
+arithmetic = TransferSizes[0, 0]
+logical = TransferSizes[0, 0]
+get = TransferSizes[1, 32]
+putFull = TransferSizes[1, 256]
+putPartial = TransferSizes[1, 256]
+hint = TransferSizes[0, 0]
+
+
+
 
 ---------------------------------------------
 
@@ -4427,6 +4674,19 @@ hint = TransferSizes[1, 32]
 
 Slave Name = target
 Slave Address = List(AddressSet(0x60000000, 0x1fffffff))
+supports = acquireT = TransferSizes[0, 0]
+acquireB = TransferSizes[0, 0]
+arithmetic = TransferSizes[0, 0]
+logical = TransferSizes[0, 0]
+get = TransferSizes[1, 32]
+putFull = TransferSizes[1, 256]
+putPartial = TransferSizes[1, 256]
+hint = TransferSizes[0, 0]
+
+
+
+Slave Name = target
+Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -4573,6 +4833,19 @@ hint = TransferSizes[0, 0]
 
 
 
+Slave Name = target
+Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+supports = acquireT = TransferSizes[0, 0]
+acquireB = TransferSizes[0, 0]
+arithmetic = TransferSizes[0, 0]
+logical = TransferSizes[0, 0]
+get = TransferSizes[1, 32]
+putFull = TransferSizes[1, 256]
+putPartial = TransferSizes[1, 256]
+hint = TransferSizes[0, 0]
+
+
+
 
 ---------------------------------------------
 
@@ -4689,6 +4962,19 @@ hint = TransferSizes[1, 32]
 
 Slave Name = target
 Slave Address = List(AddressSet(0x60000000, 0x1fffffff))
+supports = acquireT = TransferSizes[0, 0]
+acquireB = TransferSizes[0, 0]
+arithmetic = TransferSizes[0, 0]
+logical = TransferSizes[0, 0]
+get = TransferSizes[1, 32]
+putFull = TransferSizes[1, 256]
+putPartial = TransferSizes[1, 256]
+hint = TransferSizes[0, 0]
+
+
+
+Slave Name = target
+Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -4863,6 +5149,19 @@ hint = TransferSizes[1, 32]
 
 Slave Name = target
 Slave Address = List(AddressSet(0x60000000, 0x1fffffff))
+supports = acquireT = TransferSizes[0, 0]
+acquireB = TransferSizes[0, 0]
+arithmetic = TransferSizes[0, 0]
+logical = TransferSizes[0, 0]
+get = TransferSizes[1, 32]
+putFull = TransferSizes[1, 256]
+putPartial = TransferSizes[1, 256]
+hint = TransferSizes[0, 0]
+
+
+
+Slave Name = target
+Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -5183,6 +5482,19 @@ hint = TransferSizes[0, 0]
 
 
 
+Slave Name = target
+Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+supports = acquireT = TransferSizes[0, 0]
+acquireB = TransferSizes[0, 0]
+arithmetic = TransferSizes[0, 0]
+logical = TransferSizes[0, 0]
+get = TransferSizes[1, 32]
+putFull = TransferSizes[1, 256]
+putPartial = TransferSizes[1, 256]
+hint = TransferSizes[0, 0]
+
+
+
 
 ---------------------------------------------
 
@@ -5354,6 +5666,19 @@ hint = TransferSizes[0, 0]
 
 
 
+Slave Name = target
+Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+supports = acquireT = TransferSizes[0, 0]
+acquireB = TransferSizes[0, 0]
+arithmetic = TransferSizes[0, 0]
+logical = TransferSizes[0, 0]
+get = TransferSizes[1, 32]
+putFull = TransferSizes[1, 256]
+putPartial = TransferSizes[1, 256]
+hint = TransferSizes[0, 0]
+
+
+
 
 ---------------------------------------------
 
@@ -5486,6 +5811,19 @@ hint = TransferSizes[0, 0]
 
 
 
+Slave Name = target
+Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+supports = acquireT = TransferSizes[0, 0]
+acquireB = TransferSizes[0, 0]
+arithmetic = TransferSizes[0, 0]
+logical = TransferSizes[0, 0]
+get = TransferSizes[1, 32]
+putFull = TransferSizes[1, 256]
+putPartial = TransferSizes[1, 256]
+hint = TransferSizes[0, 0]
+
+
+
 
 ---------------------------------------------
 
@@ -5607,6 +5945,19 @@ hint = TransferSizes[1, 32]
 
 Slave Name = target
 Slave Address = List(AddressSet(0x60000000, 0x1fffffff))
+supports = acquireT = TransferSizes[0, 0]
+acquireB = TransferSizes[0, 0]
+arithmetic = TransferSizes[0, 0]
+logical = TransferSizes[0, 0]
+get = TransferSizes[1, 32]
+putFull = TransferSizes[1, 256]
+putPartial = TransferSizes[1, 256]
+hint = TransferSizes[0, 0]
+
+
+
+Slave Name = target
+Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -5890,6 +6241,19 @@ hint = TransferSizes[0, 0]
 
 
 
+Slave Name = target
+Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+supports = acquireT = TransferSizes[0, 0]
+acquireB = TransferSizes[0, 0]
+arithmetic = TransferSizes[0, 0]
+logical = TransferSizes[0, 0]
+get = TransferSizes[1, 32]
+putFull = TransferSizes[1, 256]
+putPartial = TransferSizes[1, 256]
+hint = TransferSizes[0, 0]
+
+
+
 
 ---------------------------------------------
 
@@ -6006,6 +6370,19 @@ hint = TransferSizes[1, 32]
 
 Slave Name = target
 Slave Address = List(AddressSet(0x60000000, 0x1fffffff))
+supports = acquireT = TransferSizes[0, 0]
+acquireB = TransferSizes[0, 0]
+arithmetic = TransferSizes[0, 0]
+logical = TransferSizes[0, 0]
+get = TransferSizes[1, 32]
+putFull = TransferSizes[1, 256]
+putPartial = TransferSizes[1, 256]
+hint = TransferSizes[0, 0]
+
+
+
+Slave Name = target
+Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -6141,6 +6518,19 @@ hint = TransferSizes[0, 0]
 
 
 
+Slave Name = target
+Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+supports = acquireT = TransferSizes[0, 0]
+acquireB = TransferSizes[0, 0]
+arithmetic = TransferSizes[0, 0]
+logical = TransferSizes[0, 0]
+get = TransferSizes[1, 32]
+putFull = TransferSizes[1, 256]
+putPartial = TransferSizes[1, 256]
+hint = TransferSizes[0, 0]
+
+
+
 On Input Edge:
 
 Master Name = meowv64-ui
@@ -6254,6 +6644,19 @@ hint = TransferSizes[1, 32]
 
 Slave Name = target
 Slave Address = List(AddressSet(0x60000000, 0x1fffffff))
+supports = acquireT = TransferSizes[0, 0]
+acquireB = TransferSizes[0, 0]
+arithmetic = TransferSizes[0, 0]
+logical = TransferSizes[0, 0]
+get = TransferSizes[1, 32]
+putFull = TransferSizes[1, 256]
+putPartial = TransferSizes[1, 256]
+hint = TransferSizes[0, 0]
+
+
+
+Slave Name = target
+Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -6392,6 +6795,19 @@ hint = TransferSizes[1, 32]
 
 Slave Name = target
 Slave Address = List(AddressSet(0x60000000, 0x1fffffff))
+supports = acquireT = TransferSizes[0, 0]
+acquireB = TransferSizes[0, 0]
+arithmetic = TransferSizes[0, 0]
+logical = TransferSizes[0, 0]
+get = TransferSizes[1, 32]
+putFull = TransferSizes[1, 256]
+putPartial = TransferSizes[1, 256]
+hint = TransferSizes[0, 0]
+
+
+
+Slave Name = target
+Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -10588,6 +11004,19 @@ hint = TransferSizes[0, 0]
 
 
 
+Slave Name = target
+Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+supports = acquireT = TransferSizes[0, 0]
+acquireB = TransferSizes[0, 0]
+arithmetic = TransferSizes[0, 0]
+logical = TransferSizes[0, 0]
+get = TransferSizes[1, 32]
+putFull = TransferSizes[1, 256]
+putPartial = TransferSizes[1, 256]
+hint = TransferSizes[0, 0]
+
+
+
 
 ---------------------------------------------
 
@@ -10704,6 +11133,19 @@ hint = TransferSizes[1, 32]
 
 Slave Name = target
 Slave Address = List(AddressSet(0x60000000, 0x1fffffff))
+supports = acquireT = TransferSizes[0, 0]
+acquireB = TransferSizes[0, 0]
+arithmetic = TransferSizes[0, 0]
+logical = TransferSizes[0, 0]
+get = TransferSizes[1, 32]
+putFull = TransferSizes[1, 256]
+putPartial = TransferSizes[1, 256]
+hint = TransferSizes[0, 0]
+
+
+
+Slave Name = target
+Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -10852,6 +11294,19 @@ hint = TransferSizes[0, 0]
 
 
 
+Slave Name = target
+Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+supports = acquireT = TransferSizes[0, 0]
+acquireB = TransferSizes[0, 0]
+arithmetic = TransferSizes[0, 0]
+logical = TransferSizes[0, 0]
+get = TransferSizes[1, 32]
+putFull = TransferSizes[1, 256]
+putPartial = TransferSizes[1, 256]
+hint = TransferSizes[0, 0]
+
+
+
 
 ---------------------------------------------
 
@@ -10979,6 +11434,19 @@ hint = TransferSizes[0, 0]
 
 
 
+Slave Name = target
+Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+supports = acquireT = TransferSizes[0, 0]
+acquireB = TransferSizes[0, 0]
+arithmetic = TransferSizes[0, 0]
+logical = TransferSizes[0, 0]
+get = TransferSizes[1, 32]
+putFull = TransferSizes[1, 256]
+putPartial = TransferSizes[1, 256]
+hint = TransferSizes[0, 0]
+
+
+
 , 
 a:BufferParams:2, b:BufferParams:2, c:BufferParams:2, d:BufferParams:2, e:BufferParams:2</data>
                 </node>
@@ -11093,221 +11561,12 @@ a:BufferParams:2, b:BufferParams:2, c:BufferParams:2, d:BufferParams:2, e:Buffer
 </data>
                 </node>
                 <node id="172">
-                  <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">widget</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
+                  <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">widget</y:NodeLabel><y:BorderStyle type="dotted"/></y:ShapeNode></data>
                   <data key="d">TLWidthWidget_3 (RiscVSystem.target.subsystem_sbus.coupler_to_port_named_mmio_port_axi4.widget)</data>
                   <graph id="172::" edgedefault="directed">
                     <node id="172::0">
-                      <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
-                      <data key="d">On Output Edge:
-
-Master Name = debug
-visibility = List(AddressSet(0x0, ~0x0))
-emits = acquireT = TransferSizes[1, 4096]
-acquireB = TransferSizes[1, 4096]
-arithmetic = TransferSizes[1, 4096]
-logical = TransferSizes[1, 4096]
-get = TransferSizes[1, 4096]
-putFull = TransferSizes[1, 4096]
-putPartial = TransferSizes[1, 4096]
-hint = TransferSizes[1, 4096]
-
-
-sourceId = IdRange(16,17)
-
-Master Name = meowv64-ic
-visibility = List(AddressSet(0x0, ~0x0))
-emits = acquireT = TransferSizes[0, 0]
-acquireB = TransferSizes[0, 0]
-arithmetic = TransferSizes[0, 0]
-logical = TransferSizes[0, 0]
-get = TransferSizes[32, 32]
-putFull = TransferSizes[0, 0]
-putPartial = TransferSizes[0, 0]
-hint = TransferSizes[0, 0]
-
-
-sourceId = IdRange(10,11)
-
-Master Name = meowv64-dc
-visibility = List(AddressSet(0x0, ~0x0))
-emits = acquireT = TransferSizes[32, 32]
-acquireB = TransferSizes[32, 32]
-arithmetic = TransferSizes[0, 0]
-logical = TransferSizes[0, 0]
-get = TransferSizes[32, 32]
-putFull = TransferSizes[32, 32]
-putPartial = TransferSizes[0, 0]
-hint = TransferSizes[0, 0]
-
-
-sourceId = IdRange(9,10)
-
-Master Name = meowv64-ui
-visibility = List(AddressSet(0x0, ~0x0))
-emits = acquireT = TransferSizes[0, 0]
-acquireB = TransferSizes[0, 0]
-arithmetic = TransferSizes[0, 0]
-logical = TransferSizes[0, 0]
-get = TransferSizes[32, 32]
-putFull = TransferSizes[0, 0]
-putPartial = TransferSizes[0, 0]
-hint = TransferSizes[0, 0]
-
-
-sourceId = IdRange(8,9)
-
-Master Name = meowv64-uc
-visibility = List(AddressSet(0x0, ~0x0))
-emits = acquireT = TransferSizes[0, 0]
-acquireB = TransferSizes[0, 0]
-arithmetic = TransferSizes[0, 0]
-logical = TransferSizes[0, 0]
-get = TransferSizes[1, 8]
-putFull = TransferSizes[1, 8]
-putPartial = TransferSizes[0, 0]
-hint = TransferSizes[0, 0]
-
-
-sourceId = IdRange(4,5)
-
-Master Name = meowv64-addrgen
-visibility = List(AddressSet(0x0, ~0x0))
-emits = acquireT = TransferSizes[0, 0]
-acquireB = TransferSizes[0, 0]
-arithmetic = TransferSizes[0, 0]
-logical = TransferSizes[0, 0]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[0, 0]
-putPartial = TransferSizes[0, 0]
-hint = TransferSizes[0, 0]
-
-
-sourceId = IdRange(0,4)
-
-
-Slave Port Beatbytes = 8
-Slave Port MinLatency = 3
-
-Slave Name = target
-Slave Address = List(AddressSet(0x60000000, 0x1fffffff))
-supports = acquireT = TransferSizes[0, 0]
-acquireB = TransferSizes[0, 0]
-arithmetic = TransferSizes[0, 0]
-logical = TransferSizes[0, 0]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 256]
-putPartial = TransferSizes[1, 256]
-hint = TransferSizes[0, 0]
-
-
-
-
----------------------------------------------
-
-On Input Edge:
-
-Master Name = debug
-visibility = List(AddressSet(0x0, ~0x0))
-emits = acquireT = TransferSizes[1, 4096]
-acquireB = TransferSizes[1, 4096]
-arithmetic = TransferSizes[1, 4096]
-logical = TransferSizes[1, 4096]
-get = TransferSizes[1, 4096]
-putFull = TransferSizes[1, 4096]
-putPartial = TransferSizes[1, 4096]
-hint = TransferSizes[1, 4096]
-
-
-sourceId = IdRange(16,17)
-
-Master Name = meowv64-ic
-visibility = List(AddressSet(0x0, ~0x0))
-emits = acquireT = TransferSizes[0, 0]
-acquireB = TransferSizes[0, 0]
-arithmetic = TransferSizes[0, 0]
-logical = TransferSizes[0, 0]
-get = TransferSizes[32, 32]
-putFull = TransferSizes[0, 0]
-putPartial = TransferSizes[0, 0]
-hint = TransferSizes[0, 0]
-
-
-sourceId = IdRange(10,11)
-
-Master Name = meowv64-dc
-visibility = List(AddressSet(0x0, ~0x0))
-emits = acquireT = TransferSizes[32, 32]
-acquireB = TransferSizes[32, 32]
-arithmetic = TransferSizes[0, 0]
-logical = TransferSizes[0, 0]
-get = TransferSizes[32, 32]
-putFull = TransferSizes[32, 32]
-putPartial = TransferSizes[0, 0]
-hint = TransferSizes[0, 0]
-
-
-sourceId = IdRange(9,10)
-
-Master Name = meowv64-ui
-visibility = List(AddressSet(0x0, ~0x0))
-emits = acquireT = TransferSizes[0, 0]
-acquireB = TransferSizes[0, 0]
-arithmetic = TransferSizes[0, 0]
-logical = TransferSizes[0, 0]
-get = TransferSizes[32, 32]
-putFull = TransferSizes[0, 0]
-putPartial = TransferSizes[0, 0]
-hint = TransferSizes[0, 0]
-
-
-sourceId = IdRange(8,9)
-
-Master Name = meowv64-uc
-visibility = List(AddressSet(0x0, ~0x0))
-emits = acquireT = TransferSizes[0, 0]
-acquireB = TransferSizes[0, 0]
-arithmetic = TransferSizes[0, 0]
-logical = TransferSizes[0, 0]
-get = TransferSizes[1, 8]
-putFull = TransferSizes[1, 8]
-putPartial = TransferSizes[0, 0]
-hint = TransferSizes[0, 0]
-
-
-sourceId = IdRange(4,5)
-
-Master Name = meowv64-addrgen
-visibility = List(AddressSet(0x0, ~0x0))
-emits = acquireT = TransferSizes[0, 0]
-acquireB = TransferSizes[0, 0]
-arithmetic = TransferSizes[0, 0]
-logical = TransferSizes[0, 0]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[0, 0]
-putPartial = TransferSizes[0, 0]
-hint = TransferSizes[0, 0]
-
-
-sourceId = IdRange(0,4)
-
-
-Slave Port Beatbytes = 16
-Slave Port MinLatency = 3
-
-Slave Name = target
-Slave Address = List(AddressSet(0x60000000, 0x1fffffff))
-supports = acquireT = TransferSizes[0, 0]
-acquireB = TransferSizes[0, 0]
-arithmetic = TransferSizes[0, 0]
-logical = TransferSizes[0, 0]
-get = TransferSizes[1, 32]
-putFull = TransferSizes[1, 256]
-putPartial = TransferSizes[1, 256]
-hint = TransferSizes[0, 0]
-
-
-
-, 
+                      <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="true"/></y:ShapeNode></data>
+                      <data key="d">, 
 </data>
                     </node>
                   </graph>
@@ -11546,6 +11805,19 @@ hint = TransferSizes[0, 0]
 
 
 
+Slave Name = target
+Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+supports = acquireT = TransferSizes[0, 0]
+acquireB = TransferSizes[0, 0]
+arithmetic = TransferSizes[0, 0]
+logical = TransferSizes[0, 0]
+get = TransferSizes[1, 32]
+putFull = TransferSizes[1, 256]
+putPartial = TransferSizes[1, 256]
+hint = TransferSizes[0, 0]
+
+
+
 
 ---------------------------------------------
 
@@ -11662,6 +11934,19 @@ hint = TransferSizes[1, 32]
 
 Slave Name = target
 Slave Address = List(AddressSet(0x60000000, 0x1fffffff))
+supports = acquireT = TransferSizes[0, 0]
+acquireB = TransferSizes[0, 0]
+arithmetic = TransferSizes[0, 0]
+logical = TransferSizes[0, 0]
+get = TransferSizes[1, 32]
+putFull = TransferSizes[1, 256]
+putPartial = TransferSizes[1, 256]
+hint = TransferSizes[0, 0]
+
+
+
+Slave Name = target
+Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -12171,6 +12456,19 @@ hint = TransferSizes[0, 0]
 
 
 
+Slave Name = target
+Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+supports = acquireT = TransferSizes[0, 0]
+acquireB = TransferSizes[0, 0]
+arithmetic = TransferSizes[0, 0]
+logical = TransferSizes[0, 0]
+get = TransferSizes[1, 32]
+putFull = TransferSizes[1, 256]
+putPartial = TransferSizes[1, 256]
+hint = TransferSizes[0, 0]
+
+
+
 On Output Edge:
 
 Master Name = meowv64-ic
@@ -12351,6 +12649,19 @@ hint = TransferSizes[0, 0]
 
 
 
+Slave Name = target
+Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+supports = acquireT = TransferSizes[0, 0]
+acquireB = TransferSizes[0, 0]
+arithmetic = TransferSizes[0, 0]
+logical = TransferSizes[0, 0]
+get = TransferSizes[1, 32]
+putFull = TransferSizes[1, 256]
+putPartial = TransferSizes[1, 256]
+hint = TransferSizes[0, 0]
+
+
+
 
 ---------------------------------------------
 
@@ -12467,6 +12778,19 @@ hint = TransferSizes[1, 32]
 
 Slave Name = target
 Slave Address = List(AddressSet(0x60000000, 0x1fffffff))
+supports = acquireT = TransferSizes[0, 0]
+acquireB = TransferSizes[0, 0]
+arithmetic = TransferSizes[0, 0]
+logical = TransferSizes[0, 0]
+get = TransferSizes[1, 32]
+putFull = TransferSizes[1, 256]
+putPartial = TransferSizes[1, 256]
+hint = TransferSizes[0, 0]
+
+
+
+Slave Name = target
+Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -12647,6 +12971,19 @@ hint = TransferSizes[1, 32]
 
 Slave Name = target
 Slave Address = List(AddressSet(0x60000000, 0x1fffffff))
+supports = acquireT = TransferSizes[0, 0]
+acquireB = TransferSizes[0, 0]
+arithmetic = TransferSizes[0, 0]
+logical = TransferSizes[0, 0]
+get = TransferSizes[1, 32]
+putFull = TransferSizes[1, 256]
+putPartial = TransferSizes[1, 256]
+hint = TransferSizes[0, 0]
+
+
+
+Slave Name = target
+Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -13043,6 +13380,19 @@ hint = TransferSizes[0, 0]
 
 
 
+Slave Name = target
+Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
+supports = acquireT = TransferSizes[0, 0]
+acquireB = TransferSizes[0, 0]
+arithmetic = TransferSizes[0, 0]
+logical = TransferSizes[0, 0]
+get = TransferSizes[1, 32]
+putFull = TransferSizes[1, 256]
+putPartial = TransferSizes[1, 256]
+hint = TransferSizes[0, 0]
+
+
+
 
 ---------------------------------------------
 
@@ -13159,6 +13509,19 @@ hint = TransferSizes[1, 32]
 
 Slave Name = target
 Slave Address = List(AddressSet(0x60000000, 0x1fffffff))
+supports = acquireT = TransferSizes[0, 0]
+acquireB = TransferSizes[0, 0]
+arithmetic = TransferSizes[0, 0]
+logical = TransferSizes[0, 0]
+get = TransferSizes[1, 32]
+putFull = TransferSizes[1, 256]
+putPartial = TransferSizes[1, 256]
+hint = TransferSizes[0, 0]
+
+
+
+Slave Name = target
+Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -13339,6 +13702,19 @@ hint = TransferSizes[1, 32]
 
 Slave Name = target
 Slave Address = List(AddressSet(0x60000000, 0x1fffffff))
+supports = acquireT = TransferSizes[0, 0]
+acquireB = TransferSizes[0, 0]
+arithmetic = TransferSizes[0, 0]
+logical = TransferSizes[0, 0]
+get = TransferSizes[1, 32]
+putFull = TransferSizes[1, 256]
+putPartial = TransferSizes[1, 256]
+hint = TransferSizes[0, 0]
+
+
+
+Slave Name = target
+Slave Address = List(AddressSet(0x100000000, 0x7fffffff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -13613,12 +13989,12 @@ sync:3</data>
     <edge source="14::0" target="15::0"><data key="e"><y:PolyLineEdge><y:Arrows source="none" target="standard"/><y:LineStyle color="#00cc00" type="line" width="1.0"/><y:EdgeLabel modelName="centered" rotationAngle="270.0"></y:EdgeLabel></y:PolyLineEdge></data></edge>
     <edge source="13::0" target="14::0"><data key="e"><y:PolyLineEdge><y:Arrows source="none" target="standard"/><y:LineStyle color="#00cc00" type="line" width="1.0"/><y:EdgeLabel modelName="centered" rotationAngle="270.0"></y:EdgeLabel></y:PolyLineEdge></data></edge>
     <edge source="166::0" target="172::0"><data key="e"><y:PolyLineEdge><y:Arrows source="none" target="standard"/><y:LineStyle color="#000000" type="line" width="1.0"/><y:EdgeLabel modelName="centered" rotationAngle="270.0">128</y:EdgeLabel></y:PolyLineEdge></data></edge>
-    <edge source="172::0" target="171::0"><data key="e"><y:PolyLineEdge><y:Arrows source="none" target="standard"/><y:LineStyle color="#000000" type="line" width="1.0"/><y:EdgeLabel modelName="centered" rotationAngle="270.0">64</y:EdgeLabel></y:PolyLineEdge></data></edge>
-    <edge source="171::0" target="170::0"><data key="e"><y:PolyLineEdge><y:Arrows source="none" target="standard"/><y:LineStyle color="#00ccff" type="line" width="1.0"/><y:EdgeLabel modelName="centered" rotationAngle="270.0">64</y:EdgeLabel></y:PolyLineEdge></data></edge>
-    <edge source="170::0" target="169::0"><data key="e"><y:PolyLineEdge><y:Arrows source="none" target="standard"/><y:LineStyle color="#00ccff" type="line" width="1.0"/><y:EdgeLabel modelName="centered" rotationAngle="270.0">64</y:EdgeLabel></y:PolyLineEdge></data></edge>
-    <edge source="169::0" target="168::0"><data key="e"><y:PolyLineEdge><y:Arrows source="none" target="standard"/><y:LineStyle color="#00ccff" type="line" width="1.0"/><y:EdgeLabel modelName="centered" rotationAngle="270.0">64</y:EdgeLabel></y:PolyLineEdge></data></edge>
-    <edge source="168::0" target="167::0"><data key="e"><y:PolyLineEdge><y:Arrows source="none" target="standard"/><y:LineStyle color="#00ccff" type="line" width="1.0"/><y:EdgeLabel modelName="centered" rotationAngle="270.0">64</y:EdgeLabel></y:PolyLineEdge></data></edge>
-    <edge source="167::0" target="1::20"><data key="e"><y:PolyLineEdge><y:Arrows source="none" target="standard"/><y:LineStyle color="#00ccff" type="line" width="1.0"/><y:EdgeLabel modelName="centered" rotationAngle="270.0">64</y:EdgeLabel></y:PolyLineEdge></data></edge>
+    <edge source="172::0" target="171::0"><data key="e"><y:PolyLineEdge><y:Arrows source="none" target="standard"/><y:LineStyle color="#000000" type="line" width="1.0"/><y:EdgeLabel modelName="centered" rotationAngle="270.0">128</y:EdgeLabel></y:PolyLineEdge></data></edge>
+    <edge source="171::0" target="170::0"><data key="e"><y:PolyLineEdge><y:Arrows source="none" target="standard"/><y:LineStyle color="#00ccff" type="line" width="1.0"/><y:EdgeLabel modelName="centered" rotationAngle="270.0">128</y:EdgeLabel></y:PolyLineEdge></data></edge>
+    <edge source="170::0" target="169::0"><data key="e"><y:PolyLineEdge><y:Arrows source="none" target="standard"/><y:LineStyle color="#00ccff" type="line" width="1.0"/><y:EdgeLabel modelName="centered" rotationAngle="270.0">128</y:EdgeLabel></y:PolyLineEdge></data></edge>
+    <edge source="169::0" target="168::0"><data key="e"><y:PolyLineEdge><y:Arrows source="none" target="standard"/><y:LineStyle color="#00ccff" type="line" width="1.0"/><y:EdgeLabel modelName="centered" rotationAngle="270.0">128</y:EdgeLabel></y:PolyLineEdge></data></edge>
+    <edge source="168::0" target="167::0"><data key="e"><y:PolyLineEdge><y:Arrows source="none" target="standard"/><y:LineStyle color="#00ccff" type="line" width="1.0"/><y:EdgeLabel modelName="centered" rotationAngle="270.0">128</y:EdgeLabel></y:PolyLineEdge></data></edge>
+    <edge source="167::0" target="1::20"><data key="e"><y:PolyLineEdge><y:Arrows source="none" target="standard"/><y:LineStyle color="#00ccff" type="line" width="1.0"/><y:EdgeLabel modelName="centered" rotationAngle="270.0">128</y:EdgeLabel></y:PolyLineEdge></data></edge>
     <edge source="135::3" target="135::1"><data key="e"><y:PolyLineEdge><y:Arrows source="none" target="standard"/><y:LineStyle color="#000000" type="line" width="1.0"/><y:EdgeLabel modelName="centered" rotationAngle="270.0">128</y:EdgeLabel></y:PolyLineEdge></data></edge>
     <edge source="135::1" target="135::0"><data key="e"><y:PolyLineEdge><y:Arrows source="none" target="standard"/><y:LineStyle color="#000000" type="line" width="1.0"/><y:EdgeLabel modelName="centered" rotationAngle="270.0">128</y:EdgeLabel></y:PolyLineEdge></data></edge>
     <edge source="135::0" target="11::0"><data key="e"><y:PolyLineEdge><y:Arrows source="none" target="standard"/><y:LineStyle color="#000000" type="line" width="1.0"/><y:EdgeLabel modelName="centered" rotationAngle="270.0">128</y:EdgeLabel></y:PolyLineEdge></data></edge>

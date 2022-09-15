@@ -15,10 +15,33 @@ import freechips.rocketchip.system.BaseConfig
 import meowv64.system.DualCoreSystemDef
 import meowv64.system.HexaCoreSystemDef
 import meowv64.system.SingleCoreSystemDef
+import freechips.rocketchip.subsystem.MasterPortParams
+import freechips.rocketchip.subsystem.MemoryBusKey
+
+class WithCustomMMIOPort
+    extends Config((site, _, _) => { case CustomExtBus =>
+      Seq(
+        MasterPortParams(
+          // 0x6000_0000 ~ 0x8000_0000
+          base = BigInt("60000000", 16),
+          size = BigInt("20000000", 16),
+          beatBytes = site(MemoryBusKey).beatBytes,
+          idBits = 4
+        ),
+        MasterPortParams(
+          // 0x1_000_0000 ~ 0x1_8000_0000
+          base = BigInt("100000000", 16),
+          size = BigInt("80000000", 16),
+          beatBytes = site(MemoryBusKey).beatBytes,
+          idBits = 4
+        )
+      )
+    })
 
 class MeowV64BaseConfig
     extends Config(
-      new WithJtagDTM ++
+      new WithCustomMMIOPort ++
+        new WithJtagDTM ++
         new WithNoSlavePort ++
         new WithInclusiveCache ++
         new WithCoherentBusTopology ++

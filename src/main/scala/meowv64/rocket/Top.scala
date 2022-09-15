@@ -12,6 +12,20 @@ import freechips.rocketchip.jtag.JTAGIO
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.util._
 import meowv64.core.CoreDebug
+import freechips.rocketchip.amba.axi4.AXI4SlaveNode
+import freechips.rocketchip.diplomacy.SimpleBus
+import freechips.rocketchip.amba.axi4.AXI4SlavePortParameters
+import freechips.rocketchip.amba.axi4.AXI4SlaveParameters
+import freechips.rocketchip.diplomacy.AddressSet
+import freechips.rocketchip.diplomacy.TransferSizes
+import freechips.rocketchip.amba.axi4.AXI4Buffer
+import freechips.rocketchip.amba.axi4.AXI4UserYanker
+import freechips.rocketchip.amba.axi4.AXI4Deinterleaver
+import freechips.rocketchip.amba.axi4.AXI4IdIndexer
+import freechips.rocketchip.tilelink.TLToAXI4
+import freechips.rocketchip.tilelink.TLWidthWidget
+import freechips.rocketchip.diplomacy.InModuleBody
+import chipsalliance.rocketchip.config
 
 class RiscVSystem(implicit val p: Parameters) extends Module {
   val target = Module(LazyModule(new RocketTop).module)
@@ -84,7 +98,7 @@ class RocketTop(implicit p: Parameters)
     extends RocketSubsystem
     with HasAsyncExtInterrupts
     with CanHaveMasterAXI4MemPort
-    with CanHaveMasterAXI4MMIOPort {
+    with CanHaveCustomMasterAXI4MMIOPort {
   override lazy val module = new RocketTopModule(this)
 
   // from freechips.rocketchip.system.ExampleRocketSystem
@@ -131,4 +145,55 @@ class RocketTopModule(outer: RocketTop)
     None
   }
 
+}
+
+// Customize CanHaveMasterAXI4MMIOPort to allow multiple address ranges
+case object CustomExtBus extends config.Field[Seq[MasterPortParams]](Seq())
+
+/** Adds a AXI4 port to the system intended to master an MMIO device bus */
+trait CanHaveCustomMasterAXI4MMIOPort { this: BaseSubsystem =>
+  private val mmioPortParams = p(CustomExtBus)
+  private val mmioPortParam = mmioPortParams(0)
+  private val portName = "mmio_port_axi4"
+  private val device = new SimpleBus(portName.kebab, Nil)
+
+  // validate
+  for (param <- mmioPortParams) {
+    assert(param.beatBytes == mmioPortParam.beatBytes)
+    assert(param.idBits == mmioPortParam.idBits)
+    assert(param.maxXferBytes == mmioPortParam.maxXferBytes)
+    assert(param.executable == mmioPortParam.executable)
+  }
+
+  val mmioAXI4Node = AXI4SlaveNode(
+    Seq(
+      AXI4SlavePortParameters(
+        slaves = mmioPortParams
+          .map(params =>
+            AXI4SlaveParameters(
+              address = AddressSet.misaligned(params.base, params.size),
+              resources = device.ranges,
+              executable = params.executable,
+              supportsWrite = TransferSizes(1, params.maxXferBytes),
+              supportsRead = TransferSizes(1, params.maxXferBytes)
+            )
+          )
+          .toSeq,
+        beatBytes = mmioPortParam.beatBytes
+      )
+    )
+  )
+
+  sbus.coupleTo(s"port_named_$portName") {
+    (mmioAXI4Node
+      := AXI4Buffer()
+      := AXI4UserYanker()
+      := AXI4Deinterleaver(sbus.blockBytes)
+      := AXI4IdIndexer(mmioPortParam.idBits)
+      := TLToAXI4()
+      := TLWidthWidget(sbus.beatBytes)
+      := _)
+  }
+
+  val mmio_axi4 = InModuleBody { mmioAXI4Node.makeIOs() }
 }
