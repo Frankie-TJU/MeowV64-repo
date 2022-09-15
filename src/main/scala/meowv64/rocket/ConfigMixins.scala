@@ -27,29 +27,6 @@ class WithMeowV64Cores(
         up(MemoryBusKey).copy(beatBytes = 16)
       case SystemBusKey =>
         up(SystemBusKey).copy(beatBytes = 16)
-      // MMIO 64 bits
-      case ExtBus =>
-        Some(
-          MasterPortParams(
-            base = BigInt("60000000", 16),
-            size = BigInt("20000000", 16),
-            beatBytes = 8,
-            idBits = 4
-          )
-        )
-      // Mem
-      case ExtMem =>
-        Some(
-          MemoryPortParams(
-            MasterPortParams(
-              base = BigInt("80000000", 16),
-              size = BigInt("80000000", 16),
-              beatBytes = site(MemoryBusKey).beatBytes,
-              idBits = 4
-            ),
-            1
-          )
-        )
       // Tiles
       case TilesLocated(InSubsystem) => {
         val prev = up(TilesLocated(InSubsystem))

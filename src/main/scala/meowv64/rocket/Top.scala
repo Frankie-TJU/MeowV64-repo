@@ -26,6 +26,8 @@ import freechips.rocketchip.tilelink.TLToAXI4
 import freechips.rocketchip.tilelink.TLWidthWidget
 import freechips.rocketchip.diplomacy.InModuleBody
 import chipsalliance.rocketchip.config
+import freechips.rocketchip.diplomacy.MemoryDevice
+import freechips.rocketchip.diplomacy.RegionType
 
 class RiscVSystem(implicit val p: Parameters) extends Module {
   val target = Module(LazyModule(new RocketTop).module)
@@ -97,7 +99,7 @@ class RiscVSystem(implicit val p: Parameters) extends Module {
 class RocketTop(implicit p: Parameters)
     extends RocketSubsystem
     with HasAsyncExtInterrupts
-    with CanHaveMasterAXI4MemPort
+    with CanHaveCustomMasterAXI4MemPort
     with CanHaveCustomMasterAXI4MMIOPort {
   override lazy val module = new RocketTopModule(this)
 
@@ -196,4 +198,56 @@ trait CanHaveCustomMasterAXI4MMIOPort { this: BaseSubsystem =>
   }
 
   val mmio_axi4 = InModuleBody { mmioAXI4Node.makeIOs() }
+}
+
+// Customize CanHaveMasterAXI4MemPort to allow multiple address ranges
+case object CustomExtMem extends config.Field[Seq[MasterPortParams]](Seq())
+
+/** Adds a port to the system intended to master an AXI4 DRAM controller. */
+trait CanHaveCustomMasterAXI4MemPort { this: BaseSubsystem =>
+  private val memPortParams = p(CustomExtMem)
+  private val memPortParam = memPortParams(0)
+  private val portName = "axi4"
+  private val device = new MemoryDevice
+  private val idBits = memPortParam.idBits
+
+  // validate
+  for (param <- memPortParams) {
+    assert(param.beatBytes == memPortParam.beatBytes)
+    assert(param.idBits == memPortParam.idBits)
+    assert(param.maxXferBytes == memPortParam.maxXferBytes)
+    assert(param.executable == memPortParam.executable)
+  }
+
+  val memAXI4Node = AXI4SlaveNode(
+    Seq(
+      AXI4SlavePortParameters(
+        slaves = memPortParams
+          .map(params =>
+            AXI4SlaveParameters(
+              address = AddressSet.misaligned(params.base, params.size),
+              resources = device.reg,
+              regionType = RegionType.UNCACHED, // cacheable
+              executable = true,
+              supportsWrite = TransferSizes(1, mbus.blockBytes),
+              supportsRead = TransferSizes(1, mbus.blockBytes),
+              interleavedId = Some(0)
+            )
+          )
+          .toSeq, // slave does not interleave read responses
+        beatBytes = memPortParam.beatBytes
+      )
+    )
+  )
+
+  mbus.coupleTo(s"memory_controller_port_named_$portName") {
+    (memAXI4Node
+      :*= AXI4UserYanker()
+      :*= AXI4IdIndexer(idBits)
+      :*= TLToAXI4()
+      :*= TLWidthWidget(mbus.beatBytes)
+      :*= _)
+  }
+
+  val mem_axi4 = InModuleBody { memAXI4Node.makeIOs() }
 }
