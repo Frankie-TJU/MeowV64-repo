@@ -13,3 +13,6 @@
 [submodule "submodules/block-inclusivecache-sifive"]
 	path = submodules/block-inclusivecache-sifive
 	url = ../block-inclusivecache-sifive.git
+[submodule "fpga/digilent-vivado-scripts"]
+	path = fpga/digilent-vivado-scripts
+	url = git@github.com:Digilent/digilent-vivado-scripts.git
