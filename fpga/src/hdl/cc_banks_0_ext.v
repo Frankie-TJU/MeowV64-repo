@@ -1,0 +1,1 @@
+../../../build/meowv64.rocket.MeowV64SingleCoreConfig/cc_banks_0_ext.v
