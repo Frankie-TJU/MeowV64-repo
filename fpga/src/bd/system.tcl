@@ -36,6 +36,13 @@ if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
 # To test this script, run the following commands from Vivado Tcl console:
 # source system_script.tcl
 
+
+# The design that will be created by this Tcl script contains the following 
+# module references:
+# RiscVSystem
+
+# Please add the sources of those modules before sourcing this Tcl script.
+
 # If there is no project opened, this script will create a
 # project, but make sure you do not have an existing project
 # <./myproj/project_1.xpr> in the current working folder.
@@ -124,6 +131,10 @@ set bCheckIPs 1
 if { $bCheckIPs == 1 } {
    set list_check_ips "\ 
 xilinx.com:ip:clk_wiz:*\
+xilinx.com:ip:hbm:*\
+xilinx.com:ip:proc_sys_reset:*\
+xilinx.com:ip:vio:*\
+xilinx.com:ip:xlconstant:*\
 "
 
    set list_ips_missing ""
@@ -141,6 +152,31 @@ xilinx.com:ip:clk_wiz:*\
       set bCheckIPsPassed 0
    }
 
+}
+
+##################################################################
+# CHECK Modules
+##################################################################
+set bCheckModules 1
+if { $bCheckModules == 1 } {
+   set list_check_mods "\ 
+RiscVSystem\
+"
+
+   set list_mods_missing ""
+   common::send_gid_msg -ssname BD::TCL -id 2020 -severity "INFO" "Checking if the following modules exist in the project's sources: $list_check_mods ."
+
+   foreach mod_vlnv $list_check_mods {
+      if { [can_resolve_reference $mod_vlnv] == 0 } {
+         lappend list_mods_missing $mod_vlnv
+      }
+   }
+
+   if { $list_mods_missing ne "" } {
+      catch {common::send_gid_msg -ssname BD::TCL -id 2021 -severity "ERROR" "The following module(s) are not found in the project: $list_mods_missing" }
+      common::send_gid_msg -ssname BD::TCL -id 2022 -severity "INFO" "Please add source files for the missing module(s) above."
+      set bCheckIPsPassed 0
+   }
 }
 
 if { $bCheckIPsPassed != 1 } {
@@ -194,10 +230,32 @@ proc create_root_design { parentCell } {
 
 
   # Create ports
+  set jtag_TCK [ create_bd_port -dir I jtag_TCK ]
+  set jtag_TDI [ create_bd_port -dir I jtag_TDI ]
+  set jtag_TDO [ create_bd_port -dir O jtag_TDO ]
+  set jtag_TMS [ create_bd_port -dir I jtag_TMS ]
   set reset [ create_bd_port -dir I -type rst reset ]
   set_property -dict [ list \
    CONFIG.POLARITY {ACTIVE_HIGH} \
  ] $reset
+
+  # Create instance: RiscVSystem_0, and set properties
+  set block_name RiscVSystem
+  set block_cell_name RiscVSystem_0
+  if { [catch {set RiscVSystem_0 [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2095 -severity "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   } elseif { $RiscVSystem_0 eq "" } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   }
+  
+  # Create instance: axi_interconnect_0, and set properties
+  set axi_interconnect_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect axi_interconnect_0 ]
+  set_property -dict [ list \
+   CONFIG.NUM_MI {1} \
+   CONFIG.NUM_SI {2} \
+ ] $axi_interconnect_0
 
   # Create instance: clk_wiz_0, and set properties
   set clk_wiz_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:clk_wiz clk_wiz_0 ]
@@ -216,18 +274,70 @@ proc create_root_design { parentCell } {
    CONFIG.USE_BOARD_FLOW {true} \
  ] $clk_wiz_0
 
+  # Create instance: hbm_0, and set properties
+  set hbm_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:hbm hbm_0 ]
+  set_property -dict [ list \
+   CONFIG.USER_APB_EN {false} \
+   CONFIG.USER_CLK_SEL_LIST0 {AXI_00_ACLK} \
+   CONFIG.USER_SAXI_01 {false} \
+   CONFIG.USER_SAXI_02 {false} \
+   CONFIG.USER_SAXI_03 {false} \
+   CONFIG.USER_SAXI_04 {false} \
+   CONFIG.USER_SAXI_05 {false} \
+   CONFIG.USER_SAXI_06 {false} \
+   CONFIG.USER_SAXI_07 {false} \
+   CONFIG.USER_SAXI_08 {false} \
+   CONFIG.USER_SAXI_09 {false} \
+   CONFIG.USER_SAXI_10 {false} \
+   CONFIG.USER_SAXI_11 {false} \
+   CONFIG.USER_SAXI_12 {false} \
+   CONFIG.USER_SAXI_13 {false} \
+   CONFIG.USER_SAXI_14 {false} \
+   CONFIG.USER_SAXI_15 {false} \
+   CONFIG.USER_XSDB_INTF_EN {TRUE} \
+ ] $hbm_0
+
+  # Create instance: proc_sys_reset_0, and set properties
+  set proc_sys_reset_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset proc_sys_reset_0 ]
+
+  # Create instance: vio_0, and set properties
+  set vio_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:vio vio_0 ]
+  set_property -dict [ list \
+   CONFIG.C_EN_PROBE_IN_ACTIVITY {0} \
+   CONFIG.C_NUM_PROBE_IN {0} \
+ ] $vio_0
+
+  # Create instance: xlconstant_0, and set properties
+  set xlconstant_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant xlconstant_0 ]
+
   # Create interface connections
+  connect_bd_intf_net -intf_net RiscVSystem_0_mem_axi4 [get_bd_intf_pins RiscVSystem_0/mem_axi4] [get_bd_intf_pins axi_interconnect_0/S00_AXI]
+  connect_bd_intf_net -intf_net RiscVSystem_0_mmio_axi4 [get_bd_intf_pins RiscVSystem_0/mmio_axi4] [get_bd_intf_pins axi_interconnect_0/S01_AXI]
+  connect_bd_intf_net -intf_net axi_interconnect_0_M00_AXI [get_bd_intf_pins axi_interconnect_0/M00_AXI] [get_bd_intf_pins hbm_0/SAXI_00]
   connect_bd_intf_net -intf_net default_100mhz_clk_1 [get_bd_intf_ports default_100mhz_clk] [get_bd_intf_pins clk_wiz_0/CLK_IN1_D]
 
   # Create port connections
-  connect_bd_net -net reset_1 [get_bd_ports reset] [get_bd_pins clk_wiz_0/reset]
+  connect_bd_net -net ARESETN_1 [get_bd_pins axi_interconnect_0/ARESETN] [get_bd_pins axi_interconnect_0/M00_ARESETN] [get_bd_pins axi_interconnect_0/S01_ARESETN] [get_bd_pins proc_sys_reset_0/interconnect_aresetn]
+  connect_bd_net -net RiscVSystem_0_jtag_TDO_data [get_bd_ports jtag_TDO] [get_bd_pins RiscVSystem_0/jtag_TDO_data]
+  connect_bd_net -net clk_wiz_0_clk_100M [get_bd_pins axi_interconnect_0/M00_ACLK] [get_bd_pins clk_wiz_0/clk_100M] [get_bd_pins hbm_0/APB_0_PCLK] [get_bd_pins hbm_0/AXI_00_ACLK] [get_bd_pins hbm_0/HBM_REF_CLK_0]
+  connect_bd_net -net clk_wiz_0_clk_50M [get_bd_pins RiscVSystem_0/clock] [get_bd_pins axi_interconnect_0/ACLK] [get_bd_pins axi_interconnect_0/S00_ACLK] [get_bd_pins axi_interconnect_0/S01_ACLK] [get_bd_pins clk_wiz_0/clk_50M] [get_bd_pins proc_sys_reset_0/slowest_sync_clk] [get_bd_pins vio_0/clk]
+  connect_bd_net -net clk_wiz_0_locked [get_bd_pins clk_wiz_0/locked] [get_bd_pins proc_sys_reset_0/dcm_locked]
+  connect_bd_net -net jtag_TCK_0_1 [get_bd_ports jtag_TCK] [get_bd_pins RiscVSystem_0/jtag_TCK]
+  connect_bd_net -net jtag_TDI_0_1 [get_bd_ports jtag_TDI] [get_bd_pins RiscVSystem_0/jtag_TDI]
+  connect_bd_net -net jtag_TMS_0_1 [get_bd_ports jtag_TMS] [get_bd_pins RiscVSystem_0/jtag_TMS]
+  connect_bd_net -net proc_sys_reset_0_mb_reset [get_bd_pins RiscVSystem_0/reset] [get_bd_pins proc_sys_reset_0/mb_reset]
+  connect_bd_net -net reset_1 [get_bd_ports reset] [get_bd_pins proc_sys_reset_0/ext_reset_in]
+  connect_bd_net -net vio_0_probe_out0 [get_bd_pins proc_sys_reset_0/aux_reset_in] [get_bd_pins vio_0/probe_out0]
+  connect_bd_net -net xlconstant_0_dout [get_bd_pins clk_wiz_0/reset] [get_bd_pins xlconstant_0/dout]
 
   # Create address segments
+  assign_bd_address -offset 0x00000000 -range 0x10000000 -target_address_space [get_bd_addr_spaces RiscVSystem_0/mem_axi4] [get_bd_addr_segs hbm_0/SAXI_00/HBM_MEM00] -force
 
 
   # Restore current instance
   current_bd_instance $oldCurInst
 
+  validate_bd_design
   save_bd_design
 }
 # End of create_root_design()
@@ -239,6 +349,4 @@ proc create_root_design { parentCell } {
 
 create_root_design ""
 
-
-common::send_gid_msg -ssname BD::TCL -id 2053 -severity "WARNING" "This Tcl script was generated from a block design that has not been validated. It is possible that design <$design_name> may result in errors during validation."
 
