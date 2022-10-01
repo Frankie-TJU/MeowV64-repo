@@ -1,3 +1,6 @@
+set_property -dict {PACKAGE_PIN BM29 IOSTANDARD LVCMOS12} [get_ports reset]
+
+#
 # easy to confuse rxd/txd here
 # uart0_txd
 set_property -dict {PACKAGE_PIN BP26 IOSTANDARD LVCMOS18} [get_ports jtag_TCK]
