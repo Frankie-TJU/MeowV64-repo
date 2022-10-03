@@ -54,3 +54,7 @@ hw_handoff/*
 
 # maintain required directories
 !**/.keep
+
+!openocd.cfg
+!gdbinit
+!start-gdb.sh
