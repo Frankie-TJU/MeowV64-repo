@@ -15,4 +15,4 @@
 	url = ../block-inclusivecache-sifive.git
 [submodule "fpga/digilent-vivado-scripts"]
 	path = fpga/digilent-vivado-scripts
-	url = git@github.com:Digilent/digilent-vivado-scripts.git
+	url = ../digilent-vivado-scripts.git
