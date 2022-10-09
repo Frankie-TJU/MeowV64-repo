@@ -28,7 +28,10 @@ class FloatMiscMultiCycleExt(implicit val coredef: CoreDef) extends Bundle {
 /** Handles instructions: FMIN, FMAX, FCVT
   */
 class FloatMiscMultiCycle(override implicit val coredef: CoreDef)
-    extends ExecUnit(1, new FloatMiscMultiCycleExt, coredef.REG_FLOAT) {
+    extends ExecUnit(1, new FloatMiscMultiCycleExt, coredef.REG_FLOAT)
+    with WithFRM {
+
+  val frm = IO(Input(UInt(3.W)))
 
   def map(
       stage: Int,
@@ -153,7 +156,7 @@ class FloatMiscMultiCycle(override implicit val coredef: CoreDef)
             )
             convS2D.io.in := rs1valSingleHF
             convS2D.io.detectTininess := hardfloat.consts.tininess_afterRounding
-            convS2D.io.roundingMode := 0.U
+            convS2D.io.roundingMode := frm
 
             ext.res := fNFromRecFN(FloatD.exp(), FloatD.sig(), convS2D.io.out)
             ext.fflags := convS2D.io.exceptionFlags
@@ -171,7 +174,7 @@ class FloatMiscMultiCycle(override implicit val coredef: CoreDef)
             )
             convH2D.io.in := rs1valHalfHF
             convH2D.io.detectTininess := hardfloat.consts.tininess_afterRounding
-            convH2D.io.roundingMode := 0.U
+            convH2D.io.roundingMode := frm
 
             ext.res := fNFromRecFN(FloatD.exp(), FloatD.sig(), convH2D.io.out)
             ext.fflags := convH2D.io.exceptionFlags
@@ -191,7 +194,7 @@ class FloatMiscMultiCycle(override implicit val coredef: CoreDef)
 
             convD2S.io.in := rs1valDoubleHF
             convD2S.io.detectTininess := hardfloat.consts.tininess_afterRounding
-            convD2S.io.roundingMode := 0.U
+            convD2S.io.roundingMode := frm
 
             // NaN boxing
             ext.res := FloatS.box(
@@ -213,7 +216,7 @@ class FloatMiscMultiCycle(override implicit val coredef: CoreDef)
 
             convH2S.io.in := rs1valHalfHF
             convH2S.io.detectTininess := hardfloat.consts.tininess_afterRounding
-            convH2S.io.roundingMode := 0.U
+            convH2S.io.roundingMode := frm
 
             // NaN boxing
             ext.res := FloatS.box(
@@ -237,7 +240,7 @@ class FloatMiscMultiCycle(override implicit val coredef: CoreDef)
 
             convD2H.io.in := rs1valDoubleHF
             convD2H.io.detectTininess := hardfloat.consts.tininess_afterRounding
-            convD2H.io.roundingMode := 0.U
+            convD2H.io.roundingMode := frm
 
             // NaN boxing
             ext.res := FloatH.box(
@@ -259,7 +262,7 @@ class FloatMiscMultiCycle(override implicit val coredef: CoreDef)
 
             convS2H.io.in := rs1valSingleHF
             convS2H.io.detectTininess := hardfloat.consts.tininess_afterRounding
-            convS2H.io.roundingMode := 0.U
+            convS2H.io.roundingMode := frm
 
             // NaN boxing
             ext.res := FloatH.box(

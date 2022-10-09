@@ -46,6 +46,7 @@ class Exec(implicit val coredef: CoreDef) extends Module {
     val status = Input(new Status)
     val vState = Input(new VState)
     val debugMode = Input(Bool())
+    val frm = Input(UInt(3.W))
 
     val step = Input(Bool()) // single stepping in dcsr
     val stepAck = Output(Bool())
@@ -336,6 +337,9 @@ class Exec(implicit val coredef: CoreDef) extends Module {
     }
     if (unit.extras.contains("vState")) {
       unit.extras("vState") := toCtrl.vState
+    }
+    if (unit.extras.contains("frm")) {
+      unit.extras("frm") := toCtrl.frm
     }
   }
 

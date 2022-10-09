@@ -594,6 +594,10 @@ trait WithVState {
   val vState: VState
 }
 
+trait WithFRM {
+  val frm: UInt
+}
+
 object MuxBE {
 
   /** Apply byte enable mask

@@ -170,6 +170,7 @@ class Core(implicit val coredef: CoreDef) extends Module {
   ctrl.toExec.updateVState <> exec.toCtrl.updateVState
   ctrl.toExec.vState <> exec.toCtrl.vState
   ctrl.toExec.debugMode <> exec.toCtrl.debugMode
+  ctrl.toExec.frm <> exec.toCtrl.frm
   ctrl.toExec.step <> exec.toCtrl.step
   ctrl.toExec.stepAck := exec.toCtrl.stepAck
 

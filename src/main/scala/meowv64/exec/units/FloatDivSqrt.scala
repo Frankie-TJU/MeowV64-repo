@@ -26,7 +26,11 @@ object FloatDivSqrtState extends ChiselEnum {
 
 class FloatDivSqrt(implicit val coredef: CoreDef)
     extends Module
-    with ExecUnitInt {
+    with ExecUnitInt
+    with WithFRM {
+
+  val frm = IO(Input(UInt(3.W)))
+
   val regInfo = coredef.REG_FLOAT
   val DEPTH = 1
   val io = IO(new ExecUnitPort(regInfo))
@@ -39,7 +43,7 @@ class FloatDivSqrt(implicit val coredef: CoreDef)
     )
     convS2D.io.in := n
     convS2D.io.detectTininess := hardfloat.consts.tininess_afterRounding
-    convS2D.io.roundingMode := 0.U
+    convS2D.io.roundingMode := frm
     convS2D.io.out
   }
 
@@ -49,7 +53,7 @@ class FloatDivSqrt(implicit val coredef: CoreDef)
     )
     convH2D.io.in := n
     convH2D.io.detectTininess := hardfloat.consts.tininess_afterRounding
-    convH2D.io.roundingMode := 0.U
+    convH2D.io.roundingMode := frm
     convH2D.io.out
   }
 
@@ -59,7 +63,7 @@ class FloatDivSqrt(implicit val coredef: CoreDef)
     )
     convD2S.io.in := n
     convD2S.io.detectTininess := hardfloat.consts.tininess_afterRounding
-    convD2S.io.roundingMode := 0.U
+    convD2S.io.roundingMode := frm
     convD2S.io.out
   }
 
@@ -69,7 +73,7 @@ class FloatDivSqrt(implicit val coredef: CoreDef)
     )
     convD2H.io.in := n
     convD2H.io.detectTininess := hardfloat.consts.tininess_afterRounding
-    convD2H.io.roundingMode := 0.U
+    convD2H.io.roundingMode := frm
     convD2H.io.out
   }
 
@@ -87,7 +91,7 @@ class FloatDivSqrt(implicit val coredef: CoreDef)
   div_sqrt.io.b := 0.U
   div_sqrt.io.detectTininess := hardfloat.consts.tininess_afterRounding
   div_sqrt.io.sqrtOp := false.B
-  div_sqrt.io.roundingMode := 0.U
+  div_sqrt.io.roundingMode := frm
   div_sqrt.io.flush := io.flush
 
   val currentInstr = Reg(new PipeInstr(regInfo))
@@ -112,7 +116,7 @@ class FloatDivSqrt(implicit val coredef: CoreDef)
       div_sqrt.io.b := rs2valHF
 
       div_sqrt.io.inValid := true.B
-      div_sqrt.io.roundingMode := false.B
+      div_sqrt.io.roundingMode := frm
       div_sqrt.io.detectTininess := hardfloat.consts.tininess_afterRounding
       div_sqrt.io.sqrtOp := sqrtOp
 

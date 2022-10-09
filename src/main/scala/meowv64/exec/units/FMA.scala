@@ -77,7 +77,10 @@ class FMA(override implicit val coredef: CoreDef)
       4,
       new FMAExt,
       coredef.REG_FLOAT
-    ) {
+    )
+    with WithFRM {
+
+  val frm = IO(Input(UInt(3.W)))
 
   def map(stage: Int, pipe: PipeInstr, ext: Option[FMAExt]): (FMAExt, Bool) = {
     val state = Wire(new FMAExt)
@@ -222,8 +225,7 @@ class FMA(override implicit val coredef: CoreDef)
           postMul.suggestName(s"postMul_${float.name}")
           postMul.io.fromPreMul := lastState.toPostMul(idx)
           postMul.io.mulAddResult := lastState.mulAddResult(idx)
-          // TODO
-          postMul.io.roundingMode := 0.U
+          postMul.io.roundingMode := frm
 
           state.rawOut(idx) := postMul.io.rawOut
           state.invalidExc(idx) := postMul.io.invalidExc
@@ -238,7 +240,7 @@ class FMA(override implicit val coredef: CoreDef)
           round.io.infiniteExc := false.B
           round.io.invalidExc := lastState.invalidExc(idx)
           round.io.detectTininess := hardfloat.consts.tininess_afterRounding
-          round.io.roundingMode := 0.U
+          round.io.roundingMode := frm
 
           // convert to ieee
           state.res := float.box(

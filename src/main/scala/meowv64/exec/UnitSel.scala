@@ -145,6 +145,21 @@ class UnitSel(
 
       u.asInstanceOf[WithVState].vState := vState
     }
+
+    if (u.isInstanceOf[WithFRM]) {
+      println("Found extra port: frm")
+
+      val frm = extras.get("frm") match {
+        case Some(port) => port
+        case None => {
+          val frm = IO(Input(UInt(3.W)))
+          extras.put("frm", frm)
+          frm
+        }
+      }
+
+      u.asInstanceOf[WithFRM].frm := frm
+    }
   }
 
   // pass flush to units

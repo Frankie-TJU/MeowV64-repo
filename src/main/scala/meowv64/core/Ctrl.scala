@@ -111,6 +111,7 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
     val status = Output(new Status)
     val vState = Output(new VState)
     val debugMode = Output(Bool())
+    val frm = Output(UInt(3.W))
 
     val step = Output(Bool())
     val stepAck = Input(Bool())
@@ -399,6 +400,7 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
   csr.fflags <> CSRPort.fromReg(5, fcsr.fflags)
   csr.frm <> CSRPort.fromReg(3, fcsr.frm)
   csr.fcsr <> CSRPort.fromReg(8, fcsr)
+  toExec.frm := fcsr.frm
 
   // update fflags
   // and set mstatus.fs = 3(dirty)

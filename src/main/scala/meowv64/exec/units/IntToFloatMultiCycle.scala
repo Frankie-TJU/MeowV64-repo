@@ -33,7 +33,10 @@ class IntToFloatMultiCycleExt(implicit val coredef: CoreDef) extends Bundle {
   * FCVT.D.L, FCVT.D.LU, FCVT.S.LU
   */
 class IntToFloatMultiCycle(override implicit val coredef: CoreDef)
-    extends ExecUnit(2, new IntToFloatMultiCycleExt, coredef.REG_FLOAT) {
+    extends ExecUnit(2, new IntToFloatMultiCycleExt, coredef.REG_FLOAT)
+    with WithFRM {
+
+  val frm = IO(Input(UInt(3.W)))
 
   def map(
       stage: Int,
@@ -85,7 +88,7 @@ class IntToFloatMultiCycle(override implicit val coredef: CoreDef)
             convI2F.suggestName(s"convI2F_${float.name}")
             convI2F.io.in := last.in(idx)
             convI2F.io.signedIn := last.signedIn(idx)
-            convI2F.io.roundingMode := 0.U
+            convI2F.io.roundingMode := frm
             convI2F.io.detectTininess := hardfloat.consts.tininess_afterRounding
 
             ext.out(idx) := convI2F.io.out
