@@ -124,11 +124,22 @@ class FloatToIntMultiCycle(override implicit val coredef: CoreDef)
                   // FCVT.W.D/FCVT.L.D/FCVT.W.S/FCVT.L.S
                   // signed int
                   convF2I.io.signedOut := true.B
+
                 }.otherwise {
                   convF2I.io.signedOut := false.B
+                  ext.res := convF2I.io.out
                 }
 
-                ext.res := convF2I.io.out
+                // sign extension regardless of signedOut
+                if (intWidth < coredef.XLEN) {
+                  ext.res := Fill(
+                    coredef.XLEN - intWidth,
+                    convF2I.io.out(intWidth - 1)
+                  ) ## convF2I.io.out
+                } else {
+                  ext.res := convF2I.io.out
+                }
+
                 // see rocket chip
                 ext.fflags := Cat(
                   convF2I.io.intExceptionFlags(2, 1).orR,
