@@ -143,9 +143,9 @@ class FloatDivSqrt(implicit val coredef: CoreDef)
     for ((float, idx) <- coredef.FLOAT_TYPES.zipWithIndex) {
       when(float.fmt === io.next.instr.instr.fmt) {
         rs1valHF(idx) :=
-          recFNFromFN(float.exp, float.sig, io.next.rs1val(float.width - 1, 0))
+          float.toHardfloat(float.unbox(io.next.rs1val, coredef.XLEN))
         rs2valHF(idx) :=
-          recFNFromFN(float.exp, float.sig, io.next.rs2val(float.width - 1, 0))
+          float.toHardfloat(float.unbox(io.next.rs2val, coredef.XLEN))
       }
     }
 
