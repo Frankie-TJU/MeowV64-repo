@@ -25,7 +25,10 @@ class FloatToIntMultiCycleExt(implicit val coredef: CoreDef) extends Bundle {
   * FCVT.WU.D, FCVT.L.D, FCVT.LU.D
   */
 class FloatToIntMultiCycle(override implicit val coredef: CoreDef)
-    extends ExecUnit(1, new FloatToIntMultiCycleExt, coredef.REG_FLOAT) {
+    extends ExecUnit(1, new FloatToIntMultiCycleExt, coredef.REG_FLOAT)
+    with WithFRM {
+
+  val frm = IO(Input(UInt(3.W)))
 
   def map(
       stage: Int,
@@ -51,6 +54,17 @@ class FloatToIntMultiCycle(override implicit val coredef: CoreDef)
     // stage 0: convert to hf
     ext.rs1HFValues := rs1HFValues
     ext.rs2HFValues := rs2HFValues
+
+    // Floating-point operations use either a static rounding mode encoded in the instruction,
+    // or a dynamic rounding mode held in frm.
+    val roundingMode = Wire(UInt(3.W))
+    when(pipe.instr.instr.funct3 === 7.U) {
+      // dynamic
+      roundingMode := frm
+    }.otherwise {
+      // static
+      roundingMode := pipe.instr.instr.funct3
+    }
 
     if (stage == 1) {
       when(
@@ -93,77 +107,36 @@ class FloatToIntMultiCycle(override implicit val coredef: CoreDef)
         )
       ) {
         // convert float to int
-        // convert float32/float64 to int64 first
-        // then clamp to int32
+        // we can't convert float32/float64 to int64 first and then clamp to int32
+        // because when we convert float64 to int32, there may be precision lost
         for ((float, idx) <- coredef.FLOAT_TYPES.zipWithIndex) {
           when(pipe.instr.instr.fmt === float.fmt) {
-            val convF2I =
-              Module(new RecFNToIN(float.exp, float.sig, coredef.XLEN))
-            convF2I.io.in := last_ext.get.rs1HFValues(idx)
-            convF2I.io.signedOut := false.B
-            convF2I.io.roundingMode := pipe.instr.instr.funct3
+            // check int format by rs2(1)
+            for ((intFmt, intWidth) <- Seq((0, 32), (1, 64))) {
+              when(pipe.instr.instr.rs2(1) === intFmt.U) {
+                val convF2I =
+                  Module(new RecFNToIN(float.exp, float.sig, intWidth))
+                convF2I.io.in := last_ext.get.rs1HFValues(idx)
+                convF2I.io.roundingMode := roundingMode
+                convF2I.suggestName(s"convF2I_${float.name}_I${intWidth}")
 
-            convF2I.suggestName(s"convF2I_${float.name}")
-
-            // overflow in int64 -> int32
-            val overflow = WireInit(false.B)
-            when(pipe.instr.instr.rs2(1) === 0.U) {
-              // FCVT.W.S/FCVT.WU.S/FCVT.W.D/FCVT.WU.D
-              // convert 32/64-bit float to 32-bit int/uint
-              // clamp to int32 range
-              val clamped = WireInit(0.U(32.W))
-
-              when(pipe.instr.instr.rs2(0) === 0.U) {
-                // signed
-                when(
-                  convF2I.io.out(coredef.XLEN - 1) && ~convF2I.io
-                    .out(coredef.XLEN - 1, 31)
-                    .andR
-                ) {
-                  // negative underflow
-                  clamped := 1.U ## Fill(31, 0.U)
-                  overflow := true.B
-                }.elsewhen(
-                  ~convF2I.io.out(coredef.XLEN - 1) && convF2I.io
-                    .out(coredef.XLEN - 1, 31)
-                    .orR
-                ) {
-                  // positive overflow
-                  clamped := 0.U ## Fill(31, 1.U)
-                  overflow := true.B
+                when(pipe.instr.instr.rs2(0) === 0.U) {
+                  // FCVT.W.D/FCVT.L.D/FCVT.W.S/FCVT.L.S
+                  // signed int
+                  convF2I.io.signedOut := true.B
                 }.otherwise {
-                  clamped := convF2I.io.out(31, 0)
+                  convF2I.io.signedOut := false.B
                 }
-              }.otherwise {
-                // unsigned
-                when(convF2I.io.out(coredef.XLEN - 1, 32).orR) {
-                  // positive overflow
-                  clamped := Fill(32, 1.U)
-                }.otherwise {
-                  clamped := convF2I.io.out(31, 0)
-                }
+
+                ext.res := convF2I.io.out
+                // see rocket chip
+                ext.fflags := Cat(
+                  convF2I.io.intExceptionFlags(2, 1).orR,
+                  0.U(3.W),
+                  convF2I.io.intExceptionFlags(0)
+                )
               }
-
-              // sign extension
-              ext.res := Fill(32, clamped(31)) ## clamped(31, 0)
-            }.otherwise {
-              // FCVT.L.S/FCVT.LU.S/FCVT.L.D/FCVT.LU.D
-              // convert 32/64-bit float to 64-bit int/uint
-              ext.res := convF2I.io.out
             }
-
-            when(pipe.instr.instr.rs2(0) === 0.U) {
-              // FCVT.W.D/FCVT.L.D/FCVT.W.S/FCVT.L.S
-              // signed int
-              convF2I.io.signedOut := true.B
-            }
-
-            // see rocket chip
-            ext.fflags := Cat(
-              convF2I.io.intExceptionFlags(2, 1).orR | overflow,
-              0.U(3.W),
-              convF2I.io.intExceptionFlags(0)
-            )
           }
         }
 
