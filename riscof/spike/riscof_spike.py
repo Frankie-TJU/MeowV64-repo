@@ -77,7 +77,7 @@ class spike(pluginTemplate):
         # Note the march is not hardwired here, because it will change for each
         # test. Similarly the output elf name and compile macros will be assigned later in the
         # runTests function
-        self.compile_cmd = 'riscv{1}-unknown-elf-gcc -march={0}_zicsr_zifencei \
+        self.compile_cmd = 'riscv{1}-unknown-elf-gcc -march={0} \
          -static -mcmodel=medany -fvisibility=hidden -nostdlib -nostartfiles -g\
          -T '+self.pluginpath+'/env/link.ld\
          -I '+self.pluginpath+'/env/\
@@ -155,8 +155,14 @@ class spike(pluginTemplate):
 
             # substitute all variables in the compile command that we created in the initialize
             # function
+            # Ensure _zicsr_zifencei
+            isa = testentry['isa'].lower()
+            if 'zicsr' not in isa:
+                isa += '_zicsr'
+            if 'zifencei' not in isa:
+                isa += '_zifencei'
             cmd = self.compile_cmd.format(
-                testentry['isa'].lower(), self.xlen, test, elf, compile_macros)
+                isa, self.xlen, test, elf, compile_macros)
 
             # if the user wants to disable running the tests and only compile the tests, then
             # the "else" clause is executed below assigning the sim command to simple no action
