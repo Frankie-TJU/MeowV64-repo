@@ -18,4 +18,4 @@
 	url = ../digilent-vivado-scripts.git
 [submodule "riscof/riscv-arch-test"]
 	path = riscof/riscv-arch-test
-	url = git@github.com:riscv/riscv-arch-test.git
+	url = ../riscv-arch-test.git
