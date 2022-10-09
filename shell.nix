@@ -16,6 +16,7 @@ pkgs.pkgsCross.riscv64-embedded.mkShell {
     verilator
     pkg-config
     gmp
+    openocd
   ];
 
   buildInputs = with pkgs; [
