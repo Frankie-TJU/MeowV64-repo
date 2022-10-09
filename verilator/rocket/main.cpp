@@ -931,7 +931,8 @@ int main(int argc, char **argv) {
   bool trace = false;
   bool progress = false;
   const char *signature_path = "dump.sig";
-  while ((opt = getopt(argc, argv, "tpjvs:")) != -1) {
+  int signature_granularity = 16;
+  while ((opt = getopt(argc, argv, "tpjvs:S:")) != -1) {
     switch (opt) {
     case 't':
       trace = true;
@@ -950,8 +951,14 @@ int main(int argc, char **argv) {
     case 's':
       signature_path = optarg;
       break;
+    case 'S':
+      sscanf(optarg, "%d", &signature_granularity);
+      break;
     default: /* '?' */
-      fprintf(stderr, "Usage: %s [-t] [-p] [-j] [-v] [-s signature] name\n", argv[0]);
+      fprintf(stderr,
+              "Usage: %s [-t] [-p] [-j] [-v] [-s signature] [-S granularity] "
+              "name\n",
+              argv[0]);
       return 1;
     }
   }
@@ -1113,10 +1120,12 @@ int main(int argc, char **argv) {
     fprintf(stderr, "> Dumping signature(%lx:%lx) to dump.sig\n",
             begin_signature, end_signature);
     FILE *fp = fopen(signature_path, "w");
-    for (uint64_t addr = begin_signature; addr < end_signature; addr += 16) {
-      uint64_t words = 16 / sizeof(mem_t);
-      for (uint64_t i = 0; i < 16; i += sizeof(mem_t)) {
-        fprintf(fp, "%08lx", memory[addr + 16 - sizeof(mem_t) - i]);
+    for (uint64_t addr = begin_signature; addr < end_signature;
+         addr += signature_granularity) {
+      uint64_t words = signature_granularity / sizeof(mem_t);
+      for (uint64_t i = 0; i < signature_granularity; i += sizeof(mem_t)) {
+        fprintf(fp, "%08lx",
+                memory[addr + signature_granularity - sizeof(mem_t) - i]);
       }
       fprintf(fp, "\n");
     }
