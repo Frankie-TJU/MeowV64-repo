@@ -16,3 +16,6 @@
 [submodule "fpga/digilent-vivado-scripts"]
 	path = fpga/digilent-vivado-scripts
 	url = ../digilent-vivado-scripts.git
+[submodule "riscof/riscv-arch-test"]
+	path = riscof/riscv-arch-test
+	url = git@github.com:riscv/riscv-arch-test.git

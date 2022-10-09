@@ -11,6 +11,7 @@ pkgs.pkgsCross.riscv64-embedded.mkShell {
 
     # Testcases
     autoconf
+    spike
 
     # Simulation
     verilator
