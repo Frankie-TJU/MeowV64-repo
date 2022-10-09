@@ -6,7 +6,6 @@ import chisel3.util.Cat
 import chisel3.util._
 import chisel3.util.log2Ceil
 import hardfloat.RawFloat
-import hardfloat.RecFNToRecFN
 import hardfloat.RoundRawFNToRecFN
 import hardfloat.consts.divSqrtOpt_twoBitsPerCycle
 import hardfloat.fNFromRecFN
@@ -14,9 +13,6 @@ import hardfloat.isSigNaNRawFloat
 import hardfloat.rawFloatFromRecFN
 import hardfloat.recFNFromFN
 import meowv64.core.CoreDef
-import meowv64.core.FloatD
-import meowv64.core.FloatH
-import meowv64.core.FloatS
 import meowv64.exec._
 import meowv64.instr.Decoder
 
@@ -37,67 +33,42 @@ class FloatDivSqrt(implicit val coredef: CoreDef)
 
   val state = RegInit(FloatDivSqrtState.sIdle)
 
-  def single2double(n: UInt) = {
-    val convS2D = Module(
-      new RecFNToRecFN(FloatS.exp, FloatS.sig, FloatD.exp, FloatD.sig)
-    )
-    convS2D.io.in := n
-    convS2D.io.detectTininess := hardfloat.consts.tininess_afterRounding
-    convS2D.io.roundingMode := frm
-    convS2D.io.out
-  }
+  val div_sqrt =
+    for ((float, idx) <- coredef.FLOAT_TYPES.zipWithIndex) yield {
+      val inner = Module(
+        new DivSqrtRecFN_small(
+          float.exp(),
+          float.sig(),
+          0
+        )
+      )
 
-  def half2double(n: UInt) = {
-    val convH2D = Module(
-      new RecFNToRecFN(FloatH.exp, FloatH.sig, FloatD.exp, FloatD.sig)
-    )
-    convH2D.io.in := n
-    convH2D.io.detectTininess := hardfloat.consts.tininess_afterRounding
-    convH2D.io.roundingMode := frm
-    convH2D.io.out
-  }
+      // default wiring
+      inner.io.inValid := false.B
+      inner.io.a := 0.U
+      inner.io.b := 0.U
+      inner.io.detectTininess := hardfloat.consts.tininess_afterRounding
+      inner.io.sqrtOp := false.B
+      inner.io.roundingMode := frm
+      inner.io.flush := io.flush
 
-  def double2single(n: UInt) = {
-    val convD2S = Module(
-      new RecFNToRecFN(FloatD.exp, FloatD.sig, FloatS.exp, FloatS.sig)
-    )
-    convD2S.io.in := n
-    convD2S.io.detectTininess := hardfloat.consts.tininess_afterRounding
-    convD2S.io.roundingMode := frm
-    convD2S.io.out
-  }
-
-  def double2half(n: UInt) = {
-    val convD2H = Module(
-      new RecFNToRecFN(FloatD.exp, FloatD.sig, FloatH.exp, FloatH.sig)
-    )
-    convD2H.io.in := n
-    convD2H.io.detectTininess := hardfloat.consts.tininess_afterRounding
-    convD2H.io.roundingMode := frm
-    convD2H.io.out
-  }
-
-  val floatType = FloatD
-  val div_sqrt = Module(
-    new DivSqrtRecFN_small(
-      floatType.exp(),
-      floatType.sig(),
-      0
-    )
-  )
-  // default wiring
-  div_sqrt.io.inValid := false.B
-  div_sqrt.io.a := 0.U
-  div_sqrt.io.b := 0.U
-  div_sqrt.io.detectTininess := hardfloat.consts.tininess_afterRounding
-  div_sqrt.io.sqrtOp := false.B
-  div_sqrt.io.roundingMode := frm
-  div_sqrt.io.flush := io.flush
+      inner.suggestName(s"DivSqrt_${float.name}")
+      inner
+    }
 
   val currentInstr = Reg(new PipeInstr(regInfo))
-  val rs1valHF = Reg(UInt(floatType.widthHardfloat.W))
-  val rs2valHF = Reg(UInt(floatType.widthHardfloat.W))
-  val resHF = Reg(UInt(floatType.widthHardfloat.W))
+  val rs1valHF =
+    for ((float, idx) <- coredef.FLOAT_TYPES.zipWithIndex) yield {
+      Reg(UInt(float.widthHardfloat.W))
+    }
+  val rs2valHF =
+    for ((float, idx) <- coredef.FLOAT_TYPES.zipWithIndex) yield {
+      Reg(UInt(float.widthHardfloat.W))
+    }
+  val resHF =
+    for ((float, idx) <- coredef.FLOAT_TYPES.zipWithIndex) yield {
+      Reg(UInt(float.widthHardfloat.W))
+    }
   val fflags = Reg(UInt(5.W))
   val sqrtOp = Reg(Bool())
 
@@ -108,57 +79,53 @@ class FloatDivSqrt(implicit val coredef: CoreDef)
   switch(state) {
     is(FloatDivSqrtState.sIdle) {
       io.stall := false.B
-
     }
 
     is(FloatDivSqrtState.sReq) {
-      div_sqrt.io.a := rs1valHF
-      div_sqrt.io.b := rs2valHF
+      for ((float, idx) <- coredef.FLOAT_TYPES.zipWithIndex) {
+        when(float.fmt === currentInstr.instr.instr.fmt) {
+          div_sqrt(idx).io.a := rs1valHF(idx)
+          div_sqrt(idx).io.b := rs2valHF(idx)
 
-      div_sqrt.io.inValid := true.B
-      div_sqrt.io.roundingMode := frm
-      div_sqrt.io.detectTininess := hardfloat.consts.tininess_afterRounding
-      div_sqrt.io.sqrtOp := sqrtOp
+          div_sqrt(idx).io.inValid := true.B
+          div_sqrt(idx).io.roundingMode := frm
+          div_sqrt(
+            idx
+          ).io.detectTininess := hardfloat.consts.tininess_afterRounding
+          div_sqrt(idx).io.sqrtOp := sqrtOp
 
-      when(div_sqrt.io.inReady) {
-        state := FloatDivSqrtState.sResp
+          when(div_sqrt(idx).io.inReady) {
+            state := FloatDivSqrtState.sResp
+          }
+        }
       }
     }
 
     is(FloatDivSqrtState.sResp) {
-      when(div_sqrt.io.outValid_div || div_sqrt.io.outValid_sqrt) {
-        resHF := div_sqrt.io.out
-        fflags := div_sqrt.io.exceptionFlags
-        state := FloatDivSqrtState.sDone
+      for ((float, idx) <- coredef.FLOAT_TYPES.zipWithIndex) {
+        when(float.fmt === currentInstr.instr.instr.fmt) {
+          when(
+            div_sqrt(idx).io.outValid_div || div_sqrt(idx).io.outValid_sqrt
+          ) {
+            resHF(idx) := div_sqrt(idx).io.out
+            fflags := div_sqrt(idx).io.exceptionFlags
+            state := FloatDivSqrtState.sDone
+          }
+        }
       }
     }
 
     is(FloatDivSqrtState.sDone) {
       io.stall := false.B
-      val res = Wire(UInt(coredef.XLEN.W))
+      val res = WireInit(0.U(coredef.XLEN.W))
 
-      when(currentInstr.instr.instr.fmt === FloatS.fmt) {
-        // convert double to single and NaN-box
-        res := FloatS.box(
-          fNFromRecFN(
-            FloatS.exp,
-            FloatS.sig,
-            double2single(resHF)
-          ),
-          coredef.XLEN
-        )
-      }.elsewhen(currentInstr.instr.instr.fmt === FloatH.fmt) {
-        // convert double to half and NaN-box
-        res := FloatH.box(
-          fNFromRecFN(
-            FloatH.exp,
-            FloatH.sig,
-            double2half(resHF)
-          ),
-          coredef.XLEN
-        )
-      }.otherwise {
-        res := fNFromRecFN(floatType.exp, floatType.sig, resHF)
+      for ((float, idx) <- coredef.FLOAT_TYPES.zipWithIndex) {
+        when(float.fmt === currentInstr.instr.instr.fmt) {
+          res := float.box(
+            float.fromHardfloat(resHF(idx)),
+            coredef.XLEN
+          )
+        }
       }
 
       io.retiredInstr.instr.valid := true.B
@@ -173,27 +140,13 @@ class FloatDivSqrt(implicit val coredef: CoreDef)
 
   when(!io.stall && io.next.valid) {
     // convert to hardfloat
-    rs1valHF :=
-      recFNFromFN(floatType.exp, floatType.sig, io.next.rs1val)
-    rs2valHF :=
-      recFNFromFN(floatType.exp, floatType.sig, io.next.rs2val)
-
-    when(io.next.instr.instr.fmt === FloatS.fmt) {
-      // convert single to double
-      rs1valHF := single2double(
-        recFNFromFN(FloatS.exp, FloatS.sig, io.next.rs1val(31, 0))
-      )
-      rs2valHF := single2double(
-        recFNFromFN(FloatS.exp, FloatS.sig, io.next.rs2val(31, 0))
-      )
-    }.elsewhen(io.next.instr.instr.fmt === FloatH.fmt) {
-      // convert half to double
-      rs1valHF := half2double(
-        recFNFromFN(FloatH.exp, FloatH.sig, io.next.rs1val(15, 0))
-      )
-      rs2valHF := half2double(
-        recFNFromFN(FloatH.exp, FloatH.sig, io.next.rs2val(15, 0))
-      )
+    for ((float, idx) <- coredef.FLOAT_TYPES.zipWithIndex) {
+      when(float.fmt === currentInstr.instr.instr.fmt) {
+        rs1valHF(idx) :=
+          recFNFromFN(float.exp, float.sig, io.next.rs1val(float.width - 1, 0))
+        rs2valHF(idx) :=
+          recFNFromFN(float.exp, float.sig, io.next.rs2val(float.width - 1, 0))
+      }
     }
 
     sqrtOp := io.next.instr.instr.funct5 === Decoder.FP_FUNC("FSQRT")
