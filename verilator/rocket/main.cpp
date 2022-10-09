@@ -930,7 +930,8 @@ int main(int argc, char **argv) {
   int opt;
   bool trace = false;
   bool progress = false;
-  while ((opt = getopt(argc, argv, "tpjv")) != -1) {
+  const char *signature_path = "dump.sig";
+  while ((opt = getopt(argc, argv, "tpjvs:")) != -1) {
     switch (opt) {
     case 't':
       trace = true;
@@ -946,8 +947,11 @@ int main(int argc, char **argv) {
       jtag = true;
       jtag_vpi = true;
       break;
+    case 's':
+      signature_path = optarg;
+      break;
     default: /* '?' */
-      fprintf(stderr, "Usage: %s [-t] [-p] [-j] [-v] name\n", argv[0]);
+      fprintf(stderr, "Usage: %s [-t] [-p] [-j] [-v] [-s signature] name\n", argv[0]);
       return 1;
     }
   }
@@ -1108,7 +1112,7 @@ int main(int argc, char **argv) {
     }
     fprintf(stderr, "> Dumping signature(%lx:%lx) to dump.sig\n",
             begin_signature, end_signature);
-    FILE *fp = fopen("dump.sig", "w");
+    FILE *fp = fopen(signature_path, "w");
     for (uint64_t addr = begin_signature; addr < end_signature; addr += 16) {
       uint64_t words = 16 / sizeof(mem_t);
       for (uint64_t i = 0; i < 16; i += sizeof(mem_t)) {
