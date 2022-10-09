@@ -46,7 +46,7 @@ class sail_cSim(pluginTemplate):
         self.suite = suite
         self.work_dir = work_dir
         self.objdump_cmd = 'riscv{1}-unknown-elf-objdump -D {0} > {2};'
-        self.compile_cmd = 'riscv{1}-unknown-elf-gcc -march={0}_zicsr_zifencei \
+        self.compile_cmd = 'riscv{1}-unknown-elf-gcc -march={0} \
          -static -mcmodel=medany -fvisibility=hidden -nostdlib -nostartfiles\
          -T '+self.pluginpath+'/env/link.ld\
          -I '+self.pluginpath+'/env/\
@@ -103,8 +103,14 @@ class sail_cSim(pluginTemplate):
 
             execute = "@cd "+testentry['work_dir']+";"
 
+            # Ensure _zicsr_zifencei
+            isa = testentry['isa'].lower()
+            if 'zicsr' not in isa:
+                isa += '_zicsr'
+            if 'zifencei' not in isa:
+                isa += '_zifencei'
             cmd = self.compile_cmd.format(
-                testentry['isa'].lower(), self.xlen) + ' ' + test + ' -o ' + elf
+                isa, self.xlen) + ' ' + test + ' -o ' + elf
             compile_cmd = cmd + ' -D' + " -D".join(testentry['macros'])
             execute += compile_cmd+";"
 
