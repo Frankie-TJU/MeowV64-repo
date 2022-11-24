@@ -17,3 +17,7 @@ fromhost: .dword 0
   la a1, tohost; \
   sw a0, 0(a1); \
   j 2b;
+
+#define MSTATUS_FS          0x00006000
+#define MSTATUS_VS          0x00000600
+#define MSTATUS_XS          0x00018000

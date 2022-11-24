@@ -32,7 +32,7 @@ hex/%.hex: bin/%.bin Makefile
 
 dump/%.S: bin/%.linked
 	mkdir -p dump
-	$(PREFIX)objdump -M no-aliases -S $^ > $@
+	$(PREFIX)objdump -D -M no-aliases -S $^ > $@
 
 list:
 	@echo "Sources:"
