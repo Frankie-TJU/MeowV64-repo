@@ -27,7 +27,8 @@ case class AddressGenerationConfig(
     maxInflights: Int = 4,
     addrWidth: Int = 64,
     bytesWidth: Int = 5,
-    strideWidth: Int = 5
+    strideWidth: Int = 5,
+    shiftWidth: Int = 2
 ) {
   // power of two
   assert((maxInflights & (maxInflights - 1)) == 0)
@@ -43,6 +44,7 @@ object AddressGeneration {
   // config
   def CONFIG_OPCODE = 31
   def CONFIG_BYTES = 20
+  def CONFIG_INDEXED_SHIFT = 10
   def CONFIG_STRIDE = 0
 }
 
@@ -63,6 +65,7 @@ class AddressGenerationInflight(config: AddressGenerationConfig)
   val op = AddressGenerationOp()
   val bytes = UInt(config.bytesWidth.W)
   val indexedBase = UInt(config.addrWidth.W)
+  val indexedShift = UInt(config.shiftWidth.W)
 
   // progress
   val recv = UInt(config.bytesWidth.W)
@@ -90,6 +93,7 @@ object AddressGenerationInflight {
     res.op := AddressGenerationOp.STRIDED
     res.bytes := 0.U
     res.indexedBase := 0.U
+    res.indexedShift := 0.U
 
     res.recv := 0.U
     res.data := 0.U
@@ -216,6 +220,10 @@ class AddressGenerationModuleImp(outer: AddressGeneration)
         AddressGeneration.CONFIG_STRIDE + config.strideWidth - 1,
         AddressGeneration.CONFIG_STRIDE
       )
+      val currentIndexedShift = currentInst(
+        AddressGeneration.CONFIG_INDEXED_SHIFT + config.shiftWidth - 1,
+        AddressGeneration.CONFIG_INDEXED_SHIFT
+      )
 
       val full = tail +% 1.U === head
       when(currentInst === 0.U) {
@@ -239,6 +247,8 @@ class AddressGenerationModuleImp(outer: AddressGeneration)
           val base = arg1 ## arg2
           val indexedBase = arg3 ## arg4
           inflights(tail).indexedBase := indexedBase
+          inflights(tail).indexedShift := currentIndexedShift
+          inflights(tail).data := 0.U
 
           // progress
           inflights(tail).recv := 0.U
@@ -312,10 +322,15 @@ class AddressGenerationModuleImp(outer: AddressGeneration)
       when(!inflight.gotIndex) {
         inflight.gotIndex := true.B
         inflight.index := master.d.bits.data
+        val index = Wire(UInt(32.W))
+        index := master.d.bits.data >> shift
 
         // first indexed access
+        // indexedShift = 2 -> uint32_t data[]
+        // indexedShift = 3 -> uint64_t data[]
         inflight.req := true.B
-        inflight.reqAddr := inflight.indexedBase + master.d.bits.data(31, 0)
+        inflight.reqAddr := inflight.indexedBase +
+          (index << inflight.indexedShift)
         inflight.reqLgSize := 2.U // 4 bytes
         inflight.recv := 0.U
       }.otherwise {
@@ -330,7 +345,7 @@ class AddressGenerationModuleImp(outer: AddressGeneration)
           inflight.req := true.B
           val index = Wire(UInt(32.W))
           index := inflight.index >> (newRecv << 3.U)
-          inflight.reqAddr := inflight.indexedBase + index
+          inflight.reqAddr := inflight.indexedBase + (index << inflight.indexedShift)
         }
       }
     }

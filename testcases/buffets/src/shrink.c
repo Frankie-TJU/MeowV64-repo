@@ -30,5 +30,5 @@ int main()
     // shrink
     *BUFFETS_SHRINK = 4;
   }
-  return sum == N * (N - 1) / 2;
+  return !(sum == N * (N - 1) / 2);
 }
