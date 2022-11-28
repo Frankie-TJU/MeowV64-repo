@@ -86,10 +86,11 @@ class BuffetsModuleImp(outer: Buffets) extends LazyModuleImp(outer) {
   val enable = WireInit(false.B)
   val write = WireInit(false.B)
   val addr = Wire(UInt(log2Up(words).W))
-  val readData = Reg(Vec(config.beatBytes, UInt(8.W)))
+  val readData = Wire(Vec(config.beatBytes, UInt(8.W)))
   val writeData = Wire(Vec(config.beatBytes, UInt(8.W)))
   val writeMask = Wire(Vec(config.beatBytes, Bool()))
 
+  readData := 0.U.asTypeOf(readData)
   writeData := 0.U.asTypeOf(writeData)
   writeMask := 0.U.asTypeOf(writeMask)
   addr := 0.U
@@ -210,6 +211,7 @@ class BuffetsModuleImp(outer: Buffets) extends LazyModuleImp(outer) {
       state := BuffetsState.sReadDone
     }
     is(BuffetsState.sReadDone) {
+      enable := true.B
       slave.d.valid := true.B
       val headInLine = head(log2Ceil(config.beatBytes) - 1, 0)
       val actualData =

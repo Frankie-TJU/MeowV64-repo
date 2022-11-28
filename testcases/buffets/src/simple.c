@@ -28,5 +28,5 @@ int main()
     uint32_t data = BUFFETS_DATA[i];
     sum += data;
   }
-  return sum == N * (N - 1) / 2;
+  return !(sum == (N * (N - 1) / 2));
 }
