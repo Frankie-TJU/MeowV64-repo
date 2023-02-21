@@ -17,6 +17,8 @@ import meowv64.system.HexaCoreSystemDef
 import meowv64.system.SingleCoreSystemDef
 import freechips.rocketchip.subsystem.MasterPortParams
 import freechips.rocketchip.subsystem.MemoryBusKey
+import _root_.freechips.rocketchip.subsystem.WithDefaultSlavePort
+import freechips.rocketchip.subsystem.WithNExtTopInterrupts
 
 class WithCustomMemPort
     extends Config((site, _, _) => { case CustomExtMem =>
@@ -55,6 +57,8 @@ class MeowV64BaseConfig
     extends Config(
       new WithCustomMemPort ++
         new WithCustomMMIOPort ++
+        new WithDefaultSlavePort ++
+        new WithNExtTopInterrupts(6) ++ // UART(1) + ETH(1+2) + I2C(1) + SPI(1)
         new WithJtagDTM ++
         new WithNoSlavePort ++
         new WithInclusiveCache ++

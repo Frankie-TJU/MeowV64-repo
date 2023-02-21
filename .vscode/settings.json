@@ -257,6 +257,9 @@
 		"util.h": "c",
 		"stdlib.h": "c",
 		"cstdio": "c",
-		"common.h": "c"
+		"common.h": "c",
+		"array": "c",
+		"string": "c",
+		"string_view": "c"
 	}
 }

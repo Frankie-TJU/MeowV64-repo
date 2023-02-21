@@ -34,6 +34,7 @@ class RiscVSystem(implicit val p: Parameters) extends Module {
 
   require(target.mem_axi4.size == 1)
   require(target.mmio_axi4.size == 1)
+  require(target.slave_axi4.size == 1)
 
   val interrupts = IO(Input(UInt(p(NExtTopInterrupts).W)))
   assert(target.mem_axi4.head.params.addrBits == 33)
@@ -50,6 +51,15 @@ class RiscVSystem(implicit val p: Parameters) extends Module {
       32, // force 32 bits addr
       target.mmio_axi4.head.params.dataBits,
       target.mmio_axi4.head.params.idBits
+    )
+  )
+  val slave_axi4 = IO(
+    Flipped(
+      new StandardAXI4Bundle(
+        32, // force 32 bits addr
+        target.slave_axi4.head.params.dataBits,
+        target.slave_axi4.head.params.idBits
+      )
     )
   )
   val jtag = IO(Flipped(new JTAGIO))
@@ -91,7 +101,7 @@ class RiscVSystem(implicit val p: Parameters) extends Module {
   Debug.connectDebugClockAndReset(target.debug, clock)
 
   mem_axi4 <> target.mem_axi4.head.viewAs[StandardAXI4Bundle]
-  // toggle msb
+  // toggle msb and truncate to 32 bits
   // [0x80000000, 0x100000000] -> [0x00000000, 0x800000000]
   // [0x100000000, 0x180000000] -> [0x80000000, 0x100000000]
   val mask = BigInt("80000000", 16).U
@@ -99,6 +109,7 @@ class RiscVSystem(implicit val p: Parameters) extends Module {
   mem_axi4.AWADDR := target.mem_axi4.head.aw.bits.addr ^ mask
 
   mmio_axi4 <> target.mmio_axi4.head.viewAs[StandardAXI4Bundle]
+  slave_axi4 <> target.slave_axi4.head.viewAs[StandardAXI4Bundle]
 
   target.interrupts := interrupts
 
@@ -109,7 +120,8 @@ class RocketTop(implicit p: Parameters)
     extends RocketSubsystem
     with HasAsyncExtInterrupts
     with CanHaveCustomMasterAXI4MemPort
-    with CanHaveCustomMasterAXI4MMIOPort {
+    with CanHaveCustomMasterAXI4MMIOPort
+    with CanHaveSlaveAXI4Port {
   override lazy val module = new RocketTopModule(this)
 
   // from freechips.rocketchip.system.ExampleRocketSystem
@@ -137,6 +149,7 @@ class RocketTopModule(outer: RocketTop)
     with DontTouch {
   lazy val mem_axi4 = outer.mem_axi4
   lazy val mmio_axi4 = outer.mmio_axi4
+  lazy val slave_axi4 = outer.l2_frontend_bus_axi4
 
   // wire custom debug signals
   val customDebugIO = outer.customDebugNexus.in.map(_._1)
