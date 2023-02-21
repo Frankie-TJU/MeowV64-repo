@@ -153,7 +153,7 @@ class MeowV64Tile private (
     new Buffets(
       BuffetsConfig(
         memoryBase = 0x5000000L,
-        memorySize = 0x10000L,
+        memorySize = 0x400L,
         configBase = 0x58000000L,
         beatBytes = 32
       )

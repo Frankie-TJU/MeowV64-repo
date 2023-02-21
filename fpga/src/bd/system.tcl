@@ -250,6 +250,10 @@ proc create_root_design { parentCell } {
 
 
   # Create ports
+  set dummy_port_in_0 [ create_bd_port -dir I -type rst dummy_port_in_0 ]
+  set_property -dict [ list \
+   CONFIG.POLARITY {ACTIVE_HIGH} \
+ ] $dummy_port_in_0
   set jtag_TCK [ create_bd_port -dir I jtag_TCK ]
   set jtag_TDI [ create_bd_port -dir I jtag_TDI ]
   set jtag_TDO [ create_bd_port -dir O jtag_TDO ]
@@ -284,8 +288,11 @@ proc create_root_design { parentCell } {
    CONFIG.ETHERNET_BOARD_INTERFACE {sgmii_lvds} \
    CONFIG.InstantiateBitslice0 {true} \
    CONFIG.MDIO_BOARD_INTERFACE {mdio_mdc} \
+   CONFIG.PHYADDR {0} \
    CONFIG.PHYRST_BOARD_INTERFACE_DUMMY_PORT {dummy_port_in} \
    CONFIG.PHY_TYPE {SGMII} \
+   CONFIG.RXCSUM {Full} \
+   CONFIG.TXCSUM {Full} \
    CONFIG.lvdsclkrate {625} \
    CONFIG.rxlane0_placement {DIFF_PAIR_2} \
    CONFIG.rxnibblebitslice0used {false} \
@@ -347,7 +354,7 @@ proc create_root_design { parentCell } {
    CONFIG.MMCM_CLKOUT1_DIVIDE {24} \
    CONFIG.NUM_OUT_CLKS {2} \
    CONFIG.PRIM_SOURCE {Differential_clock_capable_pin} \
-   CONFIG.RESET_BOARD_INTERFACE {reset} \
+   CONFIG.RESET_BOARD_INTERFACE {Custom} \
    CONFIG.USE_BOARD_FLOW {true} \
  ] $clk_wiz_0
 
@@ -447,6 +454,7 @@ proc create_root_design { parentCell } {
   connect_bd_net -net clk_wiz_0_locked [get_bd_pins clk_wiz_0/locked] [get_bd_pins proc_sys_reset_0/dcm_locked]
   connect_bd_net -net debug_0_pc [get_bd_pins RiscVSystem_0/debug_0_pc] [get_bd_pins system_ila_0/probe0]
   set_property HDL_ATTRIBUTE.DEBUG {true} [get_bd_nets debug_0_pc]
+  connect_bd_net -net dummy_port_in_0_1 [get_bd_ports dummy_port_in_0] [get_bd_pins axi_ethernet_0/dummy_port_in]
   connect_bd_net -net jtag_TCK_0_1 [get_bd_ports jtag_TCK] [get_bd_pins RiscVSystem_0/jtag_TCK]
   connect_bd_net -net jtag_TDI_0_1 [get_bd_ports jtag_TDI] [get_bd_pins RiscVSystem_0/jtag_TDI]
   connect_bd_net -net jtag_TMS_0_1 [get_bd_ports jtag_TMS] [get_bd_pins RiscVSystem_0/jtag_TMS]
@@ -487,6 +495,7 @@ proc create_root_design { parentCell } {
   # Restore current instance
   current_bd_instance $oldCurInst
 
+  validate_bd_design
   save_bd_design
 }
 # End of create_root_design()
@@ -498,6 +507,4 @@ proc create_root_design { parentCell } {
 
 create_root_design ""
 
-
-common::send_gid_msg -ssname BD::TCL -id 2053 -severity "WARNING" "This Tcl script was generated from a block design that has not been validated. It is possible that design <$design_name> may result in errors during validation."
 

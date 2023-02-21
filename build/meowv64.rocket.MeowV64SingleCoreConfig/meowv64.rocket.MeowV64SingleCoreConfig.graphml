@@ -2651,7 +2651,7 @@ Slave Port Beatbytes = 32
 Slave Port MinLatency = 0
 
 Slave Name = buffets
-Slave Address = List(AddressSet(0x5000000, 0xffff))
+Slave Address = List(AddressSet(0x5000000, 0x3ff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -2932,7 +2932,7 @@ Slave Port Beatbytes = 32
 Slave Port MinLatency = 0
 
 Slave Name = buffets
-Slave Address = List(AddressSet(0x5000000, 0xffff))
+Slave Address = List(AddressSet(0x5000000, 0x3ff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -3108,7 +3108,7 @@ Slave Port Beatbytes = 32
 Slave Port MinLatency = 0
 
 Slave Name = buffets
-Slave Address = List(AddressSet(0x5000000, 0xffff))
+Slave Address = List(AddressSet(0x5000000, 0x3ff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -5023,7 +5023,7 @@ Slave Port Beatbytes = 32
 Slave Port MinLatency = 0
 
 Slave Name = buffets
-Slave Address = List(AddressSet(0x5000000, 0xffff))
+Slave Address = List(AddressSet(0x5000000, 0x3ff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -5340,7 +5340,7 @@ Slave Port Beatbytes = 32
 Slave Port MinLatency = 0
 
 Slave Name = buffets
-Slave Address = List(AddressSet(0x5000000, 0xffff))
+Slave Address = List(AddressSet(0x5000000, 0x3ff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
@@ -5529,7 +5529,7 @@ Slave Port Beatbytes = 32
 Slave Port MinLatency = 0
 
 Slave Name = buffets
-Slave Address = List(AddressSet(0x5000000, 0xffff))
+Slave Address = List(AddressSet(0x5000000, 0x3ff))
 supports = acquireT = TransferSizes[0, 0]
 acquireB = TransferSizes[0, 0]
 arithmetic = TransferSizes[0, 0]
