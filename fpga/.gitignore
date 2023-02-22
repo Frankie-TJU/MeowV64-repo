@@ -58,3 +58,5 @@ hw_handoff/*
 !openocd.cfg
 !gdbinit
 !start-gdb.sh
+!reset.tcl
+!program.tcl
