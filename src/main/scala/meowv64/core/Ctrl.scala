@@ -139,6 +139,8 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
     val mcountinhibit = new CSRPort(coredef.XLEN)
     val mideleg = new CSRPort(coredef.XLEN)
     val medeleg = new CSRPort(coredef.XLEN)
+    val pmpcfg0 = new CSRPort(coredef.XLEN)
+    val pmpaddr0 = new CSRPort(coredef.XLEN)
 
     val sstatus = new CSRPort(coredef.XLEN)
     val stvec = new CSRPort(coredef.XLEN)
@@ -155,6 +157,10 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
     val frm = new CSRPort(coredef.XLEN)
     val fcsr = new CSRPort(coredef.XLEN)
 
+    val vstart = new CSRPort(coredef.XLEN)
+    val vxsat = new CSRPort(coredef.XLEN)
+    val vxrm = new CSRPort(coredef.XLEN)
+    val vcsr = new CSRPort(coredef.XLEN)
     val vl = new CSRPort(coredef.XLEN)
     val vtype = new CSRPort(coredef.XLEN)
     val vlenb = new CSRPort(coredef.XLEN)
@@ -302,6 +308,12 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
   csr.medeleg <> CSRPort.fromReg(coredef.XLEN, medeleg)
   csr.mideleg <> CSRPort.fromReg(coredef.XLEN, mideleg)
 
+  // PMP
+  val pmpcfg0 = RegInit(0.U(coredef.XLEN.W))
+  val pmpaddr0 = RegInit(0.U(coredef.XLEN.W))
+  csr.pmpcfg0 <> CSRPort.fromReg(coredef.XLEN, pmpcfg0)
+  csr.pmpaddr0 <> CSRPort.fromReg(coredef.XLEN, pmpaddr0)
+
   // xIE, xIP
   val ipStore = RegInit(IntConf.empty)
   val ie = RegInit(IntConf.empty)
@@ -420,6 +432,21 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
   when(toExec.updateVState.valid) {
     vState := toExec.updateVState.bits
   }
+
+  // vcsr: vxrm + vxsat
+  class VCSR extends Bundle {
+    // from MSB to LSB
+    val vxrm = UInt(2.W)
+    val vxsat = UInt(1.W)
+  }
+
+  val vcsr = RegInit(0.U.asTypeOf(new VCSR))
+  csr.vxrm <> CSRPort.fromReg(2, vcsr.vxrm)
+  csr.vxsat <> CSRPort.fromReg(1, vcsr.vxsat)
+  csr.vcsr <> CSRPort.fromReg(3, vcsr)
+
+  val vstart = RegInit(0.U(coredef.XLEN.W))
+  csr.vstart <> CSRPort.fromReg(coredef.XLEN, vstart)
 
   val dcsr = RegInit(DCSR.init)
   csr.dcsr.rdata := (

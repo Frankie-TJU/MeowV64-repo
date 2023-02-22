@@ -123,6 +123,10 @@ object CSR {
     0x7a5 -> (("tcontrol", false)),
 
     // Vector
+    0x008 -> (("vstart", true)),
+    0x009 -> (("vxsat", true)),
+    0x00a -> (("vxrm", true)),
+    0x00f -> (("vcsr", true)),
     0xc20 -> (("vl", false)),
     0xc21 -> (("vtype", false)),
     0xc22 -> (("vlenb", false)),
@@ -145,6 +149,8 @@ object CSR {
     0x342 -> (("mcause", true)),
     0x343 -> (("mtval", true)),
     0x344 -> (("mip", true)),
+    0x3a0 -> (("pmpcfg0", true)),
+    0x3b0 -> (("pmpaddr0", true)),
     0xb00 -> (("mcycle", true)),
     0xb02 -> (("minstret", true)),
 

@@ -192,6 +192,8 @@ class Core(implicit val coredef: CoreDef) extends Module {
   csr.attach("mcountinhibit").connect(ctrl.csr.mcountinhibit)
   csr.attach("mideleg").connect(ctrl.csr.mideleg)
   csr.attach("medeleg").connect(ctrl.csr.medeleg)
+  csr.attach("pmpcfg0").connect(ctrl.csr.pmpcfg0)
+  csr.attach("pmpaddr0").connect(ctrl.csr.pmpaddr0)
 
   csr.attach("sstatus").connect(ctrl.csr.sstatus)
   csr.attach("stvec").connect(ctrl.csr.stvec)
@@ -205,6 +207,10 @@ class Core(implicit val coredef: CoreDef) extends Module {
   csr.attach("frm").connect(ctrl.csr.frm)
   csr.attach("fcsr").connect(ctrl.csr.fcsr)
 
+  csr.attach("vstart").connect(ctrl.csr.vstart)
+  csr.attach("vxsat").connect(ctrl.csr.vxsat)
+  csr.attach("vxrm").connect(ctrl.csr.vxrm)
+  csr.attach("vscr").connect(ctrl.csr.vscr)
   csr.attach("vl").connect(ctrl.csr.vl)
   csr.attach("vtype").connect(ctrl.csr.vtype)
   csr.attach("vlenb").connect(ctrl.csr.vlenb)
