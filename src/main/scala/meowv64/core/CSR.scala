@@ -159,7 +159,6 @@ object CSR {
 
     // User
     0xc00 -> (("cycle", false)),
-    0xc01 -> (("time", false)),
     0xc02 -> (("instret", false))
   )
 

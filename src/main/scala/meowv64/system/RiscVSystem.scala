@@ -51,7 +51,6 @@ class RiscVSystem(implicit val sDef: SystemDef = new DefaultSystemDef)
   for (idx <- (0 until sDef.CORE_COUNT)) {
     cores(idx).io.int.msip := clint.ints(idx).msip
     cores(idx).io.int.mtip := clint.ints(idx).mtip
-    cores(idx).io.time := clint.time
   }
 
   plic.source := io.eints.asUInt()

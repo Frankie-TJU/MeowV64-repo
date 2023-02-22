@@ -6,6 +6,7 @@ import chisel3.util._
 import meowv64.core._
 import meowv64.exec._
 import meowv64.instr.Decoder
+import meowv64.core.CSR
 
 class CSRExt(implicit val coredef: CoreDef) extends Bundle {
   val rdata = UInt(coredef.XLEN.W)
@@ -147,6 +148,13 @@ class CSR(implicit val coredef: CoreDef)
 
   val fault = WireDefault(false.B)
   val rdata = Wire(UInt(coredef.XLEN.W))
+  val invalidCSR = WireDefault(true.B)
+  for (csrNumber <- CSR.addrMap.keys) {
+    when(addr === csrNumber.U) {
+      invalidCSR := false.B
+    }
+  }
+
   when(isVSETVL) {
     fault := false.B
     rdata := newVState.vl
@@ -154,6 +162,9 @@ class CSR(implicit val coredef: CoreDef)
     fault := true.B
     rdata := DontCare
   }.elsewhen((addr === 0x180.U) && status.tvm) { // SATP trap
+    fault := true.B
+    rdata := DontCare
+  }.elsewhen(invalidCSR) { // unknown CSR
     fault := true.B
     rdata := DontCare
   }.otherwise {
