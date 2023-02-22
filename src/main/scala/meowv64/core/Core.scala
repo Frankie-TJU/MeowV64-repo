@@ -210,7 +210,7 @@ class Core(implicit val coredef: CoreDef) extends Module {
   csr.attach("vstart").connect(ctrl.csr.vstart)
   csr.attach("vxsat").connect(ctrl.csr.vxsat)
   csr.attach("vxrm").connect(ctrl.csr.vxrm)
-  csr.attach("vscr").connect(ctrl.csr.vscr)
+  csr.attach("vcsr").connect(ctrl.csr.vcsr)
   csr.attach("vl").connect(ctrl.csr.vl)
   csr.attach("vtype").connect(ctrl.csr.vtype)
   csr.attach("vlenb").connect(ctrl.csr.vlenb)
