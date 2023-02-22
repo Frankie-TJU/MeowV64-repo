@@ -80,6 +80,7 @@ uint64_t fromhost_addr = 0x60000040;
 // serial
 // default at 0x60001000
 uint64_t serial_addr = 0x60001000;
+uint64_t serial_fpga_addr = 0x60201000;
 
 // signature generation for riscv-torture
 uint64_t begin_signature = 0;
@@ -300,9 +301,12 @@ void step_mmio() {
     top->mmio_axi4_RVALID = 1;
     top->mmio_axi4_RID = pending_read_id;
     mpz_class r_data;
-    if (pending_read_addr == serial_addr + 0x14) {
+    if (pending_read_addr == serial_addr + 0x14 ||
+        pending_read_addr == serial_fpga_addr + 0x14) {
       // serial lsr
-      r_data = 1L << (32 + 5);
+      // THRE | TEMT
+      uint64_t lsr = (1L << 5) | (1L << 6);
+      r_data = lsr << 32;
     } else {
       uint64_t aligned =
           (pending_read_addr / MMIO_AXI_DATA_BYTES) * MMIO_AXI_DATA_BYTES;
@@ -410,7 +414,8 @@ void step_mmio() {
       }
 
       uint64_t input = wdata.get_ui();
-      if (pending_write_addr == serial_addr) {
+      if (pending_write_addr == serial_addr ||
+          pending_write_addr == serial_fpga_addr) {
         // serial
         printf("%c", input & 0xFF);
         fflush(stdout);

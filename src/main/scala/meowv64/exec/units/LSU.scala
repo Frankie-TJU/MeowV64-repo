@@ -176,7 +176,9 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   val vectorWriteReqIndex = RegInit(0.U(log2Ceil(vectorMaxBeats + 1).W))
   val vectorWriteData = Wire(Vec(vectorMaxBeats, UInt(coredef.XLEN.W)))
 
-  def isUncached(addr: UInt) = addr < BigInt("80000000", 16).U
+  // match MeowV64Configs.scala
+  def isUncached(addr: UInt) =
+    addr < BigInt("80000000", 16).U || addr > BigInt("200000000", 16).U
 
   // add pipeline stage because TLB has long comb path
   val stagedInst = Queue(
