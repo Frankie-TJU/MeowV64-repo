@@ -213,6 +213,12 @@ class Core(implicit val coredef: CoreDef) extends Module {
   csr.attach("dpc").connect(ctrl.csr.dpc)
   csr.attach("dscratch0").connect(ctrl.csr.dscratch0)
   csr.attach("dscratch1").connect(ctrl.csr.dscratch1)
+  csr.attach("tselect").connect(ctrl.csr.tselect)
+  csr.readers("tdata1") := 0.U
+  csr.readers("tdata2") := 0.U
+  csr.readers("tdata3") := 0.U
+  csr.readers("tinfo") := 0.U
+  csr.readers("tcontrol") := 0.U
 
   val mscratch = RegInit(0.U(coredef.XLEN.W))
   csr.attach("mscratch").connect(CSRPort.fromReg(coredef.XLEN, mscratch))

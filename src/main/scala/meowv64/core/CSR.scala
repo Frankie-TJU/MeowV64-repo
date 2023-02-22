@@ -115,6 +115,12 @@ object CSR {
     0x7b1 -> (("dpc", true)),
     0x7b2 -> (("dscratch0", true)),
     0x7b3 -> (("dscratch1", true)),
+    0x7a0 -> (("tselect", true)),
+    0x7a1 -> (("tdata1", false)),
+    0x7a2 -> (("tdata2", false)),
+    0x7a3 -> (("tdata3", false)),
+    0x7a4 -> (("tinfo", false)),
+    0x7a5 -> (("tcontrol", false)),
 
     // Vector
     0xc20 -> (("vl", false)),

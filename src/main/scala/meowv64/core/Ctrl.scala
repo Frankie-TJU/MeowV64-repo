@@ -163,6 +163,7 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
     val dpc = new CSRPort(coredef.XLEN)
     val dscratch0 = new CSRPort(coredef.XLEN)
     val dscratch1 = new CSRPort(coredef.XLEN)
+    val tselect = new CSRPort(coredef.XLEN)
   })
 
   val dm = IO(new CoreToDebugModule)
@@ -449,6 +450,13 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
   csr.dpc <> CSRPort.fromReg(coredef.XLEN, dpc)
   csr.dscratch0 <> CSRPort.fromReg(coredef.XLEN, dscratch0)
   csr.dscratch1 <> CSRPort.fromReg(coredef.XLEN, dscratch1)
+  // Writes of values greater than or equal to the number of supported triggers
+  // may result in a different value in this register than what was written.
+  val tselect = RegInit(0.U(1.W))
+  when(csr.tselect.write) {
+    tselect := csr.tselect.wdata(0) ^ 1.U
+  }
+  csr.tselect.rdata := tselect
 
   // Interrupts
   // only low 12 bits are valid

@@ -4,7 +4,7 @@
 .section .text.start, "ax", @progbits
 .globl _start
 _start:
-  csrwi 0x7c1, 0 // disable chicken bits
+  // csrwi 0x7c1, 0 // disable chicken bits
   li sp, DRAM_TOP
   la s0, bootloader
   csrr a0, mhartid
@@ -16,7 +16,7 @@ _start:
 .section .text.hang, "ax", @progbits
 .globl _hang
 _hang:
-  csrwi 0x7c1, 0 // disable chicken bits
+  // csrwi 0x7c1, 0 // disable chicken bits
   csrr a0, mhartid
   la a1, _dtb
   csrwi mie, 0
