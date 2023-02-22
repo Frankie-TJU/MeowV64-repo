@@ -14,7 +14,8 @@ import meowv64.system.SystemDef
 class WithMeowV64Cores(
     systemDef: SystemDef = new SingleCoreSystemDef,
     overrideIdOffset: Option[Int] = None,
-    frequency: BigInt = 1000000000
+    frequency: BigInt = 1000000000,
+    initVec: Option[BigInt] = None
 ) extends Config((site, _, up) => {
       case XLen => 64
       // 100MHz
@@ -37,7 +38,7 @@ class WithMeowV64Cores(
               coredef = CoreDef
                 .default(
                   id = i + idOffset,
-                  initVec = systemDef.INIT_VEC,
+                  initVec = initVec.getOrElse(systemDef.INIT_VEC),
                   cacheLineBytes = systemDef.L2_LINE_BYTES,
                   inRocketSystem = true
                 )

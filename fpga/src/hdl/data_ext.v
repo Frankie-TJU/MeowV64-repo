@@ -1,1 +1,1 @@
-../../../build/meowv64.rocket.MeowV64SingleCoreConfig/data_ext.v
+../../../build/meowv64.rocket.MeowV64FPGAConfig/data_ext.v

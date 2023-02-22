@@ -78,7 +78,7 @@
 		};
 		L11: external-interrupts {
 			interrupt-parent = <&L7>;
-			interrupts = <1 2>;
+			interrupts = <1 2 3 4 5 6>;
 		};
 		L7: interrupt-controller@c000000 {
 			#interrupt-cells = <1>;
@@ -87,8 +87,8 @@
 			interrupts-extended = <&L3 11 &L3 9>;
 			reg = <0x0 0xc000000 0x0 0x4000000>;
 			reg-names = "control";
-			riscv,max-priority = <3>;
-			riscv,ndev = <2>;
+			riscv,max-priority = <7>;
+			riscv,ndev = <6>;
 		};
 		L13: mmio-port-axi4@60000000 {
 			#address-cells = <2>;

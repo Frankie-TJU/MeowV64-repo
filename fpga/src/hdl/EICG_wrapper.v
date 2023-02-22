@@ -1,1 +1,1 @@
-../../../build/meowv64.rocket.MeowV64SingleCoreConfig/EICG_wrapper.v
+../../../build/meowv64.rocket.MeowV64FPGAConfig/EICG_wrapper.v

@@ -1,1 +1,1 @@
-../../../build/meowv64.rocket.MeowV64SingleCoreConfig/plusarg_reader.v
+../../../build/meowv64.rocket.MeowV64FPGAConfig/plusarg_reader.v

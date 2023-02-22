@@ -1,1 +1,1 @@
-../../../build/meowv64.rocket.MeowV64SingleCoreConfig/meowv64.rocket.MeowV64SingleCoreConfig.v
+../../../build/meowv64.rocket.MeowV64FPGAConfig/meowv64.rocket.MeowV64FPGAConfig.v

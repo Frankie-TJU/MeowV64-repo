@@ -1,1 +1,1 @@
-../../../build/meowv64.rocket.MeowV64SingleCoreConfig/icDataArray_ext.v
+../../../build/meowv64.rocket.MeowV64FPGAConfig/icDataArray_ext.v

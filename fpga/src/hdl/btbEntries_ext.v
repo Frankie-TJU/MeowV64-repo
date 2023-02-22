@@ -1,1 +1,1 @@
-../../../build/meowv64.rocket.MeowV64SingleCoreConfig/btbEntries_ext.v
+../../../build/meowv64.rocket.MeowV64FPGAConfig/btbEntries_ext.v

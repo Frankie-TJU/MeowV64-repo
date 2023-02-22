@@ -58,7 +58,6 @@ class MeowV64BaseConfig
       new WithCustomMemPort ++
         new WithCustomMMIOPort ++
         new WithDefaultSlavePort ++
-        new WithNExtTopInterrupts(6) ++ // UART(1) + ETH(1+2) + I2C(1) + SPI(1)
         new WithJtagDTM ++
         new WithNoSlavePort ++
         new WithInclusiveCache ++
@@ -71,6 +70,16 @@ class MeowV64BaseConfig
 class MeowV64SingleCoreConfig
     extends Config(
       new WithMeowV64Cores(new SingleCoreSystemDef) ++
+        new MeowV64BaseConfig
+    )
+
+class MeowV64FPGAConfig
+    extends Config(
+      new WithMeowV64Cores(
+        new SingleCoreSystemDef,
+        initVec = Some(0x10000)
+      ) ++
+        new WithNExtTopInterrupts(6) ++ // UART(1) + ETH(1+2) + I2C(1) + SPI(1)
         new MeowV64BaseConfig
     )
 
