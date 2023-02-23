@@ -1,4 +1,4 @@
-{ pkgs ? import (fetchTarball "https://github.com/NixOS/nixpkgs/archive/0ea7a8f1b939d74e5df8af9a8f7342097cdf69eb.tar.gz") {}
+{ pkgs ? import (fetchTarball "https://github.com/NixOS/nixpkgs/archive/1085ad554ffecf098555c77b0a40f4b14b51f940.tar.gz") {}
 }:
 
 pkgs.pkgsCross.riscv64-embedded.mkShell {
