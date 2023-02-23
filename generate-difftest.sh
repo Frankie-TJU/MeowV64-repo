@@ -8,7 +8,7 @@ mill meowv64.runMain \
 	freechips.rocketchip.system.Generator \
 	-td ${DEST} \
 	-C ${CONFIG} \
-	-T meowv64.rocket.DifftestTop
+	-T meowv64.rocket.SimTop
 mill meowv64.runMain firrtl.stage.FirrtlMain \
 	-td ${DEST} \
 	-i ${DEST}/${CONFIG}.fir \

@@ -119,7 +119,7 @@ class RiscVSystem(implicit val p: Parameters) extends Module {
   target.dontTouchPorts()
 }
 
-class DifftestTop(implicit val p: Parameters) extends Module {
+class SimTop(implicit val p: Parameters) extends Module {
   val io = IO(new Bundle(){
     val logCtrl = new LogCtrlIO
     val perfInfo = new PerfInfoIO
@@ -140,7 +140,7 @@ class DifftestTop(implicit val p: Parameters) extends Module {
     l_target.memAXI4Node,
     256L * 1024 * 1024,
     useBlackBox = true,
-    dynamicLatency = true
+    dynamicLatency = false
   )
   val simAXIMem = Module(l_simAXIMem.module)
   l_simAXIMem.io_axi4 <> target.mem_axi4

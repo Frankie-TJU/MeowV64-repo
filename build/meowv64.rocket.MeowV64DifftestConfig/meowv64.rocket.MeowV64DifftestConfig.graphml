@@ -6,7 +6,7 @@
   <graph id="G" edgedefault="directed">
     <node id="1">
       <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">l_target</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-      <data key="d">RocketTop (DifftestTop.l_target)</data>
+      <data key="d">RocketTop (SimTop.l_target)</data>
       <graph id="1::" edgedefault="directed">
         <node id="1::23">
           <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -112,7 +112,7 @@
         </node>
         <node id="173">
           <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">bootROMDomainWrapper</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-          <data key="d">ClockSinkDomain_1 (DifftestTop.l_target.bootROMDomainWrapper)</data>
+          <data key="d">ClockSinkDomain_1 (SimTop.l_target.bootROMDomainWrapper)</data>
           <graph id="173::" edgedefault="directed">
             <node id="173::0">
               <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -121,7 +121,7 @@
             </node>
             <node id="174">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">bootrom</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-              <data key="d">TLROM (DifftestTop.l_target.bootROMDomainWrapper.bootrom)</data>
+              <data key="d">TLROM (SimTop.l_target.bootROMDomainWrapper.bootrom)</data>
               <graph id="174::" edgedefault="directed">
                 <node id="174::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -170,7 +170,7 @@ hint = TransferSizes[0, 0]
         </node>
         <node id="160">
           <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">intsource_3</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-          <data key="d">IntSyncCrossingSource_8 (DifftestTop.l_target.intsource_3)</data>
+          <data key="d">IntSyncCrossingSource_8 (SimTop.l_target.intsource_3)</data>
           <graph id="160::" edgedefault="directed">
             <node id="160::0">
               <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -182,7 +182,7 @@ alreadyRegistered:false</data>
         </node>
         <node id="155">
           <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">intsink_3</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-          <data key="d">IntSyncSyncCrossingSink_6 (DifftestTop.l_target.intsink_3)</data>
+          <data key="d">IntSyncSyncCrossingSink_6 (SimTop.l_target.intsink_3)</data>
           <graph id="155::" edgedefault="directed">
             <node id="155::0">
               <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -194,7 +194,7 @@ sync:0</data>
         </node>
         <node id="153">
           <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">intsink_2</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-          <data key="d">IntSyncSyncCrossingSink_5 (DifftestTop.l_target.intsink_2)</data>
+          <data key="d">IntSyncSyncCrossingSink_5 (SimTop.l_target.intsink_2)</data>
           <graph id="153::" edgedefault="directed">
             <node id="153::0">
               <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -206,7 +206,7 @@ sync:0</data>
         </node>
         <node id="151">
           <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">intsink_1</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-          <data key="d">IntSyncSyncCrossingSink_4 (DifftestTop.l_target.intsink_1)</data>
+          <data key="d">IntSyncSyncCrossingSink_4 (SimTop.l_target.intsink_1)</data>
           <graph id="151::" edgedefault="directed">
             <node id="151::0">
               <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -218,7 +218,7 @@ sync:0</data>
         </node>
         <node id="148">
           <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">intsource_2</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-          <data key="d">IntSyncCrossingSource_7 (DifftestTop.l_target.intsource_2)</data>
+          <data key="d">IntSyncCrossingSource_7 (SimTop.l_target.intsource_2)</data>
           <graph id="148::" edgedefault="directed">
             <node id="148::0">
               <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -230,7 +230,7 @@ alreadyRegistered:false</data>
         </node>
         <node id="146">
           <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">intsource_1</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-          <data key="d">IntSyncCrossingSource_6 (DifftestTop.l_target.intsource_1)</data>
+          <data key="d">IntSyncCrossingSource_6 (SimTop.l_target.intsource_1)</data>
           <graph id="146::" edgedefault="directed">
             <node id="146::0">
               <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -242,7 +242,7 @@ alreadyRegistered:false</data>
         </node>
         <node id="144">
           <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">intsource</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-          <data key="d">IntSyncCrossingSource_5 (DifftestTop.l_target.intsource)</data>
+          <data key="d">IntSyncCrossingSource_5 (SimTop.l_target.intsource)</data>
           <graph id="144::" edgedefault="directed">
             <node id="144::0">
               <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -254,7 +254,7 @@ alreadyRegistered:false</data>
         </node>
         <node id="134">
           <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">broadcast</y:NodeLabel><y:BorderStyle type="dotted"/></y:ShapeNode></data>
-          <data key="d">BundleBridgeNexus_16 (DifftestTop.l_target.broadcast)</data>
+          <data key="d">BundleBridgeNexus_16 (SimTop.l_target.broadcast)</data>
           <graph id="134::" edgedefault="directed">
             <node id="134::0">
               <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -265,7 +265,7 @@ alreadyRegistered:false</data>
         </node>
         <node id="133">
           <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">tileHartIdNexusNode</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-          <data key="d">BundleBridgeNexus_15 (DifftestTop.l_target.tileHartIdNexusNode)</data>
+          <data key="d">BundleBridgeNexus_15 (SimTop.l_target.tileHartIdNexusNode)</data>
           <graph id="133::" edgedefault="directed">
             <node id="133::0">
               <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -276,7 +276,7 @@ alreadyRegistered:false</data>
         </node>
         <node id="132">
           <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">xbar_2</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-          <data key="d">IntXbar_4 (DifftestTop.l_target.xbar_2)</data>
+          <data key="d">IntXbar_4 (SimTop.l_target.xbar_2)</data>
           <graph id="132::" edgedefault="directed">
             <node id="132::0">
               <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -288,7 +288,7 @@ alreadyRegistered:false</data>
         </node>
         <node id="131">
           <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">xbar_1</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-          <data key="d">IntXbar_3 (DifftestTop.l_target.xbar_1)</data>
+          <data key="d">IntXbar_3 (SimTop.l_target.xbar_1)</data>
           <graph id="131::" edgedefault="directed">
             <node id="131::0">
               <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -300,7 +300,7 @@ alreadyRegistered:false</data>
         </node>
         <node id="130">
           <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">xbar</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-          <data key="d">IntXbar_2 (DifftestTop.l_target.xbar)</data>
+          <data key="d">IntXbar_2 (SimTop.l_target.xbar)</data>
           <graph id="130::" edgedefault="directed">
             <node id="130::0">
               <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -312,15 +312,15 @@ alreadyRegistered:false</data>
         </node>
         <node id="112">
           <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">debug_1</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-          <data key="d">TLDebugModule (DifftestTop.l_target.debug_1)</data>
+          <data key="d">TLDebugModule (SimTop.l_target.debug_1)</data>
           <graph id="112::" edgedefault="directed">
             <node id="122">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">dmInner</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-              <data key="d">TLDebugModuleInnerAsync (DifftestTop.l_target.debug_1.dmInner)</data>
+              <data key="d">TLDebugModuleInnerAsync (SimTop.l_target.debug_1.dmInner)</data>
               <graph id="122::" edgedefault="directed">
                 <node id="125">
                   <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">dmiXing</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-                  <data key="d">TLAsyncCrossingSink (DifftestTop.l_target.debug_1.dmInner.dmiXing)</data>
+                  <data key="d">TLAsyncCrossingSink (SimTop.l_target.debug_1.dmInner.dmiXing)</data>
                   <graph id="125::" edgedefault="directed">
                     <node id="125::0">
                       <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -400,7 +400,7 @@ hint = TransferSizes[0, 0]
                 </node>
                 <node id="123">
                   <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">dmInner</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-                  <data key="d">TLDebugModuleInner (DifftestTop.l_target.debug_1.dmInner.dmInner)</data>
+                  <data key="d">TLDebugModuleInner (SimTop.l_target.debug_1.dmInner.dmInner)</data>
                   <graph id="123::" edgedefault="directed">
                     <node id="123::2">
                       <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -491,7 +491,7 @@ hint = TransferSizes[0, 0]
                     </node>
                     <node id="124">
                       <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">sb2tlOpt</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-                      <data key="d">SBToTL (DifftestTop.l_target.debug_1.dmInner.dmInner.sb2tlOpt)</data>
+                      <data key="d">SBToTL (SimTop.l_target.debug_1.dmInner.dmInner.sb2tlOpt)</data>
                       <graph id="124::" edgedefault="directed">
                         <node id="124::0">
                           <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -633,11 +633,11 @@ hint = TransferSizes[0, 0]
             </node>
             <node id="113">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">dmOuter</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-              <data key="d">TLDebugModuleOuterAsync (DifftestTop.l_target.debug_1.dmOuter)</data>
+              <data key="d">TLDebugModuleOuterAsync (SimTop.l_target.debug_1.dmOuter)</data>
               <graph id="113::" edgedefault="directed">
                 <node id="121">
                   <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">asource</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-                  <data key="d">TLAsyncCrossingSource (DifftestTop.l_target.debug_1.dmOuter.asource)</data>
+                  <data key="d">TLAsyncCrossingSource (SimTop.l_target.debug_1.dmOuter.asource)</data>
                   <graph id="121::" edgedefault="directed">
                     <node id="121::0">
                       <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -717,7 +717,7 @@ hint = TransferSizes[0, 0]
                 </node>
                 <node id="118">
                   <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">dmiBypass</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-                  <data key="d">TLBusBypass (DifftestTop.l_target.debug_1.dmOuter.dmiBypass)</data>
+                  <data key="d">TLBusBypass (SimTop.l_target.debug_1.dmOuter.dmiBypass)</data>
                   <graph id="118::" edgedefault="directed">
                     <node id="118::1">
                       <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="true"/></y:ShapeNode></data>
@@ -731,7 +731,7 @@ hint = TransferSizes[0, 0]
                     </node>
                     <node id="120">
                       <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">error</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-                      <data key="d">TLError_1 (DifftestTop.l_target.debug_1.dmOuter.dmiBypass.error)</data>
+                      <data key="d">TLError_1 (SimTop.l_target.debug_1.dmOuter.dmiBypass.error)</data>
                       <graph id="120::" edgedefault="directed">
                         <node id="120::0">
                           <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -778,7 +778,7 @@ hint = TransferSizes[1, 4]
                     </node>
                     <node id="119">
                       <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">bar</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-                      <data key="d">TLBusBypassBar (DifftestTop.l_target.debug_1.dmOuter.dmiBypass.bar)</data>
+                      <data key="d">TLBusBypassBar (SimTop.l_target.debug_1.dmOuter.dmiBypass.bar)</data>
                       <graph id="119::" edgedefault="directed">
                         <node id="119::0">
                           <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -893,7 +893,7 @@ hint = TransferSizes[0, 0]
                 </node>
                 <node id="117">
                   <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">intsource</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-                  <data key="d">IntSyncCrossingSource_4 (DifftestTop.l_target.debug_1.dmOuter.intsource)</data>
+                  <data key="d">IntSyncCrossingSource_4 (SimTop.l_target.debug_1.dmOuter.intsource)</data>
                   <graph id="117::" edgedefault="directed">
                     <node id="117::0">
                       <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -905,7 +905,7 @@ alreadyRegistered:true</data>
                 </node>
                 <node id="116">
                   <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">dmOuter</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-                  <data key="d">TLDebugModuleOuter (DifftestTop.l_target.debug_1.dmOuter.dmOuter)</data>
+                  <data key="d">TLDebugModuleOuter (SimTop.l_target.debug_1.dmOuter.dmOuter)</data>
                   <graph id="116::" edgedefault="directed">
                     <node id="116::1">
                       <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -958,7 +958,7 @@ hint = TransferSizes[0, 0]
                 </node>
                 <node id="115">
                   <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">dmi2tl</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-                  <data key="d">DMIToTL (DifftestTop.l_target.debug_1.dmOuter.dmi2tl)</data>
+                  <data key="d">DMIToTL (SimTop.l_target.debug_1.dmOuter.dmi2tl)</data>
                   <graph id="115::" edgedefault="directed">
                     <node id="115::0">
                       <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -1018,7 +1018,7 @@ hint = TransferSizes[0, 0]
                 </node>
                 <node id="114">
                   <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">dmiXbar</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-                  <data key="d">TLXbar_10 (DifftestTop.l_target.debug_1.dmOuter.dmiXbar)</data>
+                  <data key="d">TLXbar_10 (SimTop.l_target.debug_1.dmOuter.dmiXbar)</data>
                   <graph id="114::" edgedefault="directed">
                     <node id="114::0">
                       <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -1148,7 +1148,7 @@ hint = TransferSizes[0, 0]
         </node>
         <node id="111">
           <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">debugCustomXbarOpt</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-          <data key="d">DebugCustomXbar (DifftestTop.l_target.debugCustomXbarOpt)</data>
+          <data key="d">DebugCustomXbar (SimTop.l_target.debugCustomXbarOpt)</data>
           <graph id="111::" edgedefault="directed">
             <node id="111::0">
               <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -1159,7 +1159,7 @@ hint = TransferSizes[0, 0]
         </node>
         <node id="108">
           <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">clint</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-          <data key="d">CLINT (DifftestTop.l_target.clint)</data>
+          <data key="d">CLINT (SimTop.l_target.clint)</data>
           <graph id="108::" edgedefault="directed">
             <node id="108::1">
               <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -1212,7 +1212,7 @@ hint = TransferSizes[0, 0]
         </node>
         <node id="104">
           <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">plicDomainWrapper</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-          <data key="d">ClockSinkDomain (DifftestTop.l_target.plicDomainWrapper)</data>
+          <data key="d">ClockSinkDomain (SimTop.l_target.plicDomainWrapper)</data>
           <graph id="104::" edgedefault="directed">
             <node id="104::0">
               <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -1221,7 +1221,7 @@ hint = TransferSizes[0, 0]
             </node>
             <node id="105">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">plic</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-              <data key="d">TLPLIC (DifftestTop.l_target.plicDomainWrapper.plic)</data>
+              <data key="d">TLPLIC (SimTop.l_target.plicDomainWrapper.plic)</data>
               <graph id="105::" edgedefault="directed">
                 <node id="105::1">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -1276,7 +1276,7 @@ hint = TransferSizes[0, 0]
         </node>
         <node id="78">
           <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">tile_prci_domain</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-          <data key="d">TilePRCIDomain (DifftestTop.l_target.tile_prci_domain)</data>
+          <data key="d">TilePRCIDomain (SimTop.l_target.tile_prci_domain)</data>
           <graph id="78::" edgedefault="directed">
             <node id="78::12">
               <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="true"/></y:ShapeNode></data>
@@ -1326,7 +1326,7 @@ hint = TransferSizes[0, 0]
             </node>
             <node id="158">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">tracecore</y:NodeLabel><y:BorderStyle type="dotted"/></y:ShapeNode></data>
-              <data key="d">BundleBridgeNexus_14 (DifftestTop.l_target.tile_prci_domain.tracecore)</data>
+              <data key="d">BundleBridgeNexus_14 (SimTop.l_target.tile_prci_domain.tracecore)</data>
               <graph id="158::" edgedefault="directed">
                 <node id="158::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -1337,7 +1337,7 @@ hint = TransferSizes[0, 0]
             </node>
             <node id="157">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">trace</y:NodeLabel><y:BorderStyle type="dotted"/></y:ShapeNode></data>
-              <data key="d">BundleBridgeNexus_13 (DifftestTop.l_target.tile_prci_domain.trace)</data>
+              <data key="d">BundleBridgeNexus_13 (SimTop.l_target.tile_prci_domain.trace)</data>
               <graph id="157::" edgedefault="directed">
                 <node id="157::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -1348,7 +1348,7 @@ hint = TransferSizes[0, 0]
             </node>
             <node id="156">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">intsource_3</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-              <data key="d">IntSyncCrossingSource_3 (DifftestTop.l_target.tile_prci_domain.intsource_3)</data>
+              <data key="d">IntSyncCrossingSource_3 (SimTop.l_target.tile_prci_domain.intsource_3)</data>
               <graph id="156::" edgedefault="directed">
                 <node id="156::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -1360,7 +1360,7 @@ alreadyRegistered:false</data>
             </node>
             <node id="154">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">intsource_2</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-              <data key="d">IntSyncCrossingSource_2 (DifftestTop.l_target.tile_prci_domain.intsource_2)</data>
+              <data key="d">IntSyncCrossingSource_2 (SimTop.l_target.tile_prci_domain.intsource_2)</data>
               <graph id="154::" edgedefault="directed">
                 <node id="154::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -1372,7 +1372,7 @@ alreadyRegistered:false</data>
             </node>
             <node id="152">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">intsource_1</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-              <data key="d">IntSyncCrossingSource_1 (DifftestTop.l_target.tile_prci_domain.intsource_1)</data>
+              <data key="d">IntSyncCrossingSource_1 (SimTop.l_target.tile_prci_domain.intsource_1)</data>
               <graph id="152::" edgedefault="directed">
                 <node id="152::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -1384,7 +1384,7 @@ alreadyRegistered:false</data>
             </node>
             <node id="147">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">intsink_3</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-              <data key="d">IntSyncSyncCrossingSink_2 (DifftestTop.l_target.tile_prci_domain.intsink_3)</data>
+              <data key="d">IntSyncSyncCrossingSink_2 (SimTop.l_target.tile_prci_domain.intsink_3)</data>
               <graph id="147::" edgedefault="directed">
                 <node id="147::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -1396,7 +1396,7 @@ sync:0</data>
             </node>
             <node id="145">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">intsink_2</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-              <data key="d">IntSyncSyncCrossingSink_1 (DifftestTop.l_target.tile_prci_domain.intsink_2)</data>
+              <data key="d">IntSyncSyncCrossingSink_1 (SimTop.l_target.tile_prci_domain.intsink_2)</data>
               <graph id="145::" edgedefault="directed">
                 <node id="145::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -1408,7 +1408,7 @@ sync:0</data>
             </node>
             <node id="143">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">intsink_1</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-              <data key="d">IntSyncSyncCrossingSink (DifftestTop.l_target.tile_prci_domain.intsink_1)</data>
+              <data key="d">IntSyncSyncCrossingSink (SimTop.l_target.tile_prci_domain.intsink_1)</data>
               <graph id="143::" edgedefault="directed">
                 <node id="143::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -1420,7 +1420,7 @@ sync:0</data>
             </node>
             <node id="142">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">intsink</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-              <data key="d">IntSyncAsyncCrossingSink_1 (DifftestTop.l_target.tile_prci_domain.intsink)</data>
+              <data key="d">IntSyncAsyncCrossingSink_1 (SimTop.l_target.tile_prci_domain.intsink)</data>
               <graph id="142::" edgedefault="directed">
                 <node id="142::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -1432,7 +1432,7 @@ sync:3</data>
             </node>
             <node id="137">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">buffer_1</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-              <data key="d">TLBuffer_15 (DifftestTop.l_target.tile_prci_domain.buffer_1)</data>
+              <data key="d">TLBuffer_15 (SimTop.l_target.tile_prci_domain.buffer_1)</data>
               <graph id="137::" edgedefault="directed">
                 <node id="137::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -1806,7 +1806,7 @@ a:BufferParams:2, b:BufferParams:2, c:BufferParams:2, d:BufferParams:2, e:Buffer
             </node>
             <node id="136">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">buffer</y:NodeLabel><y:BorderStyle type="dotted"/></y:ShapeNode></data>
-              <data key="d">TLBuffer_14 (DifftestTop.l_target.tile_prci_domain.buffer)</data>
+              <data key="d">TLBuffer_14 (SimTop.l_target.tile_prci_domain.buffer)</data>
               <graph id="136::" edgedefault="directed">
                 <node id="136::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="true"/></y:ShapeNode></data>
@@ -1817,7 +1817,7 @@ a:BufferParams:0, b:BufferParams:0, c:BufferParams:0, d:BufferParams:0, e:Buffer
             </node>
             <node id="80">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">clockNode</y:NodeLabel><y:BorderStyle type="dotted"/></y:ShapeNode></data>
-              <data key="d">FixedClockBroadcast_6 (DifftestTop.l_target.tile_prci_domain.clockNode)</data>
+              <data key="d">FixedClockBroadcast_6 (SimTop.l_target.tile_prci_domain.clockNode)</data>
               <graph id="80::" edgedefault="directed">
                 <node id="80::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="true"/></y:ShapeNode></data>
@@ -1828,7 +1828,7 @@ a:BufferParams:0, b:BufferParams:0, c:BufferParams:0, d:BufferParams:0, e:Buffer
             </node>
             <node id="79">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">tile_reset_domain</y:NodeLabel><y:BorderStyle type="dotted"/></y:ShapeNode></data>
-              <data key="d">TileResetDomain (DifftestTop.l_target.tile_prci_domain.tile_reset_domain)</data>
+              <data key="d">TileResetDomain (SimTop.l_target.tile_prci_domain.tile_reset_domain)</data>
               <graph id="79::" edgedefault="directed">
                 <node id="79::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -1837,7 +1837,7 @@ a:BufferParams:0, b:BufferParams:0, c:BufferParams:0, d:BufferParams:0, e:Buffer
                 </node>
                 <node id="81">
                   <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">meowv64_tile</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-                  <data key="d">MeowV64Tile (DifftestTop.l_target.tile_prci_domain.tile_reset_domain.meowv64_tile)</data>
+                  <data key="d">MeowV64Tile (SimTop.l_target.tile_prci_domain.tile_reset_domain.meowv64_tile)</data>
                   <graph id="81::" edgedefault="directed">
                     <node id="81::22">
                       <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -1936,7 +1936,7 @@ a:BufferParams:0, b:BufferParams:0, c:BufferParams:0, d:BufferParams:0, e:Buffer
                     </node>
                     <node id="103">
                       <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">widget_3</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-                      <data key="d">TLWidthWidget_12 (DifftestTop.l_target.tile_prci_domain.tile_reset_domain.meowv64_tile.widget_3)</data>
+                      <data key="d">TLWidthWidget_12 (SimTop.l_target.tile_prci_domain.tile_reset_domain.meowv64_tile.widget_3)</data>
                       <graph id="103::" edgedefault="directed">
                         <node id="103::0">
                           <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -2226,7 +2226,7 @@ hint = TransferSizes[0, 0]
                     </node>
                     <node id="102">
                       <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">buffer_3</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-                      <data key="d">TLBuffer_13 (DifftestTop.l_target.tile_prci_domain.tile_reset_domain.meowv64_tile.buffer_3)</data>
+                      <data key="d">TLBuffer_13 (SimTop.l_target.tile_prci_domain.tile_reset_domain.meowv64_tile.buffer_3)</data>
                       <graph id="102::" edgedefault="directed">
                         <node id="102::0">
                           <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -2516,7 +2516,7 @@ a:BufferParams:2, b:BufferParams:2, c:BufferParams:2, d:BufferParams:2, e:Buffer
                     </node>
                     <node id="101">
                       <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">xbar</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-                      <data key="d">TLXbar_9 (DifftestTop.l_target.tile_prci_domain.tile_reset_domain.meowv64_tile.xbar)</data>
+                      <data key="d">TLXbar_9 (SimTop.l_target.tile_prci_domain.tile_reset_domain.meowv64_tile.xbar)</data>
                       <graph id="101::" edgedefault="directed">
                         <node id="101::0">
                           <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -3135,7 +3135,7 @@ hint = TransferSizes[0, 0]
                     </node>
                     <node id="100">
                       <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">widget_2</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-                      <data key="d">TLWidthWidget_11 (DifftestTop.l_target.tile_prci_domain.tile_reset_domain.meowv64_tile.widget_2)</data>
+                      <data key="d">TLWidthWidget_11 (SimTop.l_target.tile_prci_domain.tile_reset_domain.meowv64_tile.widget_2)</data>
                       <graph id="100::" edgedefault="directed">
                         <node id="100::0">
                           <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -3397,7 +3397,7 @@ hint = TransferSizes[0, 0]
                     </node>
                     <node id="99">
                       <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">buffer_2</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-                      <data key="d">TLBuffer_12 (DifftestTop.l_target.tile_prci_domain.tile_reset_domain.meowv64_tile.buffer_2)</data>
+                      <data key="d">TLBuffer_12 (SimTop.l_target.tile_prci_domain.tile_reset_domain.meowv64_tile.buffer_2)</data>
                       <graph id="99::" edgedefault="directed">
                         <node id="99::0">
                           <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -3659,7 +3659,7 @@ a:BufferParams:2, b:BufferParams:2, c:BufferParams:2, d:BufferParams:2, e:Buffer
                     </node>
                     <node id="98">
                       <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">widget_1</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-                      <data key="d">TLWidthWidget_10 (DifftestTop.l_target.tile_prci_domain.tile_reset_domain.meowv64_tile.widget_1)</data>
+                      <data key="d">TLWidthWidget_10 (SimTop.l_target.tile_prci_domain.tile_reset_domain.meowv64_tile.widget_1)</data>
                       <graph id="98::" edgedefault="directed">
                         <node id="98::0">
                           <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -3921,7 +3921,7 @@ hint = TransferSizes[0, 0]
                     </node>
                     <node id="97">
                       <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">buffer_1</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-                      <data key="d">TLBuffer_11 (DifftestTop.l_target.tile_prci_domain.tile_reset_domain.meowv64_tile.buffer_1)</data>
+                      <data key="d">TLBuffer_11 (SimTop.l_target.tile_prci_domain.tile_reset_domain.meowv64_tile.buffer_1)</data>
                       <graph id="97::" edgedefault="directed">
                         <node id="97::0">
                           <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -4183,7 +4183,7 @@ a:BufferParams:2, b:BufferParams:2, c:BufferParams:2, d:BufferParams:2, e:Buffer
                     </node>
                     <node id="96">
                       <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">widget</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-                      <data key="d">TLWidthWidget_9 (DifftestTop.l_target.tile_prci_domain.tile_reset_domain.meowv64_tile.widget)</data>
+                      <data key="d">TLWidthWidget_9 (SimTop.l_target.tile_prci_domain.tile_reset_domain.meowv64_tile.widget)</data>
                       <graph id="96::" edgedefault="directed">
                         <node id="96::0">
                           <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -4445,7 +4445,7 @@ hint = TransferSizes[0, 0]
                     </node>
                     <node id="95">
                       <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">buffer</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-                      <data key="d">TLBuffer_10 (DifftestTop.l_target.tile_prci_domain.tile_reset_domain.meowv64_tile.buffer)</data>
+                      <data key="d">TLBuffer_10 (SimTop.l_target.tile_prci_domain.tile_reset_domain.meowv64_tile.buffer)</data>
                       <graph id="95::" edgedefault="directed">
                         <node id="95::0">
                           <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -4707,7 +4707,7 @@ a:BufferParams:2, b:BufferParams:2, c:BufferParams:2, d:BufferParams:2, e:Buffer
                     </node>
                     <node id="94">
                       <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">addrGen</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-                      <data key="d">AddressGeneration (DifftestTop.l_target.tile_prci_domain.tile_reset_domain.meowv64_tile.addrGen)</data>
+                      <data key="d">AddressGeneration (SimTop.l_target.tile_prci_domain.tile_reset_domain.meowv64_tile.addrGen)</data>
                       <graph id="94::" edgedefault="directed">
                         <node id="94::1">
                           <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -4939,7 +4939,7 @@ hint = TransferSizes[0, 0]
                     </node>
                     <node id="93">
                       <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">buffets</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-                      <data key="d">Buffets (DifftestTop.l_target.tile_prci_domain.tile_reset_domain.meowv64_tile.buffets)</data>
+                      <data key="d">Buffets (SimTop.l_target.tile_prci_domain.tile_reset_domain.meowv64_tile.buffets)</data>
                       <graph id="93::" edgedefault="directed">
                         <node id="93::1">
                           <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -5055,7 +5055,7 @@ hint = TransferSizes[0, 0]
                     </node>
                     <node id="92">
                       <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">adapter</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-                      <data key="d">MeowV64TileLinkAdapter (DifftestTop.l_target.tile_prci_domain.tile_reset_domain.meowv64_tile.adapter)</data>
+                      <data key="d">MeowV64TileLinkAdapter (SimTop.l_target.tile_prci_domain.tile_reset_domain.meowv64_tile.adapter)</data>
                       <graph id="92::" edgedefault="directed">
                         <node id="92::3">
                           <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -5628,7 +5628,7 @@ hint = TransferSizes[0, 0]
                     </node>
                     <node id="91">
                       <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">broadcast_4</y:NodeLabel><y:BorderStyle type="dotted"/></y:ShapeNode></data>
-                      <data key="d">BundleBridgeNexus_12 (DifftestTop.l_target.tile_prci_domain.tile_reset_domain.meowv64_tile.broadcast_4)</data>
+                      <data key="d">BundleBridgeNexus_12 (SimTop.l_target.tile_prci_domain.tile_reset_domain.meowv64_tile.broadcast_4)</data>
                       <graph id="91::" edgedefault="directed">
                         <node id="91::0">
                           <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -5639,7 +5639,7 @@ hint = TransferSizes[0, 0]
                     </node>
                     <node id="90">
                       <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">nexus_1</y:NodeLabel><y:BorderStyle type="dotted"/></y:ShapeNode></data>
-                      <data key="d">BundleBridgeNexus_11 (DifftestTop.l_target.tile_prci_domain.tile_reset_domain.meowv64_tile.nexus_1)</data>
+                      <data key="d">BundleBridgeNexus_11 (SimTop.l_target.tile_prci_domain.tile_reset_domain.meowv64_tile.nexus_1)</data>
                       <graph id="90::" edgedefault="directed">
                         <node id="90::0">
                           <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -5650,7 +5650,7 @@ hint = TransferSizes[0, 0]
                     </node>
                     <node id="89">
                       <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">broadcast_3</y:NodeLabel><y:BorderStyle type="dotted"/></y:ShapeNode></data>
-                      <data key="d">BundleBridgeNexus_10 (DifftestTop.l_target.tile_prci_domain.tile_reset_domain.meowv64_tile.broadcast_3)</data>
+                      <data key="d">BundleBridgeNexus_10 (SimTop.l_target.tile_prci_domain.tile_reset_domain.meowv64_tile.broadcast_3)</data>
                       <graph id="89::" edgedefault="directed">
                         <node id="89::0">
                           <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -5661,7 +5661,7 @@ hint = TransferSizes[0, 0]
                     </node>
                     <node id="87">
                       <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">broadcast_2</y:NodeLabel><y:BorderStyle type="dotted"/></y:ShapeNode></data>
-                      <data key="d">BundleBridgeNexus_8 (DifftestTop.l_target.tile_prci_domain.tile_reset_domain.meowv64_tile.broadcast_2)</data>
+                      <data key="d">BundleBridgeNexus_8 (SimTop.l_target.tile_prci_domain.tile_reset_domain.meowv64_tile.broadcast_2)</data>
                       <graph id="87::" edgedefault="directed">
                         <node id="87::0">
                           <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -5672,7 +5672,7 @@ hint = TransferSizes[0, 0]
                     </node>
                     <node id="86">
                       <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">broadcast_1</y:NodeLabel><y:BorderStyle type="dotted"/></y:ShapeNode></data>
-                      <data key="d">BundleBridgeNexus_7 (DifftestTop.l_target.tile_prci_domain.tile_reset_domain.meowv64_tile.broadcast_1)</data>
+                      <data key="d">BundleBridgeNexus_7 (SimTop.l_target.tile_prci_domain.tile_reset_domain.meowv64_tile.broadcast_1)</data>
                       <graph id="86::" edgedefault="directed">
                         <node id="86::0">
                           <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -5683,7 +5683,7 @@ hint = TransferSizes[0, 0]
                     </node>
                     <node id="85">
                       <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">broadcast</y:NodeLabel><y:BorderStyle type="dotted"/></y:ShapeNode></data>
-                      <data key="d">BundleBridgeNexus_6 (DifftestTop.l_target.tile_prci_domain.tile_reset_domain.meowv64_tile.broadcast)</data>
+                      <data key="d">BundleBridgeNexus_6 (SimTop.l_target.tile_prci_domain.tile_reset_domain.meowv64_tile.broadcast)</data>
                       <graph id="85::" edgedefault="directed">
                         <node id="85::0">
                           <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -5694,7 +5694,7 @@ hint = TransferSizes[0, 0]
                     </node>
                     <node id="84">
                       <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">intXbar</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-                      <data key="d">IntXbar_1 (DifftestTop.l_target.tile_prci_domain.tile_reset_domain.meowv64_tile.intXbar)</data>
+                      <data key="d">IntXbar_1 (SimTop.l_target.tile_prci_domain.tile_reset_domain.meowv64_tile.intXbar)</data>
                       <graph id="84::" edgedefault="directed">
                         <node id="84::0">
                           <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -5706,7 +5706,7 @@ hint = TransferSizes[0, 0]
                     </node>
                     <node id="82">
                       <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">tlMasterXbar</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-                      <data key="d">TLXbar_7 (DifftestTop.l_target.tile_prci_domain.tile_reset_domain.meowv64_tile.tlMasterXbar)</data>
+                      <data key="d">TLXbar_7 (SimTop.l_target.tile_prci_domain.tile_reset_domain.meowv64_tile.tlMasterXbar)</data>
                       <graph id="82::" edgedefault="directed">
                         <node id="82::0">
                           <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -6416,7 +6416,7 @@ hint = TransferSizes[0, 0]
         </node>
         <node id="49">
           <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">subsystem_l2_wrapper</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-          <data key="d">CoherenceManagerWrapper (DifftestTop.l_target.subsystem_l2_wrapper)</data>
+          <data key="d">CoherenceManagerWrapper (SimTop.l_target.subsystem_l2_wrapper)</data>
           <graph id="49::" edgedefault="directed">
             <node id="49::0">
               <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -6425,7 +6425,7 @@ hint = TransferSizes[0, 0]
             </node>
             <node id="75">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">coupler_to_bus_named_subsystem_mbus</y:NodeLabel><y:BorderStyle type="dotted"/></y:ShapeNode></data>
-              <data key="d">TLInterconnectCoupler_14 (DifftestTop.l_target.subsystem_l2_wrapper.coupler_to_bus_named_subsystem_mbus)</data>
+              <data key="d">TLInterconnectCoupler_14 (SimTop.l_target.subsystem_l2_wrapper.coupler_to_bus_named_subsystem_mbus)</data>
               <graph id="75::" edgedefault="directed">
                 <node id="75::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="true"/></y:ShapeNode></data>
@@ -6434,7 +6434,7 @@ hint = TransferSizes[0, 0]
                 </node>
                 <node id="77">
                   <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">widget</y:NodeLabel><y:BorderStyle type="dotted"/></y:ShapeNode></data>
-                  <data key="d">TLWidthWidget_8 (DifftestTop.l_target.subsystem_l2_wrapper.coupler_to_bus_named_subsystem_mbus.widget)</data>
+                  <data key="d">TLWidthWidget_8 (SimTop.l_target.subsystem_l2_wrapper.coupler_to_bus_named_subsystem_mbus.widget)</data>
                   <graph id="77::" edgedefault="directed">
                     <node id="77::0">
                       <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="true"/></y:ShapeNode></data>
@@ -6447,7 +6447,7 @@ hint = TransferSizes[0, 0]
             </node>
             <node id="63">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">binder</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-              <data key="d">BankBinder (DifftestTop.l_target.subsystem_l2_wrapper.binder)</data>
+              <data key="d">BankBinder (SimTop.l_target.subsystem_l2_wrapper.binder)</data>
               <graph id="63::" edgedefault="directed">
                 <node id="63::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -6527,7 +6527,7 @@ hint = TransferSizes[0, 0]
             </node>
             <node id="62">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">coherent_jbar</y:NodeLabel><y:BorderStyle type="dotted"/></y:ShapeNode></data>
-              <data key="d">TLJbar (DifftestTop.l_target.subsystem_l2_wrapper.coherent_jbar)</data>
+              <data key="d">TLJbar (SimTop.l_target.subsystem_l2_wrapper.coherent_jbar)</data>
               <graph id="62::" edgedefault="directed">
                 <node id="62::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="true"/></y:ShapeNode></data>
@@ -6538,7 +6538,7 @@ hint = TransferSizes[0, 0]
             </node>
             <node id="58">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">cork</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-              <data key="d">TLCacheCork (DifftestTop.l_target.subsystem_l2_wrapper.cork)</data>
+              <data key="d">TLCacheCork (SimTop.l_target.subsystem_l2_wrapper.cork)</data>
               <graph id="58::" edgedefault="directed">
                 <node id="58::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -6618,7 +6618,7 @@ hint = TransferSizes[0, 0]
             </node>
             <node id="57">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">InclusiveCache_outer_TLBuffer</y:NodeLabel><y:BorderStyle type="dotted"/></y:ShapeNode></data>
-              <data key="d">TLBuffer_9 (DifftestTop.l_target.subsystem_l2_wrapper.InclusiveCache_outer_TLBuffer)</data>
+              <data key="d">TLBuffer_9 (SimTop.l_target.subsystem_l2_wrapper.InclusiveCache_outer_TLBuffer)</data>
               <graph id="57::" edgedefault="directed">
                 <node id="57::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="true"/></y:ShapeNode></data>
@@ -6629,7 +6629,7 @@ a:BufferParams:0, b:BufferParams:0, c:BufferParams:0, d:BufferParams:0, e:Buffer
             </node>
             <node id="56">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">InclusiveCache_inner_TLBuffer</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-              <data key="d">TLBuffer_8 (DifftestTop.l_target.subsystem_l2_wrapper.InclusiveCache_inner_TLBuffer)</data>
+              <data key="d">TLBuffer_8 (SimTop.l_target.subsystem_l2_wrapper.InclusiveCache_inner_TLBuffer)</data>
               <graph id="56::" edgedefault="directed">
                 <node id="56::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -6793,7 +6793,7 @@ a:BufferParams:1F, b:BufferParams:0, c:BufferParams:0, d:BufferParams:1F, e:Buff
             </node>
             <node id="55">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">filter</y:NodeLabel><y:BorderStyle type="dotted"/></y:ShapeNode></data>
-              <data key="d">TLFilter (DifftestTop.l_target.subsystem_l2_wrapper.filter)</data>
+              <data key="d">TLFilter (SimTop.l_target.subsystem_l2_wrapper.filter)</data>
               <graph id="55::" edgedefault="directed">
                 <node id="55::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="true"/></y:ShapeNode></data>
@@ -6804,7 +6804,7 @@ a:BufferParams:1F, b:BufferParams:0, c:BufferParams:0, d:BufferParams:1F, e:Buff
             </node>
             <node id="54">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">l2</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-              <data key="d">InclusiveCache (DifftestTop.l_target.subsystem_l2_wrapper.l2)</data>
+              <data key="d">InclusiveCache (SimTop.l_target.subsystem_l2_wrapper.l2)</data>
               <graph id="54::" edgedefault="directed">
                 <node id="54::1">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -6967,7 +6967,7 @@ hint = TransferSizes[1, 32]
             </node>
             <node id="52">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">fixedClockNode</y:NodeLabel><y:BorderStyle type="dotted"/></y:ShapeNode></data>
-              <data key="d">FixedClockBroadcast_5 (DifftestTop.l_target.subsystem_l2_wrapper.fixedClockNode)</data>
+              <data key="d">FixedClockBroadcast_5 (SimTop.l_target.subsystem_l2_wrapper.fixedClockNode)</data>
               <graph id="52::" edgedefault="directed">
                 <node id="52::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="true"/></y:ShapeNode></data>
@@ -6978,7 +6978,7 @@ hint = TransferSizes[1, 32]
             </node>
             <node id="51">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">clockGroup</y:NodeLabel><y:BorderStyle type="dotted"/></y:ShapeNode></data>
-              <data key="d">ClockGroup_5 (DifftestTop.l_target.subsystem_l2_wrapper.clockGroup)</data>
+              <data key="d">ClockGroup_5 (SimTop.l_target.subsystem_l2_wrapper.clockGroup)</data>
               <graph id="51::" edgedefault="directed">
                 <node id="51::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="true"/></y:ShapeNode></data>
@@ -6989,7 +6989,7 @@ hint = TransferSizes[1, 32]
             </node>
             <node id="50">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">subsystem_l2_clock_groups</y:NodeLabel><y:BorderStyle type="dotted"/></y:ShapeNode></data>
-              <data key="d">ClockGroupAggregator_5 (DifftestTop.l_target.subsystem_l2_wrapper.subsystem_l2_clock_groups)</data>
+              <data key="d">ClockGroupAggregator_5 (SimTop.l_target.subsystem_l2_wrapper.subsystem_l2_clock_groups)</data>
               <graph id="50::" edgedefault="directed">
                 <node id="50::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -7002,7 +7002,7 @@ hint = TransferSizes[1, 32]
         </node>
         <node id="41">
           <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">subsystem_mbus</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-          <data key="d">MemoryBus (DifftestTop.l_target.subsystem_mbus)</data>
+          <data key="d">MemoryBus (SimTop.l_target.subsystem_mbus)</data>
           <graph id="41::" edgedefault="directed">
             <node id="41::1">
               <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="true"/></y:ShapeNode></data>
@@ -7016,7 +7016,7 @@ hint = TransferSizes[1, 32]
             </node>
             <node id="161">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">coupler_to_memory_controller_port_named_axi4</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-              <data key="d">TLInterconnectCoupler_13 (DifftestTop.l_target.subsystem_mbus.coupler_to_memory_controller_port_named_axi4)</data>
+              <data key="d">TLInterconnectCoupler_13 (SimTop.l_target.subsystem_mbus.coupler_to_memory_controller_port_named_axi4)</data>
               <graph id="161::" edgedefault="directed">
                 <node id="161::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="true"/></y:ShapeNode></data>
@@ -7025,7 +7025,7 @@ hint = TransferSizes[1, 32]
                 </node>
                 <node id="165">
                   <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">widget</y:NodeLabel><y:BorderStyle type="dotted"/></y:ShapeNode></data>
-                  <data key="d">TLWidthWidget_7 (DifftestTop.l_target.subsystem_mbus.coupler_to_memory_controller_port_named_axi4.widget)</data>
+                  <data key="d">TLWidthWidget_7 (SimTop.l_target.subsystem_mbus.coupler_to_memory_controller_port_named_axi4.widget)</data>
                   <graph id="165::" edgedefault="directed">
                     <node id="165::0">
                       <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="true"/></y:ShapeNode></data>
@@ -7036,7 +7036,7 @@ hint = TransferSizes[1, 32]
                 </node>
                 <node id="164">
                   <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">tl2axi4</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-                  <data key="d">TLToAXI4_1 (DifftestTop.l_target.subsystem_mbus.coupler_to_memory_controller_port_named_axi4.tl2axi4)</data>
+                  <data key="d">TLToAXI4_1 (SimTop.l_target.subsystem_mbus.coupler_to_memory_controller_port_named_axi4.tl2axi4)</data>
                   <graph id="164::" edgedefault="directed">
                     <node id="164::0">
                       <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -7047,7 +7047,7 @@ hint = TransferSizes[1, 32]
                 </node>
                 <node id="163">
                   <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">axi4index</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-                  <data key="d">AXI4IdIndexer_1 (DifftestTop.l_target.subsystem_mbus.coupler_to_memory_controller_port_named_axi4.axi4index)</data>
+                  <data key="d">AXI4IdIndexer_1 (SimTop.l_target.subsystem_mbus.coupler_to_memory_controller_port_named_axi4.axi4index)</data>
                   <graph id="163::" edgedefault="directed">
                     <node id="163::0">
                       <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -7058,7 +7058,7 @@ hint = TransferSizes[1, 32]
                 </node>
                 <node id="162">
                   <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">axi4yank</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-                  <data key="d">AXI4UserYanker_1 (DifftestTop.l_target.subsystem_mbus.coupler_to_memory_controller_port_named_axi4.axi4yank)</data>
+                  <data key="d">AXI4UserYanker_1 (SimTop.l_target.subsystem_mbus.coupler_to_memory_controller_port_named_axi4.axi4yank)</data>
                   <graph id="162::" edgedefault="directed">
                     <node id="162::0">
                       <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -7071,7 +7071,7 @@ hint = TransferSizes[1, 32]
             </node>
             <node id="76">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">buffer</y:NodeLabel><y:BorderStyle type="dotted"/></y:ShapeNode></data>
-              <data key="d">TLBuffer_7 (DifftestTop.l_target.subsystem_mbus.buffer)</data>
+              <data key="d">TLBuffer_7 (SimTop.l_target.subsystem_mbus.buffer)</data>
               <graph id="76::" edgedefault="directed">
                 <node id="76::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="true"/></y:ShapeNode></data>
@@ -7082,7 +7082,7 @@ a:BufferParams:0, b:BufferParams:0, c:BufferParams:0, d:BufferParams:0, e:Buffer
             </node>
             <node id="48">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">picker</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-              <data key="d">ProbePicker (DifftestTop.l_target.subsystem_mbus.picker)</data>
+              <data key="d">ProbePicker (SimTop.l_target.subsystem_mbus.picker)</data>
               <graph id="48::" edgedefault="directed">
                 <node id="48::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -7162,7 +7162,7 @@ hint = TransferSizes[0, 0]
             </node>
             <node id="47">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">fixer</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-              <data key="d">TLFIFOFixer_3 (DifftestTop.l_target.subsystem_mbus.fixer)</data>
+              <data key="d">TLFIFOFixer_3 (SimTop.l_target.subsystem_mbus.fixer)</data>
               <graph id="47::" edgedefault="directed">
                 <node id="47::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -7242,7 +7242,7 @@ hint = TransferSizes[0, 0]
             </node>
             <node id="46">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">subsystem_mbus_xbar</y:NodeLabel><y:BorderStyle type="dotted"/></y:ShapeNode></data>
-              <data key="d">TLXbar_6 (DifftestTop.l_target.subsystem_mbus.subsystem_mbus_xbar)</data>
+              <data key="d">TLXbar_6 (SimTop.l_target.subsystem_mbus.subsystem_mbus_xbar)</data>
               <graph id="46::" edgedefault="directed">
                 <node id="46::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="true"/></y:ShapeNode></data>
@@ -7253,7 +7253,7 @@ hint = TransferSizes[0, 0]
             </node>
             <node id="44">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">fixedClockNode</y:NodeLabel><y:BorderStyle type="dotted"/></y:ShapeNode></data>
-              <data key="d">FixedClockBroadcast_4 (DifftestTop.l_target.subsystem_mbus.fixedClockNode)</data>
+              <data key="d">FixedClockBroadcast_4 (SimTop.l_target.subsystem_mbus.fixedClockNode)</data>
               <graph id="44::" edgedefault="directed">
                 <node id="44::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="true"/></y:ShapeNode></data>
@@ -7264,7 +7264,7 @@ hint = TransferSizes[0, 0]
             </node>
             <node id="43">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">clockGroup</y:NodeLabel><y:BorderStyle type="dotted"/></y:ShapeNode></data>
-              <data key="d">ClockGroup_4 (DifftestTop.l_target.subsystem_mbus.clockGroup)</data>
+              <data key="d">ClockGroup_4 (SimTop.l_target.subsystem_mbus.clockGroup)</data>
               <graph id="43::" edgedefault="directed">
                 <node id="43::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="true"/></y:ShapeNode></data>
@@ -7275,7 +7275,7 @@ hint = TransferSizes[0, 0]
             </node>
             <node id="42">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">subsystem_mbus_clock_groups</y:NodeLabel><y:BorderStyle type="dotted"/></y:ShapeNode></data>
-              <data key="d">ClockGroupAggregator_4 (DifftestTop.l_target.subsystem_mbus.subsystem_mbus_clock_groups)</data>
+              <data key="d">ClockGroupAggregator_4 (SimTop.l_target.subsystem_mbus.subsystem_mbus_clock_groups)</data>
               <graph id="42::" edgedefault="directed">
                 <node id="42::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="true"/></y:ShapeNode></data>
@@ -7288,7 +7288,7 @@ hint = TransferSizes[0, 0]
         </node>
         <node id="28">
           <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">subsystem_cbus</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-          <data key="d">PeripheryBus_1 (DifftestTop.l_target.subsystem_cbus)</data>
+          <data key="d">PeripheryBus_1 (SimTop.l_target.subsystem_cbus)</data>
           <graph id="28::" edgedefault="directed">
             <node id="28::1">
               <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="true"/></y:ShapeNode></data>
@@ -7302,7 +7302,7 @@ hint = TransferSizes[0, 0]
             </node>
             <node id="175">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">coupler_to_bootrom</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-              <data key="d">TLInterconnectCoupler_12 (DifftestTop.l_target.subsystem_cbus.coupler_to_bootrom)</data>
+              <data key="d">TLInterconnectCoupler_12 (SimTop.l_target.subsystem_cbus.coupler_to_bootrom)</data>
               <graph id="175::" edgedefault="directed">
                 <node id="175::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="true"/></y:ShapeNode></data>
@@ -7311,7 +7311,7 @@ hint = TransferSizes[0, 0]
                 </node>
                 <node id="176">
                   <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">fragmenter</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-                  <data key="d">TLFragmenter_4 (DifftestTop.l_target.subsystem_cbus.coupler_to_bootrom.fragmenter)</data>
+                  <data key="d">TLFragmenter_4 (SimTop.l_target.subsystem_cbus.coupler_to_bootrom.fragmenter)</data>
                   <graph id="176::" edgedefault="directed">
                     <node id="176::0">
                       <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -7463,7 +7463,7 @@ hint = TransferSizes[0, 0]
             </node>
             <node id="126">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">coupler_to_debug</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-              <data key="d">TLInterconnectCoupler_10 (DifftestTop.l_target.subsystem_cbus.coupler_to_debug)</data>
+              <data key="d">TLInterconnectCoupler_10 (SimTop.l_target.subsystem_cbus.coupler_to_debug)</data>
               <graph id="126::" edgedefault="directed">
                 <node id="126::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="true"/></y:ShapeNode></data>
@@ -7472,7 +7472,7 @@ hint = TransferSizes[0, 0]
                 </node>
                 <node id="127">
                   <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">fragmenter</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-                  <data key="d">TLFragmenter_3 (DifftestTop.l_target.subsystem_cbus.coupler_to_debug.fragmenter)</data>
+                  <data key="d">TLFragmenter_3 (SimTop.l_target.subsystem_cbus.coupler_to_debug.fragmenter)</data>
                   <graph id="127::" edgedefault="directed">
                     <node id="127::0">
                       <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -7624,7 +7624,7 @@ hint = TransferSizes[0, 0]
             </node>
             <node id="109">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">coupler_to_clint</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-              <data key="d">TLInterconnectCoupler_9 (DifftestTop.l_target.subsystem_cbus.coupler_to_clint)</data>
+              <data key="d">TLInterconnectCoupler_9 (SimTop.l_target.subsystem_cbus.coupler_to_clint)</data>
               <graph id="109::" edgedefault="directed">
                 <node id="109::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="true"/></y:ShapeNode></data>
@@ -7633,7 +7633,7 @@ hint = TransferSizes[0, 0]
                 </node>
                 <node id="110">
                   <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">fragmenter</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-                  <data key="d">TLFragmenter_2 (DifftestTop.l_target.subsystem_cbus.coupler_to_clint.fragmenter)</data>
+                  <data key="d">TLFragmenter_2 (SimTop.l_target.subsystem_cbus.coupler_to_clint.fragmenter)</data>
                   <graph id="110::" edgedefault="directed">
                     <node id="110::0">
                       <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -7785,7 +7785,7 @@ hint = TransferSizes[0, 0]
             </node>
             <node id="106">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">coupler_to_plic</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-              <data key="d">TLInterconnectCoupler_8 (DifftestTop.l_target.subsystem_cbus.coupler_to_plic)</data>
+              <data key="d">TLInterconnectCoupler_8 (SimTop.l_target.subsystem_cbus.coupler_to_plic)</data>
               <graph id="106::" edgedefault="directed">
                 <node id="106::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="true"/></y:ShapeNode></data>
@@ -7794,7 +7794,7 @@ hint = TransferSizes[0, 0]
                 </node>
                 <node id="107">
                   <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">fragmenter</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-                  <data key="d">TLFragmenter_1 (DifftestTop.l_target.subsystem_cbus.coupler_to_plic.fragmenter)</data>
+                  <data key="d">TLFragmenter_1 (SimTop.l_target.subsystem_cbus.coupler_to_plic.fragmenter)</data>
                   <graph id="107::" edgedefault="directed">
                     <node id="107::0">
                       <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -7946,7 +7946,7 @@ hint = TransferSizes[0, 0]
             </node>
             <node id="65">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">buffer_1</y:NodeLabel><y:BorderStyle type="dotted"/></y:ShapeNode></data>
-              <data key="d">TLBuffer_6 (DifftestTop.l_target.subsystem_cbus.buffer_1)</data>
+              <data key="d">TLBuffer_6 (SimTop.l_target.subsystem_cbus.buffer_1)</data>
               <graph id="65::" edgedefault="directed">
                 <node id="65::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="true"/></y:ShapeNode></data>
@@ -7957,7 +7957,7 @@ a:BufferParams:0, b:BufferParams:0, c:BufferParams:0, d:BufferParams:0, e:Buffer
             </node>
             <node id="59">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">coupler_to_l2_ctrl</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-              <data key="d">TLInterconnectCoupler_6 (DifftestTop.l_target.subsystem_cbus.coupler_to_l2_ctrl)</data>
+              <data key="d">TLInterconnectCoupler_6 (SimTop.l_target.subsystem_cbus.coupler_to_l2_ctrl)</data>
               <graph id="59::" edgedefault="directed">
                 <node id="59::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="true"/></y:ShapeNode></data>
@@ -7966,7 +7966,7 @@ a:BufferParams:0, b:BufferParams:0, c:BufferParams:0, d:BufferParams:0, e:Buffer
                 </node>
                 <node id="61">
                   <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">fragmenter</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-                  <data key="d">TLFragmenter (DifftestTop.l_target.subsystem_cbus.coupler_to_l2_ctrl.fragmenter)</data>
+                  <data key="d">TLFragmenter (SimTop.l_target.subsystem_cbus.coupler_to_l2_ctrl.fragmenter)</data>
                   <graph id="61::" edgedefault="directed">
                     <node id="61::0">
                       <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -8116,7 +8116,7 @@ hint = TransferSizes[0, 0]
                 </node>
                 <node id="60">
                   <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">buffer</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-                  <data key="d">TLBuffer_5 (DifftestTop.l_target.subsystem_cbus.coupler_to_l2_ctrl.buffer)</data>
+                  <data key="d">TLBuffer_5 (SimTop.l_target.subsystem_cbus.coupler_to_l2_ctrl.buffer)</data>
                   <graph id="60::" edgedefault="directed">
                     <node id="60::0">
                       <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -8198,11 +8198,11 @@ a:BufferParams:1, b:BufferParams:1, c:BufferParams:1, d:BufferParams:1, e:Buffer
             </node>
             <node id="38">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">wrapped_error_device</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-              <data key="d">ErrorDeviceWrapper (DifftestTop.l_target.subsystem_cbus.wrapped_error_device)</data>
+              <data key="d">ErrorDeviceWrapper (SimTop.l_target.subsystem_cbus.wrapped_error_device)</data>
               <graph id="38::" edgedefault="directed">
                 <node id="40">
                   <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">buffer</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-                  <data key="d">TLBuffer_4 (DifftestTop.l_target.subsystem_cbus.wrapped_error_device.buffer)</data>
+                  <data key="d">TLBuffer_4 (SimTop.l_target.subsystem_cbus.wrapped_error_device.buffer)</data>
                   <graph id="40::" edgedefault="directed">
                     <node id="40::0">
                       <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -8422,7 +8422,7 @@ a:BufferParams:2, b:BufferParams:2, c:BufferParams:2, d:BufferParams:2, e:Buffer
                 </node>
                 <node id="39">
                   <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">error</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-                  <data key="d">TLError (DifftestTop.l_target.subsystem_cbus.wrapped_error_device.error)</data>
+                  <data key="d">TLError (SimTop.l_target.subsystem_cbus.wrapped_error_device.error)</data>
                   <graph id="39::" edgedefault="directed">
                     <node id="39::0">
                       <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -8541,7 +8541,7 @@ hint = TransferSizes[1, 4096]
             </node>
             <node id="37">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">atomics</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-              <data key="d">TLAtomicAutomata_1 (DifftestTop.l_target.subsystem_cbus.atomics)</data>
+              <data key="d">TLAtomicAutomata_1 (SimTop.l_target.subsystem_cbus.atomics)</data>
               <graph id="37::" edgedefault="directed">
                 <node id="37::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -8891,7 +8891,7 @@ hint = TransferSizes[0, 0]
             </node>
             <node id="36">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">buffer</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-              <data key="d">TLBuffer_3 (DifftestTop.l_target.subsystem_cbus.buffer)</data>
+              <data key="d">TLBuffer_3 (SimTop.l_target.subsystem_cbus.buffer)</data>
               <graph id="36::" edgedefault="directed">
                 <node id="36::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -9241,7 +9241,7 @@ a:BufferParams:2, b:BufferParams:2, c:BufferParams:2, d:BufferParams:2, e:Buffer
             </node>
             <node id="35">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">out_xbar</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-              <data key="d">TLXbar_5 (DifftestTop.l_target.subsystem_cbus.out_xbar)</data>
+              <data key="d">TLXbar_5 (SimTop.l_target.subsystem_cbus.out_xbar)</data>
               <graph id="35::" edgedefault="directed">
                 <node id="35::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -10041,7 +10041,7 @@ hint = TransferSizes[0, 0]
             </node>
             <node id="34">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">in_xbar</y:NodeLabel><y:BorderStyle type="dotted"/></y:ShapeNode></data>
-              <data key="d">TLXbar_4 (DifftestTop.l_target.subsystem_cbus.in_xbar)</data>
+              <data key="d">TLXbar_4 (SimTop.l_target.subsystem_cbus.in_xbar)</data>
               <graph id="34::" edgedefault="directed">
                 <node id="34::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="true"/></y:ShapeNode></data>
@@ -10052,7 +10052,7 @@ hint = TransferSizes[0, 0]
             </node>
             <node id="33">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">fixer</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-              <data key="d">TLFIFOFixer_2 (DifftestTop.l_target.subsystem_cbus.fixer)</data>
+              <data key="d">TLFIFOFixer_2 (SimTop.l_target.subsystem_cbus.fixer)</data>
               <graph id="33::" edgedefault="directed">
                 <node id="33::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -10402,7 +10402,7 @@ hint = TransferSizes[0, 0]
             </node>
             <node id="31">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">fixedClockNode</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-              <data key="d">FixedClockBroadcast_3 (DifftestTop.l_target.subsystem_cbus.fixedClockNode)</data>
+              <data key="d">FixedClockBroadcast_3 (SimTop.l_target.subsystem_cbus.fixedClockNode)</data>
               <graph id="31::" edgedefault="directed">
                 <node id="31::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -10413,7 +10413,7 @@ hint = TransferSizes[0, 0]
             </node>
             <node id="30">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">clockGroup</y:NodeLabel><y:BorderStyle type="dotted"/></y:ShapeNode></data>
-              <data key="d">ClockGroup_3 (DifftestTop.l_target.subsystem_cbus.clockGroup)</data>
+              <data key="d">ClockGroup_3 (SimTop.l_target.subsystem_cbus.clockGroup)</data>
               <graph id="30::" edgedefault="directed">
                 <node id="30::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="true"/></y:ShapeNode></data>
@@ -10424,7 +10424,7 @@ hint = TransferSizes[0, 0]
             </node>
             <node id="29">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">subsystem_cbus_clock_groups</y:NodeLabel><y:BorderStyle type="dotted"/></y:ShapeNode></data>
-              <data key="d">ClockGroupAggregator_3 (DifftestTop.l_target.subsystem_cbus.subsystem_cbus_clock_groups)</data>
+              <data key="d">ClockGroupAggregator_3 (SimTop.l_target.subsystem_cbus.subsystem_cbus_clock_groups)</data>
               <graph id="29::" edgedefault="directed">
                 <node id="29::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -10437,7 +10437,7 @@ hint = TransferSizes[0, 0]
         </node>
         <node id="22">
           <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">subsystem_fbus</y:NodeLabel><y:BorderStyle type="dotted"/></y:ShapeNode></data>
-          <data key="d">FrontBus (DifftestTop.l_target.subsystem_fbus)</data>
+          <data key="d">FrontBus (SimTop.l_target.subsystem_fbus)</data>
           <graph id="22::" edgedefault="directed">
             <node id="22::1">
               <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="true"/></y:ShapeNode></data>
@@ -10451,7 +10451,7 @@ hint = TransferSizes[0, 0]
             </node>
             <node id="128">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">coupler_from_debug_sb</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-              <data key="d">TLInterconnectCoupler_5 (DifftestTop.l_target.subsystem_fbus.coupler_from_debug_sb)</data>
+              <data key="d">TLInterconnectCoupler_5 (SimTop.l_target.subsystem_fbus.coupler_from_debug_sb)</data>
               <graph id="128::" edgedefault="directed">
                 <node id="128::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="true"/></y:ShapeNode></data>
@@ -10460,7 +10460,7 @@ hint = TransferSizes[0, 0]
                 </node>
                 <node id="129">
                   <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">widget</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-                  <data key="d">TLWidthWidget_4 (DifftestTop.l_target.subsystem_fbus.coupler_from_debug_sb.widget)</data>
+                  <data key="d">TLWidthWidget_4 (SimTop.l_target.subsystem_fbus.coupler_from_debug_sb.widget)</data>
                   <graph id="129::" edgedefault="directed">
                     <node id="129::0">
                       <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -10724,7 +10724,7 @@ hint = TransferSizes[0, 0]
             </node>
             <node id="72">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">buffer</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-              <data key="d">TLBuffer_2 (DifftestTop.l_target.subsystem_fbus.buffer)</data>
+              <data key="d">TLBuffer_2 (SimTop.l_target.subsystem_fbus.buffer)</data>
               <graph id="72::" edgedefault="directed">
                 <node id="72::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -10986,7 +10986,7 @@ a:BufferParams:2, b:BufferParams:2, c:BufferParams:2, d:BufferParams:2, e:Buffer
             </node>
             <node id="27">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">subsystem_fbus_xbar</y:NodeLabel><y:BorderStyle type="dotted"/></y:ShapeNode></data>
-              <data key="d">TLXbar_3 (DifftestTop.l_target.subsystem_fbus.subsystem_fbus_xbar)</data>
+              <data key="d">TLXbar_3 (SimTop.l_target.subsystem_fbus.subsystem_fbus_xbar)</data>
               <graph id="27::" edgedefault="directed">
                 <node id="27::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="true"/></y:ShapeNode></data>
@@ -10997,7 +10997,7 @@ a:BufferParams:2, b:BufferParams:2, c:BufferParams:2, d:BufferParams:2, e:Buffer
             </node>
             <node id="25">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">fixedClockNode</y:NodeLabel><y:BorderStyle type="dotted"/></y:ShapeNode></data>
-              <data key="d">FixedClockBroadcast_2 (DifftestTop.l_target.subsystem_fbus.fixedClockNode)</data>
+              <data key="d">FixedClockBroadcast_2 (SimTop.l_target.subsystem_fbus.fixedClockNode)</data>
               <graph id="25::" edgedefault="directed">
                 <node id="25::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="true"/></y:ShapeNode></data>
@@ -11008,7 +11008,7 @@ a:BufferParams:2, b:BufferParams:2, c:BufferParams:2, d:BufferParams:2, e:Buffer
             </node>
             <node id="24">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">clockGroup</y:NodeLabel><y:BorderStyle type="dotted"/></y:ShapeNode></data>
-              <data key="d">ClockGroup_2 (DifftestTop.l_target.subsystem_fbus.clockGroup)</data>
+              <data key="d">ClockGroup_2 (SimTop.l_target.subsystem_fbus.clockGroup)</data>
               <graph id="24::" edgedefault="directed">
                 <node id="24::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="true"/></y:ShapeNode></data>
@@ -11019,7 +11019,7 @@ a:BufferParams:2, b:BufferParams:2, c:BufferParams:2, d:BufferParams:2, e:Buffer
             </node>
             <node id="23">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">subsystem_fbus_clock_groups</y:NodeLabel><y:BorderStyle type="dotted"/></y:ShapeNode></data>
-              <data key="d">ClockGroupAggregator_2 (DifftestTop.l_target.subsystem_fbus.subsystem_fbus_clock_groups)</data>
+              <data key="d">ClockGroupAggregator_2 (SimTop.l_target.subsystem_fbus.subsystem_fbus_clock_groups)</data>
               <graph id="23::" edgedefault="directed">
                 <node id="23::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="true"/></y:ShapeNode></data>
@@ -11032,7 +11032,7 @@ a:BufferParams:2, b:BufferParams:2, c:BufferParams:2, d:BufferParams:2, e:Buffer
         </node>
         <node id="12">
           <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">subsystem_pbus</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-          <data key="d">PeripheryBus (DifftestTop.l_target.subsystem_pbus)</data>
+          <data key="d">PeripheryBus (SimTop.l_target.subsystem_pbus)</data>
           <graph id="12::" edgedefault="directed">
             <node id="12::0">
               <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -11041,7 +11041,7 @@ a:BufferParams:2, b:BufferParams:2, c:BufferParams:2, d:BufferParams:2, e:Buffer
             </node>
             <node id="15">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">fixedClockNode</y:NodeLabel><y:BorderStyle type="dotted"/></y:ShapeNode></data>
-              <data key="d">FixedClockBroadcast_1 (DifftestTop.l_target.subsystem_pbus.fixedClockNode)</data>
+              <data key="d">FixedClockBroadcast_1 (SimTop.l_target.subsystem_pbus.fixedClockNode)</data>
               <graph id="15::" edgedefault="directed">
                 <node id="15::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="true"/></y:ShapeNode></data>
@@ -11052,7 +11052,7 @@ a:BufferParams:2, b:BufferParams:2, c:BufferParams:2, d:BufferParams:2, e:Buffer
             </node>
             <node id="14">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">clockGroup</y:NodeLabel><y:BorderStyle type="dotted"/></y:ShapeNode></data>
-              <data key="d">ClockGroup_1 (DifftestTop.l_target.subsystem_pbus.clockGroup)</data>
+              <data key="d">ClockGroup_1 (SimTop.l_target.subsystem_pbus.clockGroup)</data>
               <graph id="14::" edgedefault="directed">
                 <node id="14::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="true"/></y:ShapeNode></data>
@@ -11063,7 +11063,7 @@ a:BufferParams:2, b:BufferParams:2, c:BufferParams:2, d:BufferParams:2, e:Buffer
             </node>
             <node id="13">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">subsystem_pbus_clock_groups</y:NodeLabel><y:BorderStyle type="dotted"/></y:ShapeNode></data>
-              <data key="d">ClockGroupAggregator_1 (DifftestTop.l_target.subsystem_pbus.subsystem_pbus_clock_groups)</data>
+              <data key="d">ClockGroupAggregator_1 (SimTop.l_target.subsystem_pbus.subsystem_pbus_clock_groups)</data>
               <graph id="13::" edgedefault="directed">
                 <node id="13::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="true"/></y:ShapeNode></data>
@@ -11076,7 +11076,7 @@ a:BufferParams:2, b:BufferParams:2, c:BufferParams:2, d:BufferParams:2, e:Buffer
         </node>
         <node id="5">
           <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">subsystem_sbus</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-          <data key="d">SystemBus (DifftestTop.l_target.subsystem_sbus)</data>
+          <data key="d">SystemBus (SimTop.l_target.subsystem_sbus)</data>
           <graph id="5::" edgedefault="directed">
             <node id="5::0">
               <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -11085,7 +11085,7 @@ a:BufferParams:2, b:BufferParams:2, c:BufferParams:2, d:BufferParams:2, e:Buffer
             </node>
             <node id="166">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">coupler_to_port_named_mmio_port_axi4</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-              <data key="d">TLInterconnectCoupler_4 (DifftestTop.l_target.subsystem_sbus.coupler_to_port_named_mmio_port_axi4)</data>
+              <data key="d">TLInterconnectCoupler_4 (SimTop.l_target.subsystem_sbus.coupler_to_port_named_mmio_port_axi4)</data>
               <graph id="166::" edgedefault="directed">
                 <node id="166::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="true"/></y:ShapeNode></data>
@@ -11094,7 +11094,7 @@ a:BufferParams:2, b:BufferParams:2, c:BufferParams:2, d:BufferParams:2, e:Buffer
                 </node>
                 <node id="172">
                   <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">widget</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-                  <data key="d">TLWidthWidget_3 (DifftestTop.l_target.subsystem_sbus.coupler_to_port_named_mmio_port_axi4.widget)</data>
+                  <data key="d">TLWidthWidget_3 (SimTop.l_target.subsystem_sbus.coupler_to_port_named_mmio_port_axi4.widget)</data>
                   <graph id="172::" edgedefault="directed">
                     <node id="172::0">
                       <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -11314,7 +11314,7 @@ hint = TransferSizes[0, 0]
                 </node>
                 <node id="171">
                   <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">tl2axi4</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-                  <data key="d">TLToAXI4 (DifftestTop.l_target.subsystem_sbus.coupler_to_port_named_mmio_port_axi4.tl2axi4)</data>
+                  <data key="d">TLToAXI4 (SimTop.l_target.subsystem_sbus.coupler_to_port_named_mmio_port_axi4.tl2axi4)</data>
                   <graph id="171::" edgedefault="directed">
                     <node id="171::0">
                       <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -11325,7 +11325,7 @@ hint = TransferSizes[0, 0]
                 </node>
                 <node id="170">
                   <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">axi4index</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-                  <data key="d">AXI4IdIndexer (DifftestTop.l_target.subsystem_sbus.coupler_to_port_named_mmio_port_axi4.axi4index)</data>
+                  <data key="d">AXI4IdIndexer (SimTop.l_target.subsystem_sbus.coupler_to_port_named_mmio_port_axi4.axi4index)</data>
                   <graph id="170::" edgedefault="directed">
                     <node id="170::0">
                       <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -11336,7 +11336,7 @@ hint = TransferSizes[0, 0]
                 </node>
                 <node id="169">
                   <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">axi4deint</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-                  <data key="d">AXI4Deinterleaver (DifftestTop.l_target.subsystem_sbus.coupler_to_port_named_mmio_port_axi4.axi4deint)</data>
+                  <data key="d">AXI4Deinterleaver (SimTop.l_target.subsystem_sbus.coupler_to_port_named_mmio_port_axi4.axi4deint)</data>
                   <graph id="169::" edgedefault="directed">
                     <node id="169::0">
                       <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -11347,7 +11347,7 @@ hint = TransferSizes[0, 0]
                 </node>
                 <node id="168">
                   <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">axi4yank</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-                  <data key="d">AXI4UserYanker (DifftestTop.l_target.subsystem_sbus.coupler_to_port_named_mmio_port_axi4.axi4yank)</data>
+                  <data key="d">AXI4UserYanker (SimTop.l_target.subsystem_sbus.coupler_to_port_named_mmio_port_axi4.axi4yank)</data>
                   <graph id="168::" edgedefault="directed">
                     <node id="168::0">
                       <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -11358,7 +11358,7 @@ hint = TransferSizes[0, 0]
                 </node>
                 <node id="167">
                   <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">axi4buf</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-                  <data key="d">AXI4Buffer (DifftestTop.l_target.subsystem_sbus.coupler_to_port_named_mmio_port_axi4.axi4buf)</data>
+                  <data key="d">AXI4Buffer (SimTop.l_target.subsystem_sbus.coupler_to_port_named_mmio_port_axi4.axi4buf)</data>
                   <graph id="167::" edgedefault="directed">
                     <node id="167::0">
                       <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -11371,7 +11371,7 @@ hint = TransferSizes[0, 0]
             </node>
             <node id="135">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">coupler_from_meowv64_tile</y:NodeLabel><y:BorderStyle type="dotted"/></y:ShapeNode></data>
-              <data key="d">TLInterconnectCoupler_3 (DifftestTop.l_target.subsystem_sbus.coupler_from_meowv64_tile)</data>
+              <data key="d">TLInterconnectCoupler_3 (SimTop.l_target.subsystem_sbus.coupler_from_meowv64_tile)</data>
               <graph id="135::" edgedefault="directed">
                 <node id="135::3">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="true"/></y:ShapeNode></data>
@@ -11392,11 +11392,11 @@ hint = TransferSizes[0, 0]
             </node>
             <node id="73">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">coupler_to_bus_named_subsystem_l2</y:NodeLabel><y:BorderStyle type="dotted"/></y:ShapeNode></data>
-              <data key="d">TLInterconnectCoupler_2 (DifftestTop.l_target.subsystem_sbus.coupler_to_bus_named_subsystem_l2)</data>
+              <data key="d">TLInterconnectCoupler_2 (SimTop.l_target.subsystem_sbus.coupler_to_bus_named_subsystem_l2)</data>
               <graph id="73::" edgedefault="directed">
                 <node id="74">
                   <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">widget</y:NodeLabel><y:BorderStyle type="dotted"/></y:ShapeNode></data>
-                  <data key="d">TLWidthWidget_2 (DifftestTop.l_target.subsystem_sbus.coupler_to_bus_named_subsystem_l2.widget)</data>
+                  <data key="d">TLWidthWidget_2 (SimTop.l_target.subsystem_sbus.coupler_to_bus_named_subsystem_l2.widget)</data>
                   <graph id="74::" edgedefault="directed">
                     <node id="74::0">
                       <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="true"/></y:ShapeNode></data>
@@ -11409,7 +11409,7 @@ hint = TransferSizes[0, 0]
             </node>
             <node id="70">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">coupler_from_bus_named_subsystem_fbus</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-              <data key="d">TLInterconnectCoupler_1 (DifftestTop.l_target.subsystem_sbus.coupler_from_bus_named_subsystem_fbus)</data>
+              <data key="d">TLInterconnectCoupler_1 (SimTop.l_target.subsystem_sbus.coupler_from_bus_named_subsystem_fbus)</data>
               <graph id="70::" edgedefault="directed">
                 <node id="70::1">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="true"/></y:ShapeNode></data>
@@ -11418,7 +11418,7 @@ hint = TransferSizes[0, 0]
                 </node>
                 <node id="71">
                   <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">widget</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-                  <data key="d">TLWidthWidget_1 (DifftestTop.l_target.subsystem_sbus.coupler_from_bus_named_subsystem_fbus.widget)</data>
+                  <data key="d">TLWidthWidget_1 (SimTop.l_target.subsystem_sbus.coupler_from_bus_named_subsystem_fbus.widget)</data>
                   <graph id="71::" edgedefault="directed">
                     <node id="71::0">
                       <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -11682,7 +11682,7 @@ hint = TransferSizes[0, 0]
             </node>
             <node id="64">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">coupler_to_bus_named_subsystem_cbus</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-              <data key="d">TLInterconnectCoupler (DifftestTop.l_target.subsystem_sbus.coupler_to_bus_named_subsystem_cbus)</data>
+              <data key="d">TLInterconnectCoupler (SimTop.l_target.subsystem_sbus.coupler_to_bus_named_subsystem_cbus)</data>
               <graph id="64::" edgedefault="directed">
                 <node id="64::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="true"/></y:ShapeNode></data>
@@ -11691,7 +11691,7 @@ hint = TransferSizes[0, 0]
                 </node>
                 <node id="66">
                   <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">widget</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-                  <data key="d">TLWidthWidget (DifftestTop.l_target.subsystem_sbus.coupler_to_bus_named_subsystem_cbus.widget)</data>
+                  <data key="d">TLWidthWidget (SimTop.l_target.subsystem_sbus.coupler_to_bus_named_subsystem_cbus.widget)</data>
                   <graph id="66::" edgedefault="directed">
                     <node id="66::0">
                       <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -12043,7 +12043,7 @@ hint = TransferSizes[0, 0]
             </node>
             <node id="11">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">fixer</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-              <data key="d">TLFIFOFixer (DifftestTop.l_target.subsystem_sbus.fixer)</data>
+              <data key="d">TLFIFOFixer (SimTop.l_target.subsystem_sbus.fixer)</data>
               <graph id="11::" edgedefault="directed">
                 <node id="11::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -12665,7 +12665,7 @@ hint = TransferSizes[0, 0]
             </node>
             <node id="10">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">system_bus_xbar</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-              <data key="d">TLXbar (DifftestTop.l_target.subsystem_sbus.system_bus_xbar)</data>
+              <data key="d">TLXbar (SimTop.l_target.subsystem_sbus.system_bus_xbar)</data>
               <graph id="10::" edgedefault="directed">
                 <node id="10::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -13357,7 +13357,7 @@ hint = TransferSizes[0, 0]
             </node>
             <node id="8">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">fixedClockNode</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-              <data key="d">FixedClockBroadcast (DifftestTop.l_target.subsystem_sbus.fixedClockNode)</data>
+              <data key="d">FixedClockBroadcast (SimTop.l_target.subsystem_sbus.fixedClockNode)</data>
               <graph id="8::" edgedefault="directed">
                 <node id="8::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -13368,7 +13368,7 @@ hint = TransferSizes[0, 0]
             </node>
             <node id="7">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">clockGroup</y:NodeLabel><y:BorderStyle type="dotted"/></y:ShapeNode></data>
-              <data key="d">ClockGroup (DifftestTop.l_target.subsystem_sbus.clockGroup)</data>
+              <data key="d">ClockGroup (SimTop.l_target.subsystem_sbus.clockGroup)</data>
               <graph id="7::" edgedefault="directed">
                 <node id="7::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="true"/></y:ShapeNode></data>
@@ -13379,7 +13379,7 @@ hint = TransferSizes[0, 0]
             </node>
             <node id="6">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">subsystem_sbus_clock_groups</y:NodeLabel><y:BorderStyle type="dotted"/></y:ShapeNode></data>
-              <data key="d">ClockGroupAggregator (DifftestTop.l_target.subsystem_sbus.subsystem_sbus_clock_groups)</data>
+              <data key="d">ClockGroupAggregator (SimTop.l_target.subsystem_sbus.subsystem_sbus_clock_groups)</data>
               <graph id="6::" edgedefault="directed">
                 <node id="6::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -13392,7 +13392,7 @@ hint = TransferSizes[0, 0]
         </node>
         <node id="4">
           <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">dummyClockGroupSourceNode</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-          <data key="d">SimpleClockGroupSource (DifftestTop.l_target.dummyClockGroupSourceNode)</data>
+          <data key="d">SimpleClockGroupSource (SimTop.l_target.dummyClockGroupSourceNode)</data>
           <graph id="4::" edgedefault="directed">
             <node id="4::0">
               <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -13403,7 +13403,7 @@ hint = TransferSizes[0, 0]
         </node>
         <node id="2">
           <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">ibus</y:NodeLabel><y:BorderStyle type="dotted"/></y:ShapeNode></data>
-          <data key="d">InterruptBusWrapper (DifftestTop.l_target.ibus)</data>
+          <data key="d">InterruptBusWrapper (SimTop.l_target.ibus)</data>
           <graph id="2::" edgedefault="directed">
             <node id="2::1">
               <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="true"/></y:ShapeNode></data>
@@ -13418,7 +13418,7 @@ hint = TransferSizes[0, 0]
             </node>
             <node id="159">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">intsink</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-              <data key="d">IntSyncAsyncCrossingSink (DifftestTop.l_target.ibus.intsink)</data>
+              <data key="d">IntSyncAsyncCrossingSink (SimTop.l_target.ibus.intsink)</data>
               <graph id="159::" edgedefault="directed">
                 <node id="159::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
@@ -13430,7 +13430,7 @@ sync:3</data>
             </node>
             <node id="3">
               <data key="n"><y:ShapeNode><y:NodeLabel modelName="sides" modelPosition="w" rotationAngle="270.0">int_bus</y:NodeLabel><y:BorderStyle type="line"/></y:ShapeNode></data>
-              <data key="d">IntXbar (DifftestTop.l_target.ibus.int_bus)</data>
+              <data key="d">IntXbar (SimTop.l_target.ibus.int_bus)</data>
               <graph id="3::" edgedefault="directed">
                 <node id="3::0">
                   <data key="n"><y:ShapeNode><y:Shape type="ellipse"/><y:Fill color="#FFCC00" transparent="false"/></y:ShapeNode></data>
