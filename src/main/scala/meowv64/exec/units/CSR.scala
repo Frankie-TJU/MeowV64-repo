@@ -148,12 +148,10 @@ class CSR(implicit val coredef: CoreDef)
 
   val fault = WireDefault(false.B)
   val rdata = Wire(UInt(coredef.XLEN.W))
-  val invalidCSR = WireDefault(true.B)
-  for (csrNumber <- CSR.addrMap.keys) {
-    when(addr === csrNumber.U) {
-      invalidCSR := false.B
-    }
-  }
+  val validCSR = Wire(Bool())
+  validCSR := CSR.addrMap.keys
+    .map(csrNumber => addr === csrNumber.U)
+    .reduce(_ || _)
 
   when(isVSETVL) {
     fault := false.B
@@ -164,7 +162,7 @@ class CSR(implicit val coredef: CoreDef)
   }.elsewhen((addr === 0x180.U) && status.tvm) { // SATP trap
     fault := true.B
     rdata := DontCare
-  }.elsewhen(invalidCSR) { // unknown CSR
+  }.elsewhen(!validCSR) { // unknown CSR
     fault := true.B
     rdata := DontCare
   }.otherwise {
