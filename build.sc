@@ -115,6 +115,18 @@ object inclusiveCache extends CommonScalaModule {
     super.moduleDeps ++ Seq(rocketChip)
 }
 
+object difftest extends CommonScalaModule {
+  override def millSourcePath =
+    os.pwd / "submodules" / "difftest"
+
+  override def scalacPluginIvyDeps = super.scalacPluginIvyDeps() ++ Agg(
+    getVersion("chisel3-plugin")
+  )
+
+  override def moduleDeps =
+    super.moduleDeps ++ Seq(rocketChip)
+}
+
 object meowv64 extends CommonSbtModule with ScalafmtModule with ScalafixModule {
   override def millSourcePath = os.pwd
 
@@ -133,7 +145,7 @@ object meowv64 extends CommonSbtModule with ScalafmtModule with ScalafixModule {
   )
 
   override def moduleDeps =
-    super.moduleDeps ++ Seq(hardfloat, cde, rocketChip, inclusiveCache)
+    super.moduleDeps ++ Seq(hardfloat, cde, rocketChip, inclusiveCache, difftest)
 
   object test
       extends Tests

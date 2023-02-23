@@ -19,6 +19,8 @@ import freechips.rocketchip.subsystem.MasterPortParams
 import freechips.rocketchip.subsystem.MemoryBusKey
 import _root_.freechips.rocketchip.subsystem.WithDefaultSlavePort
 import freechips.rocketchip.subsystem.WithNExtTopInterrupts
+import freechips.rocketchip.subsystem.WithDefaultMemPort
+import freechips.rocketchip.subsystem.WithDefaultMMIOPort
 
 class WithCustomMemPort
     extends Config((site, _, _) => { case CustomExtMem =>
@@ -80,6 +82,43 @@ class MeowV64FPGAConfig
         initVec = Some(0x10000)
       ) ++
         new WithNExtTopInterrupts(6) ++ // UART(1) + ETH(1+2) + I2C(1) + SPI(1)
+        new MeowV64BaseConfig
+    )
+
+class WithDifftestMemPort
+    extends Config((site, _, _) => { case CustomExtMem =>
+      Seq(
+        MasterPortParams(
+          // 0x8000_0000 ~ 0x9000_0000
+          base = BigInt("80000000", 16),
+          size = BigInt("10000000", 16),
+          beatBytes = site(MemoryBusKey).beatBytes,
+          idBits = 4
+        )
+      )
+    })
+
+class WithDifftestMMIOPort
+    extends Config((_, _, _) => { case CustomExtBus =>
+      Seq(
+        MasterPortParams(
+          // 0x4000_0000 ~ 0x5000_0000
+          base = BigInt("40000000", 16),
+          size = BigInt("10000000", 16),
+          beatBytes = 8,
+          idBits = 4
+        )
+      )
+    })
+
+class MeowV64DifftestConfig
+    extends Config(
+      new WithMeowV64Cores(
+        new SingleCoreSystemDef
+      ) ++
+        new WithDifftestMemPort ++
+        new WithDifftestMMIOPort ++
+        new WithNoSlavePort ++
         new MeowV64BaseConfig
     )
 
