@@ -156,6 +156,7 @@ object CSR {
     0xb00 -> (("mcycle", true)),
     0xb02 -> (("minstret", true)),
     0xb03 -> (("mhpmcounter3", true)),
+    0x323 -> (("mhpmevent3", true)),
 
     // Supervisor
     0x100 -> (("sstatus", true)),

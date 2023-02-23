@@ -197,6 +197,7 @@ class Core(implicit val coredef: CoreDef) extends Module {
   csr.attach("pmpaddr0").connect(ctrl.csr.pmpaddr0)
   csr.attach("pmpaddr1").connect(ctrl.csr.pmpaddr1)
   csr.attach("mhpmcounter3").connect(ctrl.csr.mhpmcounter3)
+  csr.attach("mhpmevent3").connect(ctrl.csr.mhpmevent3)
 
   csr.attach("sstatus").connect(ctrl.csr.sstatus)
   csr.attach("stvec").connect(ctrl.csr.stvec)
