@@ -995,7 +995,7 @@ int main(int argc, char **argv) {
     tfp = new VerilatedFstC;
     top->trace(tfp, 99);
     tfp->open("dump.fst");
-    printf("> Enable tracing\n");
+    fprintf(stderr, "> Enable tracing\n");
   }
 
   top->reset = 1;

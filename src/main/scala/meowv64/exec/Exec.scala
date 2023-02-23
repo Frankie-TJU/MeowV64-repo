@@ -83,6 +83,7 @@ class Exec(implicit val coredef: CoreDef) extends Module {
     val issueNumBoundedByROBSize = Output(Bool())
     val issueNumBoundedByLSQSize = Output(Bool())
     val retireNum = Output(UInt(log2Ceil(coredef.ISSUE_NUM + 1).W))
+    val retirePc = Output(UInt(coredef.XLEN.W))
   })
 
   val csrWriter = IO(new CSRWriter())
@@ -401,6 +402,13 @@ class Exec(implicit val coredef: CoreDef) extends Module {
   toCore.issueNumBoundedByROBSize := issueNum === maxIssueNum
   toCore.issueNumBoundedByLSQSize := issueNum === lsu.toExec.lsqEmptyEntries
   toCore.retireNum := retireNum
+  val retirePc = RegInit(0.U(coredef.XLEN.W))
+  for (i <- 0 until coredef.ISSUE_NUM) {
+    when(inflights.reader.cnt > i.U) {
+      retirePc := inflights.reader.view(i).addr
+    }
+  }
+  toCore.retirePc := retirePc
 
   val wasGFence = RegInit(false.B)
   val canIssue = Wire(Vec(coredef.ISSUE_NUM, Bool()))

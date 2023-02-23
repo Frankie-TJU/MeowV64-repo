@@ -29,6 +29,7 @@ class CoreFrontend(implicit val coredef: CoreDef) extends Bundle {
 
 class CoreDebug(implicit val coredef: CoreDef) extends Bundle {
   val pc = UInt(coredef.XLEN.W)
+  val fetchPc = UInt(coredef.XLEN.W)
   val minstret = UInt(coredef.XLEN.W)
   val mcycle = UInt(coredef.XLEN.W)
 
@@ -175,7 +176,7 @@ class Core(implicit val coredef: CoreDef) extends Module {
 
   ctrl.int := io.int
 
-  io.debug.pc := fetch.debug.pc
+  io.debug.fetchPc := fetch.debug.pc
 
   // CSR
   CSRHelper.defaults(csr)
@@ -253,4 +254,5 @@ class Core(implicit val coredef: CoreDef) extends Module {
   io.debug.issueNumBoundedByROBSize := exec.toCore.issueNumBoundedByROBSize
   io.debug.issueNumBoundedByLSQSize := exec.toCore.issueNumBoundedByLSQSize
   io.debug.retireNum := exec.toCore.retireNum
+  io.debug.pc := exec.toCore.retirePc
 }
