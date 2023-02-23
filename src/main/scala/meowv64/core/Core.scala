@@ -193,7 +193,10 @@ class Core(implicit val coredef: CoreDef) extends Module {
   csr.attach("mideleg").connect(ctrl.csr.mideleg)
   csr.attach("medeleg").connect(ctrl.csr.medeleg)
   csr.attach("pmpcfg0").connect(ctrl.csr.pmpcfg0)
+  csr.attach("pmpcfg2").connect(ctrl.csr.pmpcfg2)
   csr.attach("pmpaddr0").connect(ctrl.csr.pmpaddr0)
+  csr.attach("pmpaddr1").connect(ctrl.csr.pmpaddr1)
+  csr.attach("mhpmcounter3").connect(ctrl.csr.mhpmcounter3)
 
   csr.attach("sstatus").connect(ctrl.csr.sstatus)
   csr.attach("stvec").connect(ctrl.csr.stvec)

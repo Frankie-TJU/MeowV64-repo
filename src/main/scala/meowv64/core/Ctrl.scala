@@ -140,7 +140,10 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
     val mideleg = new CSRPort(coredef.XLEN)
     val medeleg = new CSRPort(coredef.XLEN)
     val pmpcfg0 = new CSRPort(coredef.XLEN)
+    val pmpcfg2 = new CSRPort(coredef.XLEN)
     val pmpaddr0 = new CSRPort(coredef.XLEN)
+    val pmpaddr1 = new CSRPort(coredef.XLEN)
+    val mhpmcounter3 = new CSRPort(coredef.XLEN)
 
     val sstatus = new CSRPort(coredef.XLEN)
     val stvec = new CSRPort(coredef.XLEN)
@@ -310,9 +313,16 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
 
   // PMP
   val pmpcfg0 = RegInit(0.U(coredef.XLEN.W))
+  val pmpcfg2 = RegInit(0.U(coredef.XLEN.W))
   val pmpaddr0 = RegInit(0.U(coredef.XLEN.W))
+  val pmpaddr1 = RegInit(0.U(coredef.XLEN.W))
   csr.pmpcfg0 <> CSRPort.fromReg(coredef.XLEN, pmpcfg0)
+  csr.pmpcfg2 <> CSRPort.fromReg(coredef.XLEN, pmpcfg2)
   csr.pmpaddr0 <> CSRPort.fromReg(coredef.XLEN, pmpaddr0)
+  csr.pmpaddr1 <> CSRPort.fromReg(coredef.XLEN, pmpaddr1)
+
+  val mhpmcounter3 = RegInit(0.U(coredef.XLEN.W))
+  csr.mhpmcounter3 <> CSRPort.fromReg(coredef.XLEN, mhpmcounter3)
 
   // xIE, xIP
   val ipStore = RegInit(IntConf.empty)
