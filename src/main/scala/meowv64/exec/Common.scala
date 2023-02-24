@@ -300,6 +300,9 @@ class InflightInstr(implicit val coredef: CoreDef) extends Bundle {
     */
   val overridePred = Bool() // FIXME: change to default pred
 
+  /* Debugging */
+  val instr = UInt(32.W)
+
   def taken = overridePred || pred.prediction === BranchPrediction.taken
   def npc = Mux(isC, 2.U, 4.U) +% addr
 }
@@ -318,6 +321,7 @@ object InflightInstr {
     ret.staleRdPhys := renamed.staleRdPhys
     ret.pred := instr.pred
     ret.overridePred := instr.overridePred
+    ret.instr := instr.instr.raw
 
     ret
   }

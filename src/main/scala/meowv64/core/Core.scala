@@ -8,6 +8,8 @@ import meowv64.exec.Exec
 import meowv64.instr._
 import meowv64.paging.PTW
 import meowv64.reg._
+import difftest.DifftestCSRState
+import difftest.DifftestArchIntRegState
 
 class CoreInt extends Bundle {
   val meip = Bool()
@@ -91,11 +93,19 @@ class Core(implicit val coredef: CoreDef) extends Module {
   val exec = Module(new Exec)
   val regFiles =
     for (regInfo <- coredef.REG_TYPES) yield {
+      // add additional read ports for difftest
+      val readPortCount = coredef
+        .REG_READ_PORT_COUNT(regInfo.regType) + (if (
+                                                   regInfo == coredef.REG_INT && coredef.ENABLE_DIFFTEST
+                                                 ) { 32 }
+                                                 else {
+                                                   0
+                                                 })
       val reg = Module(
         new RegFile(
           regInfo.width,
           regInfo.physRegs,
-          coredef.REG_READ_PORT_COUNT(regInfo.regType),
+          readPortCount,
           coredef.REG_WRITE_PORT_COUNT(regInfo.regType),
           // hardwire x0 to zero
           FIXED_ZERO = regInfo.fixedZero
@@ -255,4 +265,40 @@ class Core(implicit val coredef: CoreDef) extends Module {
   io.debug.issueNumBoundedByLSQSize := exec.toCore.issueNumBoundedByLSQSize
   io.debug.retireNum := exec.toCore.retireNum
   io.debug.pc := exec.toCore.retirePc
+
+  if (coredef.ENABLE_DIFFTEST) {
+    val difftestCSR = Module(new DifftestCSRState)
+    difftestCSR.io.clock := clock
+    difftestCSR.io.coreid := coredef.HART_ID.U
+    difftestCSR.io.priviledgeMode := ctrl.toExec.priv.asUInt
+    difftestCSR.io.mstatus := csr.readers("mstatus")
+    difftestCSR.io.sstatus := csr.readers("sstatus")
+    difftestCSR.io.mepc := csr.readers("mepc")
+    difftestCSR.io.sepc := csr.readers("sepc")
+    difftestCSR.io.mtval := csr.readers("mtval")
+    difftestCSR.io.stval := csr.readers("stval")
+    difftestCSR.io.mtvec := csr.readers("mtvec")
+    difftestCSR.io.stvec := csr.readers("stvec")
+    difftestCSR.io.mcause := csr.readers("mcause")
+    difftestCSR.io.scause := csr.readers("scause")
+    difftestCSR.io.satp := csr.readers("satp")
+    difftestCSR.io.mip := csr.readers("mip")
+    difftestCSR.io.mie := csr.readers("mie")
+    difftestCSR.io.mscratch := csr.readers("mscratch")
+    difftestCSR.io.sscratch := csr.readers("sscratch")
+    difftestCSR.io.mideleg := csr.readers("mideleg")
+    difftestCSR.io.medeleg := csr.readers("medeleg")
+
+    val difftestArchIntReg = Module(new DifftestArchIntRegState)
+    difftestArchIntReg.io.clock := clock
+    difftestArchIntReg.io.coreid := coredef.HART_ID.U
+    for (i <- 0 until 32) {
+      val readPortOffset = coredef
+        .REG_READ_PORT_COUNT(coredef.REG_INT.regType)
+      val physReg = exec.difftest.intCommittedMap(i.U)
+      regFiles(0).io.reads(readPortOffset + i).addr := physReg
+      difftestArchIntReg.io
+        .gpr(i) := regFiles(0).io.reads(readPortOffset + i).data
+    }
+  }
 }

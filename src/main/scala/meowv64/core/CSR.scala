@@ -357,7 +357,6 @@ object IntConfGroup {
 }
 
 class IntConf(implicit val coredef: CoreDef) extends Bundle {
-  val WPRI1 = UInt((coredef.XLEN - 12).W)
   val external = new IntConfGroup
   val timer = new IntConfGroup
   val software = new IntConfGroup
@@ -394,7 +393,6 @@ object IntConf {
 
   def empty(implicit coredef: CoreDef) = {
     val result = Wire(new IntConf)
-    result.WPRI1 := 0.U
     result.external := IntConfGroup.empty
     result.timer := IntConfGroup.empty
     result.software := IntConfGroup.empty
@@ -403,7 +401,6 @@ object IntConf {
 
   def hardwired(implicit coredef: CoreDef) = {
     val result = Wire(new IntConf)
-    result.WPRI1 := DontCare
     result.external := IntConfGroup.hardwired
     result.timer := IntConfGroup.hardwired
     result.software := IntConfGroup.hardwired

@@ -40,6 +40,10 @@ class Renamer(implicit coredef: CoreDef) extends Module {
     val flush = Input(Bool())
   })
 
+  val difftest = IO(new Bundle {
+    val intCommittedMap = Output(Vec(REG_NUM, UInt((log2Ceil(coredef.REG_INT.physRegs).W))))
+  })
+
   val NAME_LENGTH = log2Ceil(coredef.INFLIGHT_INSTR_LIMIT)
   val REG_ADDR_LENGTH = log2Ceil(REG_NUM)
 
@@ -81,6 +85,10 @@ class Renamer(implicit coredef: CoreDef) extends Module {
       val nextCommittedFreeList = WireInit(committedFreeList)
       committedMapping := nextCommittedMapping
       committedFreeList := nextCommittedFreeList
+
+      if (regInfo == coredef.REG_INT) {
+        difftest.intCommittedMap := committedMapping
+      }
 
       // masks for updating committedFreeList
       val setCommittedFreeMask = WireInit(0.U(regInfo.physRegs.W))

@@ -5,6 +5,8 @@ import chisel3.experimental.ChiselEnum
 import chisel3.util._
 import meowv64.debug.DebugModule
 import meowv64.exec.ExceptionResult
+import difftest.DifftestTrapEvent
+import difftest.DifftestArchEvent
 
 class StageCtrl extends Bundle {
   val stall = Input(Bool())
@@ -344,54 +346,46 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
 
   csr.mie.rdata := (
     ie.asUInt & IntConf.mmask(false)
-      | mwpri & IntConf.mwpri
-      | IntConf.hardwired.asUInt & ~(Status.mmask | Status.mwpri)
+      | IntConf.hardwired.asUInt
   )
 
   csr.sie.rdata := (
     ie.asUInt & IntConf.smask(false)
-      | swpri & IntConf.swpri
-      | IntConf.hardwired.asUInt & ~(Status.smask | Status.swpri)
+      | IntConf.hardwired.asUInt
   )
 
   when(csr.mie.write) {
     ie := (
-      csr.mie.wdata & IntConf.mmask(false) | ie.asUInt & ~Status.mmask
+      csr.mie.wdata & IntConf.mmask(false)
     ).asTypeOf(ie)
-    mwpri := csr.mie.wdata
   }
 
   when(csr.sie.write) {
     ie := (
-      csr.sie.wdata & IntConf.smask(false) | ie.asUInt & ~Status.smask
+      csr.sie.wdata & IntConf.smask(false)
     ).asTypeOf(ie)
-    swpri := csr.sie.wdata
   }
 
   csr.mip.rdata := (
     ip.asUInt & IntConf.mmask(false)
-      | mwpri & IntConf.mwpri
-      | IntConf.hardwired.asUInt & ~(Status.mmask | Status.mwpri)
+      | IntConf.hardwired.asUInt
   )
 
   csr.sip.rdata := (
     ip.asUInt & IntConf.smask(false)
-      | swpri & IntConf.swpri
-      | IntConf.hardwired.asUInt & ~(Status.smask | Status.swpri)
+      | IntConf.hardwired.asUInt
   )
 
   when(csr.mip.write) {
     ipStore := (
-      csr.mip.wdata & IntConf.mmask(false) | ipStore.asUInt & ~Status.mmask
+      csr.mip.wdata & IntConf.mmask(false)
     ).asTypeOf(ipStore)
-    mwpri := csr.mip.wdata
   }
 
   when(csr.sip.write) {
     ipStore := (
-      csr.sip.wdata & IntConf.smask(false) | ipStore.asUInt & ~Status.smask
+      csr.sip.wdata & IntConf.smask(false)
     ).asTypeOf(ipStore)
-    swpri := csr.sip.wdata
   }
 
   // xEPC
@@ -669,6 +663,34 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
     debugMode := false.B
 
     priv := dcsr.prv.asTypeOf(PrivLevel.Type())
+  }
+
+  if (coredef.ENABLE_DIFFTEST) {
+    // trap
+    val difftestTrap = Module(new DifftestTrapEvent)
+    difftestTrap.io.clock := clock
+    difftestTrap.io.coreid := coredef.HART_ID.U
+    difftestTrap.io.valid := ex
+    difftestTrap.io.code := cause
+    difftestTrap.io.pc := nepc
+    difftestTrap.io.cycleCnt := mcycle
+    difftestTrap.io.instrCnt := minstret
+    difftestTrap.io.hasWFI := false.B
+
+    val difftestArch = Module(new DifftestArchEvent)
+    difftestArch.io.clock := clock
+    difftestArch.io.coreid := coredef.HART_ID.U
+    when(intFired) {
+      difftestArch.io.intrNO := intCause
+    }.otherwise {
+      difftestArch.io.intrNO := 0.U
+    }
+    when(ex) {
+      difftestArch.io.cause := cause
+    }.otherwise {
+      difftestArch.io.cause := 0.U
+    }
+    difftestArch.io.exceptionPC := nepc
   }
 
   // Avoid Vivado naming collision. Com'on, Xilinx, write *CORRECT* code plz

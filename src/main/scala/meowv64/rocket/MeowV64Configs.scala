@@ -19,8 +19,6 @@ import freechips.rocketchip.subsystem.MasterPortParams
 import freechips.rocketchip.subsystem.MemoryBusKey
 import _root_.freechips.rocketchip.subsystem.WithDefaultSlavePort
 import freechips.rocketchip.subsystem.WithNExtTopInterrupts
-import freechips.rocketchip.subsystem.WithDefaultMemPort
-import freechips.rocketchip.subsystem.WithDefaultMMIOPort
 
 class WithCustomMemPort
     extends Config((site, _, _) => { case CustomExtMem =>
@@ -114,7 +112,8 @@ class WithDifftestMMIOPort
 class MeowV64DifftestConfig
     extends Config(
       new WithMeowV64Cores(
-        new SingleCoreSystemDef
+        new SingleCoreSystemDef,
+        enableDifftest = true
       ) ++
         new WithDifftestMemPort ++
         new WithDifftestMMIOPort ++

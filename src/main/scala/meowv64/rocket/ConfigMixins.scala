@@ -15,7 +15,8 @@ class WithMeowV64Cores(
     systemDef: SystemDef = new SingleCoreSystemDef,
     overrideIdOffset: Option[Int] = None,
     frequency: BigInt = 1000000000,
-    initVec: Option[BigInt] = None
+    initVec: Option[BigInt] = None,
+    enableDifftest: Boolean = false,
 ) extends Config((site, _, up) => {
       case XLen => 64
       // 100MHz
@@ -40,7 +41,8 @@ class WithMeowV64Cores(
                   id = i + idOffset,
                   initVec = initVec.getOrElse(systemDef.INIT_VEC),
                   cacheLineBytes = systemDef.L2_LINE_BYTES,
-                  inRocketSystem = true
+                  inRocketSystem = true,
+                  enableDifftest = enableDifftest
                 )
             ),
             crossingParams = RocketCrossingParams()
