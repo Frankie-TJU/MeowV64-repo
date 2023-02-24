@@ -424,7 +424,8 @@ void step_mmio() {
       if (pending_write_addr == serial_addr ||
           pending_write_addr == serial_fpga_addr) {
         // serial
-        printf("%c", input & 0xFF);
+        // printed in spike
+        // printf("%c", input & 0xFF);
         fflush(stdout);
       } else if (pending_write_addr == tohost_addr) {
         // tohost
@@ -937,7 +938,14 @@ void jtag_vpi_tick() {
 struct sim : simif_t {
   bus_t bus;
   // should return NULL for MMIO addresses
-  char *addr_to_mem(reg_t paddr) { return NULL; }
+  char *addr_to_mem(reg_t paddr) {
+    // taken from sim.cc
+    auto desc = bus.find_device(paddr);
+    if (auto mem = dynamic_cast<mem_t *>(desc.second))
+      if (paddr - desc.first < mem->size())
+        return mem->contents(paddr - desc.first);
+    return NULL;
+  }
   bool reservable(reg_t paddr) { return addr_to_mem(paddr); }
   // used for MMIO addresses
   bool mmio_fetch(reg_t paddr, size_t len, uint8_t *bytes) {
@@ -962,12 +970,33 @@ processor_t *proc;
 struct commit_state {
   int valid;
   uint64_t pc;
+  uint32_t inst;
 } state[2];
-struct csr_state {
-  uint64_t mstatus;
-  uint64_t mepc;
-  uint64_t mcause;
-} csr_state;
+enum csr {
+  STATE_CSR_MSTATUS,
+  STATE_CSR_SSTATUS,
+  STATE_CSR_MEPC,
+  STATE_CSR_SEPC,
+  STATE_CSR_MTVAL,
+  STATE_CSR_STVAL,
+  STATE_CSR_MTVEC,
+  STATE_CSR_STVEC,
+  STATE_CSR_MCAUSE,
+  STATE_CSR_SCAUSE,
+  STATE_CSR_SATP,
+  STATE_CSR_MIP,
+  STATE_CSR_MIE,
+  STATE_CSR_MSCRATCH,
+  STATE_CSR_SSCRATCH,
+  STATE_CSR_MIDELEG,
+  STATE_CSR_MEDELEG,
+  STATE_CSR_COUNT,
+};
+const char *csr_names[] = {
+    "mstatus", "sstatus",  "mepc",     "sepc",    "mtval",  "stval",
+    "mtvec",   "stvec",    "mcause",   "scause",  "satp",   "mip",
+    "mie",     "mscratch", "sscratch", "mideleg", "medeleg"};
+uint64_t csr_state[STATE_CSR_COUNT];
 uint64_t gpr[32];
 uint64_t last_pc = 0x80000000;
 
@@ -1036,9 +1065,23 @@ void v_difftest_CSRState(DPIC_ARG_BYTE coreid, DPIC_ARG_BYTE privilegeMode,
                          DPIC_ARG_LONG mie, DPIC_ARG_LONG mscratch,
                          DPIC_ARG_LONG sscratch, DPIC_ARG_LONG mideleg,
                          DPIC_ARG_LONG medeleg) {
-  csr_state.mstatus = mstatus;
-  csr_state.mepc = mepc;
-  csr_state.mcause = mcause;
+  csr_state[STATE_CSR_MSTATUS] = mstatus;
+  csr_state[STATE_CSR_SSTATUS] = sstatus;
+  csr_state[STATE_CSR_MEPC] = mepc;
+  csr_state[STATE_CSR_SEPC] = sepc;
+  csr_state[STATE_CSR_MTVAL] = mtval;
+  csr_state[STATE_CSR_STVAL] = stval;
+  csr_state[STATE_CSR_MTVEC] = mtvec;
+  csr_state[STATE_CSR_STVEC] = stvec;
+  csr_state[STATE_CSR_MCAUSE] = mcause;
+  csr_state[STATE_CSR_SCAUSE] = scause;
+  csr_state[STATE_CSR_SATP] = satp;
+  csr_state[STATE_CSR_MIP] = mip;
+  csr_state[STATE_CSR_MIE] = mie;
+  csr_state[STATE_CSR_MSCRATCH] = mscratch;
+  csr_state[STATE_CSR_SSCRATCH] = sscratch;
+  csr_state[STATE_CSR_MIDELEG] = mideleg;
+  csr_state[STATE_CSR_MEDELEG] = medeleg;
 }
 
 void v_difftest_InstrCommit(DPIC_ARG_BYTE coreid, DPIC_ARG_BYTE index,
@@ -1053,6 +1096,7 @@ void v_difftest_InstrCommit(DPIC_ARG_BYTE coreid, DPIC_ARG_BYTE index,
   if (valid) {
     state[index].valid = 1;
     state[index].pc = pc;
+    state[index].inst = instr;
   }
 }
 
@@ -1123,15 +1167,22 @@ int main(int argc, char **argv) {
             /*default_trigger_count=*/4);
   sim s;
   s.bus.add_device(0x80000000, &m);
+  // add dummy device for reading dtb
+  mem_t m_zero(0x1000);
+  s.bus.add_device(0x00000000, &m_zero);
 
   isa_parser_t isa_parser(DEFAULT_ISA, DEFAULT_PRIV);
   processor_t p(&isa_parser, &cfg, &s, 0, true, stderr, std::cerr);
+  // only enable sv39 and sv48, disable sv57
+  p.set_impl(IMPL_MMU_SV57, false);
 
-  // add plic and uart
+  // add plic, clint and uart
   std::vector<processor_t *> procs;
   procs.push_back(&p);
   plic_t plic(procs, true, 2);
   s.bus.add_device(0xc000000, &plic);
+  clint_t clint(procs, 1000000000, false);
+  s.bus.add_device(0x2000000, &clint);
   ns16550_t uart(&s.bus, &plic, 1, 2, 1);
   s.bus.add_device(0x60201000, &uart);
 
@@ -1230,15 +1281,26 @@ int main(int argc, char **argv) {
       step_mem();
       step_mmio();
 
+      clint.increment(1);
+
       bool any_valid = false;
       for (int index = 0; index < 2; index++) {
         if (state[index].valid) {
           any_valid = true;
-          uint32_t cur_pc = state[index].pc;
-          uint32_t exp_pc = proc->get_state()->pc;
+          uint64_t cur_pc = state[index].pc;
+          uint64_t exp_pc = proc->get_state()->pc;
           if (cur_pc != exp_pc) {
-            fprintf(stderr, "> Mismatch commit @ pc %lx (expected %lx)\n",
-                    cur_pc, exp_pc);
+            fprintf(stderr,
+                    "> %ld: Mismatch commit @ pc %lx (expected %lx) inst %lx\n",
+                    main_time, cur_pc, exp_pc, state[index].inst);
+            for (int i = 0; i < 32; i++) {
+              fprintf(stderr, "> gpr[%d] = %016lx\n", i, gpr[i]);
+            }
+            for (int i = 0; i < STATE_CSR_COUNT; i++) {
+              fprintf(stderr, "> csr[%s] = %016lx\n", csr_names[i],
+                      csr_state[i]);
+            }
+
             finished = true;
             res = 1;
           }
@@ -1248,26 +1310,41 @@ int main(int argc, char **argv) {
         }
       }
       if (any_valid) {
-        if (proc->get_state()->mstatus->read() != csr_state.mstatus) {
-          fprintf(
-              stderr, "> Mismatch CSR @ pc %lx mstatus %lx (expected %lx)\n",
-              last_pc, csr_state.mstatus, proc->get_state()->mstatus->read());
-        }
-        if (proc->get_state()->mepc->read() != csr_state.mepc) {
-          fprintf(stderr, "> Mismatch CSR @ pc %lx mepc %lx (expected %lx)\n",
-                  last_pc, csr_state.mepc, proc->get_state()->mepc->read());
-        }
-        if (proc->get_state()->mcause->read() != csr_state.mcause) {
-          fprintf(stderr, "> Mismatch CSR @ pc %lx mcause %lx (expected %lx)\n",
-                  last_pc, csr_state.mcause, proc->get_state()->mcause->read());
+        const csr_t *csrs[] = {
+            proc->get_state()->mstatus.get(),
+            proc->get_state()->sstatus.get(),
+            proc->get_state()->mepc.get(),
+            proc->get_state()->sepc.get(),
+            proc->get_state()->mtval.get(),
+            proc->get_state()->stval.get(),
+            proc->get_state()->mtvec.get(),
+            proc->get_state()->stvec.get(),
+            proc->get_state()->mcause.get(),
+            proc->get_state()->scause.get(),
+            proc->get_state()->satp.get(),
+            proc->get_state()->mip.get(),
+            proc->get_state()->mie.get(),
+            proc->get_state()->csrmap[CSR_MSCRATCH].get(),
+            proc->get_state()->csrmap[CSR_SSCRATCH].get(),
+            proc->get_state()->mideleg.get(),
+            proc->get_state()->medeleg.get(),
+        };
+        for (int i = 0; i < STATE_CSR_COUNT; i++) {
+          uint64_t actual = csr_state[i];
+          uint64_t expected = csrs[i]->read();
+          if (expected != actual) {
+            fprintf(stderr,
+                    "> %ld: Mismatch csr @ pc %lx %s %lx (expected %lx)\n",
+                    main_time, last_pc, csr_names[i], actual, expected);
+          }
         }
 
         for (int i = 0; i < 32; i++) {
           if (gpr[i] != proc->get_state()->XPR[i]) {
-            fprintf(
-                stderr,
-                "> Mismatch gpr @ pc %lx gpr[%d]=%016lx (expected %016lx)\n",
-                last_pc, i, gpr[i], proc->get_state()->XPR[i]);
+            fprintf(stderr,
+                    "> %ld: Mismatch gpr @ pc %lx gpr[%d]=%016lx (expected "
+                    "%016lx)\n",
+                    main_time, last_pc, i, gpr[i], proc->get_state()->XPR[i]);
           }
         }
       }
