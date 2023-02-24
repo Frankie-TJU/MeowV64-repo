@@ -10,6 +10,7 @@ import meowv64.paging.PTW
 import meowv64.reg._
 import difftest.DifftestCSRState
 import difftest.DifftestArchIntRegState
+import difftest.DifftestArchFpRegState
 
 class CoreInt extends Bundle {
   val meip = Bool()
@@ -96,7 +97,7 @@ class Core(implicit val coredef: CoreDef) extends Module {
       // add additional read ports for difftest
       val readPortCount = coredef
         .REG_READ_PORT_COUNT(regInfo.regType) + (if (
-                                                   regInfo == coredef.REG_INT && coredef.ENABLE_DIFFTEST
+                                                   (regInfo == coredef.REG_INT || regInfo == coredef.REG_FLOAT) && coredef.ENABLE_DIFFTEST
                                                  ) { 32 }
                                                  else {
                                                    0
@@ -299,6 +300,18 @@ class Core(implicit val coredef: CoreDef) extends Module {
       regFiles(0).io.reads(readPortOffset + i).addr := physReg
       difftestArchIntReg.io
         .gpr(i) := regFiles(0).io.reads(readPortOffset + i).data
+    }
+
+    val difftestArchFpReg = Module(new DifftestArchFpRegState)
+    difftestArchFpReg.io.clock := clock
+    difftestArchFpReg.io.coreid := coredef.HART_ID.U
+    for (i <- 0 until 32) {
+      val readPortOffset = coredef
+        .REG_READ_PORT_COUNT(coredef.REG_FLOAT.regType)
+      val physReg = exec.difftest.fpCommittedMap(i.U)
+      regFiles(1).io.reads(readPortOffset + i).addr := physReg
+      difftestArchFpReg.io
+        .fpr(i) := regFiles(1).io.reads(readPortOffset + i).data
     }
   }
 }

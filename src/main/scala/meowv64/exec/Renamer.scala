@@ -42,6 +42,7 @@ class Renamer(implicit coredef: CoreDef) extends Module {
 
   val difftest = IO(new Bundle {
     val intCommittedMap = Output(Vec(REG_NUM, UInt((log2Ceil(coredef.REG_INT.physRegs).W))))
+    val fpCommittedMap = Output(Vec(REG_NUM, UInt((log2Ceil(coredef.REG_FLOAT.physRegs).W))))
   })
 
   val NAME_LENGTH = log2Ceil(coredef.INFLIGHT_INSTR_LIMIT)
@@ -88,6 +89,8 @@ class Renamer(implicit coredef: CoreDef) extends Module {
 
       if (regInfo == coredef.REG_INT) {
         difftest.intCommittedMap := committedMapping
+      } else if (regInfo == coredef.REG_FLOAT) {
+        difftest.fpCommittedMap := committedMapping
       }
 
       // masks for updating committedFreeList
