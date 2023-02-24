@@ -369,8 +369,10 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
   }
 
   when(csr.sie.write) {
+    // do not override mie bits when writing to sie
     ie := (
       csr.sie.wdata & IntConf.smask(false)
+        | ie.asUInt & ~IntConf.smask(false)
     ).asTypeOf(ie)
   }
 
