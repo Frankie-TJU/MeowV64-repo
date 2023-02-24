@@ -28,9 +28,6 @@ import freechips.rocketchip.diplomacy.InModuleBody
 import chipsalliance.rocketchip.config
 import freechips.rocketchip.diplomacy.MemoryDevice
 import freechips.rocketchip.diplomacy.RegionType
-import difftest._
-import top.SimMMIO
-import device._
 
 class RiscVSystem(implicit val p: Parameters) extends Module {
   val target = Module(LazyModule(new RocketTop).module)
@@ -113,79 +110,6 @@ class RiscVSystem(implicit val p: Parameters) extends Module {
 
   mmio_axi4 <> target.mmio_axi4.head.viewAs[StandardAXI4Bundle]
   slave_axi4 <> target.slave_axi4.head.viewAs[StandardAXI4Bundle]
-
-  target.interrupts := interrupts
-
-  target.dontTouchPorts()
-}
-
-class SimTop(implicit val p: Parameters) extends Module {
-  val io = IO(new Bundle(){
-    val logCtrl = new LogCtrlIO
-    val perfInfo = new PerfInfoIO
-    val uart = new UARTIO
-  })
-
-  val l_target = LazyModule(new RocketTop)
-  val target = Module(l_target.module)
-
-  // taken from XiangShan
-  val l_simMMIO = LazyModule(new SimMMIO(l_target.mmioAXI4Node.in.head._2))
-  val simMMIO = Module(l_simMMIO.module)
-  l_simMMIO.io_axi4 <> target.mmio_axi4
-
-  simMMIO.io.uart <> io.uart
-
-  val l_simAXIMem = AXI4MemorySlave(
-    l_target.memAXI4Node,
-    256L * 1024 * 1024,
-    useBlackBox = true,
-    dynamicLatency = false
-  )
-  val simAXIMem = Module(l_simAXIMem.module)
-  l_simAXIMem.io_axi4 <> target.mem_axi4
-
-  require(target.mem_axi4.size == 1)
-  require(target.mmio_axi4.size == 1)
-
-  val interrupts = IO(Input(UInt(p(NExtTopInterrupts).W)))
-  val jtag = IO(Flipped(new JTAGIO))
-
-  // expose custom debug interface if any
-  target.customDebug match {
-    case Some(customDebug) => {
-      val debug = IO(customDebug.cloneType)
-      debug := customDebug
-    }
-    case None =>
-  }
-
-  // ndreset can reset all harts
-  val childReset = reset.asBool | target.debug.map(_.ndreset).getOrElse(false.B)
-  target.reset := childReset
-
-  // setup jtag
-  val systemJtag = target.debug.get.systemjtag.get
-  systemJtag.jtag.TCK := jtag.TCK
-  systemJtag.jtag.TMS := jtag.TMS
-  systemJtag.jtag.TDI := jtag.TDI
-  jtag.TDO := systemJtag.jtag.TDO
-  //systemJtag.mfr_id := p(JtagDTMKey).idcodeManufId.U(11.W)
-  //systemJtag.part_number := p(JtagDTMKey).idcodePartNum.U(16.W)
-  //systemJtag.version := p(JtagDTMKey).idcodeVersion.U(4.W)
-  // custom idcode
-  systemJtag.mfr_id := 0.U
-  systemJtag.part_number := 0x2222.U
-  systemJtag.version := 1.U
-  // MUST use async reset here
-  // otherwise the internal logic(e.g. TLXbar) might not function
-  // if reset deasserted before TCK rises
-  systemJtag.reset := reset.asAsyncReset
-  target.resetctrl.foreach { rc =>
-    rc.hartIsInReset.foreach { _ := childReset }
-  }
-
-  Debug.connectDebugClockAndReset(target.debug, clock)
 
   target.interrupts := interrupts
 

@@ -322,7 +322,7 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
   val pmpaddr1 = RegInit(0.U(coredef.XLEN.W))
   csr.pmpcfg0 <> CSRPort.fromReg(coredef.XLEN, pmpcfg0)
   csr.pmpcfg2 <> CSRPort.fromReg(coredef.XLEN, pmpcfg2)
-  val pmpMask = 0x3fffffc00L.U
+  val pmpMask = 0x003fffffffffffffL.U
   csr.pmpaddr0.rdata := pmpaddr0.asUInt
   when(csr.pmpaddr0.write) {
     pmpaddr0 := csr.pmpaddr0.wdata & pmpMask
