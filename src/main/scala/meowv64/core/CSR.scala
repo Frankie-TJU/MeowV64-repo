@@ -317,7 +317,7 @@ object Status {
       "0" * 2 + // SXL and UXL not supported
       "0" * 12 + // WPRI
       "11" + // MXR, SUM
-      "00000" + // WPRI, XS & FS
+      "00011" + // WPRI, XS & FS
       "00001" + // xPP
       "00110011" // xP?IE
     ,
