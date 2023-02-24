@@ -115,9 +115,6 @@ class MeowV64DifftestConfig
         new SingleCoreSystemDef,
         enableDifftest = true
       ) ++
-        new WithDifftestMemPort ++
-        new WithDifftestMMIOPort ++
-        new WithNoSlavePort ++
         new MeowV64BaseConfig
     )
 
