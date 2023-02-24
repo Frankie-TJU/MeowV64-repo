@@ -825,7 +825,8 @@ class Exec(implicit val coredef: CoreDef) extends Module {
       difftest.coreid := coredef.HART_ID.U
       difftest.index := i.U
 
-      difftest.valid := retireNum > i.U
+      difftest.valid := retireNum > i.U &&
+        toCtrl.branch.ex =/= ExReq.ex
       difftest.pc := inflights.reader.view(i).addr
       difftest.robIdx := retirePtr + i.U
       difftest.isRVC := inflights.reader.view(i).isC

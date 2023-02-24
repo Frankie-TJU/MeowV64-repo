@@ -287,7 +287,7 @@ object Status {
       "0" * 12 +
       "11001000100",
     2
-  ).U
+  ).U(coredef.XLEN.W)
 
   def mmask(implicit coredef: CoreDef) = BigInt(
     "0" + // SD not supported
@@ -300,7 +300,7 @@ object Status {
       "10111011" // xP?IE
     ,
     2
-  ).U
+  ).U(coredef.XLEN.W)
 
   def swpri(implicit coredef: CoreDef) = BigInt(
     "0" +
@@ -309,7 +309,7 @@ object Status {
       "1" * 12 +
       "00100001111011001100",
     2
-  ).U
+  ).U(coredef.XLEN.W)
 
   def smask(implicit coredef: CoreDef) = BigInt(
     "0" + // SD not supported
@@ -322,7 +322,7 @@ object Status {
       "00110011" // xP?IE
     ,
     2
-  ).U
+  ).U(coredef.XLEN.W)
 }
 
 class IntConfGroup extends Bundle {

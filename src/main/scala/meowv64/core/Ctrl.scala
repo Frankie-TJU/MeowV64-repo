@@ -7,6 +7,7 @@ import meowv64.debug.DebugModule
 import meowv64.exec.ExceptionResult
 import difftest.DifftestTrapEvent
 import difftest.DifftestArchEvent
+import _root_.difftest.DiffArchEventIO
 
 class StageCtrl extends Bundle {
   val stall = Input(Bool())
@@ -321,8 +322,15 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
   val pmpaddr1 = RegInit(0.U(coredef.XLEN.W))
   csr.pmpcfg0 <> CSRPort.fromReg(coredef.XLEN, pmpcfg0)
   csr.pmpcfg2 <> CSRPort.fromReg(coredef.XLEN, pmpcfg2)
-  csr.pmpaddr0 <> CSRPort.fromReg(coredef.XLEN, pmpaddr0)
-  csr.pmpaddr1 <> CSRPort.fromReg(coredef.XLEN, pmpaddr1)
+  val pmpMask = 0x3fffffc00L.U
+  csr.pmpaddr0.rdata := pmpaddr0.asUInt
+  when(csr.pmpaddr0.write) {
+    pmpaddr0 := csr.pmpaddr0.wdata & pmpMask
+  }
+  csr.pmpaddr1.rdata := pmpaddr1.asUInt
+  when(csr.pmpaddr1.write) {
+    pmpaddr1 := csr.pmpaddr1.wdata & pmpMask
+  }
 
   val mhpmcounter3 = RegInit(0.U(coredef.XLEN.W))
   val mhpmevent3 = RegInit(0.U(coredef.XLEN.W))
@@ -670,27 +678,31 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
     val difftestTrap = Module(new DifftestTrapEvent)
     difftestTrap.io.clock := clock
     difftestTrap.io.coreid := coredef.HART_ID.U
-    difftestTrap.io.valid := ex
-    difftestTrap.io.code := cause
+    difftestTrap.io.valid := false.B
+    difftestTrap.io.code := 0.U
     difftestTrap.io.pc := nepc
     difftestTrap.io.cycleCnt := mcycle
     difftestTrap.io.instrCnt := minstret
     difftestTrap.io.hasWFI := false.B
 
     val difftestArch = Module(new DifftestArchEvent)
-    difftestArch.io.clock := clock
-    difftestArch.io.coreid := coredef.HART_ID.U
+    val difftest = Wire(Output(new DiffArchEventIO()))
+    difftest := DontCare
+    difftest.coreid := coredef.HART_ID.U
     when(intFired) {
-      difftestArch.io.intrNO := intCause
+      difftest.intrNO := intCause
     }.otherwise {
-      difftestArch.io.intrNO := 0.U
+      difftest.intrNO := 0.U
     }
     when(ex) {
-      difftestArch.io.cause := cause
+      difftest.cause := cause
     }.otherwise {
-      difftestArch.io.cause := 0.U
+      difftest.cause := 0.U
     }
-    difftestArch.io.exceptionPC := nepc
+    difftest.exceptionPC := nepc
+
+    difftestArch.io := RegNext(difftest)
+    difftestArch.io.clock := clock
   }
 
   // Avoid Vivado naming collision. Com'on, Xilinx, write *CORRECT* code plz
