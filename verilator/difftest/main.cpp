@@ -963,6 +963,13 @@ struct commit_state {
   int valid;
   uint64_t pc;
 } state[2];
+struct csr_state {
+  uint64_t mstatus;
+  uint64_t mepc;
+  uint64_t mcause;
+} csr_state;
+uint64_t gpr[32];
+uint64_t last_pc = 0x80000000;
 
 extern "C" {
 
@@ -971,13 +978,68 @@ extern "C" {
 #define DPIC_ARG_INT uint32_t
 #define DPIC_ARG_LONG uint64_t
 
-void v_difftest_ArchFPRegState() {}
-
-void v_difftest_ArchIntRegState() {}
+void v_difftest_ArchIntRegState(
+    DPIC_ARG_BYTE coreid, DPIC_ARG_LONG gpr_0, DPIC_ARG_LONG gpr_1,
+    DPIC_ARG_LONG gpr_2, DPIC_ARG_LONG gpr_3, DPIC_ARG_LONG gpr_4,
+    DPIC_ARG_LONG gpr_5, DPIC_ARG_LONG gpr_6, DPIC_ARG_LONG gpr_7,
+    DPIC_ARG_LONG gpr_8, DPIC_ARG_LONG gpr_9, DPIC_ARG_LONG gpr_10,
+    DPIC_ARG_LONG gpr_11, DPIC_ARG_LONG gpr_12, DPIC_ARG_LONG gpr_13,
+    DPIC_ARG_LONG gpr_14, DPIC_ARG_LONG gpr_15, DPIC_ARG_LONG gpr_16,
+    DPIC_ARG_LONG gpr_17, DPIC_ARG_LONG gpr_18, DPIC_ARG_LONG gpr_19,
+    DPIC_ARG_LONG gpr_20, DPIC_ARG_LONG gpr_21, DPIC_ARG_LONG gpr_22,
+    DPIC_ARG_LONG gpr_23, DPIC_ARG_LONG gpr_24, DPIC_ARG_LONG gpr_25,
+    DPIC_ARG_LONG gpr_26, DPIC_ARG_LONG gpr_27, DPIC_ARG_LONG gpr_28,
+    DPIC_ARG_LONG gpr_29, DPIC_ARG_LONG gpr_30, DPIC_ARG_LONG gpr_31) {
+  gpr[0] = gpr_0;
+  gpr[1] = gpr_1;
+  gpr[2] = gpr_2;
+  gpr[3] = gpr_3;
+  gpr[4] = gpr_4;
+  gpr[5] = gpr_5;
+  gpr[6] = gpr_6;
+  gpr[7] = gpr_7;
+  gpr[8] = gpr_8;
+  gpr[9] = gpr_9;
+  gpr[10] = gpr_10;
+  gpr[11] = gpr_11;
+  gpr[12] = gpr_12;
+  gpr[13] = gpr_13;
+  gpr[14] = gpr_14;
+  gpr[15] = gpr_15;
+  gpr[16] = gpr_16;
+  gpr[17] = gpr_17;
+  gpr[18] = gpr_18;
+  gpr[19] = gpr_19;
+  gpr[20] = gpr_20;
+  gpr[21] = gpr_21;
+  gpr[22] = gpr_22;
+  gpr[23] = gpr_23;
+  gpr[24] = gpr_24;
+  gpr[25] = gpr_25;
+  gpr[26] = gpr_26;
+  gpr[27] = gpr_27;
+  gpr[28] = gpr_28;
+  gpr[29] = gpr_29;
+  gpr[30] = gpr_30;
+  gpr[31] = gpr_31;
+}
 
 void v_difftest_ArchFpRegState() {}
 
-void v_difftest_CSRState() {}
+void v_difftest_CSRState(DPIC_ARG_BYTE coreid, DPIC_ARG_BYTE privilegeMode,
+                         DPIC_ARG_LONG mstatus, DPIC_ARG_LONG sstatus,
+                         DPIC_ARG_LONG mepc, DPIC_ARG_LONG sepc,
+                         DPIC_ARG_LONG mtval, DPIC_ARG_LONG stval,
+                         DPIC_ARG_LONG mtvec, DPIC_ARG_LONG stvec,
+                         DPIC_ARG_LONG mcause, DPIC_ARG_LONG scause,
+                         DPIC_ARG_LONG satp, DPIC_ARG_LONG mip,
+                         DPIC_ARG_LONG mie, DPIC_ARG_LONG mscratch,
+                         DPIC_ARG_LONG sscratch, DPIC_ARG_LONG mideleg,
+                         DPIC_ARG_LONG medeleg) {
+  csr_state.mstatus = mstatus;
+  csr_state.mepc = mepc;
+  csr_state.mcause = mcause;
+}
 
 void v_difftest_InstrCommit(DPIC_ARG_BYTE coreid, DPIC_ARG_BYTE index,
                             DPIC_ARG_BIT valid, DPIC_ARG_BYTE special,
@@ -1061,11 +1123,21 @@ int main(int argc, char **argv) {
             /*default_trigger_count=*/4);
   sim s;
   s.bus.add_device(0x80000000, &m);
+
   isa_parser_t isa_parser(DEFAULT_ISA, DEFAULT_PRIV);
-  processor_t p(&isa_parser, &cfg, &s, 0, true, NULL, std::cerr);
-  // p.enable_log_commits();
+  processor_t p(&isa_parser, &cfg, &s, 0, true, stderr, std::cerr);
+
+  // add plic and uart
+  std::vector<processor_t *> procs;
+  procs.push_back(&p);
+  plic_t plic(procs, true, 2);
+  s.bus.add_device(0xc000000, &plic);
+  ns16550_t uart(&s.bus, &plic, 1, 2, 1);
+  s.bus.add_device(0x60201000, &uart);
+
   p.reset();
   p.get_state()->pc = 0x80000000;
+  // p.enable_log_commits();
   // p.debug = true;
   proc = &p;
   top = new VRiscVSystem;
@@ -1158,8 +1230,10 @@ int main(int argc, char **argv) {
       step_mem();
       step_mmio();
 
+      bool any_valid = false;
       for (int index = 0; index < 2; index++) {
         if (state[index].valid) {
+          any_valid = true;
           uint32_t cur_pc = state[index].pc;
           uint32_t exp_pc = proc->get_state()->pc;
           if (cur_pc != exp_pc) {
@@ -1168,8 +1242,33 @@ int main(int argc, char **argv) {
             finished = true;
             res = 1;
           }
+          last_pc = cur_pc;
           proc->step(1);
           state[index].valid = 0;
+        }
+      }
+      if (any_valid) {
+        if (proc->get_state()->mstatus->read() != csr_state.mstatus) {
+          fprintf(
+              stderr, "> Mismatch CSR @ pc %lx mstatus %lx (expected %lx)\n",
+              last_pc, csr_state.mstatus, proc->get_state()->mstatus->read());
+        }
+        if (proc->get_state()->mepc->read() != csr_state.mepc) {
+          fprintf(stderr, "> Mismatch CSR @ pc %lx mepc %lx (expected %lx)\n",
+                  last_pc, csr_state.mepc, proc->get_state()->mepc->read());
+        }
+        if (proc->get_state()->mcause->read() != csr_state.mcause) {
+          fprintf(stderr, "> Mismatch CSR @ pc %lx mcause %lx (expected %lx)\n",
+                  last_pc, csr_state.mcause, proc->get_state()->mcause->read());
+        }
+
+        for (int i = 0; i < 32; i++) {
+          if (gpr[i] != proc->get_state()->XPR[i]) {
+            fprintf(
+                stderr,
+                "> Mismatch gpr @ pc %lx gpr[%d]=%016lx (expected %016lx)\n",
+                last_pc, i, gpr[i], proc->get_state()->XPR[i]);
+          }
         }
       }
     }
