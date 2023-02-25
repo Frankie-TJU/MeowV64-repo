@@ -11,6 +11,7 @@ import meowv64.reg._
 import difftest.DifftestCSRState
 import difftest.DifftestArchIntRegState
 import difftest.DifftestArchFpRegState
+import difftest.DiffCSRStateIO
 
 class CoreInt extends Bundle {
   val meip = Bool()
@@ -269,26 +270,29 @@ class Core(implicit val coredef: CoreDef) extends Module {
 
   if (coredef.ENABLE_DIFFTEST) {
     val difftestCSR = Module(new DifftestCSRState)
+    val difftest = Wire(Output(new DiffCSRStateIO()))
+    difftest := DontCare
+    difftest.coreid := coredef.HART_ID.U
+    difftest.priviledgeMode := ctrl.toExec.priv.asUInt
+    difftest.mstatus := csr.readers("mstatus")
+    difftest.sstatus := csr.readers("sstatus")
+    difftest.mepc := csr.readers("mepc")
+    difftest.sepc := csr.readers("sepc")
+    difftest.mtval := csr.readers("mtval")
+    difftest.stval := csr.readers("stval")
+    difftest.mtvec := csr.readers("mtvec")
+    difftest.stvec := csr.readers("stvec")
+    difftest.mcause := csr.readers("mcause")
+    difftest.scause := csr.readers("scause")
+    difftest.satp := csr.readers("satp")
+    difftest.mip := csr.readers("mip")
+    difftest.mie := csr.readers("mie")
+    difftest.mscratch := csr.readers("mscratch")
+    difftest.sscratch := csr.readers("sscratch")
+    difftest.mideleg := csr.readers("mideleg")
+    difftest.medeleg := csr.readers("medeleg")
+    difftestCSR.io := RegNext(RegNext(difftest))
     difftestCSR.io.clock := clock
-    difftestCSR.io.coreid := coredef.HART_ID.U
-    difftestCSR.io.priviledgeMode := ctrl.toExec.priv.asUInt
-    difftestCSR.io.mstatus := csr.readers("mstatus")
-    difftestCSR.io.sstatus := csr.readers("sstatus")
-    difftestCSR.io.mepc := csr.readers("mepc")
-    difftestCSR.io.sepc := csr.readers("sepc")
-    difftestCSR.io.mtval := csr.readers("mtval")
-    difftestCSR.io.stval := csr.readers("stval")
-    difftestCSR.io.mtvec := csr.readers("mtvec")
-    difftestCSR.io.stvec := csr.readers("stvec")
-    difftestCSR.io.mcause := csr.readers("mcause")
-    difftestCSR.io.scause := csr.readers("scause")
-    difftestCSR.io.satp := csr.readers("satp")
-    difftestCSR.io.mip := csr.readers("mip")
-    difftestCSR.io.mie := csr.readers("mie")
-    difftestCSR.io.mscratch := csr.readers("mscratch")
-    difftestCSR.io.sscratch := csr.readers("sscratch")
-    difftestCSR.io.mideleg := csr.readers("mideleg")
-    difftestCSR.io.medeleg := csr.readers("medeleg")
 
     val difftestArchIntReg = Module(new DifftestArchIntRegState)
     difftestArchIntReg.io.clock := clock

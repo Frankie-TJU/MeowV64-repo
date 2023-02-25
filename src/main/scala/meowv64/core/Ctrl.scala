@@ -529,6 +529,8 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
   val ex =
     (br.req.ex === ExReq.ex) || (toExec.intAck && (intFired || haltFired)) || toExec.stepAck
   val cause = Wire(UInt(coredef.XLEN.W))
+  val tval = WireDefault(br.tval)
+
   when(
     br.req.ex === ExReq.ex && br.req.exType === ExType.BREAKPOINT &&
       ~debugMode && ((priv === PrivLevel.M && dcsr.ebreakm)
@@ -550,6 +552,8 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
     assert(enterDebugMode)
   }.elsewhen(intFired) {
     cause := (true.B << (coredef.XLEN - 1)) | intCause
+    // For other traps, stval is set to zero
+    tval := 0.U
   }.otherwise {
     cause := (false.B << (coredef.XLEN - 1)) | br.req.exType.asUInt()
   }
@@ -630,7 +634,7 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
       when(delegs) {
         sepc := nepc
         scause := cause
-        stval := br.tval
+        stval := tval
 
         status.spie := status.sie
         status.sie := false.B
@@ -640,7 +644,7 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
       } otherwise {
         mepc := nepc
         mcause := cause
-        mtval := br.tval
+        mtval := tval
 
         status.mpie := status.mie
         status.mie := false.B
@@ -691,7 +695,7 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
     val difftest = Wire(Output(new DiffArchEventIO()))
     difftest := DontCare
     difftest.coreid := coredef.HART_ID.U
-    when(toExec.int && toExec.intAck) {
+    when(intFired && toExec.intAck) {
       difftest.intrNO := intCause
     }.otherwise {
       difftest.intrNO := 0.U
@@ -703,7 +707,7 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
     }
     difftest.exceptionPC := nepc
 
-    difftestArch.io := RegNext(difftest)
+    difftestArch.io := RegNext(RegNext(difftest))
     difftestArch.io.clock := clock
   }
 
