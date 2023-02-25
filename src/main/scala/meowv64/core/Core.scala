@@ -8,6 +8,10 @@ import meowv64.exec.Exec
 import meowv64.instr._
 import meowv64.paging.PTW
 import meowv64.reg._
+import difftest.DifftestCSRState
+import difftest.DifftestArchIntRegState
+import difftest.DifftestArchFpRegState
+import difftest.DiffCSRStateIO
 
 class CoreInt extends Bundle {
   val meip = Bool()
@@ -29,6 +33,7 @@ class CoreFrontend(implicit val coredef: CoreDef) extends Bundle {
 
 class CoreDebug(implicit val coredef: CoreDef) extends Bundle {
   val pc = UInt(coredef.XLEN.W)
+  val fetchPc = UInt(coredef.XLEN.W)
   val minstret = UInt(coredef.XLEN.W)
   val mcycle = UInt(coredef.XLEN.W)
 
@@ -57,7 +62,6 @@ class Core(implicit val coredef: CoreDef) extends Module {
   val io = IO(new Bundle {
     val int = Input(new CoreInt)
     val frontend = new CoreFrontend
-    val time = Input(UInt(64.W))
 
     val dm = new CoreToDebugModule
 
@@ -91,11 +95,19 @@ class Core(implicit val coredef: CoreDef) extends Module {
   val exec = Module(new Exec)
   val regFiles =
     for (regInfo <- coredef.REG_TYPES) yield {
+      // add additional read ports for difftest
+      val readPortCount = coredef
+        .REG_READ_PORT_COUNT(regInfo.regType) + (if (
+                                                   (regInfo == coredef.REG_INT || regInfo == coredef.REG_FLOAT) && coredef.ENABLE_DIFFTEST
+                                                 ) { 32 }
+                                                 else {
+                                                   0
+                                                 })
       val reg = Module(
         new RegFile(
           regInfo.width,
           regInfo.physRegs,
-          coredef.REG_READ_PORT_COUNT(regInfo.regType),
+          readPortCount,
           coredef.REG_WRITE_PORT_COUNT(regInfo.regType),
           // hardwire x0 to zero
           FIXED_ZERO = regInfo.fixedZero
@@ -176,7 +188,7 @@ class Core(implicit val coredef: CoreDef) extends Module {
 
   ctrl.int := io.int
 
-  io.debug.pc := fetch.debug.pc
+  io.debug.fetchPc := fetch.debug.pc
 
   // CSR
   CSRHelper.defaults(csr)
@@ -193,6 +205,12 @@ class Core(implicit val coredef: CoreDef) extends Module {
   csr.attach("mcountinhibit").connect(ctrl.csr.mcountinhibit)
   csr.attach("mideleg").connect(ctrl.csr.mideleg)
   csr.attach("medeleg").connect(ctrl.csr.medeleg)
+  csr.attach("pmpcfg0").connect(ctrl.csr.pmpcfg0)
+  csr.attach("pmpcfg2").connect(ctrl.csr.pmpcfg2)
+  csr.attach("pmpaddr0").connect(ctrl.csr.pmpaddr0)
+  csr.attach("pmpaddr1").connect(ctrl.csr.pmpaddr1)
+  csr.attach("mhpmcounter3").connect(ctrl.csr.mhpmcounter3)
+  csr.attach("mhpmevent3").connect(ctrl.csr.mhpmevent3)
 
   csr.attach("sstatus").connect(ctrl.csr.sstatus)
   csr.attach("stvec").connect(ctrl.csr.stvec)
@@ -206,6 +224,10 @@ class Core(implicit val coredef: CoreDef) extends Module {
   csr.attach("frm").connect(ctrl.csr.frm)
   csr.attach("fcsr").connect(ctrl.csr.fcsr)
 
+  csr.attach("vstart").connect(ctrl.csr.vstart)
+  csr.attach("vxsat").connect(ctrl.csr.vxsat)
+  csr.attach("vxrm").connect(ctrl.csr.vxrm)
+  csr.attach("vcsr").connect(ctrl.csr.vcsr)
   csr.attach("vl").connect(ctrl.csr.vl)
   csr.attach("vtype").connect(ctrl.csr.vtype)
   csr.attach("vlenb").connect(ctrl.csr.vlenb)
@@ -214,6 +236,12 @@ class Core(implicit val coredef: CoreDef) extends Module {
   csr.attach("dpc").connect(ctrl.csr.dpc)
   csr.attach("dscratch0").connect(ctrl.csr.dscratch0)
   csr.attach("dscratch1").connect(ctrl.csr.dscratch1)
+  csr.attach("tselect").connect(ctrl.csr.tselect)
+  csr.readers("tdata1") := 0.U
+  csr.readers("tdata2") := 0.U
+  csr.readers("tdata3") := 0.U
+  csr.readers("tinfo") := 0.U
+  csr.readers("tcontrol") := 0.U
 
   val mscratch = RegInit(0.U(coredef.XLEN.W))
   csr.attach("mscratch").connect(CSRPort.fromReg(coredef.XLEN, mscratch))
@@ -224,7 +252,6 @@ class Core(implicit val coredef: CoreDef) extends Module {
   csr.attach("satp").connect(satp.port)
 
   csr.readers("cycle") := ctrl.csr.cycle
-  csr.readers("time") := io.time
   csr.readers("instret") := ctrl.csr.instret
 
   ptw.satp := satp
@@ -239,4 +266,56 @@ class Core(implicit val coredef: CoreDef) extends Module {
   io.debug.issueNumBoundedByROBSize := exec.toCore.issueNumBoundedByROBSize
   io.debug.issueNumBoundedByLSQSize := exec.toCore.issueNumBoundedByLSQSize
   io.debug.retireNum := exec.toCore.retireNum
+  io.debug.pc := exec.toCore.retirePc
+
+  if (coredef.ENABLE_DIFFTEST) {
+    val difftestCSR = Module(new DifftestCSRState)
+    val difftest = Wire(Output(new DiffCSRStateIO()))
+    difftest := DontCare
+    difftest.coreid := coredef.HART_ID.U
+    difftest.priviledgeMode := ctrl.toExec.priv.asUInt
+    difftest.mstatus := csr.readers("mstatus")
+    difftest.sstatus := csr.readers("sstatus")
+    difftest.mepc := csr.readers("mepc")
+    difftest.sepc := csr.readers("sepc")
+    difftest.mtval := csr.readers("mtval")
+    difftest.stval := csr.readers("stval")
+    difftest.mtvec := csr.readers("mtvec")
+    difftest.stvec := csr.readers("stvec")
+    difftest.mcause := csr.readers("mcause")
+    difftest.scause := csr.readers("scause")
+    difftest.satp := csr.readers("satp")
+    difftest.mip := csr.readers("mip")
+    difftest.mie := csr.readers("mie")
+    difftest.mscratch := csr.readers("mscratch")
+    difftest.sscratch := csr.readers("sscratch")
+    difftest.mideleg := csr.readers("mideleg")
+    difftest.medeleg := csr.readers("medeleg")
+    difftestCSR.io := RegNext(RegNext(difftest))
+    difftestCSR.io.clock := clock
+
+    val difftestArchIntReg = Module(new DifftestArchIntRegState)
+    difftestArchIntReg.io.clock := clock
+    difftestArchIntReg.io.coreid := coredef.HART_ID.U
+    for (i <- 0 until 32) {
+      val readPortOffset = coredef
+        .REG_READ_PORT_COUNT(coredef.REG_INT.regType)
+      val physReg = exec.difftest.intCommittedMap(i.U)
+      regFiles(0).io.reads(readPortOffset + i).addr := physReg
+      difftestArchIntReg.io
+        .gpr(i) := regFiles(0).io.reads(readPortOffset + i).data
+    }
+
+    val difftestArchFpReg = Module(new DifftestArchFpRegState)
+    difftestArchFpReg.io.clock := clock
+    difftestArchFpReg.io.coreid := coredef.HART_ID.U
+    for (i <- 0 until 32) {
+      val readPortOffset = coredef
+        .REG_READ_PORT_COUNT(coredef.REG_FLOAT.regType)
+      val physReg = exec.difftest.fpCommittedMap(i.U)
+      regFiles(1).io.reads(readPortOffset + i).addr := physReg
+      difftestArchFpReg.io
+        .fpr(i) := regFiles(1).io.reads(readPortOffset + i).data
+    }
+  }
 }

@@ -99,18 +99,24 @@ class MeowV64TileLinkAdapterModuleImp(outer: MeowV64TileLinkAdapter)
 
   val coredef = outer.coredef
   val frontend = IO(Flipped(new CoreFrontend()(coredef)))
-  val s_ready :: s_active :: s_inflight :: Nil = Enum(3)
+  val s_ready :: s_active :: s_inflight :: s_invalid :: Nil = Enum(4)
 
   // connect L1ICPort to TileLInk
   def connectIC(port: L1ICPort, node: TLClientNode) = {
     val (ic, ic_edge) = node.out(0)
     val ic_state = RegInit(s_ready)
     val ic_addr = Reg(UInt(coredef.XLEN.W))
+    // ICache may send invalid address upon speculation
+    val safeGet = ic_edge.manager.supportsGetSafe(port.read.bits, log2Ceil(outer.lineSize).U)
     switch(ic_state) {
       is(s_ready) {
         when(port.read.valid) {
           ic_addr := port.read.bits
-          ic_state := s_active
+          when(safeGet) {
+            ic_state := s_active
+          }.otherwise {
+            ic_state := s_invalid
+          }
 
           val offset =
             port.read.bits(log2Ceil(coredef.L1_LINE_BYTES) - 1, 0)
@@ -127,6 +133,9 @@ class MeowV64TileLinkAdapterModuleImp(outer: MeowV64TileLinkAdapter)
           ic_state := s_ready
         }
       }
+      is(s_invalid) {
+        ic_state := s_ready
+      }
     }
 
     // a channel
@@ -135,8 +144,12 @@ class MeowV64TileLinkAdapterModuleImp(outer: MeowV64TileLinkAdapter)
 
     // d channel
     ic.d.ready := true.B
-    port.stall := ~ic.d.valid
-    port.data := ic.d.bits.data
+    port.stall := ~(ic.d.valid || ic_state === s_invalid)
+    when(ic_state =/= s_invalid) {
+      port.data := ic.d.bits.data
+    }.otherwise {
+      port.data := 0.U
+    }
 
     // unused
     ic.b.valid := false.B
@@ -382,6 +395,9 @@ class MeowV64TileLinkAdapterModuleImp(outer: MeowV64TileLinkAdapter)
   val uc_offset = frontend.uc
     .addr(log2Ceil(coredef.L1_LINE_BYTES) - 1, 0)
   val uc_shift = uc_offset << 3
+  // do not send invalid address
+  val safeGet = uc_edge.manager.supportsGetSafe(frontend.uc.addr, frontend.uc.len.asUInt)
+  val safePut = uc_edge.manager.supportsPutFullSafe(frontend.uc.addr, frontend.uc.len.asUInt)
   switch(uc_state) {
     is(s_ready) {
       switch(frontend.uc.req) {
@@ -389,7 +405,11 @@ class MeowV64TileLinkAdapterModuleImp(outer: MeowV64TileLinkAdapter)
 
           uc_addr := frontend.uc.addr
           uc_len := frontend.uc.len
-          uc_state := s_active
+          when(safeGet) {
+            uc_state := s_active
+          }.otherwise {
+            uc_state := s_invalid
+          }
 
           uc_read := true.B
         }
@@ -397,7 +417,11 @@ class MeowV64TileLinkAdapterModuleImp(outer: MeowV64TileLinkAdapter)
 
           uc_addr := frontend.uc.addr
           uc_len := frontend.uc.len
-          uc_state := s_active
+          when(safePut) {
+            uc_state := s_active
+          }.otherwise {
+            uc_state := s_invalid
+          }
 
           uc_read := false.B
 
@@ -421,6 +445,9 @@ class MeowV64TileLinkAdapterModuleImp(outer: MeowV64TileLinkAdapter)
         uc_state := s_ready
       }
     }
+    is(s_invalid) {
+      uc_state := s_ready
+    }
   }
 
   // a channel
@@ -433,9 +460,13 @@ class MeowV64TileLinkAdapterModuleImp(outer: MeowV64TileLinkAdapter)
 
   // d channel
   uc.d.ready := true.B
-  frontend.uc.stall := ~uc.d.valid
-  // handle offset in addr
-  frontend.uc.rdata := uc.d.bits.data >> uc_shift
+  frontend.uc.stall := ~(uc.d.valid || uc_state === s_invalid)
+  when(uc_state =/= s_invalid) {
+    // handle offset in addr
+    frontend.uc.rdata := uc.d.bits.data >> uc_shift
+  }.otherwise {
+    frontend.uc.rdata := 0.U
+  }
 
   // uncached inst
   connectIC(frontend.ui, outer.uiNode)

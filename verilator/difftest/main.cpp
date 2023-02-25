@@ -1,10 +1,16 @@
 #include "VRiscVSystem.h"
 #include <arpa/inet.h>
+#include <deque>
 #include <fcntl.h>
 #include <gmpxx.h>
 #include <iostream>
 #include <map>
 #include <netinet/tcp.h>
+#include <optional>
+#include <riscv/cfg.h>
+#include <riscv/devices.h>
+#include <riscv/processor.h>
+#include <riscv/sim.h>
 #include <signal.h>
 #include <string>
 #include <sys/time.h>
@@ -19,11 +25,13 @@
 #endif
 
 // memory mapping
-typedef uint32_t mem_t;
-std::map<uint64_t, mem_t> memory;
+typedef uint32_t meow_mem_t;
+std::map<uint64_t, meow_mem_t> memory;
 
-// align to mem_t boundary
-uint64_t align(uint64_t addr) { return (addr / sizeof(mem_t)) * sizeof(mem_t); }
+// align to meow_mem_t boundary
+uint64_t align(uint64_t addr) {
+  return (addr / sizeof(meow_mem_t)) * sizeof(meow_mem_t);
+}
 
 VRiscVSystem *top;
 
@@ -143,11 +151,11 @@ void step_mem() {
 
     uint64_t aligned =
         (pending_read_addr / MEM_AXI_DATA_BYTES) * MEM_AXI_DATA_BYTES;
-    for (int i = 0; i < MEM_AXI_DATA_BYTES / sizeof(mem_t); i++) {
-      uint64_t addr = aligned + i * sizeof(mem_t);
-      mem_t r = memory[addr];
+    for (int i = 0; i < MEM_AXI_DATA_BYTES / sizeof(meow_mem_t); i++) {
+      uint64_t addr = aligned + i * sizeof(meow_mem_t);
+      meow_mem_t r = memory[addr];
       mpz_class res = r;
-      res <<= (i * (sizeof(mem_t) * 8));
+      res <<= (i * (sizeof(meow_mem_t) * 8));
       r_data += res;
     }
 
@@ -217,25 +225,25 @@ void step_mem() {
 
       uint64_t aligned =
           pending_write_addr / MEM_AXI_DATA_BYTES * MEM_AXI_DATA_BYTES;
-      for (int i = 0; i < MEM_AXI_DATA_BYTES / sizeof(mem_t); i++) {
-        uint64_t addr = aligned + i * sizeof(mem_t);
+      for (int i = 0; i < MEM_AXI_DATA_BYTES / sizeof(meow_mem_t); i++) {
+        uint64_t addr = aligned + i * sizeof(meow_mem_t);
 
-        mpz_class local_wdata_mpz = wdata >> (i * (sizeof(mem_t) * 8));
-        mem_t local_wdata = local_wdata_mpz.get_ui();
+        mpz_class local_wdata_mpz = wdata >> (i * (sizeof(meow_mem_t) * 8));
+        meow_mem_t local_wdata = local_wdata_mpz.get_ui();
 
         uint64_t local_wstrb =
-            (top->mem_axi4_WSTRB >> (i * sizeof(mem_t))) & 0xfL;
+            (top->mem_axi4_WSTRB >> (i * sizeof(meow_mem_t))) & 0xfL;
 
-        mpz_class local_mask_mpz = shifted_mask >> (i * sizeof(mem_t));
+        mpz_class local_mask_mpz = shifted_mask >> (i * sizeof(meow_mem_t));
         uint64_t local_mask = local_mask_mpz.get_ui() & 0xfL;
         if (local_mask & local_wstrb) {
-          mem_t base = memory[addr];
-          mem_t input = local_wdata;
+          meow_mem_t base = memory[addr];
+          meow_mem_t input = local_wdata;
           uint64_t be = local_mask & local_wstrb;
 
-          mem_t muxed = 0;
-          for (int i = 0; i < sizeof(mem_t); i++) {
-            mem_t sel;
+          meow_mem_t muxed = 0;
+          for (int i = 0; i < sizeof(meow_mem_t); i++) {
+            meow_mem_t sel;
             if (((be >> i) & 1) == 1) {
               sel = (input >> (i * 8)) & 0xff;
             } else {
@@ -310,11 +318,11 @@ void step_mmio() {
     } else {
       uint64_t aligned =
           (pending_read_addr / MMIO_AXI_DATA_BYTES) * MMIO_AXI_DATA_BYTES;
-      for (int i = 0; i < MMIO_AXI_DATA_BYTES / sizeof(mem_t); i++) {
-        uint64_t addr = aligned + i * sizeof(mem_t);
-        mem_t r = memory[addr];
+      for (int i = 0; i < MMIO_AXI_DATA_BYTES / sizeof(meow_mem_t); i++) {
+        uint64_t addr = aligned + i * sizeof(meow_mem_t);
+        meow_mem_t r = memory[addr];
         mpz_class res = r;
-        res <<= (i * (sizeof(mem_t) * 8));
+        res <<= (i * (sizeof(meow_mem_t) * 8));
         r_data += res;
       }
     }
@@ -382,25 +390,25 @@ void step_mmio() {
 
       uint64_t aligned =
           pending_write_addr / MMIO_AXI_DATA_BYTES * MMIO_AXI_DATA_BYTES;
-      for (int i = 0; i < MMIO_AXI_DATA_BYTES / sizeof(mem_t); i++) {
-        uint64_t addr = aligned + i * sizeof(mem_t);
+      for (int i = 0; i < MMIO_AXI_DATA_BYTES / sizeof(meow_mem_t); i++) {
+        uint64_t addr = aligned + i * sizeof(meow_mem_t);
 
-        mpz_class local_wdata_mpz = wdata >> (i * (sizeof(mem_t) * 8));
-        mem_t local_wdata = local_wdata_mpz.get_ui();
+        mpz_class local_wdata_mpz = wdata >> (i * (sizeof(meow_mem_t) * 8));
+        meow_mem_t local_wdata = local_wdata_mpz.get_ui();
 
         uint64_t local_wstrb =
-            (top->mmio_axi4_WSTRB >> (i * sizeof(mem_t))) & 0xfL;
+            (top->mmio_axi4_WSTRB >> (i * sizeof(meow_mem_t))) & 0xfL;
 
-        mpz_class local_mask_mpz = shifted_mask >> (i * sizeof(mem_t));
+        mpz_class local_mask_mpz = shifted_mask >> (i * sizeof(meow_mem_t));
         uint64_t local_mask = local_mask_mpz.get_ui() & 0xfL;
         if (local_mask & local_wstrb) {
-          mem_t base = memory[addr];
-          mem_t input = local_wdata;
+          meow_mem_t base = memory[addr];
+          meow_mem_t input = local_wdata;
           uint64_t be = local_mask & local_wstrb;
 
-          mem_t muxed = 0;
-          for (int i = 0; i < sizeof(mem_t); i++) {
-            mem_t sel;
+          meow_mem_t muxed = 0;
+          for (int i = 0; i < sizeof(meow_mem_t); i++) {
+            meow_mem_t sel;
             if (((be >> i) & 1) == 1) {
               sel = (input >> (i * 8)) & 0xff;
             } else {
@@ -417,7 +425,8 @@ void step_mmio() {
       if (pending_write_addr == serial_addr ||
           pending_write_addr == serial_fpga_addr) {
         // serial
-        printf("%c", input & 0xFF);
+        // printed in spike
+        // printf("%c", input & 0xFF);
         fflush(stdout);
       } else if (pending_write_addr == tohost_addr) {
         // tohost
@@ -444,8 +453,8 @@ void step_mmio() {
       } else if (pending_write_addr == fromhost_addr) {
         // write to fromhost
         // clear tohost
-        for (int i = 0; i < MMIO_AXI_DATA_BYTES / sizeof(mem_t); i++) {
-          uint64_t addr = tohost_addr + i * sizeof(mem_t);
+        for (int i = 0; i < MMIO_AXI_DATA_BYTES / sizeof(meow_mem_t); i++) {
+          uint64_t addr = tohost_addr + i * sizeof(meow_mem_t);
           memory[addr] = 0;
         }
       }
@@ -477,7 +486,7 @@ void step_mmio() {
 }
 
 // load file
-void load_file(const std::string &path) {
+void load_file(const std::string &path, mem_t *m) {
   size_t i = path.rfind('.');
   std::string ext;
   if (i != std::string::npos) {
@@ -489,11 +498,11 @@ void load_file(const std::string &path) {
     assert(fp);
     uint64_t addr = 0x80000000;
 
-    // read whole file and pad to multiples of mem_t
+    // read whole file and pad to multiples of meow_mem_t
     fseek(fp, 0, SEEK_END);
     size_t size = ftell(fp);
     fseek(fp, 0, SEEK_SET);
-    size_t padded_size = align(size + sizeof(mem_t) - 1);
+    size_t padded_size = align(size + sizeof(meow_mem_t) - 1);
     uint8_t *buffer = new uint8_t[padded_size];
     memset(buffer, 0, padded_size);
 
@@ -506,8 +515,9 @@ void load_file(const std::string &path) {
       offset += read;
     }
 
-    for (int i = 0; i < padded_size; i += sizeof(mem_t)) {
-      memory[addr + i] = *((mem_t *)&buffer[i]);
+    m->store(addr - 0x80000000, padded_size, buffer);
+    for (int i = 0; i < padded_size; i += sizeof(meow_mem_t)) {
+      memory[addr + i] = *((meow_mem_t *)&buffer[i]);
     }
     fprintf(stderr, "> Loaded %ld bytes from BIN %s\n", size, path.c_str());
     fclose(fp);
@@ -555,8 +565,8 @@ void load_file(const std::string &path) {
         size_t offset = hdr->p_offset;
         size_t dest = hdr->p_paddr;
         total_size += size;
-        for (int i = 0; i < size; i += sizeof(mem_t)) {
-          mem_t data = *(mem_t *)&buffer[offset + i];
+        for (int i = 0; i < size; i += sizeof(meow_mem_t)) {
+          meow_mem_t data = *(meow_mem_t *)&buffer[offset + i];
           memory[dest + i] = data;
         }
       }
@@ -926,6 +936,215 @@ void jtag_vpi_tick() {
   }
 }
 
+uint64_t mtime = 0;
+// pending
+uint8_t mtip = 0;
+uint8_t mtack = 0;
+
+struct sim : simif_t {
+  bus_t bus;
+  // should return NULL for MMIO addresses
+  char *addr_to_mem(reg_t paddr) {
+    // taken from sim.cc
+    auto desc = bus.find_device(paddr);
+    if (auto mem = dynamic_cast<mem_t *>(desc.second))
+      if (paddr - desc.first < mem->size())
+        return mem->contents(paddr - desc.first);
+    return NULL;
+  }
+  bool reservable(reg_t paddr) { return addr_to_mem(paddr); }
+  // used for MMIO addresses
+  bool mmio_fetch(reg_t paddr, size_t len, uint8_t *bytes) {
+    return mmio_load(paddr, len, bytes);
+  }
+  bool mmio_load(reg_t paddr, size_t len, uint8_t *bytes) {
+    return bus.load(paddr, len, bytes);
+  };
+  bool mmio_store(reg_t paddr, size_t len, const uint8_t *bytes) {
+    return bus.store(paddr, len, bytes);
+  };
+  // Callback for processors to let the simulation know they were reset.
+  void proc_reset(unsigned id){};
+
+  const char *get_symbol(uint64_t paddr) { return NULL; };
+
+  ~sim() = default;
+};
+
+// to sync mtime in CLINT
+extern "C" {
+void set_time(long long cur_time) {
+  fprintf(stderr, "> read mtime = %d\n", cur_time);
+  mtime = cur_time;
+}
+void set_mtip(uint8_t ip) { mtip = ip; }
+};
+
+processor_t *proc;
+
+struct commit_state {
+  int valid;
+  uint64_t pc;
+  uint32_t inst;
+};
+
+enum csr {
+  STATE_CSR_MSTATUS,
+  STATE_CSR_SSTATUS,
+  STATE_CSR_MEPC,
+  STATE_CSR_SEPC,
+  STATE_CSR_MTVAL,
+  STATE_CSR_STVAL,
+  STATE_CSR_MTVEC,
+  STATE_CSR_STVEC,
+  STATE_CSR_MCAUSE,
+  STATE_CSR_SCAUSE,
+  STATE_CSR_SATP,
+  STATE_CSR_MIP,
+  STATE_CSR_MIE,
+  STATE_CSR_MSCRATCH,
+  STATE_CSR_SSCRATCH,
+  STATE_CSR_MIDELEG,
+  STATE_CSR_MEDELEG,
+  STATE_CSR_COUNT,
+};
+const char *csr_names[] = {
+    "mstatus", "sstatus",  "mepc",     "sepc",    "mtval",  "stval",
+    "mtvec",   "stvec",    "mcause",   "scause",  "satp",   "mip",
+    "mie",     "mscratch", "sscratch", "mideleg", "medeleg"};
+
+const int pc_history_size = 10;
+
+struct cpu_state {
+  struct commit_state insn[2];
+  uint64_t csr_state[STATE_CSR_COUNT];
+  uint64_t gpr[32];
+  std::deque<uint64_t> pc_history;
+} cpu_state;
+
+struct spike_state {
+  uint64_t pc;
+  uint64_t csr_state[STATE_CSR_COUNT];
+  uint64_t gpr[32];
+  std::deque<uint64_t> pc_history;
+} spike_state;
+
+uint64_t last_pc = 0x80000000;
+
+extern "C" {
+
+#define DPIC_ARG_BIT uint8_t
+#define DPIC_ARG_BYTE uint8_t
+#define DPIC_ARG_INT uint32_t
+#define DPIC_ARG_LONG uint64_t
+
+void v_difftest_ArchIntRegState(
+    DPIC_ARG_BYTE coreid, DPIC_ARG_LONG gpr_0, DPIC_ARG_LONG gpr_1,
+    DPIC_ARG_LONG gpr_2, DPIC_ARG_LONG gpr_3, DPIC_ARG_LONG gpr_4,
+    DPIC_ARG_LONG gpr_5, DPIC_ARG_LONG gpr_6, DPIC_ARG_LONG gpr_7,
+    DPIC_ARG_LONG gpr_8, DPIC_ARG_LONG gpr_9, DPIC_ARG_LONG gpr_10,
+    DPIC_ARG_LONG gpr_11, DPIC_ARG_LONG gpr_12, DPIC_ARG_LONG gpr_13,
+    DPIC_ARG_LONG gpr_14, DPIC_ARG_LONG gpr_15, DPIC_ARG_LONG gpr_16,
+    DPIC_ARG_LONG gpr_17, DPIC_ARG_LONG gpr_18, DPIC_ARG_LONG gpr_19,
+    DPIC_ARG_LONG gpr_20, DPIC_ARG_LONG gpr_21, DPIC_ARG_LONG gpr_22,
+    DPIC_ARG_LONG gpr_23, DPIC_ARG_LONG gpr_24, DPIC_ARG_LONG gpr_25,
+    DPIC_ARG_LONG gpr_26, DPIC_ARG_LONG gpr_27, DPIC_ARG_LONG gpr_28,
+    DPIC_ARG_LONG gpr_29, DPIC_ARG_LONG gpr_30, DPIC_ARG_LONG gpr_31) {
+  cpu_state.gpr[0] = gpr_0;
+  cpu_state.gpr[1] = gpr_1;
+  cpu_state.gpr[2] = gpr_2;
+  cpu_state.gpr[3] = gpr_3;
+  cpu_state.gpr[4] = gpr_4;
+  cpu_state.gpr[5] = gpr_5;
+  cpu_state.gpr[6] = gpr_6;
+  cpu_state.gpr[7] = gpr_7;
+  cpu_state.gpr[8] = gpr_8;
+  cpu_state.gpr[9] = gpr_9;
+  cpu_state.gpr[10] = gpr_10;
+  cpu_state.gpr[11] = gpr_11;
+  cpu_state.gpr[12] = gpr_12;
+  cpu_state.gpr[13] = gpr_13;
+  cpu_state.gpr[14] = gpr_14;
+  cpu_state.gpr[15] = gpr_15;
+  cpu_state.gpr[16] = gpr_16;
+  cpu_state.gpr[17] = gpr_17;
+  cpu_state.gpr[18] = gpr_18;
+  cpu_state.gpr[19] = gpr_19;
+  cpu_state.gpr[20] = gpr_20;
+  cpu_state.gpr[21] = gpr_21;
+  cpu_state.gpr[22] = gpr_22;
+  cpu_state.gpr[23] = gpr_23;
+  cpu_state.gpr[24] = gpr_24;
+  cpu_state.gpr[25] = gpr_25;
+  cpu_state.gpr[26] = gpr_26;
+  cpu_state.gpr[27] = gpr_27;
+  cpu_state.gpr[28] = gpr_28;
+  cpu_state.gpr[29] = gpr_29;
+  cpu_state.gpr[30] = gpr_30;
+  cpu_state.gpr[31] = gpr_31;
+}
+
+void v_difftest_ArchFpRegState() {}
+
+void v_difftest_CSRState(DPIC_ARG_BYTE coreid, DPIC_ARG_BYTE privilegeMode,
+                         DPIC_ARG_LONG mstatus, DPIC_ARG_LONG sstatus,
+                         DPIC_ARG_LONG mepc, DPIC_ARG_LONG sepc,
+                         DPIC_ARG_LONG mtval, DPIC_ARG_LONG stval,
+                         DPIC_ARG_LONG mtvec, DPIC_ARG_LONG stvec,
+                         DPIC_ARG_LONG mcause, DPIC_ARG_LONG scause,
+                         DPIC_ARG_LONG satp, DPIC_ARG_LONG mip,
+                         DPIC_ARG_LONG mie, DPIC_ARG_LONG mscratch,
+                         DPIC_ARG_LONG sscratch, DPIC_ARG_LONG mideleg,
+                         DPIC_ARG_LONG medeleg) {
+  cpu_state.csr_state[STATE_CSR_MSTATUS] = mstatus;
+  cpu_state.csr_state[STATE_CSR_SSTATUS] = sstatus;
+  cpu_state.csr_state[STATE_CSR_MEPC] = mepc;
+  cpu_state.csr_state[STATE_CSR_SEPC] = sepc;
+  cpu_state.csr_state[STATE_CSR_MTVAL] = mtval;
+  cpu_state.csr_state[STATE_CSR_STVAL] = stval;
+  cpu_state.csr_state[STATE_CSR_MTVEC] = mtvec;
+  cpu_state.csr_state[STATE_CSR_STVEC] = stvec;
+  cpu_state.csr_state[STATE_CSR_MCAUSE] = mcause;
+  cpu_state.csr_state[STATE_CSR_SCAUSE] = scause;
+  cpu_state.csr_state[STATE_CSR_SATP] = satp;
+  cpu_state.csr_state[STATE_CSR_MIP] = mip;
+  cpu_state.csr_state[STATE_CSR_MIE] = mie;
+  cpu_state.csr_state[STATE_CSR_MSCRATCH] = mscratch;
+  cpu_state.csr_state[STATE_CSR_SSCRATCH] = sscratch;
+  cpu_state.csr_state[STATE_CSR_MIDELEG] = mideleg;
+  cpu_state.csr_state[STATE_CSR_MEDELEG] = medeleg;
+}
+
+void v_difftest_InstrCommit(DPIC_ARG_BYTE coreid, DPIC_ARG_BYTE index,
+                            DPIC_ARG_BIT valid, DPIC_ARG_BYTE special,
+                            DPIC_ARG_BIT skip, DPIC_ARG_BIT isRVC,
+                            DPIC_ARG_BIT rfwen, DPIC_ARG_BIT fpwen,
+                            DPIC_ARG_INT wpdest, DPIC_ARG_BYTE wdest,
+                            DPIC_ARG_LONG pc, DPIC_ARG_INT instr,
+                            DPIC_ARG_INT robidx, DPIC_ARG_BYTE lqidx,
+                            DPIC_ARG_BYTE sqidx, DPIC_ARG_BIT isLoad,
+                            DPIC_ARG_BIT isStore) {
+  if (valid) {
+    cpu_state.insn[index].valid = 1;
+    cpu_state.insn[index].pc = pc;
+    cpu_state.insn[index].inst = instr;
+  }
+}
+
+void v_difftest_ArchEvent(DPIC_ARG_BYTE coreid, DPIC_ARG_INT intrNo,
+                          DPIC_ARG_INT cause, DPIC_ARG_LONG exceptionPC,
+                          DPIC_ARG_INT exceptionInst) {
+  if (intrNo > 0) {
+    if (!mtack) {
+      fprintf(stderr, "> mtack becomes 1\n");
+    }
+    mtack = 1;
+  }
+}
+
+void v_difftest_TrapEvent() {}
+}
+
 int main(int argc, char **argv) {
   Verilated::commandArgs(argc, argv);
 
@@ -968,9 +1187,90 @@ int main(int argc, char **argv) {
     }
   }
 
+  mem_t m(0x20000000);
   if (optind < argc) {
-    load_file(argv[optind]);
+    load_file(argv[optind], &m);
   }
+
+  cfg_t cfg(/*default_initrd_bounds=*/std::make_pair((reg_t)0, (reg_t)0),
+            /*default_bootargs=*/nullptr,
+            /*default_isa=*/DEFAULT_ISA,
+            /*default_priv=*/DEFAULT_PRIV,
+            /*default_varch=*/DEFAULT_VARCH,
+            /*default_misaligned=*/false,
+            /*default_endianness=*/endianness_little,
+            /*default_pmpregions=*/16,
+            /*default_mem_layout=*/
+            std::vector<mem_cfg_t>{mem_cfg_t(0x80000000, 0x20000000)},
+            /*default_hartids=*/std::vector<int>(),
+            /*default_real_time_clint=*/false,
+            /*default_trigger_count=*/4);
+  sim s;
+  s.bus.add_device(0x80000000, &m);
+  // add dummy device for reading dtb
+  mem_t m_zero(0x1000);
+  s.bus.add_device(0x00000000, &m_zero);
+
+  isa_parser_t isa_parser(DEFAULT_ISA, DEFAULT_PRIV);
+  processor_t p(&isa_parser, &cfg, &s, 0, true, stderr, std::cerr);
+  // only enable sv39 and sv48, disable sv57
+  p.set_impl(IMPL_MMU_SV57, false);
+
+  // add plic, clint and uart
+  std::vector<processor_t *> procs;
+  procs.push_back(&p);
+  plic_t plic(procs, true, 2);
+  s.bus.add_device(0xc000000, &plic);
+  clint_t clint(procs, 1000000000, false);
+  s.bus.add_device(0x2000000, &clint);
+  ns16550_t uart(&s.bus, &plic, 1, 2, 1);
+  s.bus.add_device(0x60201000, &uart);
+
+  p.reset();
+  p.get_state()->pc = 0x80000000;
+  // p.enable_log_commits();
+  // p.debug = true;
+  proc = &p;
+
+  // step and save csr & gpr state
+  auto step_spike = [&]() {
+    proc->step(1);
+
+    const csr_t *csrs[] = {
+        proc->get_state()->mstatus.get(),
+        proc->get_state()->sstatus.get(),
+        proc->get_state()->mepc.get(),
+        proc->get_state()->sepc.get(),
+        proc->get_state()->mtval.get(),
+        proc->get_state()->stval.get(),
+        proc->get_state()->mtvec.get(),
+        proc->get_state()->stvec.get(),
+        proc->get_state()->mcause.get(),
+        proc->get_state()->scause.get(),
+        proc->get_state()->satp.get(),
+        proc->get_state()->mip.get(),
+        proc->get_state()->mie.get(),
+        proc->get_state()->csrmap[CSR_MSCRATCH].get(),
+        proc->get_state()->csrmap[CSR_SSCRATCH].get(),
+        proc->get_state()->mideleg.get(),
+        proc->get_state()->medeleg.get(),
+    };
+    for (int i = 0; i < 32; i++) {
+      spike_state.gpr[i] = proc->get_state()->XPR[i];
+    }
+    for (int i = 0; i < STATE_CSR_COUNT; i++) {
+      spike_state.csr_state[i] = csrs[i]->read();
+    }
+    // patch mtip
+    if (mtip) {
+      spike_state.csr_state[STATE_CSR_MIP] |= MIP_MTIP;
+    }
+    spike_state.pc = proc->get_state()->last_inst_pc;
+    spike_state.pc_history.push_back(spike_state.pc);
+    if (spike_state.pc_history.size() > pc_history_size) {
+      spike_state.pc_history.pop_front();
+    }
+  };
 
   top = new VRiscVSystem;
 
@@ -1029,7 +1329,7 @@ int main(int argc, char **argv) {
         fprintf(stderr, "> pc: %lx\n", top->debug_0_pc);
       }
 
-      if (top->debug_0_mcycle > 10000000 && !jtag) {
+      if (top->debug_0_mcycle > 50000000 && !jtag) {
         // do not timeout in jtag mode
         fprintf(stderr, "> Timed out\n");
         finished = true;
@@ -1061,6 +1361,76 @@ int main(int argc, char **argv) {
       top->clock = 0;
       step_mem();
       step_mmio();
+
+      // sync mtime and mtip
+      clint.mtime = mtime;
+      proc->get_state()->mip->backdoor_write_with_mask(MIP_MTIP,
+                                                       mtack ? MIP_MTIP : 0);
+
+      bool any_valid = false;
+      for (int index = 0; index < 2; index++) {
+        if (cpu_state.insn[index].valid) {
+          any_valid = true;
+
+          step_spike();
+          mtack = 0;
+          uint64_t cur_pc = cpu_state.insn[index].pc;
+          uint64_t exp_pc = spike_state.pc;
+          if (cur_pc != exp_pc) {
+            fprintf(stderr,
+                    "> %ld: Mismatch commit @ pc %lx (expected %lx) inst %lx\n",
+                    main_time, cur_pc, exp_pc, cpu_state.insn[index].inst);
+            for (int i = 0; i < 32; i++) {
+              fprintf(stderr, "> gpr[%d] = %016lx\n", i, cpu_state.gpr[i]);
+            }
+            for (int i = 0; i < STATE_CSR_COUNT; i++) {
+              fprintf(stderr, "> csr[%s] = %016lx\n", csr_names[i],
+                      cpu_state.csr_state[i]);
+            }
+            fprintf(stderr, "> cpu pc history:\n");
+            for (auto pc : cpu_state.pc_history) {
+              fprintf(stderr, "> %016lx\n", pc);
+            }
+            fprintf(stderr, "> spike pc history:\n");
+            for (auto pc : spike_state.pc_history) {
+              fprintf(stderr, "> %016lx\n", pc);
+            }
+
+            finished = true;
+            res = 1;
+          }
+          cpu_state.pc_history.push_back(cur_pc);
+          if (cpu_state.pc_history.size() > pc_history_size) {
+            cpu_state.pc_history.pop_front();
+          }
+          last_pc = cur_pc;
+
+          cpu_state.insn[index].valid = 0;
+        }
+      }
+
+      if (any_valid) {
+        for (int i = 0; i < STATE_CSR_COUNT; i++) {
+          uint64_t actual = cpu_state.csr_state[i];
+          uint64_t expected = spike_state.csr_state[i];
+          if (expected != actual) {
+            fprintf(stderr,
+                    "> %ld: Mismatch csr @ pc %lx %s %lx (expected %lx)\n",
+                    main_time, last_pc, csr_names[i], actual, expected);
+          }
+        }
+
+        for (int i = 0; i < 32; i++) {
+          uint64_t actual = cpu_state.gpr[i];
+          uint64_t expected = spike_state.gpr[i];
+          if (expected != actual) {
+            fprintf(stderr,
+                    "> %ld: Mismatch gpr @ pc %lx gpr[%d]=%016lx (expected "
+                    "%016lx)\n",
+                    main_time, last_pc, i, actual, expected);
+          }
+        }
+      }
     }
 
     if (jtag) {
@@ -1075,7 +1445,9 @@ int main(int argc, char **argv) {
 
     top->eval();
     if (tfp) {
-      tfp->dump(main_time);
+      if (main_time > 111090000) {
+        // tfp->dump(main_time);
+      }
       // tfp->flush();
     }
     main_time += 5;
@@ -1127,10 +1499,10 @@ int main(int argc, char **argv) {
     FILE *fp = fopen(signature_path, "w");
     for (uint64_t addr = begin_signature; addr < end_signature;
          addr += signature_granularity) {
-      uint64_t words = signature_granularity / sizeof(mem_t);
-      for (uint64_t i = 0; i < signature_granularity; i += sizeof(mem_t)) {
+      uint64_t words = signature_granularity / sizeof(meow_mem_t);
+      for (uint64_t i = 0; i < signature_granularity; i += sizeof(meow_mem_t)) {
         fprintf(fp, "%08lx",
-                memory[addr + signature_granularity - sizeof(mem_t) - i]);
+                memory[addr + signature_granularity - sizeof(meow_mem_t) - i]);
       }
       fprintf(fp, "\n");
     }

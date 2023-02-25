@@ -1,0 +1,3 @@
+#!/bin/bash
+echo -e "/time_;/\na\n  import \"DPI-C\" function void set_time (\n    input longint cur_time);\n  import \"DPI-C\" function void set_mtip (\n    input byte mtip);\n.\n/time_ <= _time_T_1;/\n+\na\n    if (auto_in_a_valid && auto_in_d_ready && in_bits_read && auto_in_a_bits_address[15:0] == 16'hbff8) begin\n      set_time(time_);\n    end\n    set_mtip(auto_int_out_1);\n.\nw top.v" | ed meowv64.rocket.MeowV64DifftestConfig.v
+diff -u meowv64.rocket.MeowV64DifftestConfig.v top.v || true

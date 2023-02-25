@@ -5,6 +5,9 @@ import chisel3.experimental.ChiselEnum
 import chisel3.util._
 import meowv64.debug.DebugModule
 import meowv64.exec.ExceptionResult
+import difftest.DifftestTrapEvent
+import difftest.DifftestArchEvent
+import _root_.difftest.DiffArchEventIO
 
 class StageCtrl extends Bundle {
   val stall = Input(Bool())
@@ -139,6 +142,12 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
     val mcountinhibit = new CSRPort(coredef.XLEN)
     val mideleg = new CSRPort(coredef.XLEN)
     val medeleg = new CSRPort(coredef.XLEN)
+    val pmpcfg0 = new CSRPort(coredef.XLEN)
+    val pmpcfg2 = new CSRPort(coredef.XLEN)
+    val pmpaddr0 = new CSRPort(coredef.XLEN)
+    val pmpaddr1 = new CSRPort(coredef.XLEN)
+    val mhpmcounter3 = new CSRPort(coredef.XLEN)
+    val mhpmevent3 = new CSRPort(coredef.XLEN)
 
     val sstatus = new CSRPort(coredef.XLEN)
     val stvec = new CSRPort(coredef.XLEN)
@@ -155,6 +164,10 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
     val frm = new CSRPort(coredef.XLEN)
     val fcsr = new CSRPort(coredef.XLEN)
 
+    val vstart = new CSRPort(coredef.XLEN)
+    val vxsat = new CSRPort(coredef.XLEN)
+    val vxrm = new CSRPort(coredef.XLEN)
+    val vcsr = new CSRPort(coredef.XLEN)
     val vl = new CSRPort(coredef.XLEN)
     val vtype = new CSRPort(coredef.XLEN)
     val vlenb = new CSRPort(coredef.XLEN)
@@ -163,6 +176,7 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
     val dpc = new CSRPort(coredef.XLEN)
     val dscratch0 = new CSRPort(coredef.XLEN)
     val dscratch1 = new CSRPort(coredef.XLEN)
+    val tselect = new CSRPort(coredef.XLEN)
   })
 
   val dm = IO(new CoreToDebugModule)
@@ -301,6 +315,28 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
   csr.medeleg <> CSRPort.fromReg(coredef.XLEN, medeleg)
   csr.mideleg <> CSRPort.fromReg(coredef.XLEN, mideleg)
 
+  // PMP
+  val pmpcfg0 = RegInit(0.U(coredef.XLEN.W))
+  val pmpcfg2 = RegInit(0.U(coredef.XLEN.W))
+  val pmpaddr0 = RegInit(0.U(coredef.XLEN.W))
+  val pmpaddr1 = RegInit(0.U(coredef.XLEN.W))
+  csr.pmpcfg0 <> CSRPort.fromReg(coredef.XLEN, pmpcfg0)
+  csr.pmpcfg2 <> CSRPort.fromReg(coredef.XLEN, pmpcfg2)
+  val pmpMask = 0x003fffffffffffffL.U
+  csr.pmpaddr0.rdata := pmpaddr0.asUInt
+  when(csr.pmpaddr0.write) {
+    pmpaddr0 := csr.pmpaddr0.wdata & pmpMask
+  }
+  csr.pmpaddr1.rdata := pmpaddr1.asUInt
+  when(csr.pmpaddr1.write) {
+    pmpaddr1 := csr.pmpaddr1.wdata & pmpMask
+  }
+
+  val mhpmcounter3 = RegInit(0.U(coredef.XLEN.W))
+  val mhpmevent3 = RegInit(0.U(coredef.XLEN.W))
+  csr.mhpmcounter3 <> CSRPort.fromReg(coredef.XLEN, mhpmcounter3)
+  csr.mhpmevent3 <> CSRPort.fromReg(coredef.XLEN, mhpmevent3)
+
   // xIE, xIP
   val ipStore = RegInit(IntConf.empty)
   val ie = RegInit(IntConf.empty)
@@ -318,54 +354,48 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
 
   csr.mie.rdata := (
     ie.asUInt & IntConf.mmask(false)
-      | mwpri & IntConf.mwpri
-      | IntConf.hardwired.asUInt & ~(Status.mmask | Status.mwpri)
+      | IntConf.hardwired.asUInt
   )
 
   csr.sie.rdata := (
     ie.asUInt & IntConf.smask(false)
-      | swpri & IntConf.swpri
-      | IntConf.hardwired.asUInt & ~(Status.smask | Status.swpri)
+      | IntConf.hardwired.asUInt
   )
 
   when(csr.mie.write) {
     ie := (
-      csr.mie.wdata & IntConf.mmask(false) | ie.asUInt & ~Status.mmask
+      csr.mie.wdata & IntConf.mmask(false)
     ).asTypeOf(ie)
-    mwpri := csr.mie.wdata
   }
 
   when(csr.sie.write) {
+    // do not override mie bits when writing to sie
     ie := (
-      csr.sie.wdata & IntConf.smask(false) | ie.asUInt & ~Status.smask
+      csr.sie.wdata & IntConf.smask(false)
+        | ie.asUInt & ~IntConf.smask(false)
     ).asTypeOf(ie)
-    swpri := csr.sie.wdata
   }
 
   csr.mip.rdata := (
     ip.asUInt & IntConf.mmask(false)
-      | mwpri & IntConf.mwpri
-      | IntConf.hardwired.asUInt & ~(Status.mmask | Status.mwpri)
+      | IntConf.hardwired.asUInt
   )
 
   csr.sip.rdata := (
     ip.asUInt & IntConf.smask(false)
-      | swpri & IntConf.swpri
-      | IntConf.hardwired.asUInt & ~(Status.smask | Status.swpri)
+      | IntConf.hardwired.asUInt
   )
 
   when(csr.mip.write) {
     ipStore := (
-      csr.mip.wdata & IntConf.mmask(false) | ipStore.asUInt & ~Status.mmask
+      csr.mip.wdata & IntConf.mmask(false)
     ).asTypeOf(ipStore)
-    mwpri := csr.mip.wdata
   }
 
   when(csr.sip.write) {
     ipStore := (
-      csr.sip.wdata & IntConf.smask(false) | ipStore.asUInt & ~Status.smask
+      csr.sip.wdata & IntConf.smask(false)
     ).asTypeOf(ipStore)
-    swpri := csr.sip.wdata
   }
 
   // xEPC
@@ -420,6 +450,21 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
     vState := toExec.updateVState.bits
   }
 
+  // vcsr: vxrm + vxsat
+  class VCSR extends Bundle {
+    // from MSB to LSB
+    val vxrm = UInt(2.W)
+    val vxsat = UInt(1.W)
+  }
+
+  val vcsr = RegInit(0.U.asTypeOf(new VCSR))
+  csr.vxrm <> CSRPort.fromReg(2, vcsr.vxrm)
+  csr.vxsat <> CSRPort.fromReg(1, vcsr.vxsat)
+  csr.vcsr <> CSRPort.fromReg(3, vcsr)
+
+  val vstart = RegInit(0.U(coredef.XLEN.W))
+  csr.vstart <> CSRPort.fromReg(coredef.XLEN, vstart)
+
   val dcsr = RegInit(DCSR.init)
   csr.dcsr.rdata := (
     // debugver=4 mprven=1
@@ -449,6 +494,13 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
   csr.dpc <> CSRPort.fromReg(coredef.XLEN, dpc)
   csr.dscratch0 <> CSRPort.fromReg(coredef.XLEN, dscratch0)
   csr.dscratch1 <> CSRPort.fromReg(coredef.XLEN, dscratch1)
+  // Writes of values greater than or equal to the number of supported triggers
+  // may result in a different value in this register than what was written.
+  val tselect = RegInit(0.U(1.W))
+  when(csr.tselect.write) {
+    tselect := csr.tselect.wdata(0) ^ 1.U
+  }
+  csr.tselect.rdata := tselect
 
   // Interrupts
   // only low 12 bits are valid
@@ -477,6 +529,8 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
   val ex =
     (br.req.ex === ExReq.ex) || (toExec.intAck && (intFired || haltFired)) || toExec.stepAck
   val cause = Wire(UInt(coredef.XLEN.W))
+  val tval = WireDefault(br.tval)
+
   when(
     br.req.ex === ExReq.ex && br.req.exType === ExType.BREAKPOINT &&
       ~debugMode && ((priv === PrivLevel.M && dcsr.ebreakm)
@@ -498,6 +552,8 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
     assert(enterDebugMode)
   }.elsewhen(intFired) {
     cause := (true.B << (coredef.XLEN - 1)) | intCause
+    // For other traps, stval is set to zero
+    tval := 0.U
   }.otherwise {
     cause := (false.B << (coredef.XLEN - 1)) | br.req.exType.asUInt()
   }
@@ -578,7 +634,7 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
       when(delegs) {
         sepc := nepc
         scause := cause
-        stval := br.tval
+        stval := tval
 
         status.spie := status.sie
         status.sie := false.B
@@ -588,7 +644,7 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
       } otherwise {
         mepc := nepc
         mcause := cause
-        mtval := br.tval
+        mtval := tval
 
         status.mpie := status.mie
         status.mie := false.B
@@ -621,6 +677,38 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
     debugMode := false.B
 
     priv := dcsr.prv.asTypeOf(PrivLevel.Type())
+  }
+
+  if (coredef.ENABLE_DIFFTEST) {
+    // trap
+    val difftestTrap = Module(new DifftestTrapEvent)
+    difftestTrap.io.clock := clock
+    difftestTrap.io.coreid := coredef.HART_ID.U
+    difftestTrap.io.valid := false.B
+    difftestTrap.io.code := 0.U
+    difftestTrap.io.pc := nepc
+    difftestTrap.io.cycleCnt := mcycle
+    difftestTrap.io.instrCnt := minstret
+    difftestTrap.io.hasWFI := false.B
+
+    val difftestArch = Module(new DifftestArchEvent)
+    val difftest = Wire(Output(new DiffArchEventIO()))
+    difftest := DontCare
+    difftest.coreid := coredef.HART_ID.U
+    when(intFired && toExec.intAck) {
+      difftest.intrNO := intCause
+    }.otherwise {
+      difftest.intrNO := 0.U
+    }
+    when(ex) {
+      difftest.cause := cause
+    }.otherwise {
+      difftest.cause := 0.U
+    }
+    difftest.exceptionPC := nepc
+
+    difftestArch.io := RegNext(RegNext(difftest))
+    difftestArch.io.clock := clock
   }
 
   // Avoid Vivado naming collision. Com'on, Xilinx, write *CORRECT* code plz

@@ -83,6 +83,41 @@ class MeowV64FPGAConfig
         new MeowV64BaseConfig
     )
 
+class WithDifftestMemPort
+    extends Config((site, _, _) => { case CustomExtMem =>
+      Seq(
+        MasterPortParams(
+          // 0x8000_0000 ~ 0x9000_0000
+          base = BigInt("80000000", 16),
+          size = BigInt("10000000", 16),
+          beatBytes = site(MemoryBusKey).beatBytes,
+          idBits = 4
+        )
+      )
+    })
+
+class WithDifftestMMIOPort
+    extends Config((_, _, _) => { case CustomExtBus =>
+      Seq(
+        MasterPortParams(
+          // 0x4000_0000 ~ 0x5000_0000
+          base = BigInt("40000000", 16),
+          size = BigInt("10000000", 16),
+          beatBytes = 8,
+          idBits = 4
+        )
+      )
+    })
+
+class MeowV64DifftestConfig
+    extends Config(
+      new WithMeowV64Cores(
+        new SingleCoreSystemDef,
+        enableDifftest = true
+      ) ++
+        new MeowV64BaseConfig
+    )
+
 class MeowV64DualCoreConfig
     extends Config(
       new WithMeowV64Cores(new DualCoreSystemDef) ++

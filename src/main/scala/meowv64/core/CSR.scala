@@ -115,8 +115,18 @@ object CSR {
     0x7b1 -> (("dpc", true)),
     0x7b2 -> (("dscratch0", true)),
     0x7b3 -> (("dscratch1", true)),
+    0x7a0 -> (("tselect", true)),
+    0x7a1 -> (("tdata1", false)),
+    0x7a2 -> (("tdata2", false)),
+    0x7a3 -> (("tdata3", false)),
+    0x7a4 -> (("tinfo", false)),
+    0x7a5 -> (("tcontrol", false)),
 
     // Vector
+    0x008 -> (("vstart", true)),
+    0x009 -> (("vxsat", true)),
+    0x00a -> (("vxrm", true)),
+    0x00f -> (("vcsr", true)),
     0xc20 -> (("vl", false)),
     0xc21 -> (("vtype", false)),
     0xc22 -> (("vlenb", false)),
@@ -139,8 +149,14 @@ object CSR {
     0x342 -> (("mcause", true)),
     0x343 -> (("mtval", true)),
     0x344 -> (("mip", true)),
+    0x3a0 -> (("pmpcfg0", true)),
+    0x3a2 -> (("pmpcfg2", true)),
+    0x3b0 -> (("pmpaddr0", true)),
+    0x3b1 -> (("pmpaddr1", true)),
     0xb00 -> (("mcycle", true)),
     0xb02 -> (("minstret", true)),
+    0xb03 -> (("mhpmcounter3", true)),
+    0x323 -> (("mhpmevent3", true)),
 
     // Supervisor
     0x100 -> (("sstatus", true)),
@@ -159,7 +175,6 @@ object CSR {
 
     // User
     0xc00 -> (("cycle", false)),
-    0xc01 -> (("time", false)),
     0xc02 -> (("instret", false))
   )
 
@@ -272,7 +287,7 @@ object Status {
       "0" * 12 +
       "11001000100",
     2
-  ).U
+  ).U(coredef.XLEN.W)
 
   def mmask(implicit coredef: CoreDef) = BigInt(
     "0" + // SD not supported
@@ -285,7 +300,7 @@ object Status {
       "10111011" // xP?IE
     ,
     2
-  ).U
+  ).U(coredef.XLEN.W)
 
   def swpri(implicit coredef: CoreDef) = BigInt(
     "0" +
@@ -294,7 +309,7 @@ object Status {
       "1" * 12 +
       "00100001111011001100",
     2
-  ).U
+  ).U(coredef.XLEN.W)
 
   def smask(implicit coredef: CoreDef) = BigInt(
     "0" + // SD not supported
@@ -302,12 +317,12 @@ object Status {
       "0" * 2 + // SXL and UXL not supported
       "0" * 12 + // WPRI
       "11" + // MXR, SUM
-      "00000" + // WPRI, XS & FS
+      "00011" + // WPRI, XS & FS
       "00001" + // xPP
       "00110011" // xP?IE
     ,
     2
-  ).U
+  ).U(coredef.XLEN.W)
 }
 
 class IntConfGroup extends Bundle {
@@ -342,7 +357,6 @@ object IntConfGroup {
 }
 
 class IntConf(implicit val coredef: CoreDef) extends Bundle {
-  val WPRI1 = UInt((coredef.XLEN - 12).W)
   val external = new IntConfGroup
   val timer = new IntConfGroup
   val software = new IntConfGroup
@@ -379,7 +393,6 @@ object IntConf {
 
   def empty(implicit coredef: CoreDef) = {
     val result = Wire(new IntConf)
-    result.WPRI1 := 0.U
     result.external := IntConfGroup.empty
     result.timer := IntConfGroup.empty
     result.software := IntConfGroup.empty
@@ -388,7 +401,6 @@ object IntConf {
 
   def hardwired(implicit coredef: CoreDef) = {
     val result = Wire(new IntConf)
-    result.WPRI1 := DontCare
     result.external := IntConfGroup.hardwired
     result.timer := IntConfGroup.hardwired
     result.software := IntConfGroup.hardwired
@@ -413,12 +425,13 @@ class Satp extends Bundle {
     val casted = port.wdata.asTypeOf(this)
     val modeValid = casted.mode.isValid
 
-    when(port.write) {
+    // Implementations are not required to support all MODE settings, and if
+    // satp is written with an unsupported MODE, the entire write has no effect;
+    // no fields in satp are modified.
+    when(port.write && modeValid) {
       asid := casted.asid
       ppn := casted.ppn
-      when(modeValid) {
-        mode := casted.mode
-      }
+      mode := casted.mode
     }
 
     port

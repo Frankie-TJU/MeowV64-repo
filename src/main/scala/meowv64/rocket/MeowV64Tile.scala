@@ -235,10 +235,6 @@ class MeowV64TileModuleImp(outer: MeowV64Tile)
   // wire frontend io to adapter
   core.io.frontend <> outer.adapter.module.frontend
 
-  // time
-  // TODO
-  core.io.time := 0.U
-
   outer.connectMeowV64Interrupts(
     core.io.dm.haltreq,
     core.io.int.meip,

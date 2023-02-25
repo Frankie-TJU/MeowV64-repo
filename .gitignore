@@ -371,3 +371,5 @@ firrtl_black_box_resource_files.f
 *.fir
 *.anno.json
 .direnv/
+emu
+emu-compile/

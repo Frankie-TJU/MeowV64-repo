@@ -43,7 +43,6 @@ class LocalInt extends Bundle {
 class CLINT(implicit sDef: SystemDef) extends Module {
   val toL2 = IO(new MMIOAccess(CLINTMMIODef))
   val ints = IO(Output(Vec(sDef.CORE_COUNT, new LocalInt)))
-  val time = IO(Output(UInt(64.W)))
 
   toL2.req.nodeq()
   toL2.resp.bits := 0.U
@@ -52,8 +51,6 @@ class CLINT(implicit sDef: SystemDef) extends Module {
   // Timer
   val mtime = RegInit(0.U(64.W))
   mtime := mtime +% 1.U
-
-  time := mtime
 
   val mtimecmp = RegInit(VecInit(Seq.fill(sDef.CORE_COUNT)(0.U(64.W))))
   for ((c, m) <- ints.zip(mtimecmp)) {

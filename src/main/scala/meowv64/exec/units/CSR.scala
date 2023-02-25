@@ -6,6 +6,7 @@ import chisel3.util._
 import meowv64.core._
 import meowv64.exec._
 import meowv64.instr.Decoder
+import meowv64.core.CSR
 
 class CSRExt(implicit val coredef: CoreDef) extends Bundle {
   val rdata = UInt(coredef.XLEN.W)
@@ -147,6 +148,11 @@ class CSR(implicit val coredef: CoreDef)
 
   val fault = WireDefault(false.B)
   val rdata = Wire(UInt(coredef.XLEN.W))
+  val validCSR = Wire(Bool())
+  validCSR := CSR.addrMap.keys
+    .map(csrNumber => addr === csrNumber.U)
+    .reduce(_ || _)
+
   when(isVSETVL) {
     fault := false.B
     rdata := newVState.vl
@@ -154,6 +160,9 @@ class CSR(implicit val coredef: CoreDef)
     fault := true.B
     rdata := DontCare
   }.elsewhen((addr === 0x180.U) && status.tvm) { // SATP trap
+    fault := true.B
+    rdata := DontCare
+  }.elsewhen(!validCSR) { // unknown CSR
     fault := true.B
     rdata := DontCare
   }.otherwise {
@@ -193,6 +202,8 @@ class CSR(implicit val coredef: CoreDef)
 
   when(fault) {
     info.exception.ex(ExType.ILLEGAL_INSTR)
+    // report instruction bits
+    info.wb := instr.instr.raw
   }.elsewhen(pipeWritten) {
     // csr is updated
     // flush pipeline to avoid stale value

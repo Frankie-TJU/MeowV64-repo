@@ -12,6 +12,8 @@ import meowv64.instr.FetchEx
 class BypassExt(implicit val coredef: CoreDef) extends Bundle {
   val acc = UInt(coredef.XLEN.W)
   val illegal = Bool()
+  // raw instruction bits
+  val instr = UInt(32.W)
 }
 
 class Bypass(override implicit val coredef: CoreDef)
@@ -25,6 +27,7 @@ class Bypass(override implicit val coredef: CoreDef)
     val ext = Wire(new BypassExt)
     ext.acc := DontCare
     ext.illegal := ~pipe.instr.instr.info.legal
+    ext.instr := pipe.instr.instr.raw
 
     switch(pipe.instr.instr.op) {
       is(Decoder.Op("LUI").ident) {
@@ -59,7 +62,8 @@ class Bypass(override implicit val coredef: CoreDef)
       info.wb := ifAddr
     }.elsewhen(ext.illegal) {
       info.exception.ex(ExType.ILLEGAL_INSTR)
-      info.wb := 0.U
+      // report instruction bits
+      info.wb := ext.instr
     }.elsewhen(pipe.instr.instr.op === Decoder.Op("JAL").ident) {
       val linked = Wire(UInt(coredef.XLEN.W))
       linked := pipe.instr.addr + 4.U

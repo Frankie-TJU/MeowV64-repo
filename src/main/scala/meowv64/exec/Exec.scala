@@ -19,7 +19,7 @@ import meowv64.instr._
 import meowv64.paging.TLBExt
 import meowv64.reg._
 import meowv64.util._
-
+import difftest._
 import scala.collection.mutable.ArrayBuffer
 
 /** Out-of-order execution (Tomasulo's algorithm)
@@ -83,6 +83,7 @@ class Exec(implicit val coredef: CoreDef) extends Module {
     val issueNumBoundedByROBSize = Output(Bool())
     val issueNumBoundedByLSQSize = Output(Bool())
     val retireNum = Output(UInt(log2Ceil(coredef.ISSUE_NUM + 1).W))
+    val retirePc = Output(UInt(coredef.XLEN.W))
   })
 
   val csrWriter = IO(new CSRWriter())
@@ -139,6 +140,10 @@ class Exec(implicit val coredef: CoreDef) extends Module {
   val renamer = Module(new Renamer)
   renamer.cdb := cdb
   renamer.toExec.flush := toCtrl.ctrl.flush
+
+  // expose renaming mapping
+  val difftest = IO(renamer.difftest.cloneType)
+  difftest := renamer.difftest
 
   // Inflight instr info
   val inflights = Module(
@@ -401,6 +406,13 @@ class Exec(implicit val coredef: CoreDef) extends Module {
   toCore.issueNumBoundedByROBSize := issueNum === maxIssueNum
   toCore.issueNumBoundedByLSQSize := issueNum === lsu.toExec.lsqEmptyEntries
   toCore.retireNum := retireNum
+  val retirePc = RegInit(0.U(coredef.XLEN.W))
+  for (i <- 0 until coredef.ISSUE_NUM) {
+    when(inflights.reader.cnt > i.U) {
+      retirePc := inflights.reader.view(i).addr
+    }
+  }
+  toCore.retirePc := retirePc
 
   val wasGFence = RegInit(false.B)
   val canIssue = Wire(Vec(coredef.ISSUE_NUM, Bool()))
@@ -804,8 +816,39 @@ class Exec(implicit val coredef: CoreDef) extends Module {
   inflights.reader.accept := retireNum
   assert(inflights.reader.cnt >= retireNum)
 
+  if (coredef.ENABLE_DIFFTEST) {
+    // difftest
+    for (i <- 0 until coredef.ISSUE_NUM) {
+      val difftestInstr = Module(new DifftestInstrCommit)
+      val difftest = Wire(Output(new DiffInstrCommitIO()))
+      difftest := DontCare
+      difftest.coreid := coredef.HART_ID.U
+      difftest.index := i.U
+
+      // only last instruction might ex
+      // so we only need to check ex if this is the last instruction in the bundle
+      difftest.valid := retireNum > i.U &&
+        ((i + 1).U < retireNum || toCtrl.branch.ex =/= ExReq.ex)
+      difftest.pc := inflights.reader.view(i).addr
+      difftest.robIdx := retirePtr + i.U
+      difftest.isRVC := inflights.reader.view(i).isC
+      difftest.instr := inflights.reader.view(i).instr
+
+      // delay two cycles to match other events
+      difftestInstr.io := RegNext(RegNext(difftest))
+      difftestInstr.io.clock := clock
+    }
+  }
+
   // intAck
   when(retireNext.valid && retireNext.hasMem) {
+    toCtrl.intAck := false.B
+  }.elsewhen(
+    inflights.reader.cnt > 0.U && inflights.reader
+      .view(0)
+      .op === Decoder.Op("SYSTEM").ident
+  ) {
+    // do not ack interrupt upon csr instruction
     toCtrl.intAck := false.B
   }.otherwise {
     // We need to ensure that the address we are giving ctrl is valid
