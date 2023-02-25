@@ -939,6 +939,7 @@ void jtag_vpi_tick() {
 uint64_t mtime = 0;
 // pending
 uint8_t mtip = 0;
+uint8_t mtack = 0;
 
 struct sim : simif_t {
   bus_t bus;
@@ -976,7 +977,7 @@ void set_time(long long cur_time) {
   fprintf(stderr, "> read mtime = %d\n", cur_time);
   mtime = cur_time;
 }
-// void set_mtip(uint8_t ip) { mtip = ip; }
+void set_mtip(uint8_t ip) { mtip = ip; }
 };
 
 processor_t *proc;
@@ -1134,10 +1135,10 @@ void v_difftest_ArchEvent(DPIC_ARG_BYTE coreid, DPIC_ARG_INT intrNo,
                           DPIC_ARG_INT cause, DPIC_ARG_LONG exceptionPC,
                           DPIC_ARG_INT exceptionInst) {
   if (intrNo > 0) {
-    if (!mtip) {
-      fprintf(stderr, "> mtip becomes 1\n");
+    if (!mtack) {
+      fprintf(stderr, "> mtack becomes 1\n");
     }
-    mtip = 1;
+    mtack = 1;
   }
 }
 
@@ -1260,6 +1261,10 @@ int main(int argc, char **argv) {
     for (int i = 0; i < STATE_CSR_COUNT; i++) {
       spike_state.csr_state[i] = csrs[i]->read();
     }
+    // patch mtip
+    if (mtip) {
+      spike_state.csr_state[STATE_CSR_MIP] |= MIP_MTIP;
+    }
     spike_state.pc = proc->get_state()->last_inst_pc;
     spike_state.pc_history.push_back(spike_state.pc);
     if (spike_state.pc_history.size() > pc_history_size) {
@@ -1360,7 +1365,7 @@ int main(int argc, char **argv) {
       // sync mtime and mtip
       clint.mtime = mtime;
       proc->get_state()->mip->backdoor_write_with_mask(MIP_MTIP,
-                                                       mtip ? MIP_MTIP : 0);
+                                                       mtack ? MIP_MTIP : 0);
 
       bool any_valid = false;
       for (int index = 0; index < 2; index++) {
@@ -1368,7 +1373,7 @@ int main(int argc, char **argv) {
           any_valid = true;
 
           step_spike();
-          mtip = 0;
+          mtack = 0;
           uint64_t cur_pc = cpu_state.insn[index].pc;
           uint64_t exp_pc = spike_state.pc;
           if (cur_pc != exp_pc) {
