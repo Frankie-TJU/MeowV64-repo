@@ -936,6 +936,10 @@ void jtag_vpi_tick() {
   }
 }
 
+uint64_t mtime = 0;
+// pending
+uint8_t mtip = 0;
+
 struct sim : simif_t {
   bus_t bus;
   // should return NULL for MMIO addresses
@@ -964,6 +968,15 @@ struct sim : simif_t {
   const char *get_symbol(uint64_t paddr) { return NULL; };
 
   ~sim() = default;
+};
+
+// to sync mtime in CLINT
+extern "C" {
+void set_time(long long cur_time) {
+  fprintf(stderr, "> read mtime = %d\n", cur_time);
+  mtime = cur_time;
+}
+// void set_mtip(uint8_t ip) { mtip = ip; }
 };
 
 processor_t *proc;
@@ -1117,7 +1130,16 @@ void v_difftest_InstrCommit(DPIC_ARG_BYTE coreid, DPIC_ARG_BYTE index,
   }
 }
 
-void v_difftest_ArchEvent() {}
+void v_difftest_ArchEvent(DPIC_ARG_BYTE coreid, DPIC_ARG_INT intrNo,
+                          DPIC_ARG_INT cause, DPIC_ARG_LONG exceptionPC,
+                          DPIC_ARG_INT exceptionInst) {
+  if (intrNo > 0) {
+    if (!mtip) {
+      fprintf(stderr, "> mtip becomes 1\n");
+    }
+    mtip = 1;
+  }
+}
 
 void v_difftest_TrapEvent() {}
 }
@@ -1209,8 +1231,10 @@ int main(int argc, char **argv) {
   // p.debug = true;
   proc = &p;
 
-  // step one inst ahead
-  auto save_and_step = [&]() {
+  // step and save csr & gpr state
+  auto step_spike = [&]() {
+    proc->step(1);
+
     const csr_t *csrs[] = {
         proc->get_state()->mstatus.get(),
         proc->get_state()->sstatus.get(),
@@ -1236,16 +1260,12 @@ int main(int argc, char **argv) {
     for (int i = 0; i < STATE_CSR_COUNT; i++) {
       spike_state.csr_state[i] = csrs[i]->read();
     }
-    proc->step(1);
-    // fprintf(stderr, "%016lx %016lx\n", proc->get_state()->pc,
-    //         proc->get_state()->last_inst_pc);
     spike_state.pc = proc->get_state()->last_inst_pc;
     spike_state.pc_history.push_back(spike_state.pc);
     if (spike_state.pc_history.size() > pc_history_size) {
       spike_state.pc_history.pop_front();
     }
   };
-  save_and_step();
 
   top = new VRiscVSystem;
 
@@ -1337,12 +1357,18 @@ int main(int argc, char **argv) {
       step_mem();
       step_mmio();
 
-      clint.increment(1);
+      // sync mtime and mtip
+      clint.mtime = mtime;
+      proc->get_state()->mip->backdoor_write_with_mask(MIP_MTIP,
+                                                       mtip ? MIP_MTIP : 0);
 
       bool any_valid = false;
       for (int index = 0; index < 2; index++) {
         if (cpu_state.insn[index].valid) {
           any_valid = true;
+
+          step_spike();
+          mtip = 0;
           uint64_t cur_pc = cpu_state.insn[index].pc;
           uint64_t exp_pc = spike_state.pc;
           if (cur_pc != exp_pc) {
@@ -1374,7 +1400,6 @@ int main(int argc, char **argv) {
           }
           last_pc = cur_pc;
 
-          save_and_step();
           cpu_state.insn[index].valid = 0;
         }
       }
@@ -1415,7 +1440,9 @@ int main(int argc, char **argv) {
 
     top->eval();
     if (tfp) {
-      tfp->dump(main_time);
+      if (main_time > 111090000) {
+        // tfp->dump(main_time);
+      }
       // tfp->flush();
     }
     main_time += 5;
