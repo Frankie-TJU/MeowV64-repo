@@ -425,12 +425,13 @@ class Satp extends Bundle {
     val casted = port.wdata.asTypeOf(this)
     val modeValid = casted.mode.isValid
 
-    when(port.write) {
+    // Implementations are not required to support all MODE settings, and if
+    // satp is written with an unsupported MODE, the entire write has no effect;
+    // no fields in satp are modified.
+    when(port.write && modeValid) {
       asid := casted.asid
       ppn := casted.ppn
-      when(modeValid) {
-        mode := casted.mode
-      }
+      mode := casted.mode
     }
 
     port

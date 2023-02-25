@@ -691,7 +691,7 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
     val difftest = Wire(Output(new DiffArchEventIO()))
     difftest := DontCare
     difftest.coreid := coredef.HART_ID.U
-    when(intFired) {
+    when(toExec.int && toExec.intAck) {
       difftest.intrNO := intCause
     }.otherwise {
       difftest.intrNO := 0.U

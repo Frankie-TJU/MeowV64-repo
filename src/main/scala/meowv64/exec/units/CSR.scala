@@ -202,6 +202,8 @@ class CSR(implicit val coredef: CoreDef)
 
   when(fault) {
     info.exception.ex(ExType.ILLEGAL_INSTR)
+    // report instruction bits
+    info.wb := instr.instr.raw
   }.elsewhen(pipeWritten) {
     // csr is updated
     // flush pipeline to avoid stale value

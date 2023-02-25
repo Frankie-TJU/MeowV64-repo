@@ -825,8 +825,10 @@ class Exec(implicit val coredef: CoreDef) extends Module {
       difftest.coreid := coredef.HART_ID.U
       difftest.index := i.U
 
+      // only last instruction might ex
+      // so we only need to check ex if this is the last instruction in the bundle
       difftest.valid := retireNum > i.U &&
-        toCtrl.branch.ex =/= ExReq.ex
+        ((i + 1).U < retireNum || toCtrl.branch.ex =/= ExReq.ex)
       difftest.pc := inflights.reader.view(i).addr
       difftest.robIdx := retirePtr + i.U
       difftest.isRVC := inflights.reader.view(i).isC
@@ -840,6 +842,13 @@ class Exec(implicit val coredef: CoreDef) extends Module {
 
   // intAck
   when(retireNext.valid && retireNext.hasMem) {
+    toCtrl.intAck := false.B
+  }.elsewhen(
+    inflights.reader.cnt > 0.U && inflights.reader
+      .view(0)
+      .op === Decoder.Op("SYSTEM").ident
+  ) {
+    // do not ack interrupt upon csr instruction
     toCtrl.intAck := false.B
   }.otherwise {
     // We need to ensure that the address we are giving ctrl is valid
