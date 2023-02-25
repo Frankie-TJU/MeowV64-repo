@@ -1,5 +1,6 @@
 #include "VRiscVSystem.h"
 #include <arpa/inet.h>
+#include <deque>
 #include <fcntl.h>
 #include <gmpxx.h>
 #include <iostream>
@@ -971,7 +972,8 @@ struct commit_state {
   int valid;
   uint64_t pc;
   uint32_t inst;
-} state[2];
+};
+
 enum csr {
   STATE_CSR_MSTATUS,
   STATE_CSR_SSTATUS,
@@ -996,8 +998,23 @@ const char *csr_names[] = {
     "mstatus", "sstatus",  "mepc",     "sepc",    "mtval",  "stval",
     "mtvec",   "stvec",    "mcause",   "scause",  "satp",   "mip",
     "mie",     "mscratch", "sscratch", "mideleg", "medeleg"};
-uint64_t csr_state[STATE_CSR_COUNT];
-uint64_t gpr[32];
+
+const int pc_history_size = 10;
+
+struct cpu_state {
+  struct commit_state insn[2];
+  uint64_t csr_state[STATE_CSR_COUNT];
+  uint64_t gpr[32];
+  std::deque<uint64_t> pc_history;
+} cpu_state;
+
+struct spike_state {
+  uint64_t pc;
+  uint64_t csr_state[STATE_CSR_COUNT];
+  uint64_t gpr[32];
+  std::deque<uint64_t> pc_history;
+} spike_state;
+
 uint64_t last_pc = 0x80000000;
 
 extern "C" {
@@ -1019,38 +1036,38 @@ void v_difftest_ArchIntRegState(
     DPIC_ARG_LONG gpr_23, DPIC_ARG_LONG gpr_24, DPIC_ARG_LONG gpr_25,
     DPIC_ARG_LONG gpr_26, DPIC_ARG_LONG gpr_27, DPIC_ARG_LONG gpr_28,
     DPIC_ARG_LONG gpr_29, DPIC_ARG_LONG gpr_30, DPIC_ARG_LONG gpr_31) {
-  gpr[0] = gpr_0;
-  gpr[1] = gpr_1;
-  gpr[2] = gpr_2;
-  gpr[3] = gpr_3;
-  gpr[4] = gpr_4;
-  gpr[5] = gpr_5;
-  gpr[6] = gpr_6;
-  gpr[7] = gpr_7;
-  gpr[8] = gpr_8;
-  gpr[9] = gpr_9;
-  gpr[10] = gpr_10;
-  gpr[11] = gpr_11;
-  gpr[12] = gpr_12;
-  gpr[13] = gpr_13;
-  gpr[14] = gpr_14;
-  gpr[15] = gpr_15;
-  gpr[16] = gpr_16;
-  gpr[17] = gpr_17;
-  gpr[18] = gpr_18;
-  gpr[19] = gpr_19;
-  gpr[20] = gpr_20;
-  gpr[21] = gpr_21;
-  gpr[22] = gpr_22;
-  gpr[23] = gpr_23;
-  gpr[24] = gpr_24;
-  gpr[25] = gpr_25;
-  gpr[26] = gpr_26;
-  gpr[27] = gpr_27;
-  gpr[28] = gpr_28;
-  gpr[29] = gpr_29;
-  gpr[30] = gpr_30;
-  gpr[31] = gpr_31;
+  cpu_state.gpr[0] = gpr_0;
+  cpu_state.gpr[1] = gpr_1;
+  cpu_state.gpr[2] = gpr_2;
+  cpu_state.gpr[3] = gpr_3;
+  cpu_state.gpr[4] = gpr_4;
+  cpu_state.gpr[5] = gpr_5;
+  cpu_state.gpr[6] = gpr_6;
+  cpu_state.gpr[7] = gpr_7;
+  cpu_state.gpr[8] = gpr_8;
+  cpu_state.gpr[9] = gpr_9;
+  cpu_state.gpr[10] = gpr_10;
+  cpu_state.gpr[11] = gpr_11;
+  cpu_state.gpr[12] = gpr_12;
+  cpu_state.gpr[13] = gpr_13;
+  cpu_state.gpr[14] = gpr_14;
+  cpu_state.gpr[15] = gpr_15;
+  cpu_state.gpr[16] = gpr_16;
+  cpu_state.gpr[17] = gpr_17;
+  cpu_state.gpr[18] = gpr_18;
+  cpu_state.gpr[19] = gpr_19;
+  cpu_state.gpr[20] = gpr_20;
+  cpu_state.gpr[21] = gpr_21;
+  cpu_state.gpr[22] = gpr_22;
+  cpu_state.gpr[23] = gpr_23;
+  cpu_state.gpr[24] = gpr_24;
+  cpu_state.gpr[25] = gpr_25;
+  cpu_state.gpr[26] = gpr_26;
+  cpu_state.gpr[27] = gpr_27;
+  cpu_state.gpr[28] = gpr_28;
+  cpu_state.gpr[29] = gpr_29;
+  cpu_state.gpr[30] = gpr_30;
+  cpu_state.gpr[31] = gpr_31;
 }
 
 void v_difftest_ArchFpRegState() {}
@@ -1065,23 +1082,23 @@ void v_difftest_CSRState(DPIC_ARG_BYTE coreid, DPIC_ARG_BYTE privilegeMode,
                          DPIC_ARG_LONG mie, DPIC_ARG_LONG mscratch,
                          DPIC_ARG_LONG sscratch, DPIC_ARG_LONG mideleg,
                          DPIC_ARG_LONG medeleg) {
-  csr_state[STATE_CSR_MSTATUS] = mstatus;
-  csr_state[STATE_CSR_SSTATUS] = sstatus;
-  csr_state[STATE_CSR_MEPC] = mepc;
-  csr_state[STATE_CSR_SEPC] = sepc;
-  csr_state[STATE_CSR_MTVAL] = mtval;
-  csr_state[STATE_CSR_STVAL] = stval;
-  csr_state[STATE_CSR_MTVEC] = mtvec;
-  csr_state[STATE_CSR_STVEC] = stvec;
-  csr_state[STATE_CSR_MCAUSE] = mcause;
-  csr_state[STATE_CSR_SCAUSE] = scause;
-  csr_state[STATE_CSR_SATP] = satp;
-  csr_state[STATE_CSR_MIP] = mip;
-  csr_state[STATE_CSR_MIE] = mie;
-  csr_state[STATE_CSR_MSCRATCH] = mscratch;
-  csr_state[STATE_CSR_SSCRATCH] = sscratch;
-  csr_state[STATE_CSR_MIDELEG] = mideleg;
-  csr_state[STATE_CSR_MEDELEG] = medeleg;
+  cpu_state.csr_state[STATE_CSR_MSTATUS] = mstatus;
+  cpu_state.csr_state[STATE_CSR_SSTATUS] = sstatus;
+  cpu_state.csr_state[STATE_CSR_MEPC] = mepc;
+  cpu_state.csr_state[STATE_CSR_SEPC] = sepc;
+  cpu_state.csr_state[STATE_CSR_MTVAL] = mtval;
+  cpu_state.csr_state[STATE_CSR_STVAL] = stval;
+  cpu_state.csr_state[STATE_CSR_MTVEC] = mtvec;
+  cpu_state.csr_state[STATE_CSR_STVEC] = stvec;
+  cpu_state.csr_state[STATE_CSR_MCAUSE] = mcause;
+  cpu_state.csr_state[STATE_CSR_SCAUSE] = scause;
+  cpu_state.csr_state[STATE_CSR_SATP] = satp;
+  cpu_state.csr_state[STATE_CSR_MIP] = mip;
+  cpu_state.csr_state[STATE_CSR_MIE] = mie;
+  cpu_state.csr_state[STATE_CSR_MSCRATCH] = mscratch;
+  cpu_state.csr_state[STATE_CSR_SSCRATCH] = sscratch;
+  cpu_state.csr_state[STATE_CSR_MIDELEG] = mideleg;
+  cpu_state.csr_state[STATE_CSR_MEDELEG] = medeleg;
 }
 
 void v_difftest_InstrCommit(DPIC_ARG_BYTE coreid, DPIC_ARG_BYTE index,
@@ -1094,9 +1111,9 @@ void v_difftest_InstrCommit(DPIC_ARG_BYTE coreid, DPIC_ARG_BYTE index,
                             DPIC_ARG_BYTE sqidx, DPIC_ARG_BIT isLoad,
                             DPIC_ARG_BIT isStore) {
   if (valid) {
-    state[index].valid = 1;
-    state[index].pc = pc;
-    state[index].inst = instr;
+    cpu_state.insn[index].valid = 1;
+    cpu_state.insn[index].pc = pc;
+    cpu_state.insn[index].inst = instr;
   }
 }
 
@@ -1191,6 +1208,45 @@ int main(int argc, char **argv) {
   // p.enable_log_commits();
   // p.debug = true;
   proc = &p;
+
+  // step one inst ahead
+  auto save_and_step = [&]() {
+    const csr_t *csrs[] = {
+        proc->get_state()->mstatus.get(),
+        proc->get_state()->sstatus.get(),
+        proc->get_state()->mepc.get(),
+        proc->get_state()->sepc.get(),
+        proc->get_state()->mtval.get(),
+        proc->get_state()->stval.get(),
+        proc->get_state()->mtvec.get(),
+        proc->get_state()->stvec.get(),
+        proc->get_state()->mcause.get(),
+        proc->get_state()->scause.get(),
+        proc->get_state()->satp.get(),
+        proc->get_state()->mip.get(),
+        proc->get_state()->mie.get(),
+        proc->get_state()->csrmap[CSR_MSCRATCH].get(),
+        proc->get_state()->csrmap[CSR_SSCRATCH].get(),
+        proc->get_state()->mideleg.get(),
+        proc->get_state()->medeleg.get(),
+    };
+    for (int i = 0; i < 32; i++) {
+      spike_state.gpr[i] = proc->get_state()->XPR[i];
+    }
+    for (int i = 0; i < STATE_CSR_COUNT; i++) {
+      spike_state.csr_state[i] = csrs[i]->read();
+    }
+    proc->step(1);
+    // fprintf(stderr, "%016lx %016lx\n", proc->get_state()->pc,
+    //         proc->get_state()->last_inst_pc);
+    spike_state.pc = proc->get_state()->last_inst_pc;
+    spike_state.pc_history.push_back(spike_state.pc);
+    if (spike_state.pc_history.size() > pc_history_size) {
+      spike_state.pc_history.pop_front();
+    }
+  };
+  save_and_step();
+
   top = new VRiscVSystem;
 
   if (jtag) {
@@ -1285,53 +1341,48 @@ int main(int argc, char **argv) {
 
       bool any_valid = false;
       for (int index = 0; index < 2; index++) {
-        if (state[index].valid) {
+        if (cpu_state.insn[index].valid) {
           any_valid = true;
-          uint64_t cur_pc = state[index].pc;
-          uint64_t exp_pc = proc->get_state()->pc;
+          uint64_t cur_pc = cpu_state.insn[index].pc;
+          uint64_t exp_pc = spike_state.pc;
           if (cur_pc != exp_pc) {
             fprintf(stderr,
                     "> %ld: Mismatch commit @ pc %lx (expected %lx) inst %lx\n",
-                    main_time, cur_pc, exp_pc, state[index].inst);
+                    main_time, cur_pc, exp_pc, cpu_state.insn[index].inst);
             for (int i = 0; i < 32; i++) {
-              fprintf(stderr, "> gpr[%d] = %016lx\n", i, gpr[i]);
+              fprintf(stderr, "> gpr[%d] = %016lx\n", i, cpu_state.gpr[i]);
             }
             for (int i = 0; i < STATE_CSR_COUNT; i++) {
               fprintf(stderr, "> csr[%s] = %016lx\n", csr_names[i],
-                      csr_state[i]);
+                      cpu_state.csr_state[i]);
+            }
+            fprintf(stderr, "> cpu pc history:\n");
+            for (auto pc : cpu_state.pc_history) {
+              fprintf(stderr, "> %016lx\n", pc);
+            }
+            fprintf(stderr, "> spike pc history:\n");
+            for (auto pc : spike_state.pc_history) {
+              fprintf(stderr, "> %016lx\n", pc);
             }
 
             finished = true;
             res = 1;
           }
+          cpu_state.pc_history.push_back(cur_pc);
+          if (cpu_state.pc_history.size() > pc_history_size) {
+            cpu_state.pc_history.pop_front();
+          }
           last_pc = cur_pc;
-          proc->step(1);
-          state[index].valid = 0;
+
+          save_and_step();
+          cpu_state.insn[index].valid = 0;
         }
       }
+
       if (any_valid) {
-        const csr_t *csrs[] = {
-            proc->get_state()->mstatus.get(),
-            proc->get_state()->sstatus.get(),
-            proc->get_state()->mepc.get(),
-            proc->get_state()->sepc.get(),
-            proc->get_state()->mtval.get(),
-            proc->get_state()->stval.get(),
-            proc->get_state()->mtvec.get(),
-            proc->get_state()->stvec.get(),
-            proc->get_state()->mcause.get(),
-            proc->get_state()->scause.get(),
-            proc->get_state()->satp.get(),
-            proc->get_state()->mip.get(),
-            proc->get_state()->mie.get(),
-            proc->get_state()->csrmap[CSR_MSCRATCH].get(),
-            proc->get_state()->csrmap[CSR_SSCRATCH].get(),
-            proc->get_state()->mideleg.get(),
-            proc->get_state()->medeleg.get(),
-        };
         for (int i = 0; i < STATE_CSR_COUNT; i++) {
-          uint64_t actual = csr_state[i];
-          uint64_t expected = csrs[i]->read();
+          uint64_t actual = cpu_state.csr_state[i];
+          uint64_t expected = spike_state.csr_state[i];
           if (expected != actual) {
             fprintf(stderr,
                     "> %ld: Mismatch csr @ pc %lx %s %lx (expected %lx)\n",
@@ -1340,11 +1391,13 @@ int main(int argc, char **argv) {
         }
 
         for (int i = 0; i < 32; i++) {
-          if (gpr[i] != proc->get_state()->XPR[i]) {
+          uint64_t actual = cpu_state.gpr[i];
+          uint64_t expected = spike_state.gpr[i];
+          if (expected != actual) {
             fprintf(stderr,
                     "> %ld: Mismatch gpr @ pc %lx gpr[%d]=%016lx (expected "
                     "%016lx)\n",
-                    main_time, last_pc, i, gpr[i], proc->get_state()->XPR[i]);
+                    main_time, last_pc, i, actual, expected);
           }
         }
       }
