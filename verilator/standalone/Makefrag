@@ -3,7 +3,7 @@ GMP_CFLAGS = $(shell pkg-config --cflags gmp)
 GMP_LDFLAGS = $(shell pkg-config --libs gmp)
 GMPXX_CFLAGS = $(shell pkg-config --cflags gmpxx)
 GMPXX_LDFLAGS = $(shell pkg-config --libs gmpxx)
-VERILATOR_FLAGS = -O3 -Wno-fatal --trace-fst --timescale-override 1ns/1ns -CFLAGS "-march=native -O3 $(GMP_CFLAGS) $(GMPXX_CFLAGS)" -LDFLAGS "$(GMP_LDFLAGS) $(GMPXX_LDFLAGS)"
+VERILATOR_FLAGS = -O3 -Wno-fatal --trace-fst -threads 2 --timescale-override 1ns/1ns -CFLAGS "-march=native -O3 $(GMP_CFLAGS) $(GMPXX_CFLAGS)" -LDFLAGS "$(GMP_LDFLAGS) $(GMPXX_LDFLAGS)"
 CURRENT_DIR = $(shell pwd)
 VERILOG_SRCS = RiscVSystem.v
 
