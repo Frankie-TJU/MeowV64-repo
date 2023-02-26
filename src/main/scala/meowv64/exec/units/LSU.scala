@@ -476,6 +476,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
       }
     }.elsewhen(invalAddr) {
       lsqEntry.op := DelayedMemOp.exception
+      // faulting address
       lsqEntry.data := rawAddr
       lsqEntry.exception.ex(
         Mux(
@@ -486,6 +487,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
       )
     }.elsewhen(fault) {
       lsqEntry.op := DelayedMemOp.exception
+      // faulting address
       lsqEntry.data := rawAddr
       lsqEntry.exception.ex(
         Mux(
@@ -496,6 +498,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
       )
     }.elsewhen(misaligned) {
       lsqEntry.op := DelayedMemOp.exception
+      // faulting address
       lsqEntry.data := rawAddr
       lsqEntry.exception.ex(
         Mux(
@@ -606,6 +609,8 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
 
     }.otherwise {
       lsqEntry.op := DelayedMemOp.exception
+      lsqEntry.data := next.instr.instr.raw
+      // faulting instr
       lsqEntry.exception.ex(
         ExType.ILLEGAL_INSTR
       )

@@ -10,13 +10,14 @@ import meowv64.core.Status
 import meowv64.exec._
 import meowv64.instr.Decoder
 
-class BranchExt extends Bundle {
+class BranchExt(implicit val coredef: CoreDef) extends Bundle {
 
   /** whether the branch is taken */
   val branchTaken = Bool()
 
   val ex = ExReq()
   val exType = ExType()
+  val tval = UInt(coredef.XLEN.W)
 }
 
 class Branch(override implicit val coredef: CoreDef)
@@ -35,6 +36,7 @@ class Branch(override implicit val coredef: CoreDef)
     ext.branchTaken := false.B
     ext.ex := ExReq.none
     ext.exType := DontCare
+    ext.tval := 0.U
 
     val op1 = pipe.rs1val
     val op2 = pipe.rs2val
@@ -70,6 +72,7 @@ class Branch(override implicit val coredef: CoreDef)
         when(priv =/= PrivLevel.M && status.tvm) {
           ext.ex := ExReq.ex
           ext.exType := ExType.ILLEGAL_INSTR
+          ext.tval := pipe.instr.instr.raw
         }
 
         // Currently does nothing
@@ -79,6 +82,7 @@ class Branch(override implicit val coredef: CoreDef)
             when(priv =/= PrivLevel.M && status.tw) {
               ext.ex := ExReq.ex
               ext.exType := ExType.ILLEGAL_INSTR
+              ext.tval := pipe.instr.instr.raw
             }
 
             // No-op
@@ -93,11 +97,17 @@ class Branch(override implicit val coredef: CoreDef)
                 (priv === PrivLevel.U) -> ExType.U_CALL
               )
             )
+            ext.tval := 0.U
           }
 
           is(Decoder.PRIV_RS2("EBREAK")) {
             ext.ex := ExReq.ex
             ext.exType := ExType.BREAKPOINT
+            // If mtval is written with a nonzero value when a breakpoint,
+            // address-misaligned, access-fault, or page-fault exception occurs
+            // on an instruction fetch, load, or store, then mtval will contain
+            // the faulting virtual address.
+            ext.tval := pipe.instr.addr
           }
 
           is(Decoder.PRIV_RS2("RET"), Decoder.PRIV_RS2("DRET")) {
@@ -114,14 +124,18 @@ class Branch(override implicit val coredef: CoreDef)
             when(priv === PrivLevel.U) {
               ext.ex := ExReq.ex
               ext.exType := ExType.ILLEGAL_INSTR
+              ext.tval := pipe.instr.instr.raw
             }.elsewhen(priv === PrivLevel.S && t === ExReq.mret) {
               ext.ex := ExReq.ex
               ext.exType := ExType.ILLEGAL_INSTR
+              ext.tval := pipe.instr.instr.raw
             }.elsewhen(priv === PrivLevel.S && status.tsr) {
               ext.ex := ExReq.ex
               ext.exType := ExType.ILLEGAL_INSTR
+              ext.tval := pipe.instr.instr.raw
             }.otherwise {
               ext.ex := t
+              ext.tval := 0.U
             }
           }
         }
@@ -136,8 +150,8 @@ class Branch(override implicit val coredef: CoreDef)
 
     when(ext.ex === ExReq.ex) {
       // info.regWaddr := 0.U
-      // info.wb := 0.U // tval
       info.exception.ex(ext.exType)
+      info.wb := ext.tval
     }.elsewhen(ext.ex =/= ExReq.none) {
       // info.regWaddr := 0.U
       info.exception.ret(ext.ex)
