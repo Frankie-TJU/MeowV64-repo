@@ -22,6 +22,3 @@
 [submodule "submodules/difftest"]
 	path = submodules/difftest
 	url = ../difftest.git
-[submodule "submodules/XiangShan"]
-	path = submodules/XiangShan
-	url = ../XiangShan.git
