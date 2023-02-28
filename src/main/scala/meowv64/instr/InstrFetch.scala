@@ -232,7 +232,8 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
   tlb.satp := toCore.satp
   tlb.query.req.bits.vpn := s1FPc(47, 12)
   tlb.query.req.valid := requiresTranslate && !toCtrl.ctrl.flush
-  tlb.query.req.bits.isModify := false.B
+  tlb.query.req.bits.access := TLBAccessMode.X
+  tlb.query.req.bits.mxr := false.B // never reads
   tlb.query.req.bits.mode := Mux(
     toCtrl.priv === PrivLevel.U,
     TLBLookupMode.U,

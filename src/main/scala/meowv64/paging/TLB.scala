@@ -13,12 +13,18 @@ object TLBLookupMode extends ChiselEnum {
   val U, S, both = Value
 }
 
+object TLBAccessMode extends ChiselEnum {
+  val R, W, X = Value
+}
+
 class TLBReq(implicit val coredef: CoreDef) extends Bundle {
   val mode = TLBLookupMode()
 
-  /** This access is write i.e. check dirty bit
+  /** This access is read/write/execute, check dirty and rwx bit
     */
-  val isModify = Bool()
+  val access = TLBAccessMode()
+  /* mstatus.MXR (Make eXecutable Readable) */ 
+  val mxr = Bool()
   val vpn = UInt(coredef.vpnWidth.W)
 }
 
@@ -36,8 +42,6 @@ class TLB(implicit val coredef: CoreDef) extends Module {
     val req = Flipped(Decoupled(new TLBReq))
     val resp = Output(new TLBResp)
   })
-
-  // TODO: check RWX permission, and MXR
 
   val flush = IO(Input(Bool()))
 
@@ -61,6 +65,7 @@ class TLB(implicit val coredef: CoreDef) extends Module {
   val ptwFaulted = RegInit(false.B)
 
   val inStore = VecInit(hitMap).asUInt().orR()
+  // handle SUM and U bit
   val modeMismatch = MuxLookup(
     query.req.bits.mode.asUInt(),
     false.B,
@@ -69,8 +74,19 @@ class TLB(implicit val coredef: CoreDef) extends Module {
       TLBLookupMode.U.asUInt -> !hit.u
     )
   )
+
+  // Determine if the requested memory access is allowed by the pte.r, pte.w,
+  // pte.x, and pte.u bits, given the current privilege mode and the value of
+  // the SUM and MXR fields of the mstatus register.
+  // If pte.a = 0, or if the original memory access is a store and pte.d = 0,
+  // raise a page-fault exception corresponding to the original access type
   val accessFault =
-    modeMismatch || (query.req.bits.isModify && !hit.d) || !hit.a
+    modeMismatch ||
+      (query.req.bits.access === TLBAccessMode.R && !hit.r && !query.req.bits.mxr) ||
+      (query.req.bits.access === TLBAccessMode.R && !hit.r && !hit.x && query.req.bits.mxr) ||
+      (query.req.bits.access === TLBAccessMode.W && !hit.w) ||
+      (query.req.bits.access === TLBAccessMode.X && !hit.x) ||
+      (query.req.bits.access === TLBAccessMode.W && !hit.d) || !hit.a
   val fault =
     (ptwFaulted && refilling === query.req.bits.vpn) || (inStore && accessFault)
 

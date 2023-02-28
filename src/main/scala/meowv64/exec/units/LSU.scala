@@ -264,12 +264,18 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
     priv <= PrivLevel.S
       || status.mprv && (status.mpp =/= PrivLevel.M.asUInt())
   )
+  // Note that, while SUM is ordinarily ignored when not executing in S-mode, it
+  // is in effect when MPRV=1 and MPP=S.
   val tlbEffectivePriv =
     Mux(priv === PrivLevel.M, status.mpp.asTypeOf(PrivLevel.M), priv)
   val tlbMode = Wire(TLBLookupMode())
   when(tlbEffectivePriv === PrivLevel.U) {
     tlbMode := TLBLookupMode.U
   }.otherwise {
+    // The SUM (permit Supervisor User Memory access) bit modifies the privilege
+    // with which S-mode loads and stores access virtual memory. When SUM=0,
+    // S-mode memory accesses to pages that are accessible by U-mode (U=1 in
+    // Figure 4.18) will fault. When SUM=1, these accesses are permitted.
     tlbMode := Mux(status.sum, TLBLookupMode.both, TLBLookupMode.S)
   }
 
@@ -279,7 +285,12 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   tlb.satp := satp
   tlb.ptw <> ptw
   tlb.query.req.valid := requiresTranslate && hasNext && !fenceLike
-  tlb.query.req.bits.isModify := tlbRequestModify
+  when(tlbRequestModify) {
+    tlb.query.req.bits.access := TLBAccessMode.W
+  }.otherwise {
+    tlb.query.req.bits.access := TLBAccessMode.R
+  }
+  tlb.query.req.bits.mxr := status.mxr
   tlb.query.req.bits.mode := tlbMode
   tlb.flush := tlbRst
 
