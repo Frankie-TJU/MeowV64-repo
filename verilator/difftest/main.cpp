@@ -116,9 +116,6 @@ void init() {
 
   top->mmio_axi4_ARREADY = 0;
   top->mmio_axi4_RVALID = 0;
-
-  // external interrupt
-  top->interrupts = 0x3;
 }
 
 // step per clock fall
@@ -1013,13 +1010,18 @@ const char *csr_names[] = {
     "mtvec",   "stvec",    "mcause",   "scause",  "satp",   "mip",
     "mie",     "mscratch", "sscratch", "mideleg", "medeleg"};
 
-const int pc_history_size = 10;
+const int history_size = 10;
+
+struct history_entry {
+  uint64_t pc;
+  uint32_t inst;
+};
 
 struct cpu_state {
   struct commit_state insn[2];
   uint64_t csr_state[STATE_CSR_COUNT];
   uint64_t gpr[32];
-  std::deque<uint64_t> pc_history;
+  std::deque<history_entry> history;
 } cpu_state;
 
 struct spike_state {
@@ -1030,6 +1032,7 @@ struct spike_state {
 } spike_state;
 
 uint64_t last_pc = 0x80000000;
+uint32_t last_inst = 0x00000000;
 
 extern "C" {
 
@@ -1267,7 +1270,7 @@ int main(int argc, char **argv) {
     }
     spike_state.pc = proc->get_state()->last_inst_pc;
     spike_state.pc_history.push_back(spike_state.pc);
-    if (spike_state.pc_history.size() > pc_history_size) {
+    if (spike_state.pc_history.size() > history_size) {
       spike_state.pc_history.pop_front();
     }
   };
@@ -1329,7 +1332,7 @@ int main(int argc, char **argv) {
         fprintf(stderr, "> pc: %lx\n", top->debug_0_pc);
       }
 
-      if (top->debug_0_mcycle > 50000000 && !jtag) {
+      if (0) {
         // do not timeout in jtag mode
         fprintf(stderr, "> Timed out\n");
         finished = true;
@@ -1377,9 +1380,10 @@ int main(int argc, char **argv) {
           uint64_t cur_pc = cpu_state.insn[index].pc;
           uint64_t exp_pc = spike_state.pc;
           if (cur_pc != exp_pc) {
-            fprintf(stderr,
-                    "> %ld: Mismatch commit @ pc %lx (expected %lx) inst %lx\n",
-                    main_time, cur_pc, exp_pc, cpu_state.insn[index].inst);
+            fprintf(
+                stderr,
+                "> %ld: Mismatch commit @ pc %lx (expected %lx) inst %08lx\n",
+                main_time, cur_pc, exp_pc, cpu_state.insn[index].inst);
             for (int i = 0; i < 32; i++) {
               fprintf(stderr, "> gpr[%d] = %016lx\n", i, cpu_state.gpr[i]);
             }
@@ -1387,9 +1391,9 @@ int main(int argc, char **argv) {
               fprintf(stderr, "> csr[%s] = %016lx\n", csr_names[i],
                       cpu_state.csr_state[i]);
             }
-            fprintf(stderr, "> cpu pc history:\n");
-            for (auto pc : cpu_state.pc_history) {
-              fprintf(stderr, "> %016lx\n", pc);
+            fprintf(stderr, "> cpu history:\n");
+            for (auto hist : cpu_state.history) {
+              fprintf(stderr, "> pc=%016lx inst=%08lx\n", hist.pc, hist.inst);
             }
             fprintf(stderr, "> spike pc history:\n");
             for (auto pc : spike_state.pc_history) {
@@ -1399,11 +1403,18 @@ int main(int argc, char **argv) {
             finished = true;
             res = 1;
           }
-          cpu_state.pc_history.push_back(cur_pc);
-          if (cpu_state.pc_history.size() > pc_history_size) {
-            cpu_state.pc_history.pop_front();
+
+          history_entry hist;
+          hist.pc = cur_pc;
+          hist.inst = cpu_state.insn[index].inst;
+          cpu_state.history.push_back(hist);
+
+          if (cpu_state.history.size() > history_size) {
+            cpu_state.history.pop_front();
           }
+
           last_pc = cur_pc;
+          last_inst = cpu_state.insn[index].inst;
 
           cpu_state.insn[index].valid = 0;
         }
@@ -1415,8 +1426,10 @@ int main(int argc, char **argv) {
           uint64_t expected = spike_state.csr_state[i];
           if (expected != actual) {
             fprintf(stderr,
-                    "> %ld: Mismatch csr @ pc %lx %s %lx (expected %lx)\n",
-                    main_time, last_pc, csr_names[i], actual, expected);
+                    "> %ld: Mismatch csr @ pc %lx inst %08lx %s %lx (expected "
+                    "%lx)\n",
+                    main_time, last_pc, last_inst, csr_names[i], actual,
+                    expected);
           }
         }
 
@@ -1425,9 +1438,10 @@ int main(int argc, char **argv) {
           uint64_t expected = spike_state.gpr[i];
           if (expected != actual) {
             fprintf(stderr,
-                    "> %ld: Mismatch gpr @ pc %lx gpr[%d]=%016lx (expected "
+                    "> %ld: Mismatch gpr @ pc %lx inst %08lx gpr[%d]=%016lx "
+                    "(expected "
                     "%016lx)\n",
-                    main_time, last_pc, i, actual, expected);
+                    main_time, last_pc, last_inst, i, actual, expected);
           }
         }
       }
@@ -1445,7 +1459,7 @@ int main(int argc, char **argv) {
 
     top->eval();
     if (tfp) {
-      if (main_time > 111090000) {
+      if (main_time > 4639900000) {
         // tfp->dump(main_time);
       }
       // tfp->flush();
