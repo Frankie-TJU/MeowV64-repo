@@ -73,6 +73,12 @@ class VType(implicit coredef: CoreDef) extends Bundle {
   }
 }
 
+class UpdateFState extends Bundle {
+  val markFSDirty = Bool()
+  val updateFFlags = Bool()
+  val fflags = UInt(5.W)
+}
+
 class Ctrl(implicit coredef: CoreDef) extends Module {
   val toIF = IO(new Bundle {
     val ctrl = StageCtrl.ctrl()
@@ -121,9 +127,9 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
 
     val tlbRst = Output(Bool())
 
-    /** Update fflags & vState
+    /** Update fState & vState
       */
-    val updateFFlags = Flipped(Valid(UInt(5.W)))
+    val updateFState = Input(new UpdateFState)
     val updateVState = Flipped(Valid(new VState))
   })
 
@@ -434,9 +440,11 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
 
   // update fflags
   // and set mstatus.fs = 3(dirty)
-  when(toExec.updateFFlags.valid) {
-    fcsr.fflags := fcsr.fflags | toExec.updateFFlags.bits
+  when(toExec.updateFState.markFSDirty) {
     status.fs := 3.U
+  }
+  when(toExec.updateFState.updateFFlags) {
+    fcsr.fflags := fcsr.fflags | toExec.updateFState.fflags
   }
 
   // readonly, can only set by vsetvl

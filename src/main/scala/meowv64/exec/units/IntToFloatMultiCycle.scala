@@ -25,7 +25,6 @@ class IntToFloatMultiCycleExt(implicit val coredef: CoreDef) extends Bundle {
   )
 
   val res = UInt(coredef.XLEN.W)
-  val updateFFlags = Bool()
   val fflags = UInt(5.W)
 }
 
@@ -45,6 +44,7 @@ class IntToFloatMultiCycle(override implicit val coredef: CoreDef)
   ): (IntToFloatMultiCycleExt, Bool) = {
     val ext = Wire(new IntToFloatMultiCycleExt)
     ext := DontCare
+    ext.fflags := 0.U
 
     when(
       pipe.instr.instr.funct5 === Decoder.FP_FUNC(
@@ -100,7 +100,6 @@ class IntToFloatMultiCycle(override implicit val coredef: CoreDef)
               coredef.XLEN
             )
             ext.fflags := last_ext.get.exceptionFlags(idx)
-            ext.updateFFlags := true.B
           }
         }
       }
@@ -116,7 +115,8 @@ class IntToFloatMultiCycle(override implicit val coredef: CoreDef)
     info.wb := ext.res.asUInt
 
     // fflags
-    info.updateFFlags := ext.updateFFlags
+    info.markFSDirty := true.B
+    info.updateFFlags := true.B
     info.fflags := ext.fflags
 
     info

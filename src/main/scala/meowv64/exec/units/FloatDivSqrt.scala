@@ -8,10 +8,8 @@ import chisel3.util.log2Ceil
 import hardfloat.RawFloat
 import hardfloat.RoundRawFNToRecFN
 import hardfloat.consts.divSqrtOpt_twoBitsPerCycle
-import hardfloat.fNFromRecFN
 import hardfloat.isSigNaNRawFloat
 import hardfloat.rawFloatFromRecFN
-import hardfloat.recFNFromFN
 import meowv64.core.CoreDef
 import meowv64.exec._
 import meowv64.instr.Decoder
@@ -131,6 +129,7 @@ class FloatDivSqrt(implicit val coredef: CoreDef)
       io.retiredInstr.instr.valid := true.B
 
       io.retirement.wb := res
+      io.retirement.markFSDirty := true.B
       io.retirement.updateFFlags := true.B
       io.retirement.fflags := fflags
 

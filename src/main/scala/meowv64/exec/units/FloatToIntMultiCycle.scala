@@ -17,7 +17,6 @@ class FloatToIntMultiCycleExt(implicit val coredef: CoreDef) extends Bundle {
     coredef.FLOAT_TYPES.map(f => UInt(f.widthHardfloat().W))
   )
 
-  val updateFFlags = Bool()
   val fflags = UInt(5.W)
 }
 
@@ -37,7 +36,6 @@ class FloatToIntMultiCycle(override implicit val coredef: CoreDef)
   ): (FloatToIntMultiCycleExt, Bool) = {
     val ext = Wire(new FloatToIntMultiCycleExt)
     ext.res := 0.U
-    ext.updateFFlags := false.B
     ext.fflags := 0.U
 
     val rs1Values =
@@ -100,7 +98,6 @@ class FloatToIntMultiCycle(override implicit val coredef: CoreDef)
           }
         }
 
-        ext.updateFFlags := true.B
       }.elsewhen(
         pipe.instr.instr.funct5 === Decoder.FP_FUNC(
           "FLOAT2INT"
@@ -150,8 +147,6 @@ class FloatToIntMultiCycle(override implicit val coredef: CoreDef)
             }
           }
         }
-
-        ext.updateFFlags := true.B
       }
     }
 
@@ -165,7 +160,7 @@ class FloatToIntMultiCycle(override implicit val coredef: CoreDef)
     info.wb := ext.res.asUInt
 
     // fflags
-    info.updateFFlags := ext.updateFFlags
+    info.updateFFlags := true.B
     info.fflags := ext.fflags
 
     info

@@ -151,8 +151,9 @@ class RetireInfo(val regInfo: RegInfo)(implicit val coredef: CoreDef)
     */
   val wb = UInt(regInfo.width.W)
 
-  /** Update fflags for floating point operations
+  /** Update fflags and status.FS for floating point operations
     */
+  val markFSDirty = Bool()
   val updateFFlags = Bool()
   val fflags = UInt(5.W)
 
@@ -177,9 +178,10 @@ object RetireInfo {
     info.exception.nofire
     info.wb := 0.U
     info.branchTaken := false.B
+    info.markFSDirty := false.B
     info.updateFFlags := false.B
-    info.updateVState := false.B
     info.fflags := 0.U
+    info.updateVState := false.B
     info.vState := 0.U.asTypeOf(new VState)
 
     info

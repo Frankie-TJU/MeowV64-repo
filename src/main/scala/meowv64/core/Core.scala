@@ -178,7 +178,7 @@ class Core(implicit val coredef: CoreDef) extends Module {
   ctrl.toExec.intAck := exec.toCtrl.intAck
   ctrl.toExec.priv <> exec.toCtrl.priv
   ctrl.toExec.status <> exec.toCtrl.status
-  ctrl.toExec.updateFFlags <> exec.toCtrl.updateFFlags
+  ctrl.toExec.updateFState <> exec.toCtrl.updateFState
   ctrl.toExec.updateVState <> exec.toCtrl.updateVState
   ctrl.toExec.vState <> exec.toCtrl.vState
   ctrl.toExec.debugMode <> exec.toCtrl.debugMode

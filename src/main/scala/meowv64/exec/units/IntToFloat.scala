@@ -10,7 +10,6 @@ import meowv64.instr.Decoder
 class IntToFloatExt(implicit val coredef: CoreDef) extends Bundle {
   val res = UInt(coredef.XLEN.W)
 
-  val updateFFlags = Bool()
   val fflags = UInt(5.W)
 }
 
@@ -26,7 +25,6 @@ class IntToFloat(override implicit val coredef: CoreDef)
   ): (IntToFloatExt, Bool) = {
     val ext = Wire(new IntToFloatExt)
     ext.res := 0.U
-    ext.updateFFlags := false.B
     ext.fflags := 0.U
 
     when(
@@ -58,7 +56,8 @@ class IntToFloat(override implicit val coredef: CoreDef)
     info.wb := ext.res.asUInt
 
     // fflags
-    info.updateFFlags := ext.updateFFlags
+    info.markFSDirty := true.B
+    info.updateFFlags := true.B
     info.fflags := ext.fflags
 
     info

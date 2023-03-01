@@ -703,6 +703,22 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   retire.bits.robIndex := current.robIndex
   retire.bits.info.wb := result
 
+  when(
+    current.instr.op === Decoder.Op("LOAD-FP").ident
+  ) {
+    switch(current.instr.funct3) {
+      is(Decoder.MEM_WIDTH_FUNC("H")) {
+        retire.bits.info.markFSDirty := true.B
+      }
+      is(Decoder.MEM_WIDTH_FUNC("W")) {
+        retire.bits.info.markFSDirty := true.B
+      }
+      is(Decoder.MEM_WIDTH_FUNC("D")) {
+        retire.bits.info.markFSDirty := true.B
+      }
+    }
+  }
+
   vectorWriteData := current.data.asTypeOf(vectorWriteData)
 
   // handle flush between req and resp

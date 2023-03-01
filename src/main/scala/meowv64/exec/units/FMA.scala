@@ -262,6 +262,7 @@ class FMA(override implicit val coredef: CoreDef)
     info.wb := ext.res.asUInt
 
     // fflags
+    info.markFSDirty := true.B
     info.updateFFlags := true.B
     info.fflags := ext.fflags
 

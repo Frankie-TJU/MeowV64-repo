@@ -21,6 +21,7 @@ import meowv64.reg._
 import meowv64.util._
 import difftest._
 import scala.collection.mutable.ArrayBuffer
+import meowv64.core.UpdateFState
 
 /** Out-of-order execution (Tomasulo's algorithm)
   *
@@ -53,9 +54,9 @@ class Exec(implicit val coredef: CoreDef) extends Module {
 
     val tlbRst = Input(Bool())
 
-    /** Update fflags
+    /** Update fflags and status.FS
       */
-    val updateFFlags = Valid(UInt(5.W))
+    val updateFState = Output(new UpdateFState)
 
     /** Update vState
       */
@@ -622,6 +623,7 @@ class Exec(implicit val coredef: CoreDef) extends Module {
       // for BRANCH instructions, this means taken before normalization
       rob(u.retire.bits.robIndex).branchTaken := info.branchTaken
 
+      rob(u.retire.bits.robIndex).markFSDirty := info.markFSDirty
       rob(u.retire.bits.robIndex).updateFFlags := info.updateFFlags
       rob(u.retire.bits.robIndex).fflags := info.fflags
       rob(u.retire.bits.robIndex).updateVState := info.updateVState
@@ -652,8 +654,9 @@ class Exec(implicit val coredef: CoreDef) extends Module {
   //cdb.entries(coredef.UNIT_COUNT).valid := false.B
 
   // do not update fflags by default
-  toCtrl.updateFFlags.valid := false.B
-  toCtrl.updateFFlags.bits := 0.U
+  toCtrl.updateFState.markFSDirty := false.B
+  toCtrl.updateFState.updateFFlags := false.B
+  toCtrl.updateFState.fflags := 0.U
 
   // do not update vState by default
   toCtrl.updateVState.valid := false.B
@@ -756,10 +759,11 @@ class Exec(implicit val coredef: CoreDef) extends Module {
       when(idx.U < retireNum) {
         // TODO
 
-        // update fflags
+        // update fflags and status.FS
+        toCtrl.updateFState.markFSDirty := info.markFSDirty
         when(info.updateFFlags) {
-          toCtrl.updateFFlags.valid := true.B
-          toCtrl.updateFFlags.bits := info.fflags
+          toCtrl.updateFState.updateFFlags := true.B
+          toCtrl.updateFState.fflags := info.fflags
         }
 
         // update vState
@@ -882,8 +886,9 @@ class ROBEntry(implicit val coredef: CoreDef) extends Bundle {
     */
   val branchTaken = Bool()
 
-  /** Update fflags
+  /** Update fflags and status.FS
     */
+  val markFSDirty = Bool()
   val updateFFlags = Bool()
   val fflags = UInt(5.W)
 
@@ -912,6 +917,7 @@ object ROBEntry {
     ret.hasMem := false.B
     ret.valid := false.B
     ret.branchTaken := false.B
+    ret.markFSDirty := false.B
     ret.updateFFlags := false.B
     ret.updateVState := false.B
     ret.fflags := 0.U
