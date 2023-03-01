@@ -312,6 +312,10 @@ void step_mmio() {
       // THRE | TEMT
       uint64_t lsr = (1L << 5) | (1L << 6);
       r_data = lsr << 32;
+    } else if (pending_read_addr == serial_addr ||
+               pending_read_addr == serial_fpga_addr) {
+      // serial rbr
+      r_data = 0;
     } else {
       uint64_t aligned =
           (pending_read_addr / MMIO_AXI_DATA_BYTES) * MMIO_AXI_DATA_BYTES;
@@ -1275,6 +1279,27 @@ int main(int argc, char **argv) {
     }
   };
 
+  auto difftest_failed = [&]() {
+    for (int i = 0; i < 32; i++) {
+      fprintf(stderr, "> gpr[%d] = %016lx\n", i, cpu_state.gpr[i]);
+    }
+    for (int i = 0; i < STATE_CSR_COUNT; i++) {
+      fprintf(stderr, "> csr[%s] = %016lx\n", csr_names[i],
+              cpu_state.csr_state[i]);
+    }
+    fprintf(stderr, "> cpu history:\n");
+    for (auto hist : cpu_state.history) {
+      fprintf(stderr, "> pc=%016lx inst=%08lx\n", hist.pc, hist.inst);
+    }
+    fprintf(stderr, "> spike pc history:\n");
+    for (auto pc : spike_state.pc_history) {
+      fprintf(stderr, "> %016lx\n", pc);
+    }
+
+    finished = true;
+    res = 1;
+  };
+
   top = new VRiscVSystem;
 
   if (jtag) {
@@ -1384,24 +1409,7 @@ int main(int argc, char **argv) {
                 stderr,
                 "> %ld: Mismatch commit @ pc %lx (expected %lx) inst %08lx\n",
                 main_time, cur_pc, exp_pc, cpu_state.insn[index].inst);
-            for (int i = 0; i < 32; i++) {
-              fprintf(stderr, "> gpr[%d] = %016lx\n", i, cpu_state.gpr[i]);
-            }
-            for (int i = 0; i < STATE_CSR_COUNT; i++) {
-              fprintf(stderr, "> csr[%s] = %016lx\n", csr_names[i],
-                      cpu_state.csr_state[i]);
-            }
-            fprintf(stderr, "> cpu history:\n");
-            for (auto hist : cpu_state.history) {
-              fprintf(stderr, "> pc=%016lx inst=%08lx\n", hist.pc, hist.inst);
-            }
-            fprintf(stderr, "> spike pc history:\n");
-            for (auto pc : spike_state.pc_history) {
-              fprintf(stderr, "> %016lx\n", pc);
-            }
-
-            finished = true;
-            res = 1;
+            difftest_failed();
           }
 
           history_entry hist;
@@ -1442,6 +1450,7 @@ int main(int argc, char **argv) {
                     "(expected "
                     "%016lx)\n",
                     main_time, last_pc, last_inst, i, actual, expected);
+            difftest_failed();
           }
         }
       }
