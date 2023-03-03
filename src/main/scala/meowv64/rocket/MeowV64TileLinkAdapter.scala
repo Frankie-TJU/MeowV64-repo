@@ -107,7 +107,10 @@ class MeowV64TileLinkAdapterModuleImp(outer: MeowV64TileLinkAdapter)
     val ic_state = RegInit(s_ready)
     val ic_addr = Reg(UInt(coredef.XLEN.W))
     // ICache may send invalid address upon speculation
-    val safeGet = ic_edge.manager.supportsGetSafe(port.read.bits, log2Ceil(outer.lineSize).U)
+    val safeGet = ic_edge.manager.supportsGetSafe(
+      port.read.bits,
+      log2Ceil(outer.lineSize).U
+    )
     switch(ic_state) {
       is(s_ready) {
         when(port.read.valid) {
@@ -178,6 +181,7 @@ class MeowV64TileLinkAdapterModuleImp(outer: MeowV64TileLinkAdapter)
   val s_l1_ready :: s_l1_read :: s_l1_modify :: s_l1_grant :: s_l1_grantack :: s_l1_writeback :: s_l1_releaseack :: Nil =
     Enum(7)
   val dc_l1_state = RegInit(s_l1_ready)
+  val next_dc_l1_state = WireInit(dc_l1_state)
 
   val s_l2_ready :: s_l2_probe :: s_l2_probeack :: Nil =
     Enum(3)
@@ -193,15 +197,16 @@ class MeowV64TileLinkAdapterModuleImp(outer: MeowV64TileLinkAdapter)
     is(s_l1_ready) {
       switch(frontend.dc.l1req) {
         is(L1DCPort.L1Req.read) {
-          dc_l1_state := s_l1_read
+          next_dc_l1_state := s_l1_read
         }
         is(L1DCPort.L1Req.modify) {
-          dc_l1_state := s_l1_modify
+          next_dc_l1_state := s_l1_modify
         }
         is(L1DCPort.L1Req.writeback) {
+          // Release: A master should not issue a Release if there is a pending Grant on the block.
           // do not l1.writeback & l2.flush in the same cycle
           when(dc_l2_state === s_l2_ready) {
-            dc_l1_state := s_l1_writeback
+            next_dc_l1_state := s_l1_writeback
           }
         }
       }
@@ -219,7 +224,7 @@ class MeowV64TileLinkAdapterModuleImp(outer: MeowV64TileLinkAdapter)
         )
         ._2
       when(dc.a.fire) {
-        dc_l1_state := s_l1_grant
+        next_dc_l1_state := s_l1_grant
       }
     }
     is(s_l1_grant) {
@@ -232,7 +237,7 @@ class MeowV64TileLinkAdapterModuleImp(outer: MeowV64TileLinkAdapter)
 
         when(dc.d.fire) {
           frontend.dc.l1stall := false.B
-          dc_l1_state := s_l1_grantack
+          next_dc_l1_state := s_l1_grantack
           dc_grant_d := dc.d.bits
         }
       }
@@ -242,7 +247,7 @@ class MeowV64TileLinkAdapterModuleImp(outer: MeowV64TileLinkAdapter)
       dc.e.valid := true.B
       dc.e.bits := dc_edge.GrantAck(dc_grant_d)
       when(dc.e.fire) {
-        dc_l1_state := s_l1_ready
+        next_dc_l1_state := s_l1_ready
       }
     }
     is(s_l1_writeback) {
@@ -260,7 +265,7 @@ class MeowV64TileLinkAdapterModuleImp(outer: MeowV64TileLinkAdapter)
         )
         ._2
       when(dc_l1_out_c.fire) {
-        dc_l1_state := s_l1_releaseack
+        next_dc_l1_state := s_l1_releaseack
       }
     }
     is(s_l1_releaseack) {
@@ -271,11 +276,12 @@ class MeowV64TileLinkAdapterModuleImp(outer: MeowV64TileLinkAdapter)
 
         when(dc.d.fire) {
           frontend.dc.l1stall := false.B
-          dc_l1_state := s_l1_ready
+          next_dc_l1_state := s_l1_ready
         }
       }
     }
   }
+  dc_l1_state := next_dc_l1_state
 
   // l2 req
   val dc_l2_cache_valid = Reg(Bool())
@@ -288,7 +294,13 @@ class MeowV64TileLinkAdapterModuleImp(outer: MeowV64TileLinkAdapter)
   switch(dc_l2_state) {
     is(s_l2_ready) {
       // block outer Probes when Release is inflight
-      when(dc_l1_state === s_l1_writeback || dc_l1_state === s_l1_releaseack) {
+      // Once the Release is issued, the master should not issue ProbeAcks, Acquires,
+      // or further Releases until it receives a ReleaseAck from the slave acknowledging completion of the writeback.
+      // CAUTION: handle l1 & l2 same cycle
+      when(
+        dc_l1_state === s_l1_writeback || dc_l1_state === s_l1_releaseack ||
+          next_dc_l1_state === s_l1_writeback || next_dc_l1_state === s_l1_releaseack
+      ) {
         dc.b.ready := false.B
       }.otherwise {
         dc.b.ready := true.B
@@ -319,14 +331,7 @@ class MeowV64TileLinkAdapterModuleImp(outer: MeowV64TileLinkAdapter)
       }
     }
     is(s_l2_probeack) {
-      // Release: A master should not issue a Release if there is a pending Grant on the block.
-      // Once the Release is issued, the master should not issue ProbeAcks, Acquires,
-      // or further Releases until it receives a ReleaseAck from the slave acknowledging completion of the writeback.
-      when(dc_l1_state === s_l1_writeback || dc_l1_state === s_l1_releaseack) {
-        dc_l2_out_c.valid := false.B
-      }.otherwise {
-        dc_l2_out_c.valid := true.B
-      }
+      dc_l2_out_c.valid := true.B
       val perm = WireInit(0.U(TLPermissions.cWidth.W))
       when(dc_l2_cache_valid && dc_l2_cache_dirty) {
         // M -> S/I
@@ -396,8 +401,12 @@ class MeowV64TileLinkAdapterModuleImp(outer: MeowV64TileLinkAdapter)
     .addr(log2Ceil(coredef.L1_LINE_BYTES) - 1, 0)
   val uc_shift = uc_offset << 3
   // do not send invalid address
-  val safeGet = uc_edge.manager.supportsGetSafe(frontend.uc.addr, frontend.uc.len.asUInt)
-  val safePut = uc_edge.manager.supportsPutFullSafe(frontend.uc.addr, frontend.uc.len.asUInt)
+  val safeGet =
+    uc_edge.manager.supportsGetSafe(frontend.uc.addr, frontend.uc.len.asUInt)
+  val safePut = uc_edge.manager.supportsPutFullSafe(
+    frontend.uc.addr,
+    frontend.uc.len.asUInt
+  )
   switch(uc_state) {
     is(s_ready) {
       switch(frontend.uc.req) {
