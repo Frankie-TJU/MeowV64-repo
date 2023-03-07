@@ -306,16 +306,19 @@ void step_mmio() {
     top->mmio_axi4_RVALID = 1;
     top->mmio_axi4_RID = pending_read_id;
     mpz_class r_data;
-    if (pending_read_addr == serial_addr + 0x14 ||
-        pending_read_addr == serial_fpga_addr + 0x14) {
-      // serial lsr
-      // THRE | TEMT
-      uint64_t lsr = (1L << 5) | (1L << 6);
-      r_data = lsr << 32;
-    } else if (pending_read_addr == serial_addr ||
-               pending_read_addr == serial_fpga_addr) {
-      // serial rbr
+    if ((pending_read_addr >= serial_addr &&
+         pending_read_addr <= serial_addr + 0x1000) ||
+        (pending_read_addr >= serial_fpga_addr &&
+         pending_read_addr <= serial_fpga_addr + 0x1000)) {
+      // serial
       r_data = 0;
+      if (pending_read_addr == serial_addr + 0x14 ||
+          pending_read_addr == serial_fpga_addr + 0x14) {
+        // serial lsr
+        // THRE | TEMT
+        uint64_t lsr = (1L << 5) | (1L << 6);
+        r_data = lsr << 32;
+      }
     } else {
       uint64_t aligned =
           (pending_read_addr / MMIO_AXI_DATA_BYTES) * MMIO_AXI_DATA_BYTES;
@@ -1150,6 +1153,39 @@ void v_difftest_ArchEvent(DPIC_ARG_BYTE coreid, DPIC_ARG_INT intrNo,
 }
 
 void v_difftest_TrapEvent() {}
+
+struct store_event {
+  uint64_t addr;
+  uint64_t data;
+  uint8_t len;
+};
+std::deque<store_event> store_events;
+
+void v_difftest_StoreEvent(DPIC_ARG_BYTE coreid, DPIC_ARG_BYTE index,
+                           DPIC_ARG_BIT valid, DPIC_ARG_LONG storeAddr,
+                           DPIC_ARG_LONG storeData, DPIC_ARG_BYTE storeMask) {
+  if (valid) {
+    store_event ev;
+    ev.addr = storeAddr;
+    ev.data = storeData;
+    if (storeMask == 0x1) {
+      ev.len = 1;
+      ev.data &= 0xffL;
+    } else if (storeMask == 0x3) {
+      ev.len = 2;
+      ev.data &= 0xffffL;
+    } else if (storeMask == 0xf) {
+      ev.len = 4;
+      ev.data &= 0xffffffffL;
+    } else if (storeMask == 0xff) {
+      ev.len = 8;
+    } else {
+      ev.len = 0;
+      fprintf(stderr, "> Unexpected write mask: %d\n", storeMask);
+    }
+    store_events.push_back(ev);
+  }
+}
 }
 
 int main(int argc, char **argv) {
@@ -1239,9 +1275,53 @@ int main(int argc, char **argv) {
   // p.debug = true;
   proc = &p;
 
+  auto difftest_failed = [&]() {
+    for (int i = 0; i < 32; i++) {
+      fprintf(stderr, "> gpr[%d] = %016lx\n", i, cpu_state.gpr[i]);
+    }
+    for (int i = 0; i < STATE_CSR_COUNT; i++) {
+      fprintf(stderr, "> csr[%s] = %016lx\n", csr_names[i],
+              cpu_state.csr_state[i]);
+    }
+    fprintf(stderr, "> cpu history:\n");
+    for (auto hist : cpu_state.history) {
+      fprintf(stderr, "> pc=%016lx inst=%08lx\n", hist.pc, hist.inst);
+    }
+    fprintf(stderr, "> spike pc history:\n");
+    for (auto pc : spike_state.pc_history) {
+      fprintf(stderr, "> %016lx\n", pc);
+    }
+
+    finished = true;
+    res = 1;
+  };
+
   // step and save csr & gpr state
   auto step_spike = [&]() {
     proc->step(1);
+
+    for (auto mem_write : proc->get_state()->log_mem_write) {
+      uint64_t addr, val, len;
+      std::tie(addr, val, len) = mem_write;
+      if (store_events.empty()) {
+        fprintf(stderr,
+                "> %ld: Missing store event @ pc %lx (expected addr %lx data "
+                "%lx len %ld)\n",
+                main_time, proc->get_state()->last_inst_pc, addr, val, len);
+        difftest_failed();
+      } else {
+        store_event ev = store_events.front();
+        if (ev.addr != addr || ev.data != val || ev.len != len) {
+          fprintf(stderr,
+                  "> %ld: Mismatch store event @ pc %lx addr %lx (expected "
+                  "%lx) data %lx (expected %lx) len %lx (expected %ld)\n",
+                  main_time, proc->get_state()->last_inst_pc, ev.addr, addr,
+                  ev.data, val, ev.len, len);
+          // difftest_failed();
+        }
+        store_events.pop_front();
+      }
+    }
 
     const csr_t *csrs[] = {
         proc->get_state()->mstatus.get(),
@@ -1277,27 +1357,6 @@ int main(int argc, char **argv) {
     if (spike_state.pc_history.size() > history_size) {
       spike_state.pc_history.pop_front();
     }
-  };
-
-  auto difftest_failed = [&]() {
-    for (int i = 0; i < 32; i++) {
-      fprintf(stderr, "> gpr[%d] = %016lx\n", i, cpu_state.gpr[i]);
-    }
-    for (int i = 0; i < STATE_CSR_COUNT; i++) {
-      fprintf(stderr, "> csr[%s] = %016lx\n", csr_names[i],
-              cpu_state.csr_state[i]);
-    }
-    fprintf(stderr, "> cpu history:\n");
-    for (auto hist : cpu_state.history) {
-      fprintf(stderr, "> pc=%016lx inst=%08lx\n", hist.pc, hist.inst);
-    }
-    fprintf(stderr, "> spike pc history:\n");
-    for (auto pc : spike_state.pc_history) {
-      fprintf(stderr, "> %016lx\n", pc);
-    }
-
-    finished = true;
-    res = 1;
   };
 
   top = new VRiscVSystem;
@@ -1468,8 +1527,8 @@ int main(int argc, char **argv) {
 
     top->eval();
     if (tfp) {
-      if (main_time > 4639900000) {
-        // tfp->dump(main_time);
+      if (1 || main_time > 6651900000) {
+        tfp->dump(main_time);
       }
       // tfp->flush();
     }

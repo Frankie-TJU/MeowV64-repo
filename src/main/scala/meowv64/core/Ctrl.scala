@@ -558,7 +558,7 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
     // priroity 0
     cause := 4.U // The hart single stepped because step was set.
     assert(enterDebugMode)
-  }.elsewhen(intFired) {
+  }.elsewhen(intFired && toExec.intAck) {
     cause := (true.B << (coredef.XLEN - 1)) | intCause
     // For other traps, stval is set to zero
     tval := 0.U
@@ -614,7 +614,7 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
         tvec := (DebugModule.DM_CODE_REGION_START + 0x8).U
       }
     }
-  }.elsewhen(intFired && tvecBase(1, 0) === 1.U) {
+  }.elsewhen(intFired && toExec.intAck && tvecBase(1, 0) === 1.U) {
     // Vectored trap
     tvec := (tvecBase(coredef.XLEN - 1, 2) + intCause) ## 0.U(2.W)
   }

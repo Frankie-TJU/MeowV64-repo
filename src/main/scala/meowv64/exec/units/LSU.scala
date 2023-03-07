@@ -19,6 +19,7 @@ import meowv64.paging._
 import meowv64.reg.RegType
 
 import scala.collection.mutable
+import difftest.DifftestStoreEvent
 
 /** DelayedMem = Delayed memory access, memory accesses that have side-effects
   * and thus needs to be preformed in-order.
@@ -989,5 +990,34 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
     vectorReadRespData := 0.U
     vectorReadReqIndex := 0.U
     vectorReadRespIndex := 0.U
+  }
+
+  if (coredef.ENABLE_DIFFTEST) {
+    // trap
+    val difftestStore = Module(new DifftestStoreEvent)
+    difftestStore.io.clock := clock
+    difftestStore.io.coreid := coredef.HART_ID.U
+    difftestStore.io.valid := false.B
+    when(toMem.writer.req.fire) {
+      difftestStore.io.valid := true.B
+      difftestStore.io.storeAddr := toMem.writer.req.bits.addr
+      // handle atomic
+      when(toMem.writer.req.bits.op === DCWriteOp.add) {
+        difftestStore.io.storeData := toMem.writer.rdata
+      }.otherwise {
+        difftestStore.io.storeData := toMem.writer.req.bits.wdata
+      }
+      difftestStore.io.storeMask := toMem.writer.req.bits.be >> toMem.writer.req.bits
+        .addr(4, 0)
+    }
+    when(toMem.uncached.req === L1UCReq.write && !toMem.uncached.stall) {
+      difftestStore.io.valid := true.B
+      difftestStore.io.storeAddr := toMem.uncached.addr
+      difftestStore.io.storeData := toMem.uncached.wdata
+      difftestStore.io.storeMask := DCWriteLen.toByteEnable(toMem.uncached.len)
+    }
+    assert(
+      !(toMem.writer.req.fire && toMem.uncached.req === L1UCReq.write && toMem.uncached.stall)
+    )
   }
 }
