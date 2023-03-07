@@ -109,7 +109,10 @@ class CoreDCWriteReq(val opts: L1DOpts) extends Bundle {
 class CoreDCWriter(val opts: L1DOpts) extends Bundle {
   val req = Decoupled(new CoreDCWriteReq(opts))
 
-  val rdata = Input(UInt(opts.TO_CORE_TRANSFER_WIDTH.W)) // AMOSWAP and friends
+  /* old value before atomic operations */
+  val rdata = Input(UInt(opts.TO_CORE_TRANSFER_WIDTH.W))
+  /* data written to memory for atomic operations, for difftest */
+  val atomic_written = Input(UInt(opts.XLEN.W))
 
   val IGNORED_WIDTH = log2Ceil(opts.TO_CORE_TRANSFER_BYTES)
 
@@ -287,6 +290,7 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
   /** Write result for amo and sc instructions
     */
   val pendingWriteRet = RegInit(0.U(opts.XLEN.W))
+  val pendingWriteMem = RegInit(0.U(opts.XLEN.W))
 
   val wbuf = RegInit(
     VecInit(Seq.fill(opts.WRITE_BUF_DEPTH)(WriteEv.default(opts)))
@@ -449,6 +453,7 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
           amoalu.io.rdata := lookup.data(getSublineIdx(waddr))
           written.data(getSublineIdx(waddr)) := amoalu.io.muxed
           pendingWriteRet := amoalu.io.rsliced
+          pendingWriteMem := amoalu.io.muxed >> (amoalu.io.offset << 3.U)
         }.otherwise {
           pendingWriteRet := 0.U // Successful SC
         }
@@ -617,6 +622,7 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
             }
           }.elsewhen(wbuf(wbufHead).isAMO) {
             pendingWriteRet := amoalu.io.rsliced
+            pendingWriteMem := amoalu.io.muxed >> (amoalu.io.offset << 3.U)
           }.otherwise {
             pendingWriteRet := 0.U
           }
@@ -644,6 +650,7 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
   val wmHitHead = wbuf(wbufHead).valid && wbuf(wbufHead).aligned === w.aligned
 
   w.rdata := pendingWriteRet
+  w.atomic_written := pendingWriteMem
   val pushed = RegInit(false.B) // Pushed state for
 
   when(~w.req.valid) {

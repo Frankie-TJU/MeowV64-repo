@@ -1003,7 +1003,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
       difftestStore.io.storeAddr := toMem.writer.req.bits.addr
       // handle atomic
       when(toMem.writer.req.bits.op === DCWriteOp.add) {
-        difftestStore.io.storeData := toMem.writer.rdata
+        difftestStore.io.storeData := toMem.writer.atomic_written
       }.otherwise {
         difftestStore.io.storeData := toMem.writer.req.bits.wdata
       }
