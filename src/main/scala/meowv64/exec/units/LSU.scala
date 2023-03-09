@@ -1001,11 +1001,24 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
     when(toMem.writer.req.fire) {
       difftestStore.io.valid := true.B
       difftestStore.io.storeAddr := toMem.writer.req.bits.addr
-      // handle atomic
-      when(toMem.writer.req.bits.op === DCWriteOp.add) {
-        difftestStore.io.storeData := toMem.writer.atomic_written
-      }.otherwise {
+      when(toMem.writer.req.bits.op === DCWriteOp.write) {
+        // normal write
         difftestStore.io.storeData := toMem.writer.req.bits.wdata
+      }.elsewhen(toMem.writer.req.bits.op === DCWriteOp.cond) {
+        // sc
+        when(toMem.writer.rdata === 0.U) {
+          // sc success
+          difftestStore.io.storeData := toMem.writer.req.bits.wdata
+        }.otherwise {
+          // sc failed
+          difftestStore.io.valid := false.B
+        }
+      }.elsewhen(toMem.writer.req.bits.op === DCWriteOp.commitLR) {
+        // lr
+        difftestStore.io.valid := false.B
+      }.otherwise {
+        // handle atomic
+        difftestStore.io.storeData := toMem.writer.atomic_written
       }
       difftestStore.io.storeMask := toMem.writer.req.bits.be >> toMem.writer.req.bits
         .addr(4, 0)
