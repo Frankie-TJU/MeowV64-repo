@@ -429,7 +429,8 @@ class Satp extends Bundle {
     // satp is written with an unsupported MODE, the entire write has no effect;
     // no fields in satp are modified.
     when(port.write && modeValid) {
-      asid := casted.asid
+      // asid is not implemented
+      // asid := casted.asid
       ppn := casted.ppn
       mode := casted.mode
     }
