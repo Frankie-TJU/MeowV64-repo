@@ -14,15 +14,10 @@ import meowv64.system.SystemDef
 class WithMeowV64Cores(
     systemDef: SystemDef = new SingleCoreSystemDef,
     overrideIdOffset: Option[Int] = None,
-    frequency: BigInt = 1000000000,
     initVec: Option[BigInt] = None,
     enableDifftest: Boolean = false,
 ) extends Config((site, _, up) => {
       case XLen => 64
-      // 100MHz
-      case PeripheryBusKey =>
-        up(PeripheryBusKey).copy(dtsFrequency = Some(frequency))
-      case DTSTimebase => frequency
       // Set to line bytes
       case CacheBlockBytes => systemDef.L2_LINE_BYTES
       case MemoryBusKey =>
