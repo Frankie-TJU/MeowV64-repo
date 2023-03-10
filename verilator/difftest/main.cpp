@@ -1028,6 +1028,7 @@ struct cpu_state {
   struct commit_state insn[2];
   uint64_t csr_state[STATE_CSR_COUNT];
   uint64_t gpr[32];
+  uint64_t fpr[32];
   std::deque<history_entry> history;
 } cpu_state;
 
@@ -1035,6 +1036,7 @@ struct spike_state {
   uint64_t pc;
   uint64_t csr_state[STATE_CSR_COUNT];
   uint64_t gpr[32];
+  uint64_t fpr[32];
   std::deque<uint64_t> pc_history;
 } spike_state;
 
@@ -1094,7 +1096,51 @@ void v_difftest_ArchIntRegState(
   cpu_state.gpr[31] = gpr_31;
 }
 
-void v_difftest_ArchFpRegState() {}
+void v_difftest_ArchFpRegState(
+    DPIC_ARG_BYTE coreid, DPIC_ARG_LONG fpr_0, DPIC_ARG_LONG fpr_1,
+    DPIC_ARG_LONG fpr_2, DPIC_ARG_LONG fpr_3, DPIC_ARG_LONG fpr_4,
+    DPIC_ARG_LONG fpr_5, DPIC_ARG_LONG fpr_6, DPIC_ARG_LONG fpr_7,
+    DPIC_ARG_LONG fpr_8, DPIC_ARG_LONG fpr_9, DPIC_ARG_LONG fpr_10,
+    DPIC_ARG_LONG fpr_11, DPIC_ARG_LONG fpr_12, DPIC_ARG_LONG fpr_13,
+    DPIC_ARG_LONG fpr_14, DPIC_ARG_LONG fpr_15, DPIC_ARG_LONG fpr_16,
+    DPIC_ARG_LONG fpr_17, DPIC_ARG_LONG fpr_18, DPIC_ARG_LONG fpr_19,
+    DPIC_ARG_LONG fpr_20, DPIC_ARG_LONG fpr_21, DPIC_ARG_LONG fpr_22,
+    DPIC_ARG_LONG fpr_23, DPIC_ARG_LONG fpr_24, DPIC_ARG_LONG fpr_25,
+    DPIC_ARG_LONG fpr_26, DPIC_ARG_LONG fpr_27, DPIC_ARG_LONG fpr_28,
+    DPIC_ARG_LONG fpr_29, DPIC_ARG_LONG fpr_30, DPIC_ARG_LONG fpr_31) {
+  cpu_state.fpr[0] = fpr_0;
+  cpu_state.fpr[1] = fpr_1;
+  cpu_state.fpr[2] = fpr_2;
+  cpu_state.fpr[3] = fpr_3;
+  cpu_state.fpr[4] = fpr_4;
+  cpu_state.fpr[5] = fpr_5;
+  cpu_state.fpr[6] = fpr_6;
+  cpu_state.fpr[7] = fpr_7;
+  cpu_state.fpr[8] = fpr_8;
+  cpu_state.fpr[9] = fpr_9;
+  cpu_state.fpr[10] = fpr_10;
+  cpu_state.fpr[11] = fpr_11;
+  cpu_state.fpr[12] = fpr_12;
+  cpu_state.fpr[13] = fpr_13;
+  cpu_state.fpr[14] = fpr_14;
+  cpu_state.fpr[15] = fpr_15;
+  cpu_state.fpr[16] = fpr_16;
+  cpu_state.fpr[17] = fpr_17;
+  cpu_state.fpr[18] = fpr_18;
+  cpu_state.fpr[19] = fpr_19;
+  cpu_state.fpr[20] = fpr_20;
+  cpu_state.fpr[21] = fpr_21;
+  cpu_state.fpr[22] = fpr_22;
+  cpu_state.fpr[23] = fpr_23;
+  cpu_state.fpr[24] = fpr_24;
+  cpu_state.fpr[25] = fpr_25;
+  cpu_state.fpr[26] = fpr_26;
+  cpu_state.fpr[27] = fpr_27;
+  cpu_state.fpr[28] = fpr_28;
+  cpu_state.fpr[29] = fpr_29;
+  cpu_state.fpr[30] = fpr_30;
+  cpu_state.fpr[31] = fpr_31;
+}
 
 void v_difftest_CSRState(DPIC_ARG_BYTE coreid, DPIC_ARG_BYTE privilegeMode,
                          DPIC_ARG_LONG mstatus, DPIC_ARG_LONG sstatus,
@@ -1258,6 +1304,8 @@ int main(int argc, char **argv) {
   processor_t p(&isa_parser, &cfg, &s, 0, true, stderr, std::cerr);
   // only enable sv39 and sv48, disable sv57
   p.set_impl(IMPL_MMU_SV57, false);
+  // asid not implemented
+  p.set_impl(IMPL_MMU_ASID, false);
 
   // add plic, clint and uart
   std::vector<processor_t *> procs;
@@ -1279,6 +1327,9 @@ int main(int argc, char **argv) {
     for (int i = 0; i < 32; i++) {
       fprintf(stderr, "> gpr[%d] = %016lx\n", i, cpu_state.gpr[i]);
     }
+    for (int i = 0; i < 32; i++) {
+      fprintf(stderr, "> fpr[%d] = %016lx\n", i, cpu_state.fpr[i]);
+    }
     for (int i = 0; i < STATE_CSR_COUNT; i++) {
       fprintf(stderr, "> csr[%s] = %016lx\n", csr_names[i],
               cpu_state.csr_state[i]);
@@ -1296,7 +1347,7 @@ int main(int argc, char **argv) {
     res = 1;
   };
 
-  // step and save csr & gpr state
+  // step and save csr, gpr & fpr state
   auto step_spike = [&]() {
     proc->step(1);
 
@@ -1317,7 +1368,7 @@ int main(int argc, char **argv) {
                   "%lx) data %lx (expected %lx) len %lx (expected %ld)\n",
                   main_time, proc->get_state()->last_inst_pc, ev.addr, addr,
                   ev.data, val, ev.len, len);
-          // difftest_failed();
+          difftest_failed();
         }
         store_events.pop_front();
       }
@@ -1344,6 +1395,9 @@ int main(int argc, char **argv) {
     };
     for (int i = 0; i < 32; i++) {
       spike_state.gpr[i] = proc->get_state()->XPR[i];
+    }
+    for (int i = 0; i < 32; i++) {
+      spike_state.fpr[i] = proc->get_state()->FPR[i].v[0];
     }
     for (int i = 0; i < STATE_CSR_COUNT; i++) {
       spike_state.csr_state[i] = csrs[i]->read();
@@ -1511,6 +1565,17 @@ int main(int argc, char **argv) {
                     main_time, last_pc, last_inst, i, actual, expected);
             difftest_failed();
           }
+
+          actual = cpu_state.fpr[i];
+          expected = spike_state.fpr[i];
+          if (expected != actual) {
+            fprintf(stderr,
+                    "> %ld: Mismatch fpr @ pc %lx inst %08lx fpr[%d]=%016lx "
+                    "(expected "
+                    "%016lx)\n",
+                    main_time, last_pc, last_inst, i, actual, expected);
+            difftest_failed();
+          }
         }
       }
     }
@@ -1527,8 +1592,8 @@ int main(int argc, char **argv) {
 
     top->eval();
     if (tfp) {
-      if (1 || main_time > 6651900000) {
-        tfp->dump(main_time);
+      if (main_time > 6600000000) {
+        // tfp->dump(main_time);
       }
       // tfp->flush();
     }
