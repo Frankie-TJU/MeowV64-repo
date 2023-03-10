@@ -43,6 +43,9 @@ while True:
         for addr in addrs:
             if addr > 0x9ffc0000:
                 addr = addr - 0x9ffca000 + 0x80029000
+            # linux
+            # elif addr > 0x80020000:
+            #     addr = addr - 0x80200000 + 0xffffffff80000000
 
             print('pc @ {}: {:x}'.format(time, addr))
             if addr in cache:
@@ -53,6 +56,8 @@ while True:
             binary = "~/u-boot/u-boot"
             if addr < 0x80020000:
                 binary = "~/opensbi/build/platform/rocket-chip-vcu128/firmware/fw_payload.elf"
+            # else:
+            #     binary = "~/linux/vmlinux"
             name = subprocess.check_output(
                 ["riscv64-unknown-elf-addr2line -f -e {} 0x{:x}".format(binary, addr)], shell=True, encoding='utf-8').strip()
             cache[addr] = name

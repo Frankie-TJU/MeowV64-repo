@@ -10,6 +10,10 @@ for line in sys.stdin.readlines():
         if addr > 0x9ffc0000:
             addr = addr - 0x9ffca000 + 0x80029000
         binary = "~/u-boot/u-boot"
+        # linux
+        # if addr > 0x80200000:
+        #     addr = addr + 0x80200000 - 0xffffffff80000000
+        # binary = "~/linux/vmlinux"
         if addr < 0x80020000:
             binary = "~/opensbi/build/platform/rocket-chip-vcu128/firmware/fw_payload.elf"
         name = subprocess.check_output(
