@@ -760,7 +760,9 @@ class Exec(implicit val coredef: CoreDef) extends Module {
         // TODO
 
         // update fflags and status.FS
-        toCtrl.updateFState.markFSDirty := info.markFSDirty
+        when(info.markFSDirty) {
+          toCtrl.updateFState.markFSDirty := true.B
+        }
         when(info.updateFFlags) {
           toCtrl.updateFState.updateFFlags := true.B
           toCtrl.updateFState.fflags := info.fflags
