@@ -1314,8 +1314,10 @@ int main(int argc, char **argv) {
   plic_t plic(procs, true, 2);
   s.bus.add_device(0xc000000, &plic);
   clint_t clint(procs, 1000000000, false);
+  clint.difftest_mode = true;
   s.bus.add_device(0x2000000, &clint);
   ns16550_t uart(&s.bus, &plic, 1, 2, 1);
+  uart.difftest_mode = true;
   s.bus.add_device(0x60201000, &uart);
 
   p.reset();
