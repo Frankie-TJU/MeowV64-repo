@@ -9,6 +9,7 @@
 #include <optional>
 #include <riscv/cfg.h>
 #include <riscv/devices.h>
+#include <riscv/disasm.h>
 #include <riscv/processor.h>
 #include <riscv/sim.h>
 #include <signal.h>
@@ -1323,6 +1324,8 @@ int main(int argc, char **argv) {
   // p.debug = true;
   proc = &p;
 
+  disassembler_t disassembler(&isa_parser);
+
   auto difftest_failed = [&]() {
     for (int i = 0; i < 32; i++) {
       fprintf(stderr, "> gpr[%d] = %016lx\n", i, cpu_state.gpr[i]);
@@ -1336,7 +1339,8 @@ int main(int argc, char **argv) {
     }
     fprintf(stderr, "> cpu history:\n");
     for (auto hist : cpu_state.history) {
-      fprintf(stderr, "> pc=%016lx inst=%08lx\n", hist.pc, hist.inst);
+      fprintf(stderr, "> pc=%016lx inst=%08lx %s\n", hist.pc, hist.inst,
+              disassembler.disassemble(hist.inst).c_str());
     }
     fprintf(stderr, "> spike pc history:\n");
     for (auto pc : spike_state.pc_history) {
@@ -1551,6 +1555,11 @@ int main(int argc, char **argv) {
                     "%lx)\n",
                     main_time, last_pc, last_inst, csr_names[i], actual,
                     expected);
+            fprintf(stderr, "> cpu history:\n");
+            for (auto hist : cpu_state.history) {
+              fprintf(stderr, "> pc=%016lx inst=%08lx %s\n", hist.pc,
+                      hist.inst, disassembler.disassemble(hist.inst).c_str());
+            }
           }
         }
 
