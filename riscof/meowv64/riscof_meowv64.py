@@ -23,7 +23,7 @@ class meowv64(pluginTemplate):
     __version__ = "XXX"
 
     def __init__(self, *args, **kwargs):
-        sclass = super().__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         config = kwargs.get('config')
 
@@ -60,9 +60,6 @@ class meowv64(pluginTemplate):
             self.target_run = False
         else:
             self.target_run = True
-
-        # Return the parameters set above back to RISCOF for further processing.
-        return sclass
 
     def initialise(self, suite, work_dir, archtest_env):
 
@@ -124,7 +121,7 @@ class meowv64(pluginTemplate):
 
         # set the make command that will be used. The num_jobs parameter was set in the __init__
         # function earlier
-        make.makeCommand = 'make -j' + self.num_jobs
+        make.makeCommand = 'make -k -j' + self.num_jobs
 
         # we will iterate over each entry in the testList. Each entry node will be refered to by the
         # variable testname.
@@ -185,7 +182,7 @@ class meowv64(pluginTemplate):
 
         # if you would like to exit the framework once the makefile generation is complete uncomment the
         # following line. Note this will prevent any signature checking or report generation.
-        #raise SystemExit
+        # raise SystemExit
 
         # once the make-targets are done and the makefile has been created, run all the targets in
         # parallel using the make command set above.
