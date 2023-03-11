@@ -294,12 +294,14 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
       | mwpri & Status.mwpri
       | Status.hardwired(status).asUInt & ~(Status.mmask | Status.mwpri)
   )
+  assert((Status.mmask.litValue & Status.mwpri.litValue) == 0)
 
   csr.sstatus.rdata := (
     status.asUInt & Status.smask
       | swpri & Status.swpri
       | Status.hardwired(status).asUInt & ~(Status.smask | Status.swpri)
   )
+  assert((Status.smask.litValue & Status.swpri.litValue) == 0)
 
   when(csr.mstatus.write) {
     status := (

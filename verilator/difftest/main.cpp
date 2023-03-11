@@ -104,7 +104,10 @@ void ctrlc_handler(int arg) {
 
 struct fake_interrupt_controller : abstract_interrupt_controller_t {
   void set_interrupt_level(uint32_t interrupt_id, int level) {
-    fprintf(stderr, "> intr %d = %d\n", interrupt_id, level);
+    static int last_level = 0;
+    if (level != last_level)
+      fprintf(stderr, "> intr %d = %d\n", interrupt_id, level);
+    last_level = level;
   }
   ~fake_interrupt_controller() {}
 };
@@ -1311,7 +1314,7 @@ int main(int argc, char **argv) {
 
   cfg_t cfg(/*default_initrd_bounds=*/std::make_pair((reg_t)0, (reg_t)0),
             /*default_bootargs=*/nullptr,
-            /*default_isa=*/DEFAULT_ISA,
+            /*default_isa=*/"RV64IMAFDCV",
             /*default_priv=*/DEFAULT_PRIV,
             /*default_varch=*/DEFAULT_VARCH,
             /*default_misaligned=*/false,
@@ -1328,7 +1331,7 @@ int main(int argc, char **argv) {
   mem_t m_zero(0x1000);
   s.bus.add_device(0x00000000, &m_zero);
 
-  isa_parser_t isa_parser(DEFAULT_ISA, DEFAULT_PRIV);
+  isa_parser_t isa_parser("RV64IMAFDCV", DEFAULT_PRIV);
   processor_t p(&isa_parser, &cfg, &s, 0, true, stderr, std::cerr);
   // only enable sv39 and sv48, disable sv57
   p.set_impl(IMPL_MMU_SV57, false);
@@ -1356,14 +1359,29 @@ int main(int argc, char **argv) {
 
   auto difftest_failed = [&]() {
     for (int i = 0; i < 32; i++) {
-      fprintf(stderr, "> gpr[%d] = %016lx\n", i, cpu_state.gpr[i]);
+      if (spike_state.gpr[i] == cpu_state.gpr[i]) {
+        fprintf(stderr, "> gpr[%d] = %016lx\n", i, cpu_state.gpr[i]);
+      } else {
+        fprintf(stderr, "> gpr[%d] = %016lx (expected %016lx)\n", i,
+                cpu_state.gpr[i], spike_state.gpr[i]);
+      }
     }
     for (int i = 0; i < 32; i++) {
-      fprintf(stderr, "> fpr[%d] = %016lx\n", i, cpu_state.fpr[i]);
+      if (spike_state.fpr[i] == cpu_state.fpr[i]) {
+        fprintf(stderr, "> fpr[%d] = %016lx\n", i, cpu_state.fpr[i]);
+      } else {
+        fprintf(stderr, "> fpr[%d] = %016lx (expected %016lx)\n", i,
+                cpu_state.fpr[i], spike_state.fpr[i]);
+      }
     }
     for (int i = 0; i < STATE_CSR_COUNT; i++) {
-      fprintf(stderr, "> csr[%s] = %016lx\n", csr_names[i],
-              cpu_state.csr_state[i]);
+      if (spike_state.csr_state[i] == cpu_state.csr_state[i]) {
+        fprintf(stderr, "> csr[%s] = %016lx\n", csr_names[i],
+                cpu_state.csr_state[i]);
+      } else {
+        fprintf(stderr, "> csr[%s] = %016lx (expected %016lx)\n", csr_names[i],
+                cpu_state.csr_state[i], spike_state.csr_state[i]);
+      }
     }
     fprintf(stderr, "> cpu history:\n");
     for (auto hist : cpu_state.history) {

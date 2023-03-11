@@ -246,13 +246,13 @@ class Status(implicit val coredef: CoreDef) extends Bundle {
   val fs = UInt(2.W)
 
   val mpp = UInt(2.W)
-  val WPRI3 = UInt(2.W)
+  val vs = UInt(2.W)
   val spp = Bool()
 
   val mpie = Bool()
-  val WPRI4 = Bool()
+  val WPRI3 = Bool()
   val spie = Bool()
-  val upie = Bool()
+  val WPRI4 = Bool()
 
   val mie = Bool()
   val WPRI5 = Bool()
@@ -265,8 +265,8 @@ object Status {
     val result = Wire(new Status)
     result := DontCare
 
-    // SD = ((FS==11) OR (XS==11))
-    result.sd := base.fs === 3.U
+    // SD = ((FS==11) OR (XS==11) OR (VS==11))
+    result.sd := base.fs === 3.U || base.vs === 3.U
     // No XS
     result.xs := 0.U
 
@@ -285,7 +285,7 @@ object Status {
       "0000" +
       "1" * 9 +
       "0" * 12 +
-      "11001000100",
+      "00001000100",
     2
   ).U(coredef.XLEN.W)
 
@@ -296,7 +296,7 @@ object Status {
       "0" * 9 + // WPRI
       "1" * 6 + // TSR - MPRV
       "0011" + // XS & FS
-      "11001" + // xPP
+      "11111" + // MPP & VS & SPP
       "10111011" // xP?IE
     ,
     2
@@ -307,7 +307,7 @@ object Status {
       "1" * (coredef.XLEN - 35) +
       "00" +
       "1" * 12 +
-      "00100001111011001100",
+      "00100001100011001100",
     2
   ).U(coredef.XLEN.W)
 
@@ -318,7 +318,7 @@ object Status {
       "0" * 12 + // WPRI
       "11" + // MXR, SUM
       "00011" + // WPRI, XS & FS
-      "00001" + // xPP
+      "00111" + // VS & SPP
       "00110011" // xP?IE
     ,
     2
