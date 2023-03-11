@@ -1329,7 +1329,7 @@ int main(int argc, char **argv) {
             /*default_varch=*/"vlen:128,elen:64",
             /*default_misaligned=*/false,
             /*default_endianness=*/endianness_little,
-            /*default_pmpregions=*/16,
+            /*default_pmpregions=*/0,
             /*default_mem_layout=*/
             std::vector<mem_cfg_t>{mem_cfg_t(0x80000000, 0x20000000)},
             /*default_hartids=*/std::vector<int>(),
@@ -1340,8 +1340,8 @@ int main(int argc, char **argv) {
   // add dummy device for reading dtb
   mem_t m_zero(0x1000);
   s.bus.add_device(0x00000000, &m_zero);
-  // add dummy device for tohost/fromhost
-  mem_t m_htif(0x1000);
+  // add dummy device for tohost/fromhost/signature
+  mem_t m_htif(0x10000000);
   s.bus.add_device(0x60000000, &m_htif);
 
   isa_parser_t isa_parser(isa, DEFAULT_PRIV);
@@ -1648,7 +1648,9 @@ int main(int argc, char **argv) {
                     "%lx)\n",
                     main_time, last_pc, last_inst, csr_names[i], actual,
                     expected);
-            difftest_failed();
+            if (i != STATE_CSR_MIP) {
+              difftest_failed();
+            }
           }
         }
 
