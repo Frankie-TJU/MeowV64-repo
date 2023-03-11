@@ -439,6 +439,10 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
   csr.frm <> CSRPort.fromReg(3, fcsr.frm)
   csr.fcsr <> CSRPort.fromReg(8, fcsr)
   toExec.frm := fcsr.frm
+  // set mstatus.fs = 3(dirty) when writing floating point csr directly
+  when(csr.fflags.write || csr.frm.write || csr.fcsr.write) {
+    status.fs := 3.U
+  }
 
   // update fflags
   // and set mstatus.fs = 3(dirty)
@@ -471,6 +475,10 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
   csr.vxrm <> CSRPort.fromReg(2, vcsr.vxrm)
   csr.vxsat <> CSRPort.fromReg(1, vcsr.vxsat)
   csr.vcsr <> CSRPort.fromReg(3, vcsr)
+  // set mstatus.vs = 3(dirty) when writing vector csr directly
+  when(csr.vcsr.write || csr.vxrm.write || csr.vxsat.write) {
+    status.vs := 3.U
+  }
 
   val vstart = RegInit(0.U(coredef.XLEN.W))
   csr.vstart <> CSRPort.fromReg(coredef.XLEN, vstart)

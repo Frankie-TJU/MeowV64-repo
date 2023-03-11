@@ -1600,8 +1600,8 @@ int main(int argc, char **argv) {
           uint64_t actual = cpu_state.csr_state[i];
           uint64_t expected = spike_state.csr_state[i];
           if (expected != actual) {
-            if (last_inst == 0x10200073) {
-              // sret
+            if (last_inst == 0x10200073 || last_inst == 0x30200073) {
+              // sret/mret
               // csr update is async with inst commit
               continue;
             }
@@ -1611,11 +1611,7 @@ int main(int argc, char **argv) {
                     "%lx)\n",
                     main_time, last_pc, last_inst, csr_names[i], actual,
                     expected);
-            fprintf(stderr, "> cpu history:\n");
-            for (auto hist : cpu_state.history) {
-              fprintf(stderr, "> pc=%016lx inst=%08lx %s\n", hist.pc, hist.inst,
-                      disassembler.disassemble(hist.inst).c_str());
-            }
+            difftest_failed();
           }
         }
 
