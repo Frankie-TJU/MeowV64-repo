@@ -1316,7 +1316,7 @@ int main(int argc, char **argv) {
             /*default_bootargs=*/nullptr,
             /*default_isa=*/"RV64IMAFDCV",
             /*default_priv=*/DEFAULT_PRIV,
-            /*default_varch=*/DEFAULT_VARCH,
+            /*default_varch=*/"vlen:128,elen:64",
             /*default_misaligned=*/false,
             /*default_endianness=*/endianness_little,
             /*default_pmpregions=*/16,
@@ -1404,23 +1404,43 @@ int main(int argc, char **argv) {
   auto step_spike = [&]() {
     proc->step(1);
 
-    for (auto mem_write : proc->get_state()->log_mem_write) {
-      uint64_t addr, val, len;
-      std::tie(addr, val, len) = mem_write;
+    auto &log_mem_write = proc->get_state()->log_mem_write;
+    if (log_mem_write.size() > 0) {
+      uint64_t addr = 0, len = 0, temp = 0;
+      mpz_class val;
+      val = 0;
+      for (int i = 0; i < log_mem_write.size(); i++) {
+        if (i == 0) {
+          std::tie(addr, temp, len) = log_mem_write[i];
+          val = temp;
+        } else {
+          uint64_t addr1, val1, len1;
+          std::tie(addr1, val1, len1) = log_mem_write[i];
+          if (addr1 != addr + len) {
+            fprintf(stderr, "> %ld: failed to merge write\n", main_time);
+            break;
+          }
+          val |= ((mpz_class)val1) << (len * 8);
+          len += len1;
+        }
+      }
+      std::string val_str = val.get_str(16);
+
       if (store_events.empty()) {
         fprintf(stderr,
                 "> %ld: Missing store event @ pc %lx (expected addr %lx data "
-                "%lx len %ld)\n",
-                main_time, proc->get_state()->last_inst_pc, addr, val, len);
+                "%s len %ld)\n",
+                main_time, proc->get_state()->last_inst_pc, addr,
+                val_str.c_str(), len);
         difftest_failed();
       } else {
         store_event ev = store_events.front();
         if (ev.addr != addr || ev.data != val || ev.len != len) {
           fprintf(stderr,
                   "> %ld: Mismatch store event @ pc %lx addr %lx (expected "
-                  "%lx) data %lx (expected %lx) len %lx (expected %ld)\n",
+                  "%lx) data %lx (expected %s) len %lx (expected %ld)\n",
                   main_time, proc->get_state()->last_inst_pc, ev.addr, addr,
-                  ev.data, val, ev.len, len);
+                  ev.data, val_str.c_str(), ev.len, len);
           difftest_failed();
         }
         store_events.pop_front();
