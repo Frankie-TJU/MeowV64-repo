@@ -102,6 +102,16 @@ void ctrlc_handler(int arg) {
   res = 1;
 }
 
+struct fake_interrupt_controller : abstract_interrupt_controller_t {
+  void set_interrupt_level(uint32_t interrupt_id, int level) {
+    fprintf(stderr, "> intr %d = %d\n", interrupt_id, level);
+  }
+  ~fake_interrupt_controller() {}
+};
+
+ns16550_t *sim_uart;
+fake_interrupt_controller *sim_plic;
+
 // initialize signals
 void init() {
   top->mem_axi4_AWREADY = 0;
@@ -117,6 +127,10 @@ void init() {
 
   top->mmio_axi4_ARREADY = 0;
   top->mmio_axi4_RVALID = 0;
+
+  sim_plic = new fake_interrupt_controller();
+  sim_uart = new ns16550_t(NULL, sim_plic, 1, 2, 1);
+  sim_uart->suppress_output = true;
 }
 
 // step per clock fall
@@ -313,13 +327,17 @@ void step_mmio() {
          pending_read_addr <= serial_fpga_addr + 0x1000)) {
       // serial
       r_data = 0;
-      if (pending_read_addr == serial_addr + 0x14 ||
-          pending_read_addr == serial_fpga_addr + 0x14) {
-        // serial lsr
-        // THRE | TEMT
-        uint64_t lsr = (1L << 5) | (1L << 6);
-        r_data = lsr << 32;
+      uint64_t offset;
+      if (pending_read_addr >= serial_addr &&
+          pending_read_addr <= serial_addr + 0x1000) {
+        offset = pending_read_addr - serial_addr;
+      } else {
+        offset = pending_read_addr - serial_fpga_addr;
       }
+      uint8_t data;
+      sim_uart->load(offset, 1, &data);
+      r_data = data;
+      r_data <<= (offset % 0x10) * 8;
     } else {
       uint64_t aligned =
           (pending_read_addr / MMIO_AXI_DATA_BYTES) * MMIO_AXI_DATA_BYTES;
@@ -427,12 +445,21 @@ void step_mmio() {
       }
 
       uint64_t input = wdata.get_ui();
-      if (pending_write_addr == serial_addr ||
-          pending_write_addr == serial_fpga_addr) {
+      if ((pending_write_addr >= serial_addr &&
+           pending_write_addr <= serial_addr + 0x1000) ||
+          (pending_write_addr >= serial_fpga_addr &&
+           pending_write_addr <= serial_fpga_addr + 0x1000)) {
         // serial
-        // printed in spike
-        // printf("%c", input & 0xFF);
-        fflush(stdout);
+        uint64_t offset;
+        if (pending_write_addr >= serial_addr &&
+            pending_write_addr <= serial_addr + 0x1000) {
+          offset = pending_write_addr - serial_addr;
+        } else {
+          offset = pending_write_addr - serial_fpga_addr;
+        }
+        uint8_t data;
+        data = input >> ((offset % 0x10) * 8);
+        sim_uart->store(offset, 1, &data);
       } else if (pending_write_addr == tohost_addr) {
         // tohost
         uint32_t data = input & 0xFFFFFFFF;
@@ -1317,7 +1344,6 @@ int main(int argc, char **argv) {
   clint.difftest_mode = true;
   s.bus.add_device(0x2000000, &clint);
   ns16550_t uart(&s.bus, &plic, 1, 2, 1);
-  uart.difftest_mode = true;
   s.bus.add_device(0x60201000, &uart);
 
   p.reset();
@@ -1559,8 +1585,8 @@ int main(int argc, char **argv) {
                     expected);
             fprintf(stderr, "> cpu history:\n");
             for (auto hist : cpu_state.history) {
-              fprintf(stderr, "> pc=%016lx inst=%08lx %s\n", hist.pc,
-                      hist.inst, disassembler.disassemble(hist.inst).c_str());
+              fprintf(stderr, "> pc=%016lx inst=%08lx %s\n", hist.pc, hist.inst,
+                      disassembler.disassemble(hist.inst).c_str());
             }
           }
         }
