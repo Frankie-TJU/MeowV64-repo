@@ -1330,6 +1330,9 @@ int main(int argc, char **argv) {
   // add dummy device for reading dtb
   mem_t m_zero(0x1000);
   s.bus.add_device(0x00000000, &m_zero);
+  // add dummy device for tohost/fromhost
+  mem_t m_htif(0x1000);
+  s.bus.add_device(0x60000000, &m_htif);
 
   isa_parser_t isa_parser("RV64IMAFDCV", DEFAULT_PRIV);
   processor_t p(&isa_parser, &cfg, &s, 0, true, stderr, std::cerr);
@@ -1563,9 +1566,19 @@ int main(int argc, char **argv) {
         if (cpu_state.insn[index].valid) {
           any_valid = true;
 
+          history_entry hist;
+          uint64_t cur_pc = cpu_state.insn[index].pc;
+          hist.pc = cur_pc;
+          hist.inst = cpu_state.insn[index].inst;
+          cpu_state.history.push_back(hist);
+
+          if (cpu_state.history.size() > history_size) {
+            cpu_state.history.pop_front();
+          }
+
           step_spike();
           mtack = 0;
-          uint64_t cur_pc = cpu_state.insn[index].pc;
+
           uint64_t exp_pc = spike_state.pc;
           if (cur_pc != exp_pc) {
             fprintf(
@@ -1573,15 +1586,6 @@ int main(int argc, char **argv) {
                 "> %ld: Mismatch commit @ pc %lx (expected %lx) inst %08lx\n",
                 main_time, cur_pc, exp_pc, cpu_state.insn[index].inst);
             difftest_failed();
-          }
-
-          history_entry hist;
-          hist.pc = cur_pc;
-          hist.inst = cpu_state.insn[index].inst;
-          cpu_state.history.push_back(hist);
-
-          if (cpu_state.history.size() > history_size) {
-            cpu_state.history.pop_front();
           }
 
           last_pc = cur_pc;
@@ -1596,6 +1600,12 @@ int main(int argc, char **argv) {
           uint64_t actual = cpu_state.csr_state[i];
           uint64_t expected = spike_state.csr_state[i];
           if (expected != actual) {
+            if (last_inst == 0x10200073) {
+              // sret
+              // csr update is async with inst commit
+              continue;
+            }
+
             fprintf(stderr,
                     "> %ld: Mismatch csr @ pc %lx inst %08lx %s %lx (expected "
                     "%lx)\n",
