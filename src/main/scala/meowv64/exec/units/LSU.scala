@@ -995,20 +995,22 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   if (coredef.ENABLE_DIFFTEST) {
     // trap
     val difftestStore = Module(new DifftestStoreEvent)
+    val storeData = WireInit(0.U(256.W))
     difftestStore.io.clock := clock
     difftestStore.io.coreid := coredef.HART_ID.U
     difftestStore.io.valid := false.B
+    difftestStore.io.storeData := storeData.asTypeOf(difftestStore.io.storeData)
     when(toMem.writer.req.fire) {
       difftestStore.io.valid := true.B
       difftestStore.io.storeAddr := toMem.writer.req.bits.addr
       when(toMem.writer.req.bits.op === DCWriteOp.write) {
         // normal write
-        difftestStore.io.storeData := toMem.writer.req.bits.wdata
+        storeData := toMem.writer.req.bits.wdata
       }.elsewhen(toMem.writer.req.bits.op === DCWriteOp.cond) {
         // sc
         when(toMem.writer.rdata === 0.U) {
           // sc success
-          difftestStore.io.storeData := toMem.writer.req.bits.wdata
+          storeData := toMem.writer.req.bits.wdata
         }.otherwise {
           // sc failed
           difftestStore.io.valid := false.B
@@ -1018,7 +1020,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
         difftestStore.io.valid := false.B
       }.otherwise {
         // handle atomic
-        difftestStore.io.storeData := toMem.writer.atomic_written
+        storeData := toMem.writer.atomic_written
       }
       difftestStore.io.storeMask := toMem.writer.req.bits.be >> toMem.writer.req.bits
         .addr(4, 0)
@@ -1026,7 +1028,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
     when(toMem.uncached.req === L1UCReq.write && !toMem.uncached.stall) {
       difftestStore.io.valid := true.B
       difftestStore.io.storeAddr := toMem.uncached.addr
-      difftestStore.io.storeData := toMem.uncached.wdata
+      storeData := toMem.uncached.wdata
       difftestStore.io.storeMask := DCWriteLen.toByteEnable(toMem.uncached.len)
     }
     assert(

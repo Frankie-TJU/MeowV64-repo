@@ -6,7 +6,7 @@ _start:
   li sp, 0x88000000
 	li ra, 0x100000
   csrrsi t0, misa, 0
-  li t1, 0x800000000014112D
+  li t1, 0x800000000034112D
   bne t1, t0, fail
 
   li t1, 1145141919810

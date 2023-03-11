@@ -1233,18 +1233,23 @@ void v_difftest_TrapEvent() {}
 
 struct store_event {
   uint64_t addr;
-  uint64_t data;
-  uint8_t len;
+  mpz_class data;
+  uint32_t len;
 };
 std::deque<store_event> store_events;
 
 void v_difftest_StoreEvent(DPIC_ARG_BYTE coreid, DPIC_ARG_BYTE index,
                            DPIC_ARG_BIT valid, DPIC_ARG_LONG storeAddr,
-                           DPIC_ARG_LONG storeData, DPIC_ARG_BYTE storeMask) {
+                           DPIC_ARG_LONG storeData_0, DPIC_ARG_LONG storeData_1,
+                           DPIC_ARG_LONG storeData_2, DPIC_ARG_LONG storeData_3,
+                           DPIC_ARG_INT storeMask) {
   if (valid) {
     store_event ev;
     ev.addr = storeAddr;
-    ev.data = storeData;
+    ev.data = storeData_0;
+    ev.data |= ((mpz_class)storeData_1) << 64;
+    ev.data |= ((mpz_class)storeData_2) << 128;
+    ev.data |= ((mpz_class)storeData_3) << 192;
     if (storeMask == 0x1) {
       ev.len = 1;
       ev.data &= 0xffL;
@@ -1256,6 +1261,10 @@ void v_difftest_StoreEvent(DPIC_ARG_BYTE coreid, DPIC_ARG_BYTE index,
       ev.data &= 0xffffffffL;
     } else if (storeMask == 0xff) {
       ev.len = 8;
+      ev.data &= (((mpz_class)1) << 64) - 1;
+    } else if (storeMask == 0xffff) {
+      ev.len = 16;
+      ev.data &= (((mpz_class)1) << 128) - 1;
     } else {
       ev.len = 0;
       fprintf(stderr, "> Unexpected write mask: %d\n", storeMask);
@@ -1406,44 +1415,51 @@ int main(int argc, char **argv) {
 
     auto &log_mem_write = proc->get_state()->log_mem_write;
     if (log_mem_write.size() > 0) {
-      uint64_t addr = 0, len = 0, temp = 0;
-      mpz_class val;
-      val = 0;
-      for (int i = 0; i < log_mem_write.size(); i++) {
-        if (i == 0) {
-          std::tie(addr, temp, len) = log_mem_write[i];
-          val = temp;
-        } else {
-          uint64_t addr1, val1, len1;
-          std::tie(addr1, val1, len1) = log_mem_write[i];
-          if (addr1 != addr + len) {
-            fprintf(stderr, "> %ld: failed to merge write\n", main_time);
-            break;
-          }
-          val |= ((mpz_class)val1) << (len * 8);
-          len += len1;
-        }
-      }
-      std::string val_str = val.get_str(16);
-
-      if (store_events.empty()) {
-        fprintf(stderr,
-                "> %ld: Missing store event @ pc %lx (expected addr %lx data "
-                "%s len %ld)\n",
-                main_time, proc->get_state()->last_inst_pc, addr,
-                val_str.c_str(), len);
-        difftest_failed();
-      } else {
-        store_event ev = store_events.front();
-        if (ev.addr != addr || ev.data != val || ev.len != len) {
+      int i = 0;
+      while (i < log_mem_write.size()) {
+        if (store_events.empty()) {
+          uint64_t addr, val, len;
+          std::tie(addr, val, len) = log_mem_write[i];
           fprintf(stderr,
-                  "> %ld: Mismatch store event @ pc %lx addr %lx (expected "
-                  "%lx) data %lx (expected %s) len %lx (expected %ld)\n",
-                  main_time, proc->get_state()->last_inst_pc, ev.addr, addr,
-                  ev.data, val_str.c_str(), ev.len, len);
+                  "> %ld: Missing store event @ pc %lx (expected addr %lx data "
+                  "%lx len %ld)\n",
+                  main_time, proc->get_state()->last_inst_pc, addr, val, len);
           difftest_failed();
+          break;
+        } else {
+          store_event ev = store_events.front();
+          uint64_t addr, temp, len;
+          std::tie(addr, temp, len) = log_mem_write[i];
+          mpz_class val = temp;
+
+          // attempt to merge requests
+          if (len < ev.len) {
+            while (i + 1 < log_mem_write.size() && len < ev.len) {
+              i++;
+              uint64_t addr1, val1, len1;
+              std::tie(addr1, val1, len1) = log_mem_write[i];
+              if (addr1 != addr + len) {
+                fprintf(stderr, "> %ld: failed to merge write\n", main_time);
+                break;
+              }
+              val |= ((mpz_class)val1) << (len * 8);
+              len += len1;
+            }
+          }
+
+          std::string val_str = val.get_str(16);
+          std::string data_str = ev.data.get_str(16);
+          if (ev.addr != addr || ev.data != val || ev.len != len) {
+            fprintf(stderr,
+                    "> %ld: Mismatch store event @ pc %lx addr %lx (expected "
+                    "%lx) data %s (expected %s) len %lx (expected %ld)\n",
+                    main_time, proc->get_state()->last_inst_pc, ev.addr, addr,
+                    data_str.c_str(), val_str.c_str(), ev.len, len);
+            difftest_failed();
+          }
+          i++;
+          store_events.pop_front();
         }
-        store_events.pop_front();
       }
     }
 
@@ -1673,8 +1689,8 @@ int main(int argc, char **argv) {
 
     top->eval();
     if (tfp) {
+      tfp->dump(main_time);
       if (main_time > 6600000000) {
-        // tfp->dump(main_time);
       }
       // tfp->flush();
     }
