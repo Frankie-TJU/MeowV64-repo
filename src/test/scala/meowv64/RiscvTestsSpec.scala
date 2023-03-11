@@ -12,7 +12,7 @@ object RiscvTestsSpec {
   val cases = new File("./testcases/riscv-tests/build/isa").listFiles
     .filter(_.isFile)
     .filter(_.getName.endsWith(".bin"))
-    .filter(!_.getName.endsWith("_ma_data.bin"))
+    .filter(!_.getName.endsWith("-ma_data.bin"))
     .filter(f =>
       knownFails.foldLeft(true)((ret, cur) => ret && !f.getName().endsWith(cur))
     )
