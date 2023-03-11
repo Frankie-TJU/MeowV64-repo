@@ -1321,9 +1321,10 @@ int main(int argc, char **argv) {
     load_file(argv[optind], &m);
   }
 
+  const char *isa = "RV64IMAFDCV_Zfh";
   cfg_t cfg(/*default_initrd_bounds=*/std::make_pair((reg_t)0, (reg_t)0),
             /*default_bootargs=*/nullptr,
-            /*default_isa=*/"RV64IMAFDCV",
+            /*default_isa=*/isa,
             /*default_priv=*/DEFAULT_PRIV,
             /*default_varch=*/"vlen:128,elen:64",
             /*default_misaligned=*/false,
@@ -1343,7 +1344,7 @@ int main(int argc, char **argv) {
   mem_t m_htif(0x1000);
   s.bus.add_device(0x60000000, &m_htif);
 
-  isa_parser_t isa_parser("RV64IMAFDCV", DEFAULT_PRIV);
+  isa_parser_t isa_parser(isa, DEFAULT_PRIV);
   processor_t p(&isa_parser, &cfg, &s, 0, true, stderr, std::cerr);
   // only enable sv39 and sv48, disable sv57
   p.set_impl(IMPL_MMU_SV57, false);
