@@ -614,6 +614,7 @@ void load_file(const std::string &path, mem_t *m) {
         size_t offset = hdr->p_offset;
         size_t dest = hdr->p_paddr;
         total_size += size;
+        m->store(dest - 0x80000000, size, &buffer[offset]);
         for (int i = 0; i < size; i += sizeof(meow_mem_t)) {
           meow_mem_t data = *(meow_mem_t *)&buffer[offset + i];
           memory[dest + i] = data;
