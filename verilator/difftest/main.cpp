@@ -102,11 +102,25 @@ void ctrlc_handler(int arg) {
   res = 1;
 }
 
+// machine timer interrupt pending
+uint8_t mtip = 0;
+// machine timer interrupt fire
+uint8_t mtack = 0;
+// supervisor timer interrupt fire
+uint8_t stack = 0;
+// supervisor external interrupt pending
+uint8_t seip = 0;
+// supervisor external interrupt fire
+uint8_t seack = 0;
+
 struct fake_interrupt_controller : abstract_interrupt_controller_t {
   void set_interrupt_level(uint32_t interrupt_id, int level) {
     static int last_level = 0;
-    if (level != last_level)
+    if (level != last_level) {
       fprintf(stderr, "> intr %d = %d\n", interrupt_id, level);
+      top->interrupts = level;
+    }
+    seip = level;
     last_level = level;
   }
   ~fake_interrupt_controller() {}
@@ -340,7 +354,7 @@ void step_mmio() {
       uint8_t data;
       sim_uart->load(offset, 1, &data);
       r_data = data;
-      r_data <<= (offset % 0x10) * 8;
+      r_data <<= (offset % 0x8) * 8;
     } else {
       uint64_t aligned =
           (pending_read_addr / MMIO_AXI_DATA_BYTES) * MMIO_AXI_DATA_BYTES;
@@ -461,7 +475,7 @@ void step_mmio() {
           offset = pending_write_addr - serial_fpga_addr;
         }
         uint8_t data;
-        data = input >> ((offset % 0x10) * 8);
+        data = input >> ((offset % 0x8) * 8);
         sim_uart->store(offset, 1, &data);
       } else if (pending_write_addr == tohost_addr) {
         // tohost
@@ -972,9 +986,6 @@ void jtag_vpi_tick() {
 }
 
 uint64_t mtime = 0;
-// pending
-uint8_t mtip = 0;
-uint8_t mtack = 0;
 
 struct sim : simif_t {
   bus_t bus;
@@ -1222,10 +1233,25 @@ void v_difftest_ArchEvent(DPIC_ARG_BYTE coreid, DPIC_ARG_INT intrNo,
                           DPIC_ARG_INT cause, DPIC_ARG_LONG exceptionPC,
                           DPIC_ARG_INT exceptionInst) {
   if (intrNo > 0) {
-    if (!mtack) {
-      fprintf(stderr, "> mtack becomes 1\n");
+    fprintf(stderr, "> %ld: interrupt %d\n", main_time, intrNo);
+    if (intrNo == 5) {
+      if (!stack) {
+        fprintf(stderr, "> %ld: stack becomes 1\n", main_time);
+      }
+      stack = 1;
     }
-    mtack = 1;
+    if (intrNo == 7) {
+      if (!mtack) {
+        fprintf(stderr, "> %ld: mtack becomes 1\n", main_time);
+      }
+      mtack = 1;
+    }
+    if (intrNo == 9) {
+      if (!seack) {
+        fprintf(stderr, "> %ld: seack becomes 1\n", main_time);
+      }
+      seack = 1;
+    }
   }
 }
 
@@ -1350,6 +1376,7 @@ int main(int argc, char **argv) {
   p.set_impl(IMPL_MMU_SV57, false);
   // asid not implemented
   p.set_impl(IMPL_MMU_ASID, false);
+  p.difftest_mode = true;
 
   // add plic, clint and uart
   std::vector<processor_t *> procs;
@@ -1357,7 +1384,6 @@ int main(int argc, char **argv) {
   plic_t plic(procs, true, 2);
   s.bus.add_device(0xc000000, &plic);
   clint_t clint(procs, 1000000000, false);
-  clint.difftest_mode = true;
   s.bus.add_device(0x2000000, &clint);
   ns16550_t uart(&s.bus, &plic, 1, 2, 1);
   s.bus.add_device(0x60201000, &uart);
@@ -1593,10 +1619,28 @@ int main(int argc, char **argv) {
       step_mem();
       step_mmio();
 
-      // sync mtime and mtip
+      // sync mtime
       clint.mtime = mtime;
-      proc->get_state()->mip->backdoor_write_with_mask(MIP_MTIP,
-                                                       mtack ? MIP_MTIP : 0);
+      // handle trap
+      if (stack) {
+        trap_t trap = 0x8000000000000005;
+        proc->take_trap(trap, proc->get_state()->pc);
+        stack = 0;
+        fprintf(stderr, "> %ld: take st trap\n", main_time);
+      }
+      if (mtack) {
+        trap_t trap = 0x8000000000000007;
+        proc->take_trap(trap, proc->get_state()->pc);
+        mtack = 0;
+        fprintf(stderr, "> %ld: take mt trap\n", main_time);
+      }
+      if (seack) {
+        trap_t trap = 0x8000000000000009;
+        proc->take_trap(trap, proc->get_state()->pc);
+        seack = 0;
+        fprintf(stderr, "> %ld: take se trap\n", main_time);
+      }
+      plic.set_interrupt_level(1, seip);
 
       bool any_valid = false;
       for (int index = 0; index < 2; index++) {
@@ -1614,7 +1658,6 @@ int main(int argc, char **argv) {
           }
 
           step_spike();
-          mtack = 0;
 
           uint64_t exp_pc = spike_state.pc;
           if (cur_pc != exp_pc) {
@@ -1648,7 +1691,8 @@ int main(int argc, char **argv) {
                     "%lx)\n",
                     main_time, last_pc, last_inst, csr_names[i], actual,
                     expected);
-            if (i != STATE_CSR_MIP) {
+            if (i != STATE_CSR_MIP && i != STATE_CSR_MSTATUS &&
+                i != STATE_CSR_SSTATUS) {
               difftest_failed();
             }
           }

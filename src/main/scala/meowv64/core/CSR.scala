@@ -149,9 +149,9 @@ object CSR {
     0x342 -> (("mcause", true)),
     0x343 -> (("mtval", true)),
     0x344 -> (("mip", true)),
-    0x3b0 -> (("pmpaddr0", true)),
-    0x3b1 -> (("pmpaddr1", true)),
-    0x3b2 -> (("pmpaddr2", true)),
+    0x3b0 -> (("pmpaddr0", false)),
+    0x3b1 -> (("pmpaddr1", false)),
+    0x3b2 -> (("pmpaddr2", false)),
     0xb00 -> (("mcycle", true)),
     0xb02 -> (("minstret", true)),
 
