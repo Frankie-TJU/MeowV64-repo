@@ -986,6 +986,9 @@ uint64_t mtime = 0;
 
 struct sim : simif_t {
   bus_t bus;
+  cfg_t *cfg;
+  std::map<size_t, processor_t *> m;
+
   // should return NULL for MMIO addresses
   char *addr_to_mem(reg_t paddr) {
     // taken from sim.cc
@@ -1009,7 +1012,14 @@ struct sim : simif_t {
   // Callback for processors to let the simulation know they were reset.
   void proc_reset(unsigned id){};
 
+  const cfg_t &get_cfg() const { return *cfg; };
+  const std::map<size_t, processor_t *> &get_harts() const {
+    return m;
+  };
+
   const char *get_symbol(uint64_t paddr) { return NULL; };
+
+  unsigned nprocs() const { return get_cfg().nprocs(); }
 
   ~sim() = default;
 };
@@ -1338,10 +1348,11 @@ int main(int argc, char **argv) {
             /*default_pmpregions=*/0,
             /*default_mem_layout=*/
             std::vector<mem_cfg_t>{mem_cfg_t(0x80000000, 0x20000000)},
-            /*default_hartids=*/std::vector<int>(),
+            /*default_hartids=*/std::vector<size_t>(),
             /*default_real_time_clint=*/false,
             /*default_trigger_count=*/4);
   sim s;
+  s.cfg = &cfg;
   s.bus.add_device(0x80000000, &m);
   // add dummy device for reading dtb
   mem_t m_zero(0x1000);
@@ -1352,6 +1363,7 @@ int main(int argc, char **argv) {
 
   isa_parser_t isa_parser(isa, DEFAULT_PRIV);
   processor_t p(&isa_parser, &cfg, &s, 0, true, stderr, std::cerr);
+  s.m[0] = &p;
   // only enable sv39 and sv48, disable sv57
   p.set_impl(IMPL_MMU_SV57, false);
   // asid not implemented
@@ -1361,9 +1373,9 @@ int main(int argc, char **argv) {
   // add plic, clint and uart
   std::vector<processor_t *> procs;
   procs.push_back(&p);
-  plic_t plic(procs, true, 2);
+  plic_t plic(&s, 2);
   s.bus.add_device(0xc000000, &plic);
-  clint_t clint(procs, 1000000000, false);
+  clint_t clint(&s, 1000000000, false);
   s.bus.add_device(0x2000000, &clint);
   ns16550_t uart(&s.bus, &plic, 1, 2, 1);
   s.bus.add_device(0x60201000, &uart);
