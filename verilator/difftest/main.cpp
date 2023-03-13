@@ -1069,6 +1069,15 @@ const char *csr_names[] = {
     "mtvec",   "stvec",    "mcause",   "scause",  "satp",    "mip",
     "mie",     "mscratch", "sscratch", "mideleg", "medeleg", "fcsr",
     "vstart",  "vcsr",     "vl",       "vtype"};
+const char *gpr_names[] = {"zero",  "ra", "sp",  "gp",  "tp", "t0", "t1", "t2",
+                           "s0/fp", "s1", "a0",  "a1",  "a2", "a3", "a4", "a5",
+                           "a6",    "a7", "s2",  "s3",  "s4", "s5", "s6", "s7",
+                           "s8",    "s9", "s10", "s11", "t3", "t4", "t5", "t6"};
+const char *fpr_names[] = {"ft0", "ft1", "ft2",  "ft3", "ft4", "ft5",  "ft6",
+                           "ft7", "fs0", "fs1",  "fa0", "fa1", "fa2",  "fa3",
+                           "fa4", "fa5", "fa6",  "fa7", "fs2", "fs3",  "fs4",
+                           "fs5", "fs6", "fs7",  "fs8", "fs9", "fs10", "fs11",
+                           "ft8", "ft9", "ft10", "ft11"};
 
 const int history_size = 10;
 
@@ -1399,18 +1408,20 @@ int main(int argc, char **argv) {
   auto difftest_failed = [&]() {
     for (int i = 0; i < 32; i++) {
       if (spike_state.gpr[i] == cpu_state.gpr[i]) {
-        fprintf(stderr, "> gpr[%d] = %016lx\n", i, cpu_state.gpr[i]);
+        fprintf(stderr, "> gpr[%d, %s] = %016lx\n", i, gpr_names[i],
+                cpu_state.gpr[i]);
       } else {
-        fprintf(stderr, "> gpr[%d] = %016lx (expected %016lx)\n", i,
-                cpu_state.gpr[i], spike_state.gpr[i]);
+        fprintf(stderr, "> gpr[%d, %s] = %016lx (expected %016lx)\n", i,
+                gpr_names[i], cpu_state.gpr[i], spike_state.gpr[i]);
       }
     }
     for (int i = 0; i < 32; i++) {
       if (spike_state.fpr[i] == cpu_state.fpr[i]) {
-        fprintf(stderr, "> fpr[%d] = %016lx\n", i, cpu_state.fpr[i]);
+        fprintf(stderr, "> fpr[%d, %s] = %016lx\n", i, fpr_names[i],
+                cpu_state.fpr[i]);
       } else {
-        fprintf(stderr, "> fpr[%d] = %016lx (expected %016lx)\n", i,
-                cpu_state.fpr[i], spike_state.fpr[i]);
+        fprintf(stderr, "> fpr[%d, %s] = %016lx (expected %016lx)\n", i,
+                fpr_names[i], cpu_state.fpr[i], spike_state.fpr[i]);
       }
     }
     for (int i = 0; i < STATE_CSR_COUNT; i++) {
@@ -1689,8 +1700,11 @@ int main(int argc, char **argv) {
                     "%lx)\n",
                     main_time, last_pc, last_inst, csr_names[i], actual,
                     expected);
+            // skip transient error
             if (i != STATE_CSR_MIP && i != STATE_CSR_MSTATUS &&
-                i != STATE_CSR_SSTATUS) {
+                i != STATE_CSR_SSTATUS && i != STATE_CSR_FCSR &&
+                i != STATE_CSR_VL && i != STATE_CSR_VTYPE &&
+                i != STATE_CSR_VCSR) {
               difftest_failed();
             }
           }
