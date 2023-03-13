@@ -1013,9 +1013,7 @@ struct sim : simif_t {
   void proc_reset(unsigned id){};
 
   const cfg_t &get_cfg() const { return *cfg; };
-  const std::map<size_t, processor_t *> &get_harts() const {
-    return m;
-  };
+  const std::map<size_t, processor_t *> &get_harts() const { return m; };
 
   const char *get_symbol(uint64_t paddr) { return NULL; };
 
@@ -1059,12 +1057,18 @@ enum csr {
   STATE_CSR_SSCRATCH,
   STATE_CSR_MIDELEG,
   STATE_CSR_MEDELEG,
+  STATE_CSR_FCSR,
+  STATE_CSR_VSTART,
+  STATE_CSR_VCSR,
+  STATE_CSR_VL,
+  STATE_CSR_VTYPE,
   STATE_CSR_COUNT,
 };
 const char *csr_names[] = {
-    "mstatus", "sstatus",  "mepc",     "sepc",    "mtval",  "stval",
-    "mtvec",   "stvec",    "mcause",   "scause",  "satp",   "mip",
-    "mie",     "mscratch", "sscratch", "mideleg", "medeleg"};
+    "mstatus", "sstatus",  "mepc",     "sepc",    "mtval",   "stval",
+    "mtvec",   "stvec",    "mcause",   "scause",  "satp",    "mip",
+    "mie",     "mscratch", "sscratch", "mideleg", "medeleg", "fcsr",
+    "vstart",  "vcsr",     "vl",       "vtype"};
 
 const int history_size = 10;
 
@@ -1191,16 +1195,15 @@ void v_difftest_ArchFpRegState(
   cpu_state.fpr[31] = fpr_31;
 }
 
-void v_difftest_CSRState(DPIC_ARG_BYTE coreid, DPIC_ARG_BYTE privilegeMode,
-                         DPIC_ARG_LONG mstatus, DPIC_ARG_LONG sstatus,
-                         DPIC_ARG_LONG mepc, DPIC_ARG_LONG sepc,
-                         DPIC_ARG_LONG mtval, DPIC_ARG_LONG stval,
-                         DPIC_ARG_LONG mtvec, DPIC_ARG_LONG stvec,
-                         DPIC_ARG_LONG mcause, DPIC_ARG_LONG scause,
-                         DPIC_ARG_LONG satp, DPIC_ARG_LONG mip,
-                         DPIC_ARG_LONG mie, DPIC_ARG_LONG mscratch,
-                         DPIC_ARG_LONG sscratch, DPIC_ARG_LONG mideleg,
-                         DPIC_ARG_LONG medeleg) {
+void v_difftest_CSRState(
+    DPIC_ARG_BYTE coreid, DPIC_ARG_BYTE privilegeMode, DPIC_ARG_LONG mstatus,
+    DPIC_ARG_LONG sstatus, DPIC_ARG_LONG mepc, DPIC_ARG_LONG sepc,
+    DPIC_ARG_LONG mtval, DPIC_ARG_LONG stval, DPIC_ARG_LONG mtvec,
+    DPIC_ARG_LONG stvec, DPIC_ARG_LONG mcause, DPIC_ARG_LONG scause,
+    DPIC_ARG_LONG satp, DPIC_ARG_LONG mip, DPIC_ARG_LONG mie,
+    DPIC_ARG_LONG mscratch, DPIC_ARG_LONG sscratch, DPIC_ARG_LONG mideleg,
+    DPIC_ARG_LONG medeleg, DPIC_ARG_LONG fcsr, DPIC_ARG_LONG vstart,
+    DPIC_ARG_LONG vcsr, DPIC_ARG_LONG vl, DPIC_ARG_LONG vtype) {
   cpu_state.csr_state[STATE_CSR_MSTATUS] = mstatus;
   cpu_state.csr_state[STATE_CSR_SSTATUS] = sstatus;
   cpu_state.csr_state[STATE_CSR_MEPC] = mepc;
@@ -1218,6 +1221,11 @@ void v_difftest_CSRState(DPIC_ARG_BYTE coreid, DPIC_ARG_BYTE privilegeMode,
   cpu_state.csr_state[STATE_CSR_SSCRATCH] = sscratch;
   cpu_state.csr_state[STATE_CSR_MIDELEG] = mideleg;
   cpu_state.csr_state[STATE_CSR_MEDELEG] = medeleg;
+  cpu_state.csr_state[STATE_CSR_FCSR] = fcsr;
+  cpu_state.csr_state[STATE_CSR_VSTART] = vstart;
+  cpu_state.csr_state[STATE_CSR_VCSR] = vcsr;
+  cpu_state.csr_state[STATE_CSR_VL] = vl;
+  cpu_state.csr_state[STATE_CSR_VTYPE] = vtype;
 }
 
 void v_difftest_InstrCommit(DPIC_ARG_BYTE coreid, DPIC_ARG_BYTE index,
@@ -1500,6 +1508,11 @@ int main(int argc, char **argv) {
         proc->get_state()->csrmap[CSR_SSCRATCH].get(),
         proc->get_state()->mideleg.get(),
         proc->get_state()->medeleg.get(),
+        proc->get_state()->csrmap[CSR_FCSR].get(),
+        proc->VU.vstart.get(),
+        proc->get_state()->csrmap[CSR_VCSR].get(),
+        proc->VU.vl.get(),
+        proc->VU.vtype.get(),
     };
     for (int i = 0; i < 32; i++) {
       spike_state.gpr[i] = proc->get_state()->XPR[i];

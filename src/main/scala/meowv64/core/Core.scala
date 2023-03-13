@@ -288,6 +288,11 @@ class Core(implicit val coredef: CoreDef) extends Module {
     difftest.sscratch := csr.readers("sscratch")
     difftest.mideleg := csr.readers("mideleg")
     difftest.medeleg := csr.readers("medeleg")
+    difftest.fcsr := csr.readers("fcsr")
+    difftest.vstart := csr.readers("vstart")
+    difftest.vcsr := csr.readers("vcsr")
+    difftest.vl := csr.readers("vl")
+    difftest.vtype := csr.readers("vtype")
     difftestCSR.io := RegNext(RegNext(difftest))
     difftestCSR.io.clock := clock
 
