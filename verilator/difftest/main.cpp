@@ -1635,8 +1635,10 @@ int main(int argc, char **argv) {
       step_mem();
       step_mmio();
 
-      // sync mtime
+      // sync mtime and mcycle
       clint.mtime = mtime;
+      proc->get_state()->mcycle->write(top->debug_0_mcycle - 3);
+
       // handle trap
       if (interrupt_fire) {
         trap_t trap = 0x8000000000000000 | interrupt_fire;

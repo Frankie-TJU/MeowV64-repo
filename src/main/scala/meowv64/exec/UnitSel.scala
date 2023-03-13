@@ -199,6 +199,7 @@ class UnitSel(
 
   issue.instr.ready := false.B
 
+  // add additional pipe register
   if (hasPipe) {
     when(pipeInstrValid) {
       pipeInput := false.B
@@ -220,6 +221,7 @@ class UnitSel(
     }
   } else {
     pipeInput := DontCare
+    // connect to units directly
     when(issue.instr.valid) {
       issue.instr.ready := !Mux1H(execMap.zip(units.map(_.io.stall)))
       for ((u, e) <- units.zip(execMap)) {
