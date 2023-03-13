@@ -153,6 +153,14 @@ class Core(implicit val coredef: CoreDef) extends Module {
         writeIdx += 1
       }
     }
+
+    // bypass
+    if (i == 0) {
+      regFiles(i).io.bypass := exec.toRF.bypass
+    } else {
+      regFiles(i).io.bypass := 0.U.asTypeOf(regFiles(i).io.bypass)
+    }
+
     println(
       s"Register Type ${coredef.REG_TYPES(i).regType}: ${readIdx}R ${writeIdx}W"
     )

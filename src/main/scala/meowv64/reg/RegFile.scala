@@ -36,6 +36,7 @@ class RegFile(
   val io = IO(new Bundle {
     val reads = Vec(READ_COUNT, Flipped(new RegReader(WIDTH, DEPTH)))
     val writes = Flipped(Vec(WRITE_COUNT, new RegWriter(WIDTH, DEPTH)))
+    val bypass = Flipped(new RegWriter(WIDTH, DEPTH))
   })
 
   val regs = SyncReadMem(DEPTH, UInt(WIDTH.W))
@@ -55,6 +56,10 @@ class RegFile(
         when(writes.valid && writes.addr === addr) {
           read.data := writes.data
         }
+      }
+      // bypass, but not write
+      when(io.bypass.valid && io.bypass.addr === addr) {
+        read.data := io.bypass.data
       }
     }
   }

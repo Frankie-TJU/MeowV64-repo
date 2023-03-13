@@ -61,6 +61,14 @@ class UnitSel(
     */
   val retire = IO(new RetirementIO(portInfo))
 
+  /** Early wakeup for zero-delay instruction
+    */
+  val wakeup = IO(Output(new CDBEntry()))
+
+  /** Bypass data for zero-delay instruction
+    */
+  val bypass = IO(Output(new BypassData()))
+
   // Extra ports
   val extras = new mutable.HashMap[String, Data]()
   for (u <- units) {
@@ -198,6 +206,23 @@ class UnitSel(
   val pipeInput = Wire(Bool())
 
   issue.instr.ready := false.B
+
+  // early wakeup when issued
+  wakeup := 0.U.asTypeOf(wakeup)
+  wakeup.valid := false.B
+  when(issue.instr.fire) {
+    wakeup.valid := issue.instr.bits.instr.instr.info.writeRd
+    wakeup.phys := issue.instr.bits.rdPhys
+    wakeup.regType := issue.regInfo.regType
+  }
+  // early bypass when retired
+  bypass := 0.U.asTypeOf(bypass)
+  when(retire.fire) {
+    bypass.valid := retire.bits.writeRdEff
+    bypass.phys := retire.bits.rdPhys
+    bypass.regType := retire.bits.rdType
+    bypass.data := retire.bits.info.wb
+  }
 
   // add additional pipe register
   if (hasPipe) {

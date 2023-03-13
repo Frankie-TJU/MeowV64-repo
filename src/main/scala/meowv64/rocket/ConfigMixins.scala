@@ -1,7 +1,6 @@
 package meowv64.rocket
 
 import freechips.rocketchip.config.Config
-import freechips.rocketchip.diplomacy.DTSTimebase
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.tile._
 import meowv64.core.CoreDef
@@ -16,7 +15,7 @@ class WithMeowV64Cores(
     overrideIdOffset: Option[Int] = None,
     initVec: Option[BigInt] = None,
     enableDifftest: Boolean = false,
-) extends Config((site, _, up) => {
+) extends Config((_, _, up) => {
       case XLen => 64
       // Set to line bytes
       case CacheBlockBytes => systemDef.L2_LINE_BYTES

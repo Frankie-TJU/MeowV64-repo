@@ -125,6 +125,7 @@ class Exec(implicit val coredef: CoreDef) extends Module {
               )
           }
       )
+    val bypass = new RegWriter(coredef.REG_INT.width, coredef.REG_INT.physRegs)
   })
 
   val toIF = IO(new MultiQueueIO(new InstrExt, coredef.ISSUE_NUM))
@@ -173,7 +174,6 @@ class Exec(implicit val coredef: CoreDef) extends Module {
     val isLSU = issueQueueInfo.issueQueueType == IssueQueueType.mem
     val issueQueue = Module(new OoOIssueQueue(issueQueueInfo))
     issueQueue.suggestName(s"IssueQueue_${issueQueueInfo.issueQueueType}")
-    issueQueue.cdb <> cdb
     issueQueues.append(issueQueue)
 
     for ((port, j) <- issueQueueInfo.ports.zipWithIndex) {
@@ -248,6 +248,17 @@ class Exec(implicit val coredef: CoreDef) extends Module {
           )
         )
         module.suggestName(s"UnitSel_Port${portIdx}")
+
+        if (i == 0 && j == 0) {
+          // wakeup from first port
+          cdb.wakeup := module.wakeup
+          // bypass
+          assert(module.bypass.regType === RegType.integer)
+          toRF.bypass.valid := module.bypass.valid
+          toRF.bypass.addr := module.bypass.phys
+          toRF.bypass.data := module.bypass.data
+        }
+
         module
       }
 

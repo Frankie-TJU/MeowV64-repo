@@ -81,7 +81,7 @@ class OoOIssueQueue(info: IssueQueueInfo)(implicit
   // CDB data fetch
   for ((instr, idx) <- store.zipWithIndex) {
     // Later entries takes priority
-    for (ent <- cdb.entries) {
+    for (ent <- cdb.entries ++ Seq(cdb.wakeup)) {
       when(
         ent.phys === instr.rs1Phys && ent.regType === instr.instr.instr
           .getRs1Type() && ent.valid

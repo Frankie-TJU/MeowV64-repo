@@ -6,7 +6,6 @@ import chisel3.util._
 import meowv64.core._
 import meowv64.exec._
 import meowv64.instr.Decoder
-import meowv64.core.CSR
 
 class CSRExt(implicit val coredef: CoreDef) extends Bundle {
   val rdata = UInt(coredef.XLEN.W)
