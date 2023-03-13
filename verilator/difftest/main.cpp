@@ -104,14 +104,10 @@ void ctrlc_handler(int arg) {
 
 // machine timer interrupt pending
 uint8_t mtip = 0;
-// machine timer interrupt fire
-uint8_t mtack = 0;
-// supervisor timer interrupt fire
-uint8_t stack = 0;
+// interrupt fire
+uint8_t interrupt_fire = 0;
 // supervisor external interrupt pending
 uint8_t seip = 0;
-// supervisor external interrupt fire
-uint8_t seack = 0;
 
 struct fake_interrupt_controller : abstract_interrupt_controller_t {
   void set_interrupt_level(uint32_t interrupt_id, int level) {
@@ -1235,24 +1231,7 @@ void v_difftest_ArchEvent(DPIC_ARG_BYTE coreid, DPIC_ARG_INT intrNo,
                           DPIC_ARG_INT exceptionInst) {
   if (intrNo > 0) {
     fprintf(stderr, "> %ld: interrupt %d\n", main_time, intrNo);
-    if (intrNo == 5) {
-      if (!stack) {
-        fprintf(stderr, "> %ld: stack becomes 1\n", main_time);
-      }
-      stack = 1;
-    }
-    if (intrNo == 7) {
-      if (!mtack) {
-        fprintf(stderr, "> %ld: mtack becomes 1\n", main_time);
-      }
-      mtack = 1;
-    }
-    if (intrNo == 9) {
-      if (!seack) {
-        fprintf(stderr, "> %ld: seack becomes 1\n", main_time);
-      }
-      seack = 1;
-    }
+    interrupt_fire = intrNo;
   }
 }
 
@@ -1623,25 +1602,18 @@ int main(int argc, char **argv) {
       // sync mtime
       clint.mtime = mtime;
       // handle trap
-      if (stack) {
-        trap_t trap = 0x8000000000000005;
+      if (interrupt_fire) {
+        trap_t trap = 0x8000000000000000 | interrupt_fire;
         proc->take_trap(trap, proc->get_state()->pc);
-        stack = 0;
-        fprintf(stderr, "> %ld: take st trap\n", main_time);
+        fprintf(stderr, "> %ld: take trap %d\n", main_time, interrupt_fire);
+        interrupt_fire = 0;
       }
-      if (mtack) {
-        trap_t trap = 0x8000000000000007;
-        proc->take_trap(trap, proc->get_state()->pc);
-        mtack = 0;
-        fprintf(stderr, "> %ld: take mt trap\n", main_time);
+
+      if (seip) {
+        // spike plic is level-triggered, however rocket is edge-triggered
+        plic.set_interrupt_level(1, seip);
+        fprintf(stderr, "> %ld: set plic interrupt\n", main_time);
       }
-      if (seack) {
-        trap_t trap = 0x8000000000000009;
-        proc->take_trap(trap, proc->get_state()->pc);
-        seack = 0;
-        fprintf(stderr, "> %ld: take se trap\n", main_time);
-      }
-      plic.set_interrupt_level(1, seip);
 
       bool any_valid = false;
       for (int index = 0; index < 2; index++) {
