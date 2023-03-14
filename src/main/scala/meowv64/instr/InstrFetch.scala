@@ -306,24 +306,30 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
     *     scratchpad. As of the issues with instruction boundary, worst-case we
     *     can flush the entire BHT at context switch.
     */
-  val ICQueueLen = 4;
-  val ICQueue = Module(new FlushableQueue(new ICData, ICQueueLen, false, false))
-  ICQueue.io.enq.bits.data := toIC.data.bits
-  ICQueue.io.enq.bits.addr := s2AlignedPc
-  ICQueue.io.enq.bits.mask := s2Mask
-  ICQueue.io.enq.bits.last := s2LastMask
-  ICQueue.io.enq.bits.pred := Mux(
+  val ICQueueLen = 5
+  /* one input(from ICache), two output(to Decoder) */
+  val ICQueue = Module(new MultiQueue(new ICData, ICQueueLen, 1, 2))
+  ICQueue.writer.view(0).data := toIC.data.bits
+  ICQueue.writer.view(0).addr := s2AlignedPc
+  ICQueue.writer.view(0).mask := s2Mask
+  ICQueue.writer.view(0).last := s2LastMask
+  ICQueue.writer.view(0).pred := Mux(
     toBPU.s2Res.valid,
     toBPU.s2Res.bits,
     lastS2Res
   )
-  ICQueue.io.enq.bits.fault := s2Fault
-  ICQueue.io.enq.bits.successive := s2Successive
-  ICQueue.io.enq.valid := toIC.data.valid || s2Fault
+  ICQueue.writer.view(0).fault := s2Fault
+  ICQueue.writer.view(0).successive := s2Successive
+  ICQueue.writer.cnt := Mux(
+    toIC.data.valid || s2Fault,
+    1.U,
+    0.U
+  )
+  assert(ICQueue.writer.accept > 0.U)
 
   // when successive, first instruction must be decodable
-  when(ICQueue.io.enq.bits.successive && ICQueue.io.enq.fire) {
-    assert(ICQueue.io.enq.bits.mask(0))
+  when(ICQueue.writer.view(0).successive && ICQueue.writer.cnt > 0.U) {
+    assert(ICQueue.writer.view(0).mask(0))
   }
 
   /** In the previous cycle, if there is any instruction causing a late-predict
@@ -337,7 +343,8 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
     * space to store all of them.
     */
   val haltIC =
-    (ICQueue.io.count >= (ICQueueLen - 1).U) && !toCtrl.ctrl.flush && !pipeSpecBr
+    (ICQueue.count >= (ICQueueLen - 1).U && ICQueue.reader.accept === 0.U) &&
+      !toCtrl.ctrl.flush && !pipeSpecBr
   // I$ Fetch address
   val icAddr = WireDefault(s1FPc)
   val icRead = WireDefault(!haltIC)
@@ -349,9 +356,7 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
   toIC.read.bits := icAddr
   toIC.rst := toCtrl.ctrl.flush && toCtrl.iRst
 
-  val ICHead = Module(new FlushableSlot(new ICData, true, false))
-  ICHead.io.enq <> ICQueue.io.deq
-  ICHead.io.deq.nodeq() // Default
+  ICQueue.reader.accept := 0.U // Default
 
   val headPtr = RegInit(
     0.U(log2Ceil(coredef.L1I.TO_CORE_TRANSFER_WIDTH / 16).W)
@@ -360,7 +365,7 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
   val decodeVec = Wire(
     Vec(coredef.L1I.TO_CORE_TRANSFER_WIDTH * 2 / 16, UInt(16.W))
   )
-  decodeVec := (ICQueue.io.deq.bits.data ## ICHead.io.deq.bits.data)
+  decodeVec := (ICQueue.reader.view(1).data ## ICQueue.reader.view(0).data)
     .asTypeOf(decodeVec)
   val joinedVec = Wire(
     Vec(coredef.L1I.TO_CORE_TRANSFER_WIDTH * 2 / 16 - 1, UInt(32.W))
@@ -369,9 +374,11 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
     v := decodeVec(i + 1) ## decodeVec(i)
   }
   // Scala ++ works in reverse order (little endian you may say?)
-  val joinedPred = VecInit(ICHead.io.deq.bits.pred ++ ICQueue.io.deq.bits.pred)
-  val joinedMask = ICQueue.io.deq.bits.mask ## ICHead.io.deq.bits.mask
-  val joinedLast = ICQueue.io.deq.bits.last ## ICHead.io.deq.bits.last
+  val joinedPred = VecInit(
+    ICQueue.reader.view(0).pred ++ ICQueue.reader.view(1).pred
+  )
+  val joinedMask = ICQueue.reader.view(1).mask ## ICQueue.reader.view(0).mask
+  val joinedLast = ICQueue.reader.view(1).last ## ICQueue.reader.view(0).last
 
   val decodable = Wire(Vec(coredef.FETCH_NUM, Bool()))
   val decodePtr = Wire(
@@ -391,12 +398,8 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
     val overflowed =
       decodePtr(i) >= (coredef.L1I.TO_CORE_TRANSFER_WIDTH / 16 - 1).U
 
-    when(!overflowed) {
-      decodable(i) := ICHead.io.deq.valid
-    }.otherwise {
-      decodable(i) := ICHead.io.deq.valid &&
-        ICQueue.io.deq.valid
-    }
+    // simplify: wait until ICQueue got two cache lines
+    decodable(i) := ICQueue.reader.cnt === 2.U
 
     val raw = joinedVec(decodePtr(i))
     val (instr, isInstr16) = raw.parseInstr(toCtrl.allowFloat)
@@ -408,7 +411,7 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
     }
 
     decoded(i).instr := instr
-    val addr = ICHead.io.deq.bits.addr + (decodePtr(i) << log2Ceil(
+    val addr = ICQueue.reader.view(0).addr + (decodePtr(i) << log2Ceil(
       (Const.INSTR_MIN_WIDTH / 8)
     ))
     val acrossPage =
@@ -429,7 +432,7 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
     decoded(i).fetchEx := FetchEx.none
     decoded(i).acrossPageEx := false.B
     assume(coredef.XLEN != coredef.VADDR_WIDTH)
-    val headAddr = ICHead.io.deq.bits.addr
+    val headAddr = ICQueue.reader.view(0).addr
     val isInvalAddr = WireDefault(
       // Fetch cannot be uncached. We are also ignoring tlb.query.uncached
       headAddr(coredef.XLEN - 1, coredef.PADDR_WIDTH).asSInt() =/= headAddr(
@@ -451,12 +454,12 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
       }
     }
 
-    when(ICHead.io.deq.bits.fault) {
+    when(ICQueue.reader.view(0).fault) {
       decoded(i).fetchEx := FetchEx.pageFault
-    }.elsewhen(acrossPage && ICQueue.io.deq.bits.fault) {
+    }.elsewhen(acrossPage && ICQueue.reader.view(1).fault) {
       decoded(i).fetchEx := FetchEx.pageFault
       decoded(i).acrossPageEx := true.B
-    }.elsewhen(overflowed && ICQueue.io.deq.bits.fault) {
+    }.elsewhen(overflowed && ICQueue.reader.view(1).fault) {
       // handle case for example:
       // ICHead is at 0x1ff8, ICQueue is at 0x2000
       // decoded(0) is at 0x1ffc, decoded(1) is at 0x2000
@@ -578,17 +581,18 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
 
   // TODO: finished ICHead, or encountered a taken branch
   when(
-    nHeadPtr.head(1)(0) ||
-      ~ICHead.io.deq.bits.mask(headPtr) ||
-      ~ICHead.io.deq.bits.mask(nHeadPtr)
+    (nHeadPtr.head(1)(0) ||
+      ~ICQueue.reader.view(0).mask(headPtr) ||
+      ~ICQueue.reader.view(0).mask(nHeadPtr))
+      && ICQueue.reader.cnt === 2.U
   ) {
     // ICQueue head is finished, go to next fetch packet
-    ICHead.io.deq.deq()
-  }
-
-  // if not successive, reset head ptr from mask
-  when(!ICQueue.io.deq.bits.successive && ICQueue.io.deq.fire) {
-    headPtr := PriorityEncoder(ICQueue.io.deq.bits.mask)
+    ICQueue.reader.accept := 1.U
+    // if not successive, reset head ptr from mask
+    when(!ICQueue.reader.view(1).successive) {
+      assert(ICQueue.reader.view(1).mask =/= 0.U)
+      headPtr := PriorityEncoder(ICQueue.reader.view(1).mask)
+    }
   }
 
   toExec <> issueFifo.reader
@@ -601,8 +605,7 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
   val pendingTLBRst = RegInit(false.B)
   val pendingFlush = RegInit(false.B)
 
-  ICQueue.io.flush.get := false.B
-  ICHead.io.flush.get := false.B
+  ICQueue.flush := false.B
   issueFifo.flush := false.B
 
   /** Speculative branch FIXME(meow): move BHT to early predict
@@ -624,8 +627,7 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
   )
 
   when(pipeSpecBr) {
-    ICQueue.io.flush.get := true.B
-    ICHead.io.flush.get := true.B
+    ICQueue.flush := true.B
     // Do not push into issue fifo in this cycle
     issueFifo.writer.cnt := 0.U
     // Do not commit RAS
@@ -658,8 +660,7 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
     // External flushing, wait for one tick
     // This is to ensure priv level and other environment are set up correctly
     issueFifo.flush := true.B
-    ICQueue.io.flush.get := true.B
-    ICHead.io.flush.get := true.B
+    ICQueue.flush := true.B
     toCtrl.ctrl.stall := false.B
 
     // Clear saved BPU result
@@ -688,7 +689,7 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
     toIC.rst := toCtrl.iRst | pendingIRst
     // it might assert tlbRst when pendingFlush is true
     tlb.flush := toCtrl.tlbRst | pendingTLBRst
-    ICQueue.io.enq.noenq()
+    ICQueue.writer.cnt := 0.U
     when(toIC.read.ready) { // TLB will flush within one tick
       pendingFlush := false.B
     }

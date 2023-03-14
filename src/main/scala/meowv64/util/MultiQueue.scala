@@ -18,6 +18,7 @@ class MultiQueue[T <: Data](
   val reader = IO(Flipped(new MultiQueueIO(gen, OUTPUT)))
   val writer = IO(new MultiQueueIO(gen, INPUT))
   val flush = IO(Input(Bool()))
+  val count = IO(Output(UInt(log2Ceil(DEPTH + 1).W)))
 
   // val CNT = Integer.max(coredef.FETCH_NUM, coredef.ISSUE_NUM)
   // val SIZE = (coredef.ISSUE_FIFO_DEPTH.toDouble / CNT).ceil.toInt
@@ -28,6 +29,7 @@ class MultiQueue[T <: Data](
     mod.suggestName(s"queue_$idx")
     mod
   })
+  count := queues.map(queue => queue.io.count).reduce(_ + _)
 
   for (q <- queues) {
     q.io.flush.get := flush
