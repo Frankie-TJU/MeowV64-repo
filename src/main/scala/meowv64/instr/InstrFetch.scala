@@ -308,7 +308,7 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
     */
   val ICQueueLen = 5
   /* one input(from ICache), two output(to Decoder) */
-  val ICQueue = Module(new MultiQueue(new ICData, ICQueueLen, 1, 2))
+  val ICQueue = Module(new MultiQueue(new ICData, ICQueueLen, 1, 4))
   ICQueue.writer.view(0).data := toIC.data.bits
   ICQueue.writer.view(0).addr := s2AlignedPc
   ICQueue.writer.view(0).mask := s2Mask
@@ -321,11 +321,10 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
   ICQueue.writer.view(0).fault := s2Fault
   ICQueue.writer.view(0).successive := s2Successive
   ICQueue.writer.cnt := Mux(
-    toIC.data.valid || s2Fault,
+    (toIC.data.valid || s2Fault) && ICQueue.writer.accept > 0.U,
     1.U,
     0.U
   )
-  assert(ICQueue.writer.accept > 0.U)
 
   // when successive, first instruction must be decodable
   when(ICQueue.writer.view(0).successive && ICQueue.writer.cnt > 0.U) {
@@ -398,8 +397,8 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
     val overflowed =
       decodePtr(i) >= (coredef.L1I.TO_CORE_TRANSFER_WIDTH / 16 - 1).U
 
-    // simplify: wait until ICQueue got two cache lines
-    decodable(i) := ICQueue.reader.cnt === 2.U
+    // simplify: wait until ICQueue got at least two fetch bundles
+    decodable(i) := ICQueue.reader.cnt >= 2.U
 
     val raw = joinedVec(decodePtr(i))
     val (instr, isInstr16) = raw.parseInstr(toCtrl.allowFloat)
@@ -579,21 +578,35 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
   assume(nHeadPtr.getWidth == headPtr.getWidth + 1)
   assert(stepping <= issueFifo.writer.accept)
 
-  // TODO: finished ICHead, or encountered a taken branch
+  // finished two fetch bundles
   when(
-    (nHeadPtr.head(1)(0) ||
-      ~ICQueue.reader.view(0).mask(headPtr) ||
-      ~ICQueue.reader.view(0).mask(nHeadPtr))
-      && ICQueue.reader.cnt === 2.U
+    nHeadPtr.head(1)(0) && ~joinedMask(nHeadPtr) && ICQueue.reader
+      .view(1)
+      .successive && ICQueue.reader.cnt >= 3.U
   ) {
     // ICQueue head is finished, go to next fetch packet
-    ICQueue.reader.accept := 1.U
+    ICQueue.reader.accept := 2.U
     // if not successive, reset head ptr from mask
-    when(!ICQueue.reader.view(1).successive) {
-      assert(ICQueue.reader.view(1).mask =/= 0.U)
-      headPtr := PriorityEncoder(ICQueue.reader.view(1).mask)
+    when(!ICQueue.reader.view(2).successive) {
+      assert(ICQueue.reader.view(2).mask =/= 0.U)
+      headPtr := PriorityEncoder(ICQueue.reader.view(2).mask)
     }
   }
+    // finished ICHead, or encountered a taken branch
+    .elsewhen(
+      (nHeadPtr.head(1)(0) ||
+        ~ICQueue.reader.view(0).mask(headPtr) ||
+        ~ICQueue.reader.view(0).mask(nHeadPtr))
+        && ICQueue.reader.cnt >= 2.U
+    ) {
+      // ICQueue head is finished, go to next fetch packet
+      ICQueue.reader.accept := 1.U
+      // if not successive, reset head ptr from mask
+      when(!ICQueue.reader.view(1).successive) {
+        assert(ICQueue.reader.view(1).mask =/= 0.U)
+        headPtr := PriorityEncoder(ICQueue.reader.view(1).mask)
+      }
+    }
 
   toExec <> issueFifo.reader
   issueFifo.writer.view := decoded

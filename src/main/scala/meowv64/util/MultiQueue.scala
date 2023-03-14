@@ -18,11 +18,11 @@ class MultiQueue[T <: Data](
   val reader = IO(Flipped(new MultiQueueIO(gen, OUTPUT)))
   val writer = IO(new MultiQueueIO(gen, INPUT))
   val flush = IO(Input(Bool()))
-  val count = IO(Output(UInt(log2Ceil(DEPTH + 1).W)))
 
   // val CNT = Integer.max(coredef.FETCH_NUM, coredef.ISSUE_NUM)
   // val SIZE = (coredef.ISSUE_FIFO_DEPTH.toDouble / CNT).ceil.toInt
   val CNT = Integer.max(INPUT, OUTPUT)
+  val count = IO(Output(UInt(log2Ceil(CNT * DEPTH + 1).W)))
 
   val queues = (0 until CNT).map(idx => {
     val mod = Module(new FlushableQueue(gen, DEPTH))
@@ -48,6 +48,7 @@ class MultiQueue[T <: Data](
 
   val wptr = RegInit(0.U(log2Ceil(CNT).W))
   val rptr = RegInit(0.U(log2Ceil(CNT).W))
+  assert (isPow2(CNT))
 
   for (i <- (0 until INPUT)) {
     when(writer.cnt > i.U) {
