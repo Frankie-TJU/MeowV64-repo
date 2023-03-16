@@ -122,6 +122,16 @@ struct fake_interrupt_controller : abstract_interrupt_controller_t {
   ~fake_interrupt_controller() {}
 };
 
+struct dummy_interrupt_controller : abstract_interrupt_controller_t {
+  void set_interrupt_level(uint32_t interrupt_id, int level) {
+    static int last_level = 0;
+    if (level != last_level) {
+      fprintf(stderr, "> dummy plic: intr %d = %d\n", interrupt_id, level);
+    }
+  }
+  ~dummy_interrupt_controller() {}
+};
+
 ns16550_t *sim_uart;
 fake_interrupt_controller *sim_plic;
 
@@ -1394,7 +1404,9 @@ int main(int argc, char **argv) {
   s.bus.add_device(0xc000000, &plic);
   clint_t clint(&s, 1000000000, false);
   s.bus.add_device(0x2000000, &clint);
-  ns16550_t uart(&s.bus, &plic, 1, 2, 1);
+  dummy_interrupt_controller dummy_plic; // use dummy plic to allow us to
+                                         // override interrupt pending bits
+  ns16550_t uart(&s.bus, &dummy_plic, 1, 2, 1);
   s.bus.add_device(0x60201000, &uart);
 
   p.reset();

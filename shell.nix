@@ -18,6 +18,9 @@ pkgs.pkgsCross.riscv64-embedded.mkShell {
     pkg-config
     gmp
     openocd
+
+    # Others
+    bear
   ];
 
   buildInputs = with pkgs; [
