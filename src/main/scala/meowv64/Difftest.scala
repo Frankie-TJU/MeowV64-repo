@@ -156,6 +156,13 @@ class DiffLoadEventIO extends DifftestBundle with DifftestWithIndex {
   val fuType = Input(UInt(8.W))
 }
 
+class DiffUncachedLoadEventIO extends DifftestBundle {
+  val valid  = Input(Bool())
+  val addr   = Input(UInt(64.W))
+  val len    = Input(UInt(64.W))
+  val data   = Input(UInt(64.W))
+}
+
 class DiffAtomicEventIO extends DifftestBundle {
   val atomicResp = Input(Bool())
   val atomicAddr = Input(UInt(64.W))
@@ -310,6 +317,7 @@ class DifftestArchFpRegState extends DifftestBaseModule(new DiffArchFpRegStateIO
 class DifftestSbufferEvent extends DifftestBaseModule(new DiffSbufferEventIO)
 class DifftestStoreEvent extends DifftestBaseModule(new DiffStoreEventIO)
 class DifftestLoadEvent extends DifftestBaseModule(new DiffLoadEventIO)
+class DifftestUncachedLoadEvent extends DifftestBaseModule(new DiffUncachedLoadEventIO)
 class DifftestAtomicEvent extends DifftestBaseModule(new DiffAtomicEventIO)
 class DifftestL1TLBEvent extends DifftestBaseModule(new DiffL1TLBEventIO)
 class DifftestL2TLBEvent extends DifftestBaseModule(new DiffL2TLBEventIO)

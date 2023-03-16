@@ -20,6 +20,7 @@ import meowv64.reg.RegType
 
 import scala.collection.mutable
 import difftest.DifftestStoreEvent
+import difftest.DifftestUncachedLoadEvent
 
 /** DelayedMem = Delayed memory access, memory accesses that have side-effects
   * and thus needs to be preformed in-order.
@@ -993,7 +994,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   }
 
   if (coredef.ENABLE_DIFFTEST) {
-    // trap
+    // store event
     val difftestStore = Module(new DifftestStoreEvent)
     val storeData = WireInit(0.U(256.W))
     difftestStore.io.clock := clock
@@ -1034,5 +1035,14 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
     assert(
       !(toMem.writer.req.fire && toMem.uncached.req === L1UCReq.write && toMem.uncached.stall)
     )
+
+    // uncached load
+    val difftestLoad = Module(new DifftestUncachedLoadEvent)
+    difftestLoad.io.clock := clock
+    difftestLoad.io.coreid := coredef.HART_ID.U
+    difftestLoad.io.valid := toMem.uncached.req === L1UCReq.read && !toMem.uncached.stall
+    difftestLoad.io.addr := toMem.uncached.addr
+    difftestLoad.io.len := toMem.uncached.len.asUInt
+    difftestLoad.io.data := toMem.uncached.rdata
   }
 }

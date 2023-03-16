@@ -122,16 +122,6 @@ struct fake_interrupt_controller : abstract_interrupt_controller_t {
   ~fake_interrupt_controller() {}
 };
 
-struct dummy_interrupt_controller : abstract_interrupt_controller_t {
-  void set_interrupt_level(uint32_t interrupt_id, int level) {
-    static int last_level = 0;
-    if (level != last_level) {
-      fprintf(stderr, "> dummy plic: intr %d = %d\n", interrupt_id, level);
-    }
-  }
-  ~dummy_interrupt_controller() {}
-};
-
 ns16550_t *sim_uart;
 fake_interrupt_controller *sim_plic;
 
@@ -153,7 +143,6 @@ void init() {
 
   sim_plic = new fake_interrupt_controller();
   sim_uart = new ns16550_t(NULL, sim_plic, 1, 2, 1);
-  sim_uart->suppress_output = true;
 }
 
 // step per clock fall
@@ -992,6 +981,13 @@ void jtag_vpi_tick() {
   }
 }
 
+struct uncached_load_event {
+  uint64_t addr;
+  uint64_t len;
+  uint64_t data;
+};
+std::deque<uncached_load_event> uncached_load_events;
+
 uint64_t mtime = 0;
 
 struct sim : simif_t {
@@ -1014,10 +1010,36 @@ struct sim : simif_t {
     return mmio_load(paddr, len, bytes);
   }
   bool mmio_load(reg_t paddr, size_t len, uint8_t *bytes) {
-    return bus.load(paddr, len, bytes);
+    if (paddr >= 0x80000000) {
+      return bus.load(paddr, len, bytes);
+    } else {
+      // match rtl uncached load event
+      if (!uncached_load_events.empty()) {
+        uncached_load_event ev = uncached_load_events.front();
+        if (ev.addr == paddr && ev.len == len) {
+          memcpy(bytes, (char *)&ev.data, len);
+          uncached_load_events.pop_front();
+          return true;
+        } else {
+          fprintf(stderr, "> mismatched uncached load event!\n");
+          fprintf(stderr, "> addr = %lx (expected %lx)\n", ev.addr, paddr);
+          fprintf(stderr, "> len = %ld (len %ld)\n", ev.len, len);
+        }
+      } else {
+        fprintf(stderr, "> mismatched uncached load event!\n");
+        fprintf(stderr, "> expected addr = %ld\n", paddr);
+        fprintf(stderr, "> expected len = %ld\n", len);
+      }
+      return false;
+    }
   };
   bool mmio_store(reg_t paddr, size_t len, const uint8_t *bytes) {
-    return bus.store(paddr, len, bytes);
+    if (paddr >= 0x80000000) {
+      return bus.store(paddr, len, bytes);
+    } else {
+      // fprintf(stderr, "> uncached store addr %lx len %ld\n", paddr, len);
+      return true;
+    }
   };
   // Callback for processors to let the simulation know they were reset.
   void proc_reset(unsigned id){};
@@ -1315,6 +1337,18 @@ void v_difftest_StoreEvent(DPIC_ARG_BYTE coreid, DPIC_ARG_BYTE index,
     store_events.push_back(ev);
   }
 }
+
+void v_difftest_UncachedLoadEvent(DPIC_ARG_BYTE coreid, DPIC_ARG_BIT valid,
+                                  DPIC_ARG_LONG addr, DPIC_ARG_LONG len,
+                                  DPIC_ARG_LONG data) {
+  if (valid) {
+    uncached_load_event ev;
+    ev.addr = addr;
+    ev.data = data;
+    ev.len = 1 << len;
+    uncached_load_events.push_back(ev);
+  }
+}
 }
 
 int main(int argc, char **argv) {
@@ -1382,11 +1416,11 @@ int main(int argc, char **argv) {
   s.cfg = &cfg;
   s.bus.add_device(0x80000000, &m);
   // add dummy device for reading dtb
-  mem_t m_zero(0x1000);
-  s.bus.add_device(0x00000000, &m_zero);
+  // mem_t m_zero(0x1000);
+  // s.bus.add_device(0x00000000, &m_zero);
   // add dummy device for tohost/fromhost/signature
-  mem_t m_htif(0x10000000);
-  s.bus.add_device(0x60000000, &m_htif);
+  // mem_t m_htif(0x10000000);
+  // s.bus.add_device(0x60000000, &m_htif);
 
   isa_parser_t isa_parser(isa, DEFAULT_PRIV);
   processor_t p(&isa_parser, &cfg, &s, 0, true, stderr, std::cerr);
@@ -1400,14 +1434,6 @@ int main(int argc, char **argv) {
   // add plic, clint and uart
   std::vector<processor_t *> procs;
   procs.push_back(&p);
-  plic_t plic(&s, 2);
-  s.bus.add_device(0xc000000, &plic);
-  clint_t clint(&s, 1000000000, false);
-  s.bus.add_device(0x2000000, &clint);
-  dummy_interrupt_controller dummy_plic; // use dummy plic to allow us to
-                                         // override interrupt pending bits
-  ns16550_t uart(&s.bus, &dummy_plic, 1, 2, 1);
-  s.bus.add_device(0x60201000, &uart);
 
   p.reset();
   p.get_state()->pc = 0x80000000;
@@ -1648,7 +1674,6 @@ int main(int argc, char **argv) {
       step_mmio();
 
       // sync mtime and mcycle
-      clint.mtime = mtime;
       proc->get_state()->mcycle->write(top->debug_0_mcycle - 3);
 
       // handle trap
@@ -1657,12 +1682,6 @@ int main(int argc, char **argv) {
         proc->take_trap(trap, proc->get_state()->pc);
         fprintf(stderr, "> %ld: take trap %d\n", main_time, interrupt_fire);
         interrupt_fire = 0;
-      }
-
-      if (seip) {
-        // spike plic is level-triggered, however rocket is edge-triggered
-        plic.set_interrupt_level(1, seip);
-        fprintf(stderr, "> %ld: set plic interrupt\n", main_time);
       }
 
       bool any_valid = false;
