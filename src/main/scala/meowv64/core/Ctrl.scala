@@ -562,15 +562,11 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
   // Exception delegated to S-mode
   val delegs = WireDefault(
     Mux(
-      intFired,
+      intFired && toExec.intAck,
       intDeleg,
       priv =/= PrivLevel.M && medeleg(cause(62, 0))
     )
   )
-
-  when(priv === PrivLevel.M) {
-    // When we are already in M-mode, don't delegate
-  }
 
   val tvecBase = Mux(delegs, stvec, mtvec)
   val tvec = Wire(UInt(coredef.XLEN.W))
