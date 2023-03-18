@@ -25,8 +25,11 @@ int main()
   uint32_t sum = 0;
   for (int i = 0; i < N; i++)
   {
-    uint32_t data = BUFFETS_DATA[i];
-    sum += data;
+    uint32_t tmp = BUFFETS_DATA[i];
+    if (tmp != data[i]) {
+      return 1;
+    }
+    sum += tmp;
   }
   return !(sum == (N * (N - 1) / 2));
 }

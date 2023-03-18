@@ -29,9 +29,13 @@ void spmv(int r, const double *val, const uint64_t *idx, const double *x,
   }
 }
 
-void spmv_buffets(int r, const double *val, const uint64_t *idx,
+int spmv_buffets(int r, const double *val, const uint64_t *idx,
                   const double *x, const uint64_t *ptr, double *y) {
-  ADDRGEN_INSTS[0] = (1 << 31) | (8 << 20) | (8 << 0);
+  // setup address generation
+  // 8 bytes per loop
+  // shift = 3 (8 bytes)
+  // stride = 8
+  ADDRGEN_INSTS[0] = (1 << 31) | (8 << 20) | (3 << 10) | (8 << 0);
   uint64_t addr = (uint64_t)&idx[0];
   ADDRGEN_INSTS[1] = addr >> 32;
   ADDRGEN_INSTS[2] = addr;
@@ -39,8 +43,7 @@ void spmv_buffets(int r, const double *val, const uint64_t *idx,
   ADDRGEN_INSTS[3] = addr >> 32;
   ADDRGEN_INSTS[4] = addr;
 
-  //*ADDRGEN_ITERATIONS = ptr[r + 1] - ptr[0];
-  *ADDRGEN_ITERATIONS = 20;
+  *ADDRGEN_ITERATIONS = ptr[r] - ptr[0];
   *ADDRGEN_CONTROL = 1;
 
   for (int i = 0; i < r; i++) {
@@ -48,17 +51,21 @@ void spmv_buffets(int r, const double *val, const uint64_t *idx,
     double yi0 = 0;
 
     for (int j = 0; k < ptr[i + 1]; k++, j++) {
-      yi0 += val[k] * ((volatile double *)BUFFETS_DATA)[j];
+      double tmp = ((volatile double *)BUFFETS_DATA)[j];
+      if (tmp != x[idx[k]]) {
+        return 1;
+      }
+      yi0 += val[k] * tmp;
     }
     *BUFFETS_SHRINK = 8 * (ptr[i + 1] - ptr[i]);
 
     y[i] = yi0;
   }
+  return 0;
 }
 
 int main() {
   double y[N];
-  spmv(N, val, idx, x, ptr, y);
-  spmv_buffets(N, val, idx, x, ptr, y);
-  return 0;
+  // spmv(N, val, idx, x, ptr, y);
+  return spmv_buffets(N, val, idx, x, ptr, y);
 }

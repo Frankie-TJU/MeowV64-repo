@@ -237,6 +237,7 @@ class AddressGenerationModuleImp(outer: AddressGeneration)
         currentInstIndex := 0.U
       }.otherwise {
         when(~full) {
+          inflights(tail) := AddressGenerationInflight.empty(config)
           inflights(tail).valid := true.B
           inflights(tail).done := false.B
 
@@ -331,22 +332,24 @@ class AddressGenerationModuleImp(outer: AddressGeneration)
         inflight.req := true.B
         inflight.reqAddr := inflight.indexedBase +
           (index << inflight.indexedShift)
-        inflight.reqLgSize := 2.U // 4 bytes
+        when(inflight.bytes === 4.U) {
+          inflight.reqLgSize := 2.U // 4 bytes
+        }.otherwise {
+          assert(inflight.bytes === 8.U)
+          inflight.reqLgSize := 3.U // 8 bytes
+        }
         inflight.recv := 0.U
       }.otherwise {
-        val data = Wire(UInt(32.W))
-        data := master.d.bits.data >> shift
-        inflight.data := inflight.data | (data << (inflight.recv << 3.U))
-        when(inflight.bytes <= newRecv) {
-          // done
-          inflight.done := true.B
+        val data = Wire(UInt(64.W))
+        when(inflight.bytes === 4.U) {
+          data := (master.d.bits.data >> shift)(31, 0)
         }.otherwise {
-          // next beat
-          inflight.req := true.B
-          val index = Wire(UInt(32.W))
-          index := inflight.index >> (newRecv << 3.U)
-          inflight.reqAddr := inflight.indexedBase + (index << inflight.indexedShift)
+          assert(inflight.bytes === 8.U)
+          data := master.d.bits.data >> shift
         }
+        inflight.data := data
+        // done
+        inflight.done := true.B
       }
     }
   }

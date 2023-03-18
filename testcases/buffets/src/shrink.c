@@ -25,8 +25,11 @@ int main()
   uint32_t sum = 0;
   for (int i = 0; i < N; i++)
   {
-    uint32_t data = BUFFETS_DATA[0];
-    sum += data;
+    uint32_t tmp = BUFFETS_DATA[0];
+    if (tmp != data[i]) {
+      return 1;
+    }
+    sum += tmp;
     // shrink
     *BUFFETS_SHRINK = 4;
   }

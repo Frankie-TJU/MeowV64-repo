@@ -38,8 +38,11 @@ Instructions:
 3. CONFIG:
 	1. \[31\]: opcode, 0=strided, 1=indexed
 	2. \[30:20\]: bytes
-	3. \[19:0\]: stride
+	3. \[19:10\]: indexed shift
+	4. \[9:0\]: stride
 4. ARGUMENTS:
 	1. strided: baseHigh, baseLow
 	2. indexed: baseHigh, baseLow, indexedBaseHigh, indexedBaseLow
 5. END LOOP: all zeros
+
+indexed: addr = indexedBase + index << indexedShift

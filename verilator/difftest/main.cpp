@@ -1699,6 +1699,25 @@ int main(int argc, char **argv) {
             cpu_state.history.pop_front();
           }
 
+          // debugging
+          if (0) {
+            fprintf(stderr, "> %ld: commit @ pc %lx inst %08lx\n", main_time,
+                    cur_pc, cpu_state.insn[index].inst);
+            for (int i = 0; i < 32; i++) {
+              fprintf(stderr, "> gpr[%d, %s] = %016lx\n", i, gpr_names[i],
+                      cpu_state.gpr[i]);
+            }
+            for (int i = 0; i < 32; i++) {
+              fprintf(stderr, "> fpr[%d, %s] = %016lx\n", i, fpr_names[i],
+                      cpu_state.fpr[i]);
+            }
+            fprintf(stderr, "> cpu history:\n");
+            for (auto hist : cpu_state.history) {
+              fprintf(stderr, "> pc=%016lx inst=%08lx %s\n", hist.pc, hist.inst,
+                      disassembler.disassemble(hist.inst).c_str());
+            }
+          }
+
           step_spike();
 
           uint64_t exp_pc = spike_state.pc;
@@ -1781,8 +1800,8 @@ int main(int argc, char **argv) {
 
     top->eval();
     if (tfp) {
-      tfp->dump(main_time);
-      if (main_time > 6600000000) {
+      if (1 || main_time > 21032000000) {
+        tfp->dump(main_time);
       }
       // tfp->flush();
     }
