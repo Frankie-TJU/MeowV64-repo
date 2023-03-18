@@ -150,21 +150,22 @@ class AddressGenerationSpec
         if (true) {
           // write some data to memory
           // index
-          write(0x2000, 0xc)
-          write(0x2004, 0x8)
-          write(0x2008, 0x4)
+          write(0x2000, 0x3)
+          write(0x2004, 0x2)
+          write(0x2008, 0x1)
           write(0x200c, 0x0)
           // value
-          write(0x3000, 0x0)
-          write(0x3004, 0x1)
-          write(0x3008, 0x2)
-          write(0x300c, 0x3)
+          write(0x3000, 0x00)
+          write(0x3004, 0x10)
+          write(0x3008, 0x20)
+          write(0x300c, 0x30)
 
           val opcode: Long = 1
-          val stride: Long = 8
-          val bytes: Long = 16
+          val stride: Long = 4
+          val bytes: Long = 4
+          val indexedShift: Long = 2
           val config: Long =
-            (opcode << AddressGeneration.CONFIG_OPCODE) |
+            (opcode << AddressGeneration.CONFIG_OPCODE) | (indexedShift << AddressGeneration.CONFIG_INDEXED_SHIFT) |
               (stride << AddressGeneration.CONFIG_STRIDE) | (bytes << AddressGeneration.CONFIG_BYTES)
           write(base + AddressGeneration.INSTS, config)
           // addr = 0x00002000
@@ -173,11 +174,11 @@ class AddressGenerationSpec
           // indexedBase = 0x00003000
           write(base + AddressGeneration.INSTS + 0xc, 0x0000)
           write(base + AddressGeneration.INSTS + 0x10, 0x3000)
-          write(base + AddressGeneration.ITERATIONS, 1)
+          write(base + AddressGeneration.ITERATIONS, 4)
           // start
           write(base + AddressGeneration.CONTROL, 1)
 
-          fork {
+          for (expected <- Seq(0x30, 0x20, 0x10, 0x00)) {
             dut.egress.ready.poke(true.B)
             while (!dut.egress.valid.peek.litToBoolean) {
               dut.clock.step()
@@ -185,9 +186,10 @@ class AddressGenerationSpec
 
             dut.egress.valid.expect(true.B)
             val data = dut.egress.bits.data.peekInt()
-            assert(data == BigInt("00000000000000010000000200000003", 16))
-            dut.egress.bits.len.expect(16.U)
-          }.joinAndStep(dut.clock)
+            assert(data == expected)
+            dut.egress.bits.len.expect(4.U)
+            dut.clock.step(1)
+          }
 
           dut.clock.step(16)
         }
