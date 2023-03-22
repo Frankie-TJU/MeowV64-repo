@@ -41,38 +41,6 @@ vluint64_t main_time = 0;
 double sc_time_stamp() { return main_time; }
 
 bool finished = false;
-bool jtag = false;
-// use remote bitbang protocol
-bool jtag_rbb = false;
-// use jtag_vpi protocol
-bool jtag_vpi = false;
-
-// jtag_vpi state & definitions
-enum JtagVpiState {
-  CHECK_CMD,
-  TAP_RESET,
-  GOTO_IDLE,
-  DO_TMS_SEQ,
-  SCAN_CHAIN,
-  FINISHED
-} jtag_vpi_state;
-bool jtag_vpi_tms_flip = false;
-
-enum JtagVpiCommand {
-  CMD_RESET,
-  CMD_TMS_SEQ,
-  CMD_SCAN_CHAIN,
-  CMD_SCAN_CHAIN_FLIP_TMS,
-  CMD_STOP_SIMU
-};
-
-struct jtag_vpi_cmd {
-  uint32_t cmd;
-  uint8_t buffer_out[512];
-  uint8_t buffer_in[512];
-  uint32_t length;
-  uint32_t nb_bits;
-};
 
 int res = 0;
 
@@ -102,12 +70,8 @@ void ctrlc_handler(int arg) {
   res = 1;
 }
 
-// machine timer interrupt pending
-uint8_t mtip = 0;
 // interrupt fire
 uint8_t interrupt_fire = 0;
-// supervisor external interrupt pending
-uint8_t seip = 0;
 
 struct fake_interrupt_controller : abstract_interrupt_controller_t {
   void set_interrupt_level(uint32_t interrupt_id, int level) {
@@ -116,7 +80,6 @@ struct fake_interrupt_controller : abstract_interrupt_controller_t {
       fprintf(stderr, "> intr %d = %d\n", interrupt_id, level);
       top->interrupts = level;
     }
-    seip = level;
     last_level = level;
   }
   ~fake_interrupt_controller() {}
@@ -481,15 +444,11 @@ void step_mmio() {
         } else if (data == 1) {
           // pass
           fprintf(stderr, "> ISA testsuite pass\n");
-          if (!jtag) {
-            finished = true;
-          }
+          finished = true;
         } else if ((data & 1) == 1) {
           uint32_t c = data >> 1;
           fprintf(stderr, "> ISA testsuite failed case %d\n", c);
-          if (!jtag) {
-            finished = true;
-          }
+          finished = true;
           res = 1;
         } else {
           fprintf(stderr, "> Unhandled tohost: %x\n", input);
@@ -666,329 +625,12 @@ uint64_t get_time_us() {
   return tv.tv_sec * 1000000 + tv.tv_usec;
 }
 
-int listen_fd = -1;
-int client_fd = -1;
-
-int jtag_rbb_init() {
-  // ref rocket chip remote_bitbang.cc
-  listen_fd = socket(AF_INET, SOCK_STREAM, 0);
-  if (listen_fd < 0) {
-    perror("socket");
-    return -1;
-  }
-
-  // set non blocking
-  fcntl(listen_fd, F_SETFL, O_NONBLOCK);
-
-  int reuseaddr = 1;
-  if (setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, &reuseaddr, sizeof(int)) <
-      0) {
-    perror("setsockopt");
-    return -1;
-  }
-
-  int port = 12345;
-  struct sockaddr_in addr = {};
-  addr.sin_family = AF_INET;
-  addr.sin_addr.s_addr = INADDR_ANY;
-  addr.sin_port = htons(port);
-
-  if (bind(listen_fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-    perror("bind");
-    return -1;
-  }
-
-  if (listen(listen_fd, 1) == -1) {
-    perror("listen");
-    return -1;
-  }
-  fprintf(stderr, "> Remote bitbang server listening at :12345\n");
-
-  return 0;
-}
-
-void jtag_rbb_tick() {
-  if (client_fd >= 0) {
-    static char read_buffer[128];
-    static size_t read_buffer_count = 0;
-    static size_t read_buffer_offset = 0;
-
-    if (read_buffer_offset == read_buffer_count) {
-      ssize_t num_read = read(client_fd, read_buffer, sizeof(read_buffer));
-      if (num_read > 0) {
-        read_buffer_count = num_read;
-        read_buffer_offset = 0;
-      } else if (num_read == 0) {
-        // remote socket closed
-        fprintf(stderr, "> JTAG debugger detached\n");
-        close(client_fd);
-        client_fd = -1;
-      }
-    }
-
-    if (read_buffer_offset < read_buffer_count) {
-      char command = read_buffer[read_buffer_offset++];
-      if ('0' <= command && command <= '7') {
-        // set
-        char offset = command - '0';
-        top->jtag_TCK = (offset >> 2) & 1;
-        top->jtag_TMS = (offset >> 1) & 1;
-        top->jtag_TDI = (offset >> 0) & 1;
-      } else if (command == 'R') {
-        // read
-        char send = top->jtag_TDO_data ? '1' : '0';
-
-        while (1) {
-          ssize_t sent = write(client_fd, &send, sizeof(send));
-          if (sent > 0) {
-            break;
-          } else if (send < 0) {
-            close(client_fd);
-            client_fd = -1;
-            break;
-          }
-        }
-      } else if (command == 'r' || command == 's') {
-        // trst = 0;
-        // top->io_jtag_trstn = 1;
-      } else if (command == 't' || command == 'u') {
-        // trst = 1;
-        // top->io_jtag_trstn = 0;
-      }
-    }
-  } else {
-    // accept connection
-    client_fd = accept(listen_fd, NULL, NULL);
-    if (client_fd > 0) {
-      fcntl(client_fd, F_SETFL, O_NONBLOCK);
-
-      // set nodelay
-      int flags = 1;
-      if (setsockopt(client_fd, IPPROTO_TCP, TCP_NODELAY, (void *)&flags,
-                     sizeof(flags)) < 0) {
-        perror("setsockopt");
-      }
-      fprintf(stderr, "> JTAG debugger attached\n");
-    }
-  }
-}
-
-int jtag_vpi_init() {
-  listen_fd = socket(AF_INET, SOCK_STREAM, 0);
-  if (listen_fd < 0) {
-    perror("socket");
-    return -1;
-  }
-
-  // set non blocking
-  fcntl(listen_fd, F_SETFL, O_NONBLOCK);
-
-  int reuseaddr = 1;
-  if (setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, &reuseaddr, sizeof(int)) <
-      0) {
-    perror("setsockopt");
-    return -1;
-  }
-
-  int port = 12345;
-  struct sockaddr_in addr = {};
-  addr.sin_family = AF_INET;
-  addr.sin_addr.s_addr = INADDR_ANY;
-  addr.sin_port = htons(port);
-
-  if (bind(listen_fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-    perror("bind");
-    return -1;
-  }
-
-  if (listen(listen_fd, 1) == -1) {
-    perror("listen");
-    return -1;
-  }
-  fprintf(stderr, "> JTAG vpi server listening at :12345\n");
-
-  jtag_vpi_state = JtagVpiState::CHECK_CMD;
-
-  return 0;
-}
-
-bool write_socket_full(int fd, uint8_t *data, size_t count) {
-  size_t num_sent = 0;
-  while (num_sent < count) {
-    ssize_t res = write(fd, &data[num_sent], count - num_sent);
-    if (res > 0) {
-      num_sent += res;
-    } else if (count < 0) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-void jtag_vpi_tick() {
-  // ref jtag_vpi project jtagServer.cpp
-
-  static uint8_t jtag_vpi_buffer[sizeof(struct jtag_vpi_cmd)];
-  static size_t jtag_vpi_recv = 0;
-  // automatic tck clock
-  static size_t tck_counter = 0;
-  tck_counter++;
-  static bool tck_en = false;
-  top->jtag_TCK = tck_en ? (tck_counter % 2) : 0;
-
-  struct jtag_vpi_cmd *cmd = (struct jtag_vpi_cmd *)jtag_vpi_buffer;
-
-  if (jtag_vpi_state == JtagVpiState::CHECK_CMD) {
-    if (client_fd >= 0) {
-      ssize_t num_read = read(client_fd, &jtag_vpi_buffer[jtag_vpi_recv],
-                              sizeof(jtag_vpi_cmd) - jtag_vpi_recv);
-      if (num_read > 0) {
-        jtag_vpi_recv += num_read;
-      } else if (num_read == 0) {
-        // remote socket closed
-        fprintf(stderr, "> JTAG debugger detached\n");
-        close(client_fd);
-        client_fd = -1;
-      }
-
-      if (jtag_vpi_recv == sizeof(struct jtag_vpi_cmd)) {
-        // cmd valid
-        jtag_vpi_recv = 0;
-        switch (cmd->cmd) {
-        case CMD_RESET:
-          jtag_vpi_state = TAP_RESET;
-          break;
-        case CMD_TMS_SEQ:
-          jtag_vpi_state = DO_TMS_SEQ;
-          break;
-        case CMD_SCAN_CHAIN:
-          memset(cmd->buffer_in, 0, sizeof(cmd->buffer_in));
-          jtag_vpi_state = SCAN_CHAIN;
-          jtag_vpi_tms_flip = false;
-          break;
-        case CMD_SCAN_CHAIN_FLIP_TMS:
-          memset(cmd->buffer_in, 0, sizeof(cmd->buffer_in));
-          jtag_vpi_state = SCAN_CHAIN;
-          jtag_vpi_tms_flip = true;
-          break;
-        }
-      }
-    } else {
-      client_fd = accept(listen_fd, NULL, NULL);
-      if (client_fd > 0) {
-        fcntl(client_fd, F_SETFL, O_NONBLOCK);
-
-        // set nodelay
-        int flags = 1;
-        if (setsockopt(client_fd, IPPROTO_TCP, TCP_NODELAY, (void *)&flags,
-                       sizeof(flags)) < 0) {
-          perror("setsockopt");
-        }
-        fprintf(stderr, "> JTAG debugger attached\n");
-      }
-    }
-  } else if (jtag_vpi_state == JtagVpiState::TAP_RESET) {
-    // tap reset
-    // tms=1 for five tck clocks
-    static int reset_counter = 0;
-    if (tck_counter % 2 == 0) {
-      // tck fall
-      if (reset_counter >= 5) {
-        top->jtag_TMS = 0;
-        reset_counter = 0;
-        tck_en = false;
-        jtag_vpi_state = JtagVpiState::GOTO_IDLE;
-      } else {
-        top->jtag_TMS = 1;
-        tck_en = true;
-      }
-    } else if (tck_en) {
-      // tck rise
-      reset_counter++;
-    }
-  } else if (jtag_vpi_state == JtagVpiState::GOTO_IDLE) {
-    // tap go to idle
-    // tms=0 for one tck clock
-    if (tck_counter % 2 == 0) {
-      // tck fall
-      top->jtag_TMS = 0;
-      if (!tck_en) {
-        tck_en = true;
-      } else {
-        tck_en = false;
-        jtag_vpi_state = JtagVpiState::CHECK_CMD;
-      }
-    } else if (tck_en) {
-      // tck rise
-    }
-  } else if (jtag_vpi_state == JtagVpiState::DO_TMS_SEQ) {
-    // send tms
-    static size_t progress = 0;
-
-    if (tck_counter % 2 == 0) {
-      // tck fall
-      size_t byte_offset = progress / 8;
-      size_t bit_offset = progress % 8;
-      if (progress == cmd->nb_bits) {
-        top->jtag_TMS = 0;
-        progress = 0;
-        tck_en = false;
-        jtag_vpi_state = JtagVpiState::CHECK_CMD;
-      } else {
-        top->jtag_TMS = (cmd->buffer_out[byte_offset] >> bit_offset) & 1;
-        tck_en = true;
-      }
-    } else if (tck_en) {
-      // tck rise
-      progress++;
-    }
-  } else if (jtag_vpi_state == JtagVpiState::SCAN_CHAIN) {
-    // send tdi
-    static size_t progress = 0;
-
-    size_t byte_offset = progress / 8;
-    size_t bit_offset = progress % 8;
-
-    if (tck_counter % 2 == 0) {
-      // tck fall
-      if (progress < cmd->nb_bits) {
-        top->jtag_TDI = (cmd->buffer_out[byte_offset] >> bit_offset) & 1;
-
-        if (jtag_vpi_tms_flip && progress == cmd->nb_bits - 1) {
-          // tms on last bit
-          top->jtag_TMS = 1;
-        }
-        tck_en = true;
-      } else {
-        top->jtag_TDI = 0;
-        top->jtag_TMS = 0;
-        progress = 0;
-
-        tck_en = false;
-        jtag_vpi_state = JtagVpiState::CHECK_CMD;
-        write_socket_full(client_fd, jtag_vpi_buffer,
-                          sizeof(struct jtag_vpi_cmd));
-      }
-    } else if (tck_en) {
-      // tck rise
-      // capture tdo
-      uint8_t bit = top->jtag_TDO_data & 1;
-      cmd->buffer_in[byte_offset] |= bit << bit_offset;
-
-      progress++;
-    }
-  }
-}
-
 struct uncached_load_event {
   uint64_t addr;
   uint64_t len;
   uint64_t data;
 };
 std::deque<uncached_load_event> uncached_load_events;
-
-uint64_t mtime = 0;
 
 struct sim : simif_t {
   bus_t bus;
@@ -1052,15 +694,6 @@ struct sim : simif_t {
   unsigned nprocs() const { return get_cfg().nprocs(); }
 
   ~sim() = default;
-};
-
-// to sync mtime in CLINT
-extern "C" {
-void set_time(long long cur_time) {
-  fprintf(stderr, "> read mtime = %d\n", cur_time);
-  mtime = cur_time;
-}
-void set_mtip(uint8_t ip) { mtip = ip; }
 };
 
 processor_t *proc;
@@ -1362,21 +995,13 @@ int main(int argc, char **argv) {
   bool progress = false;
   const char *signature_path = "dump.sig";
   int signature_granularity = 16;
-  while ((opt = getopt(argc, argv, "tpjvs:S:")) != -1) {
+  while ((opt = getopt(argc, argv, "tps:S:")) != -1) {
     switch (opt) {
     case 't':
       trace = true;
       break;
     case 'p':
       progress = true;
-      break;
-    case 'j':
-      jtag = true;
-      jtag_rbb = true;
-      break;
-    case 'v':
-      jtag = true;
-      jtag_vpi = true;
       break;
     case 's':
       signature_path = optarg;
@@ -1386,7 +1011,7 @@ int main(int argc, char **argv) {
       break;
     default: /* '?' */
       fprintf(stderr,
-              "Usage: %s [-t] [-p] [-j] [-v] [-s signature] [-S granularity] "
+              "Usage: %s [-t] [-p] [-s signature] [-S granularity] "
               "name\n",
               argv[0]);
       return 1;
@@ -1572,10 +1197,6 @@ int main(int argc, char **argv) {
     for (int i = 0; i < STATE_CSR_COUNT; i++) {
       spike_state.csr_state[i] = csrs[i]->read();
     }
-    // patch mtip
-    if (mtip) {
-      spike_state.csr_state[STATE_CSR_MIP] |= MIP_MTIP;
-    }
     spike_state.pc = proc->get_state()->last_inst_pc;
     spike_state.pc_history.push_back(spike_state.pc);
     if (spike_state.pc_history.size() > history_size) {
@@ -1585,20 +1206,10 @@ int main(int argc, char **argv) {
 
   top = new VRiscVSystem;
 
-  if (jtag) {
-    if (jtag_rbb && jtag_rbb_init() < 0) {
-      return -1;
-    }
-    if (jtag_vpi && jtag_vpi_init() < 0) {
-      return -1;
-    }
-
-    // init
-    top->jtag_TCK = 0;
-    top->jtag_TMS = 0;
-    top->jtag_TDI = 0;
-    // top->io_jtag_trstn = 1;
-  }
+  // init
+  top->jtag_TCK = 0;
+  top->jtag_TMS = 0;
+  top->jtag_TDI = 0;
 
   VerilatedFstC *tfp = nullptr;
   if (trace) {
@@ -1638,13 +1249,6 @@ int main(int argc, char **argv) {
         fprintf(stderr, "> mcycle: %ld\n", top->debug_0_mcycle);
         fprintf(stderr, "> minstret: %ld\n", top->debug_0_minstret);
         fprintf(stderr, "> pc: %lx\n", top->debug_0_pc);
-      }
-
-      if (0) {
-        // do not timeout in jtag mode
-        fprintf(stderr, "> Timed out\n");
-        finished = true;
-        res = 1;
       }
 
       // accumulate rs free cycles
@@ -1785,16 +1389,6 @@ int main(int argc, char **argv) {
             difftest_failed();
           }
         }
-      }
-    }
-
-    if (jtag) {
-      // jtag tick
-      if (jtag_rbb) {
-        jtag_rbb_tick();
-      }
-      if (jtag_vpi) {
-        jtag_vpi_tick();
       }
     }
 
