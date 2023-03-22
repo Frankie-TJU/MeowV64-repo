@@ -440,7 +440,7 @@ void step_mmio() {
         uint32_t data = input & 0xFFFFFFFF;
         if (input == ((data & 0xFF) | 0x0101000000000000L)) {
           // serial
-          printf("%c", input & 0xFF);
+          printf("%c", (char)input & 0xFF);
         } else if (data == 1) {
           // pass
           fprintf(stderr, "> ISA testsuite pass\n");
@@ -451,7 +451,7 @@ void step_mmio() {
           finished = true;
           res = 1;
         } else {
-          fprintf(stderr, "> Unhandled tohost: %x\n", input);
+          fprintf(stderr, "> Unhandled tohost: %lx\n", input);
         }
       } else if (pending_write_addr == fromhost_addr) {
         // write to fromhost
@@ -615,8 +615,8 @@ void load_file(const std::string &path, mem_t *m) {
     fclose(fp);
     delete[] buffer;
   }
-  fprintf(stderr, "> Using tohost at %x\n", tohost_addr);
-  fprintf(stderr, "> Using fromhost at %x\n", fromhost_addr);
+  fprintf(stderr, "> Using tohost at %lx\n", tohost_addr);
+  fprintf(stderr, "> Using fromhost at %lx\n", fromhost_addr);
 }
 
 uint64_t get_time_us() {
@@ -932,7 +932,7 @@ void v_difftest_TrapEvent() {}
 struct store_event {
   uint64_t addr;
   mpz_class data;
-  uint32_t len;
+  uint64_t len;
 };
 std::deque<store_event> store_events;
 
@@ -1098,7 +1098,7 @@ int main(int argc, char **argv) {
     }
     fprintf(stderr, "> cpu history:\n");
     for (auto hist : cpu_state.history) {
-      fprintf(stderr, "> pc=%016lx inst=%08lx %s\n", hist.pc, hist.inst,
+      fprintf(stderr, "> pc=%016lx inst=%08x %s\n", hist.pc, hist.inst,
               disassembler.disassemble(hist.inst).c_str());
     }
     fprintf(stderr, "> spike pc history:\n");
@@ -1153,7 +1153,7 @@ int main(int argc, char **argv) {
           if (ev.addr != addr || ev.data != val || ev.len != len) {
             fprintf(stderr,
                     "> %ld: Mismatch store event @ pc %lx addr %lx (expected "
-                    "%lx) data %s (expected %s) len %lx (expected %ld)\n",
+                    "%lx) data %s (expected %s) len %ld (expected %ld)\n",
                     main_time, proc->get_state()->last_inst_pc, ev.addr, addr,
                     data_str.c_str(), val_str.c_str(), ev.len, len);
             difftest_failed();
@@ -1305,7 +1305,7 @@ int main(int argc, char **argv) {
 
           // debugging
           if (0) {
-            fprintf(stderr, "> %ld: commit @ pc %lx inst %08lx\n", main_time,
+            fprintf(stderr, "> %ld: commit @ pc %lx inst %08x\n", main_time,
                     cur_pc, cpu_state.insn[index].inst);
             for (int i = 0; i < 32; i++) {
               fprintf(stderr, "> gpr[%d, %s] = %016lx\n", i, gpr_names[i],
@@ -1317,7 +1317,7 @@ int main(int argc, char **argv) {
             }
             fprintf(stderr, "> cpu history:\n");
             for (auto hist : cpu_state.history) {
-              fprintf(stderr, "> pc=%016lx inst=%08lx %s\n", hist.pc, hist.inst,
+              fprintf(stderr, "> pc=%016lx inst=%08x %s\n", hist.pc, hist.inst,
                       disassembler.disassemble(hist.inst).c_str());
             }
           }
@@ -1328,7 +1328,7 @@ int main(int argc, char **argv) {
           if (cur_pc != exp_pc) {
             fprintf(
                 stderr,
-                "> %ld: Mismatch commit @ pc %lx (expected %lx) inst %08lx\n",
+                "> %ld: Mismatch commit @ pc %lx (expected %lx) inst %08x\n",
                 main_time, cur_pc, exp_pc, cpu_state.insn[index].inst);
             difftest_failed();
           }
@@ -1352,7 +1352,7 @@ int main(int argc, char **argv) {
             }
 
             fprintf(stderr,
-                    "> %ld: Mismatch csr @ pc %lx inst %08lx %s %lx (expected "
+                    "> %ld: Mismatch csr @ pc %lx inst %08x %s %lx (expected "
                     "%lx)\n",
                     main_time, last_pc, last_inst, csr_names[i], actual,
                     expected);
@@ -1371,7 +1371,7 @@ int main(int argc, char **argv) {
           uint64_t expected = spike_state.gpr[i];
           if (expected != actual) {
             fprintf(stderr,
-                    "> %ld: Mismatch gpr @ pc %lx inst %08lx gpr[%d]=%016lx "
+                    "> %ld: Mismatch gpr @ pc %lx inst %08x gpr[%d]=%016lx "
                     "(expected "
                     "%016lx)\n",
                     main_time, last_pc, last_inst, i, actual, expected);
@@ -1382,7 +1382,7 @@ int main(int argc, char **argv) {
           expected = spike_state.fpr[i];
           if (expected != actual) {
             fprintf(stderr,
-                    "> %ld: Mismatch fpr @ pc %lx inst %08lx fpr[%d]=%016lx "
+                    "> %ld: Mismatch fpr @ pc %lx inst %08x fpr[%d]=%016lx "
                     "(expected "
                     "%016lx)\n",
                     main_time, last_pc, last_inst, i, actual, expected);
@@ -1450,7 +1450,7 @@ int main(int argc, char **argv) {
          addr += signature_granularity) {
       uint64_t words = signature_granularity / sizeof(meow_mem_t);
       for (uint64_t i = 0; i < signature_granularity; i += sizeof(meow_mem_t)) {
-        fprintf(fp, "%08lx",
+        fprintf(fp, "%08x",
                 memory[addr + signature_granularity - sizeof(meow_mem_t) - i]);
       }
       fprintf(fp, "\n");
