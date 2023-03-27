@@ -1350,6 +1350,10 @@ int main(int argc, char **argv) {
               // csr update is async with inst commit
               continue;
             }
+            if (i == STATE_CSR_MIP) {
+              // we do not sync mip
+              continue;
+            }
 
             fprintf(stderr,
                     "> %ld: Mismatch csr @ pc %lx inst %08x %s %lx (expected "
