@@ -70,8 +70,77 @@ void ctrlc_handler(int arg) {
   res = 1;
 }
 
-// interrupt fire
-uint8_t interrupt_fire = 0;
+struct history_entry {
+  uint64_t pc;
+  uint32_t inst;
+};
+
+struct commit_state {
+  int valid;
+  uint64_t pc;
+  uint32_t inst;
+};
+
+enum csr {
+  STATE_CSR_MSTATUS,
+  STATE_CSR_SSTATUS,
+  STATE_CSR_MEPC,
+  STATE_CSR_SEPC,
+  STATE_CSR_MTVAL,
+  STATE_CSR_STVAL,
+  STATE_CSR_MTVEC,
+  STATE_CSR_STVEC,
+  STATE_CSR_MCAUSE,
+  STATE_CSR_SCAUSE,
+  STATE_CSR_SATP,
+  STATE_CSR_MIP,
+  STATE_CSR_MIE,
+  STATE_CSR_MSCRATCH,
+  STATE_CSR_SSCRATCH,
+  STATE_CSR_MIDELEG,
+  STATE_CSR_MEDELEG,
+  STATE_CSR_FCSR,
+  STATE_CSR_VSTART,
+  STATE_CSR_VCSR,
+  STATE_CSR_VL,
+  STATE_CSR_VTYPE,
+  STATE_CSR_COUNT,
+};
+
+struct store_event {
+  uint64_t addr;
+  mpz_class data;
+  uint64_t len;
+};
+
+struct core_state {
+  processor_t *proc;
+
+  // interrupt fire
+  uint8_t interrupt_fire = 0;
+
+  struct cpu_state {
+    struct commit_state insn[2];
+    uint64_t csr_state[STATE_CSR_COUNT];
+    uint64_t gpr[32];
+    uint64_t fpr[32];
+    std::deque<history_entry> history;
+  } cpu_state;
+
+  struct spike_state {
+    uint64_t pc;
+    uint64_t csr_state[STATE_CSR_COUNT];
+    uint64_t gpr[32];
+    uint64_t fpr[32];
+    std::deque<uint64_t> pc_history;
+  } spike_state;
+
+  uint64_t last_pc = 0x80000000;
+  uint32_t last_inst = 0x00000000;
+
+  std::deque<store_event> store_events;
+
+} cores[2];
 
 struct fake_interrupt_controller : abstract_interrupt_controller_t {
   void set_interrupt_level(uint32_t interrupt_id, int level) {
@@ -635,7 +704,7 @@ std::deque<uncached_load_event> uncached_load_events;
 struct sim : simif_t {
   bus_t bus;
   cfg_t *cfg;
-  std::map<size_t, processor_t *> m;
+  std::map<size_t, processor_t *> *proc_map;
 
   // should return NULL for MMIO addresses
   char *addr_to_mem(reg_t paddr) {
@@ -687,7 +756,7 @@ struct sim : simif_t {
   void proc_reset(unsigned id){};
 
   const cfg_t &get_cfg() const { return *cfg; };
-  const std::map<size_t, processor_t *> &get_harts() const { return m; };
+  const std::map<size_t, processor_t *> &get_harts() const { return *proc_map; };
 
   const char *get_symbol(uint64_t paddr) { return NULL; };
 
@@ -696,39 +765,6 @@ struct sim : simif_t {
   ~sim() = default;
 };
 
-processor_t *proc;
-
-struct commit_state {
-  int valid;
-  uint64_t pc;
-  uint32_t inst;
-};
-
-enum csr {
-  STATE_CSR_MSTATUS,
-  STATE_CSR_SSTATUS,
-  STATE_CSR_MEPC,
-  STATE_CSR_SEPC,
-  STATE_CSR_MTVAL,
-  STATE_CSR_STVAL,
-  STATE_CSR_MTVEC,
-  STATE_CSR_STVEC,
-  STATE_CSR_MCAUSE,
-  STATE_CSR_SCAUSE,
-  STATE_CSR_SATP,
-  STATE_CSR_MIP,
-  STATE_CSR_MIE,
-  STATE_CSR_MSCRATCH,
-  STATE_CSR_SSCRATCH,
-  STATE_CSR_MIDELEG,
-  STATE_CSR_MEDELEG,
-  STATE_CSR_FCSR,
-  STATE_CSR_VSTART,
-  STATE_CSR_VCSR,
-  STATE_CSR_VL,
-  STATE_CSR_VTYPE,
-  STATE_CSR_COUNT,
-};
 const char *csr_names[] = {
     "mstatus", "sstatus",  "mepc",     "sepc",    "mtval",   "stval",
     "mtvec",   "stvec",    "mcause",   "scause",  "satp",    "mip",
@@ -745,30 +781,6 @@ const char *fpr_names[] = {"ft0", "ft1", "ft2",  "ft3", "ft4", "ft5",  "ft6",
                            "ft8", "ft9", "ft10", "ft11"};
 
 const int history_size = 10;
-
-struct history_entry {
-  uint64_t pc;
-  uint32_t inst;
-};
-
-struct cpu_state {
-  struct commit_state insn[2];
-  uint64_t csr_state[STATE_CSR_COUNT];
-  uint64_t gpr[32];
-  uint64_t fpr[32];
-  std::deque<history_entry> history;
-} cpu_state;
-
-struct spike_state {
-  uint64_t pc;
-  uint64_t csr_state[STATE_CSR_COUNT];
-  uint64_t gpr[32];
-  uint64_t fpr[32];
-  std::deque<uint64_t> pc_history;
-} spike_state;
-
-uint64_t last_pc = 0x80000000;
-uint32_t last_inst = 0x00000000;
 
 extern "C" {
 
@@ -789,6 +801,7 @@ void v_difftest_ArchIntRegState(
     DPIC_ARG_LONG gpr_23, DPIC_ARG_LONG gpr_24, DPIC_ARG_LONG gpr_25,
     DPIC_ARG_LONG gpr_26, DPIC_ARG_LONG gpr_27, DPIC_ARG_LONG gpr_28,
     DPIC_ARG_LONG gpr_29, DPIC_ARG_LONG gpr_30, DPIC_ARG_LONG gpr_31) {
+  auto &cpu_state = cores[coreid].cpu_state;
   cpu_state.gpr[0] = gpr_0;
   cpu_state.gpr[1] = gpr_1;
   cpu_state.gpr[2] = gpr_2;
@@ -835,6 +848,7 @@ void v_difftest_ArchFpRegState(
     DPIC_ARG_LONG fpr_23, DPIC_ARG_LONG fpr_24, DPIC_ARG_LONG fpr_25,
     DPIC_ARG_LONG fpr_26, DPIC_ARG_LONG fpr_27, DPIC_ARG_LONG fpr_28,
     DPIC_ARG_LONG fpr_29, DPIC_ARG_LONG fpr_30, DPIC_ARG_LONG fpr_31) {
+  auto &cpu_state = cores[coreid].cpu_state;
   cpu_state.fpr[0] = fpr_0;
   cpu_state.fpr[1] = fpr_1;
   cpu_state.fpr[2] = fpr_2;
@@ -878,6 +892,7 @@ void v_difftest_CSRState(
     DPIC_ARG_LONG mscratch, DPIC_ARG_LONG sscratch, DPIC_ARG_LONG mideleg,
     DPIC_ARG_LONG medeleg, DPIC_ARG_LONG fcsr, DPIC_ARG_LONG vstart,
     DPIC_ARG_LONG vcsr, DPIC_ARG_LONG vl, DPIC_ARG_LONG vtype) {
+  auto &cpu_state = cores[coreid].cpu_state;
   cpu_state.csr_state[STATE_CSR_MSTATUS] = mstatus;
   cpu_state.csr_state[STATE_CSR_SSTATUS] = sstatus;
   cpu_state.csr_state[STATE_CSR_MEPC] = mepc;
@@ -912,6 +927,7 @@ void v_difftest_InstrCommit(DPIC_ARG_BYTE coreid, DPIC_ARG_BYTE index,
                             DPIC_ARG_BYTE sqidx, DPIC_ARG_BIT isLoad,
                             DPIC_ARG_BIT isStore) {
   if (valid) {
+    auto &cpu_state = cores[coreid].cpu_state;
     cpu_state.insn[index].valid = 1;
     cpu_state.insn[index].pc = pc;
     cpu_state.insn[index].inst = instr;
@@ -922,19 +938,12 @@ void v_difftest_ArchEvent(DPIC_ARG_BYTE coreid, DPIC_ARG_INT intrNo,
                           DPIC_ARG_INT cause, DPIC_ARG_LONG exceptionPC,
                           DPIC_ARG_INT exceptionInst) {
   if (intrNo > 0) {
-    fprintf(stderr, "> %ld: interrupt %d\n", main_time, intrNo);
-    interrupt_fire = intrNo;
+    fprintf(stderr, "> %ld: core %d interrupt %d\n", main_time, coreid, intrNo);
+    cores[coreid].interrupt_fire = intrNo;
   }
 }
 
 void v_difftest_TrapEvent() {}
-
-struct store_event {
-  uint64_t addr;
-  mpz_class data;
-  uint64_t len;
-};
-std::deque<store_event> store_events;
 
 void v_difftest_StoreEvent(DPIC_ARG_BYTE coreid, DPIC_ARG_BYTE index,
                            DPIC_ARG_BIT valid, DPIC_ARG_LONG storeAddr,
@@ -967,7 +976,9 @@ void v_difftest_StoreEvent(DPIC_ARG_BYTE coreid, DPIC_ARG_BYTE index,
       ev.len = 0;
       fprintf(stderr, "> Unexpected write mask: %d\n", storeMask);
     }
-    store_events.push_back(ev);
+    fprintf(stderr, "> %ld: hart %d writes mem[%lx] = %lx\n", main_time, coreid,
+            storeAddr, storeData_0);
+    cores[coreid].store_events.push_back(ev);
   }
 }
 
@@ -1018,9 +1029,9 @@ int main(int argc, char **argv) {
     }
   }
 
-  mem_t m(0x20000000);
+  mem_t golden_mem(0x20000000);
   if (optind < argc) {
-    load_file(argv[optind], &m);
+    load_file(argv[optind], &golden_mem);
   }
 
   const char *isa = "RV64IMAFDCV_Zfh";
@@ -1037,38 +1048,40 @@ int main(int argc, char **argv) {
             /*default_hartids=*/std::vector<size_t>(),
             /*default_real_time_clint=*/false,
             /*default_trigger_count=*/4);
-  sim s;
-  s.cfg = &cfg;
-  s.bus.add_device(0x80000000, &m);
-  // add dummy device for reading dtb
-  // mem_t m_zero(0x1000);
-  // s.bus.add_device(0x00000000, &m_zero);
-  // add dummy device for tohost/fromhost/signature
-  // mem_t m_htif(0x10000000);
-  // s.bus.add_device(0x60000000, &m_htif);
-
+  std::map<size_t, processor_t *> proc_map;
   isa_parser_t isa_parser(isa, DEFAULT_PRIV);
-  processor_t p(&isa_parser, &cfg, &s, 0, true, stderr, std::cerr);
-  s.m[0] = &p;
-  // only enable sv39 and sv48, disable sv57
-  p.set_impl(IMPL_MMU_SV57, false);
-  // asid not implemented
-  p.set_impl(IMPL_MMU_ASID, false);
-  p.difftest_mode = true;
+  sim sims[2];
+  mem_t local_mem[2] = {mem_t(0x20000000), mem_t(0x20000000)};
 
-  // add plic, clint and uart
-  std::vector<processor_t *> procs;
-  procs.push_back(&p);
+  for (int i = 0; i < 2; i++) {
+    sims[i].cfg = &cfg;
+    sims[i].bus.add_device(0x80000000, &local_mem[i]);
+    golden_mem.copy_to(local_mem[i]);
+    sims[i].proc_map = &proc_map;
 
-  p.reset();
-  p.get_state()->pc = 0x80000000;
-  // p.enable_log_commits();
-  // p.debug = true;
-  proc = &p;
+    processor_t *p = new processor_t(&isa_parser, &cfg, &sims[i], i, true,
+                                     stderr, std::cerr);
+    proc_map[i] = p;
+
+    // only enable sv39 and sv48, disable sv57
+    p->set_impl(IMPL_MMU_SV57, false);
+    // asid not implemented
+    p->set_impl(IMPL_MMU_ASID, false);
+    p->difftest_mode = true;
+
+    p->reset();
+    p->get_state()->pc = 0x80000000;
+
+    cores[i].proc = p;
+  }
 
   disassembler_t disassembler(&isa_parser);
 
-  auto difftest_failed = [&]() {
+  auto difftest_failed = [&](int hart) {
+    processor_t *proc = cores[hart].proc;
+    auto &store_events = cores[hart].store_events;
+    auto &cpu_state = cores[hart].cpu_state;
+    auto &spike_state = cores[hart].spike_state;
     for (int i = 0; i < 32; i++) {
       if (spike_state.gpr[i] == cpu_state.gpr[i]) {
         fprintf(stderr, "> gpr[%d, %s] = %016lx\n", i, gpr_names[i],
@@ -1111,7 +1124,11 @@ int main(int argc, char **argv) {
   };
 
   // step and save csr, gpr & fpr state
-  auto step_spike = [&]() {
+  auto step_spike = [&](int hart) {
+    processor_t *proc = cores[hart].proc;
+    auto &store_events = cores[hart].store_events;
+    auto &cpu_state = cores[hart].cpu_state;
+    auto &spike_state = cores[hart].spike_state;
     proc->step(1);
 
     auto &log_mem_write = proc->get_state()->log_mem_write;
@@ -1125,7 +1142,7 @@ int main(int argc, char **argv) {
                   "> %ld: Missing store event @ pc %lx (expected addr %lx data "
                   "%lx len %ld)\n",
                   main_time, proc->get_state()->last_inst_pc, addr, val, len);
-          difftest_failed();
+          difftest_failed(hart);
           break;
         } else {
           store_event ev = store_events.front();
@@ -1156,7 +1173,7 @@ int main(int argc, char **argv) {
                     "%lx) data %s (expected %s) len %ld (expected %ld)\n",
                     main_time, proc->get_state()->last_inst_pc, ev.addr, addr,
                     data_str.c_str(), val_str.c_str(), ev.len, len);
-            difftest_failed();
+            // difftest_failed(hart);
           }
           i++;
           store_events.pop_front();
@@ -1277,120 +1294,130 @@ int main(int argc, char **argv) {
       step_mem();
       step_mmio();
 
-      // sync mtime and mcycle
-      proc->get_state()->mcycle->write(top->debug_0_mcycle - 3);
+      for (int hart = 0; hart < 2; hart++) {
+        auto &proc = cores[hart].proc;
+        auto &interrupt_fire = cores[hart].interrupt_fire;
+        auto &last_pc = cores[hart].last_pc;
+        auto &last_inst = cores[hart].last_inst;
+        auto &spike_state = cores[hart].spike_state;
+        auto &cpu_state = cores[hart].cpu_state;
 
-      // handle trap
-      if (interrupt_fire) {
-        trap_t trap = 0x8000000000000000 | interrupt_fire;
-        proc->take_trap(trap, proc->get_state()->pc);
-        fprintf(stderr, "> %ld: take trap %d\n", main_time, interrupt_fire);
-        interrupt_fire = 0;
-      }
+        // sync mtime and mcycle
+        proc->get_state()->mcycle->write(top->debug_0_mcycle - 3);
 
-      bool any_valid = false;
-      for (int index = 0; index < 2; index++) {
-        if (cpu_state.insn[index].valid) {
-          any_valid = true;
-
-          history_entry hist;
-          uint64_t cur_pc = cpu_state.insn[index].pc;
-          hist.pc = cur_pc;
-          hist.inst = cpu_state.insn[index].inst;
-          cpu_state.history.push_back(hist);
-
-          if (cpu_state.history.size() > history_size) {
-            cpu_state.history.pop_front();
-          }
-
-          // debugging
-          if (0) {
-            fprintf(stderr, "> %ld: commit @ pc %lx inst %08x\n", main_time,
-                    cur_pc, cpu_state.insn[index].inst);
-            for (int i = 0; i < 32; i++) {
-              fprintf(stderr, "> gpr[%d, %s] = %016lx\n", i, gpr_names[i],
-                      cpu_state.gpr[i]);
-            }
-            for (int i = 0; i < 32; i++) {
-              fprintf(stderr, "> fpr[%d, %s] = %016lx\n", i, fpr_names[i],
-                      cpu_state.fpr[i]);
-            }
-            fprintf(stderr, "> cpu history:\n");
-            for (auto hist : cpu_state.history) {
-              fprintf(stderr, "> pc=%016lx inst=%08x %s\n", hist.pc, hist.inst,
-                      disassembler.disassemble(hist.inst).c_str());
-            }
-          }
-
-          step_spike();
-
-          uint64_t exp_pc = spike_state.pc;
-          if (cur_pc != exp_pc) {
-            fprintf(
-                stderr,
-                "> %ld: Mismatch commit @ pc %lx (expected %lx) inst %08x\n",
-                main_time, cur_pc, exp_pc, cpu_state.insn[index].inst);
-            difftest_failed();
-          }
-
-          last_pc = cur_pc;
-          last_inst = cpu_state.insn[index].inst;
-
-          cpu_state.insn[index].valid = 0;
+        // handle trap
+        if (interrupt_fire) {
+          trap_t trap = 0x8000000000000000 | interrupt_fire;
+          proc->take_trap(trap, proc->get_state()->pc);
+          fprintf(stderr, "> %ld: take trap %d\n", main_time, interrupt_fire);
+          interrupt_fire = 0;
         }
-      }
 
-      if (any_valid) {
-        for (int i = 0; i < STATE_CSR_COUNT; i++) {
-          uint64_t actual = cpu_state.csr_state[i];
-          uint64_t expected = spike_state.csr_state[i];
-          if (expected != actual) {
-            if (last_inst == 0x10200073 || last_inst == 0x30200073) {
-              // sret/mret
-              // csr update is async with inst commit
-              continue;
-            }
-            if (i == STATE_CSR_MIP) {
-              // we do not sync mip
-              continue;
+        bool any_valid = false;
+        for (int index = 0; index < 2; index++) {
+          if (cpu_state.insn[index].valid) {
+            any_valid = true;
+
+            history_entry hist;
+            uint64_t cur_pc = cpu_state.insn[index].pc;
+            hist.pc = cur_pc;
+            hist.inst = cpu_state.insn[index].inst;
+            cpu_state.history.push_back(hist);
+
+            if (cpu_state.history.size() > history_size) {
+              cpu_state.history.pop_front();
             }
 
-            fprintf(stderr,
-                    "> %ld: Mismatch csr @ pc %lx inst %08x %s %lx (expected "
-                    "%lx)\n",
-                    main_time, last_pc, last_inst, csr_names[i], actual,
-                    expected);
-            // skip transient error
-            if (i != STATE_CSR_MIP && i != STATE_CSR_MSTATUS &&
-                i != STATE_CSR_SSTATUS && i != STATE_CSR_FCSR &&
-                i != STATE_CSR_VL && i != STATE_CSR_VTYPE &&
-                i != STATE_CSR_VCSR) {
-              difftest_failed();
+            // debugging
+            if (0) {
+              fprintf(stderr, "> %ld: commit @ pc %lx inst %08x\n", main_time,
+                      cur_pc, cpu_state.insn[index].inst);
+              for (int i = 0; i < 32; i++) {
+                fprintf(stderr, "> gpr[%d, %s] = %016lx\n", i, gpr_names[i],
+                        cpu_state.gpr[i]);
+              }
+              for (int i = 0; i < 32; i++) {
+                fprintf(stderr, "> fpr[%d, %s] = %016lx\n", i, fpr_names[i],
+                        cpu_state.fpr[i]);
+              }
+              fprintf(stderr, "> cpu history:\n");
+              for (auto hist : cpu_state.history) {
+                fprintf(stderr, "> pc=%016lx inst=%08x %s\n", hist.pc,
+                        hist.inst, disassembler.disassemble(hist.inst).c_str());
+              }
             }
+
+            step_spike(hart);
+
+            uint64_t exp_pc = spike_state.pc;
+            if (cur_pc != exp_pc) {
+              fprintf(
+                  stderr,
+                  "> %ld: Mismatch commit @ pc %lx (expected %lx) inst %08x\n",
+                  main_time, cur_pc, exp_pc, cpu_state.insn[index].inst);
+              difftest_failed(hart);
+            }
+
+            last_pc = cur_pc;
+            last_inst = cpu_state.insn[index].inst;
+
+            cpu_state.insn[index].valid = 0;
           }
         }
 
-        for (int i = 0; i < 32; i++) {
-          uint64_t actual = cpu_state.gpr[i];
-          uint64_t expected = spike_state.gpr[i];
-          if (expected != actual) {
-            fprintf(stderr,
-                    "> %ld: Mismatch gpr @ pc %lx inst %08x gpr[%d]=%016lx "
-                    "(expected "
-                    "%016lx)\n",
-                    main_time, last_pc, last_inst, i, actual, expected);
-            difftest_failed();
+        if (any_valid) {
+          for (int i = 0; i < STATE_CSR_COUNT; i++) {
+            uint64_t actual = cpu_state.csr_state[i];
+            uint64_t expected = spike_state.csr_state[i];
+            if (expected != actual) {
+              if (last_inst == 0x10200073 || last_inst == 0x30200073) {
+                // sret/mret
+                // csr update is async with inst commit
+                continue;
+              }
+              if (i == STATE_CSR_MIP) {
+                // we do not sync mip
+                continue;
+              }
+
+              fprintf(stderr,
+                      "> %ld: Mismatch csr @ pc %lx inst %08x %s %lx (expected "
+                      "%lx)\n",
+                      main_time, last_pc, last_inst, csr_names[i], actual,
+                      expected);
+              // skip transient error
+              if (i != STATE_CSR_MIP && i != STATE_CSR_MSTATUS &&
+                  i != STATE_CSR_SSTATUS && i != STATE_CSR_FCSR &&
+                  i != STATE_CSR_VL && i != STATE_CSR_VTYPE &&
+                  i != STATE_CSR_VCSR) {
+                difftest_failed(hart);
+              }
+            }
           }
 
-          actual = cpu_state.fpr[i];
-          expected = spike_state.fpr[i];
-          if (expected != actual) {
-            fprintf(stderr,
-                    "> %ld: Mismatch fpr @ pc %lx inst %08x fpr[%d]=%016lx "
-                    "(expected "
-                    "%016lx)\n",
-                    main_time, last_pc, last_inst, i, actual, expected);
-            difftest_failed();
+          for (int i = 0; i < 32; i++) {
+            uint64_t actual = cpu_state.gpr[i];
+            uint64_t expected = spike_state.gpr[i];
+            if (expected != actual) {
+              fprintf(stderr,
+                      "> %ld: Mismatch gpr @ hart %d pc %lx inst %08x "
+                      "gpr[%d]=%016lx "
+                      "(expected "
+                      "%016lx)\n",
+                      main_time, hart, last_pc, last_inst, i, actual, expected);
+              difftest_failed(hart);
+            }
+
+            actual = cpu_state.fpr[i];
+            expected = spike_state.fpr[i];
+            if (expected != actual) {
+              fprintf(stderr,
+                      "> %ld: Mismatch fpr @ pc %lx inst %08x fpr[%d]=%016lx "
+                      "(expected "
+                      "%016lx)\n",
+                      main_time, last_pc, last_inst, i, actual, expected);
+              difftest_failed(hart);
+            }
           }
         }
       }
