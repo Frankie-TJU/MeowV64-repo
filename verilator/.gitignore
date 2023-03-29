@@ -8,3 +8,5 @@ VRiscVSystem
 *.anno.json
 *.fir
 !benchmark.log
+log*
+output
