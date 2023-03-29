@@ -118,6 +118,15 @@ class MeowV64DifftestConfig
         new MeowV64BaseConfig
     )
 
+class MeowV64DifftestDualCoreConfig
+    extends Config(
+      new WithMeowV64Cores(
+        new DualCoreSystemDef,
+        enableDifftest = true
+      ) ++
+        new MeowV64BaseConfig
+    )
+
 class MeowV64DualCoreConfig
     extends Config(
       new WithMeowV64Cores(new DualCoreSystemDef) ++
