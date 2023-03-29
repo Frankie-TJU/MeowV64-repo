@@ -1,4 +1,4 @@
-CONFIG = meowv64.rocket.MeowV64DifftestConfig
+CONFIG = meowv64.rocket.MeowV64DifftestSingleCoreConfig
 VERILATOR = verilator
 ZLIB_CFLAGS = $(shell pkg-config --cflags zlib)
 ZLIB_LDFLAGS = $(shell pkg-config --libs zlib)
@@ -16,7 +16,7 @@ VERILOG_SRCS = $(CONFIG).v plusarg_reader.v EICG_wrapper.v icDataArray_ext.v btb
 all: VRiscVSystem
 
 firrtl_black_box_resource_files.f:
-	cd ../../ && CONFIG=$(CONFIG) ./generate-difftest.sh
+	cd ../../ && CONFIG=$(CONFIG) ./generate-difftest-single.sh
 	cp ../../build/$(CONFIG)/$@ .
 
 %.v: firrtl_black_box_resource_files.f

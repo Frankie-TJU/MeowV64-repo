@@ -109,7 +109,7 @@ class WithDifftestMMIOPort
       )
     })
 
-class MeowV64DifftestConfig
+class MeowV64DifftestSingleCoreConfig
     extends Config(
       new WithMeowV64Cores(
         new SingleCoreSystemDef,
