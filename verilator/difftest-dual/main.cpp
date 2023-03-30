@@ -132,7 +132,7 @@ struct core_state {
     uint64_t csr_state[STATE_CSR_COUNT];
     uint64_t gpr[32];
     uint64_t fpr[32];
-    std::deque<uint64_t> pc_history;
+    std::deque<history_entry> history;
   } spike_state;
 
   uint64_t last_pc = 0x80000000;
@@ -756,7 +756,9 @@ struct sim : simif_t {
   void proc_reset(unsigned id){};
 
   const cfg_t &get_cfg() const { return *cfg; };
-  const std::map<size_t, processor_t *> &get_harts() const { return *proc_map; };
+  const std::map<size_t, processor_t *> &get_harts() const {
+    return *proc_map;
+  };
 
   const char *get_symbol(uint64_t paddr) { return NULL; };
 
@@ -1115,8 +1117,9 @@ int main(int argc, char **argv) {
               disassembler.disassemble(hist.inst).c_str());
     }
     fprintf(stderr, "> spike pc history:\n");
-    for (auto pc : spike_state.pc_history) {
-      fprintf(stderr, "> %016lx\n", pc);
+    for (auto hist : spike_state.history) {
+      fprintf(stderr, "> pc=%016lx inst=%08x %s\n", hist.pc, hist.inst,
+              disassembler.disassemble(hist.inst).c_str());
     }
 
     finished = true;
@@ -1215,9 +1218,12 @@ int main(int argc, char **argv) {
       spike_state.csr_state[i] = csrs[i]->read();
     }
     spike_state.pc = proc->get_state()->last_inst_pc;
-    spike_state.pc_history.push_back(spike_state.pc);
-    if (spike_state.pc_history.size() > history_size) {
-      spike_state.pc_history.pop_front();
+    history_entry hist;
+    hist.pc = spike_state.pc;
+    hist.inst = proc->get_state()->last_inst_insn;
+    spike_state.history.push_back(hist);
+    if (spike_state.history.size() > history_size) {
+      spike_state.history.pop_front();
     }
   };
 
