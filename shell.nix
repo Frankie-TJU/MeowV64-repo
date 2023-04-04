@@ -1,4 +1,4 @@
-{ pkgs ? import (fetchTarball "https://github.com/NixOS/nixpkgs/archive/3afaf7d263025fc8c24247ec368f593af951b72f.tar.gz") {}
+{ pkgs ? import (fetchTarball "https://github.com/NixOS/nixpkgs/archive/9e5e77806a692277da477ca1879e24789350911e.tar.gz") {}
 }:
 
 pkgs.pkgsCross.riscv64-embedded.mkShell {
@@ -8,6 +8,7 @@ pkgs.pkgsCross.riscv64-embedded.mkShell {
     (mill.override { jre = pkgs.jdk11; })
     (sbt.override { jre = pkgs.jdk11; })
     dtc
+    circt
 
     # Testcases
     autoconf

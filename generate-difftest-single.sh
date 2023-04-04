@@ -9,10 +9,11 @@ mill meowv64.runMain \
 	-td ${DEST} \
 	-C ${CONFIG} \
 	-T meowv64.rocket.RiscVSystem
-mill meowv64.runMain firrtl.stage.FirrtlMain \
-	-td ${DEST} \
-	-i ${DEST}/${CONFIG}.fir \
-	-o ${CONFIG}.v \
-	-X verilog \
-	-faf ${DEST}/${CONFIG}.anno.json \
-	-firw -gmv full
+firtool --disable-all-randomization ${DEST}/${CONFIG}.fir -o ${DEST}/${CONFIG}.v
+# mill meowv64.runMain firrtl.stage.FirrtlMain \
+# 	-td ${DEST} \
+# 	-i ${DEST}/${CONFIG}.fir \
+# 	-o ${CONFIG}.v \
+# 	-X verilog \
+# 	-faf ${DEST}/${CONFIG}.anno.json \
+# 	-firw -gmv full
