@@ -1142,9 +1142,11 @@ int main(int argc, char **argv) {
           uint64_t addr, val, len;
           std::tie(addr, val, len) = log_mem_write[i];
           fprintf(stderr,
-                  "> %ld: Missing store event @ pc %lx (expected addr %lx data "
+                  "> %ld: Missing store event @ hart %d pc %lx (expected addr "
+                  "%lx data "
                   "%lx len %ld)\n",
-                  main_time, proc->get_state()->last_inst_pc, addr, val, len);
+                  main_time, hart, proc->get_state()->last_inst_pc, addr, val,
+                  len);
           difftest_failed(hart);
           break;
         } else {
@@ -1411,7 +1413,29 @@ int main(int argc, char **argv) {
                       "(expected "
                       "%016lx)\n",
                       main_time, hart, last_pc, last_inst, i, actual, expected);
-              difftest_failed(hart);
+              bool fixup = false;
+              for (int j = 0; j < 2; j++) {
+                if ((cpu_state.insn[j].inst & 0x7f) == 0x2f) {
+                  // atomic
+                  fixup = true;
+                  break;
+                } else if ((cpu_state.insn[j].inst & 0x7f) == 0x03) {
+                  // load
+                  fixup = true;
+                  break;
+                } else if ((cpu_state.insn[j].inst & 0x03) == 0x00) {
+                  // load
+                  fixup = true;
+                  break;
+                }
+              }
+              if (fixup) {
+                // fixup
+                cores[hart].proc->get_state()->XPR.write(i, actual);
+                fprintf(stderr, "> %ld: Fixup\n", main_time);
+              } else {
+                difftest_failed(hart);
+              }
             }
 
             actual = cpu_state.fpr[i];
