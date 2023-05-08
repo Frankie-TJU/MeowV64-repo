@@ -1,0 +1,100 @@
+#include "common.h"
+
+.section .text
+.globl _start
+_start:
+    li sp, 0x88000000
+    li ra, 0x100000
+    li t0, 0x00001000
+.LC0:
+    addi t0, t0, -1
+    vfmadd.vv v3, v2, v1
+    vfmadd.vv v4, v2, v1
+    vfmadd.vv v5, v2, v1
+    vfmadd.vv v6, v2, v1
+    vfmadd.vv v7, v2, v1
+    vfmadd.vv v8, v2, v1
+    vfmadd.vv v9, v2, v1
+    vfmadd.vv v10, v2, v1
+    vfmadd.vv v11, v2, v1
+    vfmadd.vv v12, v2, v1
+    vfmadd.vv v13, v2, v1
+    vfmadd.vv v14, v2, v1
+    vfmadd.vv v15, v2, v1
+    vfmadd.vv v16, v2, v1
+    vfmadd.vv v17, v2, v1
+    vfmadd.vv v18, v2, v1
+    vfmadd.vv v19, v2, v1
+    vfmadd.vv v20, v2, v1
+    vfmadd.vv v21, v2, v1
+    vfmadd.vv v22, v2, v1
+    vfmadd.vv v23, v2, v1
+    vfmadd.vv v24, v2, v1
+    vfmadd.vv v25, v2, v1
+    vfmadd.vv v26, v2, v1
+    vfmadd.vv v27, v2, v1
+    vfmadd.vv v28, v2, v1
+    vfmadd.vv v29, v2, v1
+    vfmadd.vv v30, v2, v1
+    vfmadd.vv v31, v2, v1
+    vfmadd.vv v3, v2, v1
+    vfmadd.vv v4, v2, v1
+    vfmadd.vv v5, v2, v1
+    vfmadd.vv v6, v2, v1
+    vfmadd.vv v7, v2, v1
+    vfmadd.vv v8, v2, v1
+    vfmadd.vv v9, v2, v1
+    vfmadd.vv v10, v2, v1
+    vfmadd.vv v11, v2, v1
+    vfmadd.vv v12, v2, v1
+    vfmadd.vv v13, v2, v1
+    vfmadd.vv v14, v2, v1
+    vfmadd.vv v15, v2, v1
+    vfmadd.vv v16, v2, v1
+    vfmadd.vv v17, v2, v1
+    vfmadd.vv v18, v2, v1
+    vfmadd.vv v19, v2, v1
+    vfmadd.vv v20, v2, v1
+    vfmadd.vv v21, v2, v1
+    vfmadd.vv v22, v2, v1
+    vfmadd.vv v23, v2, v1
+    vfmadd.vv v24, v2, v1
+    vfmadd.vv v25, v2, v1
+    vfmadd.vv v26, v2, v1
+    vfmadd.vv v27, v2, v1
+    vfmadd.vv v28, v2, v1
+    vfmadd.vv v29, v2, v1
+    vfmadd.vv v30, v2, v1
+    vfmadd.vv v31, v2, v1
+    vfmadd.vv v3, v2, v1
+    vfmadd.vv v4, v2, v1
+    vfmadd.vv v5, v2, v1
+    vfmadd.vv v6, v2, v1
+    vfmadd.vv v7, v2, v1
+    vfmadd.vv v8, v2, v1
+    vfmadd.vv v9, v2, v1
+    vfmadd.vv v10, v2, v1
+    vfmadd.vv v11, v2, v1
+    vfmadd.vv v12, v2, v1
+    vfmadd.vv v13, v2, v1
+    vfmadd.vv v14, v2, v1
+    vfmadd.vv v15, v2, v1
+    vfmadd.vv v16, v2, v1
+    vfmadd.vv v17, v2, v1
+    vfmadd.vv v18, v2, v1
+    vfmadd.vv v19, v2, v1
+    vfmadd.vv v20, v2, v1
+    vfmadd.vv v21, v2, v1
+    vfmadd.vv v22, v2, v1
+    vfmadd.vv v23, v2, v1
+    vfmadd.vv v24, v2, v1
+    vfmadd.vv v25, v2, v1
+    vfmadd.vv v26, v2, v1
+    vfmadd.vv v27, v2, v1
+    vfmadd.vv v28, v2, v1
+    vfmadd.vv v29, v2, v1
+    vfmadd.vv v30, v2, v1
+    vfmadd.vv v31, v2, v1
+    bne t0, zero, .LC0
+
+    SUCCESS
