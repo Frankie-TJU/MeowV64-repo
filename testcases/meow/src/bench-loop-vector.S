@@ -6,6 +6,7 @@ _start:
     li sp, 0x88000000
     li ra, 0x100000
     li t0, 0x00001000
+    .align 4
 .LC0:
     addi t0, t0, -1
     vfmadd.vv v3, v2, v1
