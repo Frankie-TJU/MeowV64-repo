@@ -101,14 +101,20 @@ class RiscVSystem(implicit val p: Parameters) extends Module {
   Debug.connectDebugClockAndReset(target.debug, clock)
 
   mem_axi4 <> target.mem_axi4.head.viewAs[StandardAXI4Bundle]
-  // toggle msb and truncate to 32 bits
-  // [0x80000000, 0x100000000] -> [0x00000000, 0x800000000]
-  // [0x100000000, 0x180000000] -> [0x80000000, 0x100000000]
-  val mask = BigInt("80000000", 16).U
-  mem_axi4.ARADDR := target.mem_axi4.head.ar.bits.addr ^ mask
-  mem_axi4.AWADDR := target.mem_axi4.head.aw.bits.addr ^ mask
-
   mmio_axi4 <> target.mmio_axi4.head.viewAs[StandardAXI4Bundle]
+
+  if (p(FlipMSBInAXI)) {
+    // if requested,
+    // toggle msb and truncate to 32 bits for both mem and mmio
+    // [0x80000000, 0x100000000] -> [0x00000000, 0x800000000]
+    // [0x100000000, 0x180000000] -> [0x80000000, 0x100000000]
+    val mask = BigInt("80000000", 16).U
+    mem_axi4.ARADDR := target.mem_axi4.head.ar.bits.addr ^ mask
+    mem_axi4.AWADDR := target.mem_axi4.head.aw.bits.addr ^ mask
+    mmio_axi4.ARADDR := target.mmio_axi4.head.ar.bits.addr ^ mask
+    mmio_axi4.AWADDR := target.mmio_axi4.head.aw.bits.addr ^ mask
+  }
+
   slave_axi4 <> target.slave_axi4.head.viewAs[StandardAXI4Bundle]
 
   target.interrupts := interrupts
@@ -221,6 +227,9 @@ trait CanHaveCustomMasterAXI4MMIOPort { this: BaseSubsystem =>
 
   val mmio_axi4 = InModuleBody { mmioAXI4Node.makeIOs() }
 }
+
+// Flip MSB of MEM/MMIO axi4 ports
+case object FlipMSBInAXI extends config.Field[Boolean](false)
 
 // Customize CanHaveMasterAXI4MemPort to allow multiple address ranges
 case object CustomExtMem extends config.Field[Seq[MasterPortParams]](Seq())

@@ -127,8 +127,7 @@ void step_mem() {
       top->mem_axi4_ARREADY = 1;
       pending_read = true;
       pending_read_id = top->mem_axi4_ARID;
-      // flipped in msb: memory begins at 0x00000000
-      pending_read_addr = top->mem_axi4_ARADDR ^ 0x80000000L;
+      pending_read_addr = top->mem_axi4_ARADDR;
       pending_read_len = top->mem_axi4_ARLEN;
       pending_read_size = top->mem_axi4_ARSIZE;
     }
@@ -188,8 +187,7 @@ void step_mem() {
     if (top->mem_axi4_AWVALID) {
       top->mem_axi4_AWREADY = 1;
       pending_write = true;
-      // flipped in msb: memory begins at 0x00000000
-      pending_write_addr = top->mem_axi4_AWADDR ^ 0x80000000;
+      pending_write_addr = top->mem_axi4_AWADDR;
       pending_write_len = top->mem_axi4_AWLEN;
       pending_write_size = top->mem_axi4_AWSIZE;
       pending_write_id = top->mem_axi4_AWID;

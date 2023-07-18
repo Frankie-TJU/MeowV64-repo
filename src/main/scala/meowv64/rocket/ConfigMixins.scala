@@ -14,7 +14,7 @@ class WithMeowV64Cores(
     systemDef: SystemDef = new SingleCoreSystemDef,
     overrideIdOffset: Option[Int] = None,
     initVec: Option[BigInt] = None,
-    enableDifftest: Boolean = false,
+    enableDifftest: Boolean = false
 ) extends Config((_, _, up) => {
       case XLen => 64
       // Set to line bytes
@@ -43,4 +43,9 @@ class WithMeowV64Cores(
           )
         } ++ prev
       }
+    })
+
+class FlipMSB(
+) extends Config((_, _, up) => { case FlipMSBInAXI =>
+      true
     })

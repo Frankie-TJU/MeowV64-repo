@@ -139,6 +139,13 @@ class MeowV64HexaCoreConfig
         new MeowV64BaseConfig
     )
 
+class MeowV64TapeOutConfig
+    extends Config(
+      new FlipMSB ++
+        new WithMeowV64Cores(new HexaCoreSystemDef, initVec = Some(0x10000)) ++
+        new MeowV64BaseConfig
+    )
+
 // for testing
 class RocketDualCoreWithInclusiveCacheConfig
     extends Config(
