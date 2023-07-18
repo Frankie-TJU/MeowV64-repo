@@ -10,3 +10,6 @@ all: $(bootrom_img)
 
 %.elf: %.S bootloader.c linker.ld
 	$(GCC) -Os -Tlinker.ld $< bootloader.c -ffreestanding -nostdlib -static -Wl,--no-gc-sections -o $@
+
+clean:
+	rm -rf *.img *.elf

@@ -142,6 +142,7 @@ class MeowV64HexaCoreConfig
 class MeowV64TapeOutConfig
     extends Config(
       new FlipMSB ++
+        new WithNoSlavePort ++
         new WithMeowV64Cores(new HexaCoreSystemDef, initVec = Some(0x10000)) ++
         new MeowV64BaseConfig
     )
