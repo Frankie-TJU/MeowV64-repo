@@ -15,9 +15,6 @@ import chiseltest.formal.Formal
 import chiseltest.formal.BoundedCheck
 
 object CacheTestDef extends CoreDef {
-
-  override val HART_ID: Int = 0
-
 }
 
 object L1DCacheTestDef
