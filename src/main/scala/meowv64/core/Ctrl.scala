@@ -181,6 +181,7 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
     val dscratch1 = new CSRPort(coredef.XLEN)
     val tselect = new CSRPort(coredef.XLEN)
   })
+  val hartId = IO(Input(UInt(32.W)))
 
   val dm = IO(new CoreToDebugModule)
   val debugMode = RegInit(false.B)
@@ -680,7 +681,7 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
     // trap
     val difftestTrap = Module(new DifftestTrapEvent)
     difftestTrap.io.clock := clock
-    difftestTrap.io.coreid := coredef.HART_ID.U
+    difftestTrap.io.coreid := hartId
     difftestTrap.io.valid := false.B
     difftestTrap.io.code := 0.U
     difftestTrap.io.pc := nepc
@@ -691,7 +692,7 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
     val difftestArch = Module(new DifftestArchEvent)
     val difftest = Wire(Output(new DiffArchEventIO()))
     difftest := DontCare
-    difftest.coreid := coredef.HART_ID.U
+    difftest.coreid := hartId
     when(intFired && toExec.intAck) {
       difftest.intrNO := intCause
     }.otherwise {

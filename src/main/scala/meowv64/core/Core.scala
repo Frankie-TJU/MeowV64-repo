@@ -64,6 +64,7 @@ class Core(implicit val coredef: CoreDef) extends Module {
     val frontend = new CoreFrontend
 
     val dm = new CoreToDebugModule
+    val hartId = Input(UInt(32.W))
 
     // Debug
     val debug = Output(new CoreDebug)
@@ -75,6 +76,7 @@ class Core(implicit val coredef: CoreDef) extends Module {
   )
 
   val ctrl = Module(new Ctrl)
+  ctrl.hartId := io.hartId
   ctrl.dm <> io.dm
 
   // Caches
@@ -93,6 +95,7 @@ class Core(implicit val coredef: CoreDef) extends Module {
   val bpu = Module(new MicroBTB)
   val ras = Module(new RAS)
   val exec = Module(new Exec)
+  exec.hartId := io.hartId
   val regFiles =
     for (regInfo <- coredef.REG_TYPES) yield {
       // add additional read ports for difftest
@@ -116,7 +119,7 @@ class Core(implicit val coredef: CoreDef) extends Module {
       reg.suggestName(s"reg_${regInfo.regType}")
     }
 
-  val (csrWriter, csr) = CSR.gen(coredef.XLEN, coredef.HART_ID)
+  val (csrWriter, csr) = CSR.gen(coredef.XLEN)
 
   fetch.toIC <> l1i.toCPU
   fetch.toCtrl <> ctrl.toIF
@@ -200,7 +203,7 @@ class Core(implicit val coredef: CoreDef) extends Module {
 
   // CSR
   CSRHelper.defaults(csr)
-  csr.const("mhartid") := coredef.HART_ID.U
+  csr.const("mhartid") := io.hartId
   csr.attach("mcycle").connect(ctrl.csr.mcycle)
   csr.attach("minstret").connect(ctrl.csr.minstret)
   csr.attach("mstatus").connect(ctrl.csr.mstatus)
@@ -277,7 +280,7 @@ class Core(implicit val coredef: CoreDef) extends Module {
     val difftestCSR = Module(new DifftestCSRState)
     val difftest = Wire(Output(new DiffCSRStateIO()))
     difftest := DontCare
-    difftest.coreid := coredef.HART_ID.U
+    difftest.coreid := io.hartId
     difftest.priviledgeMode := ctrl.toExec.priv.asUInt
     difftest.mstatus := csr.readers("mstatus")
     difftest.sstatus := csr.readers("sstatus")
@@ -306,7 +309,7 @@ class Core(implicit val coredef: CoreDef) extends Module {
 
     val difftestArchIntReg = Module(new DifftestArchIntRegState)
     difftestArchIntReg.io.clock := clock
-    difftestArchIntReg.io.coreid := coredef.HART_ID.U
+    difftestArchIntReg.io.coreid := io.hartId
     for (i <- 0 until 32) {
       val readPortOffset = coredef
         .REG_READ_PORT_COUNT(coredef.REG_INT.regType)
@@ -318,7 +321,7 @@ class Core(implicit val coredef: CoreDef) extends Module {
 
     val difftestArchFpReg = Module(new DifftestArchFpRegState)
     difftestArchFpReg.io.clock := clock
-    difftestArchFpReg.io.coreid := coredef.HART_ID.U
+    difftestArchFpReg.io.coreid := io.hartId
     for (i <- 0 until 32) {
       val readPortOffset = coredef
         .REG_READ_PORT_COUNT(coredef.REG_FLOAT.regType)

@@ -280,8 +280,6 @@ abstract class CoreDef {
 
   val TLB_SIZE: Int = 32
 
-  val HART_ID: Int
-
   /** Inflight instruction limit, also rob size
     */
   val INFLIGHT_INSTR_LIMIT = 32
@@ -537,14 +535,12 @@ abstract class CoreDef {
 // TODO: moves into MulticoreDef
 object CoreDef {
   def default(
-      id: Int,
       initVec: BigInt,
       cacheLineBytes: Int,
       inRocketSystem: Boolean = false,
       enableDifftest: Boolean = false
   ) = {
     new CoreDef {
-      override val HART_ID = id
       override val INIT_VEC = initVec
       override val L1_LINE_BYTES: Int = cacheLineBytes
       override val IN_ROCKET_SYSTEM: Boolean = inRocketSystem

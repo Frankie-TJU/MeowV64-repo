@@ -166,6 +166,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   val flush = IO(Input(Bool()))
   val issue = IO(Flipped(new RegisterReadEgress(regInfo)))
   val retire = IO(new RetirementIO(coredef.LSU_PORT_INFO))
+  val hartId = IO(Input(UInt(32.W)))
   val extras = new mutable.HashMap[String, Data]()
 
   val vectorMaxBeats = coredef.VLEN / 8
@@ -998,7 +999,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
     val difftestStore = Module(new DifftestStoreEvent)
     val storeData = WireInit(0.U(256.W))
     difftestStore.io.clock := clock
-    difftestStore.io.coreid := coredef.HART_ID.U
+    difftestStore.io.coreid := hartId
     difftestStore.io.valid := false.B
     difftestStore.io.storeData := storeData.asTypeOf(difftestStore.io.storeData)
     when(toMem.writer.req.fire) {
@@ -1039,7 +1040,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
     // uncached load
     val difftestLoad = Module(new DifftestUncachedLoadEvent)
     difftestLoad.io.clock := clock
-    difftestLoad.io.coreid := coredef.HART_ID.U
+    difftestLoad.io.coreid := hartId
     difftestLoad.io.valid := toMem.uncached.req === L1UCReq.read && !toMem.uncached.stall
     difftestLoad.io.addr := toMem.uncached.addr
     difftestLoad.io.len := toMem.uncached.len.asUInt

@@ -32,12 +32,12 @@ class WithMeowV64Cores(
             tileParams = MeowV64TileParams(
               coredef = CoreDef
                 .default(
-                  id = i + idOffset,
                   initVec = initVec.getOrElse(systemDef.INIT_VEC),
                   cacheLineBytes = systemDef.L2_LINE_BYTES,
                   inRocketSystem = true,
                   enableDifftest = enableDifftest
-                )
+                ),
+              hartId = i + idOffset,
             ),
             crossingParams = RocketCrossingParams()
           )
@@ -46,6 +46,6 @@ class WithMeowV64Cores(
     })
 
 class FlipMSB(
-) extends Config((_, _, up) => { case FlipMSBInAXI =>
+) extends Config((_, _, _) => { case FlipMSBInAXI =>
       true
     })

@@ -184,7 +184,7 @@ object CSR {
   )
    */
 
-  def gen(XLEN: Int, HART_ID: Int)(implicit
+  def gen(XLEN: Int)(implicit
       coredef: CoreDef
   ): (CSRWriter, CSR) = {
     val csr = new CSR(XLEN)

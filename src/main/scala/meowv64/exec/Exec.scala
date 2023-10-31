@@ -137,6 +137,8 @@ class Exec(implicit val coredef: CoreDef) extends Module {
     val u = new L1UCPort(coredef.L1D)
   })
 
+  val hartId = IO(Input(UInt(32.W)))
+
   val cdb = Wire(new CDB)
 
   val renamer = Module(new Renamer)
@@ -164,6 +166,7 @@ class Exec(implicit val coredef: CoreDef) extends Module {
 
   // Units
   val lsu = Module(new LSU).suggestName("LSU")
+  lsu.hartId := hartId
 
   // collect execution units dynamically
   // Issue Queue -> Port -> Execution Unit
@@ -839,7 +842,7 @@ class Exec(implicit val coredef: CoreDef) extends Module {
       val difftestInstr = Module(new DifftestInstrCommit)
       val difftest = Wire(Output(new DiffInstrCommitIO()))
       difftest := DontCare
-      difftest.coreid := coredef.HART_ID.U
+      difftest.coreid := hartId
       difftest.index := i.U
 
       // only last instruction might ex

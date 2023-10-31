@@ -208,7 +208,7 @@ class DebugModule(implicit sDef: SystemDef) extends Module {
 
     // cached code access
     val toL1I =
-      Flipped(new L1ICPort(CoreDef.default(0, 0, sDef.L2_LINE_BYTES).L1I))
+      Flipped(new L1ICPort(CoreDef.default(0, sDef.L2_LINE_BYTES).L1I))
     // uncached data access
     val toL2 = new MMIOAccess(DebugModuleMMIODef)
   })

@@ -73,12 +73,12 @@ case class MeowV64TileAttachParams(
 
 case class MeowV64TileParams(
     coredef: CoreDef,
+    hartId: Int,
     name: Option[String] = Some("meowv64_tile")
 ) extends InstantiableTileParams[MeowV64Tile] {
   val core: MeowV64CoreParams = MeowV64CoreParams(
     coredef
   )
-  val hartId: Int = coredef.HART_ID
   val icache: Option[ICacheParams] = Some(
     ICacheParams(nSets = coredef.L1I.LINE_PER_ASSOC, nWays = coredef.L1I.ASSOC)
   )
@@ -231,6 +231,9 @@ class MeowV64TileModuleImp(outer: MeowV64Tile)
   val core = Module(
     new Core()(coredef)
   )
+
+  // set hartid from outside to reuse core
+  core.io.hartId := outer.meowv64Params.hartId.U
 
   // wire frontend io to adapter
   core.io.frontend <> outer.adapter.module.frontend

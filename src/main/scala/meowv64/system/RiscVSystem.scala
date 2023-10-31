@@ -16,8 +16,8 @@ import meowv64.interrupt.PLIC
 class RiscVSystem(implicit val sDef: SystemDef = new DefaultSystemDef)
     extends Module {
   // L1 & L2 has same LINE_BYTES
-  val coreConfigs = (0 until sDef.CORE_COUNT).map(id =>
-    CoreDef.default(id, sDef.INIT_VEC, sDef.L2_LINE_BYTES)
+  val coreConfigs = (0 until sDef.CORE_COUNT).map(_ =>
+    CoreDef.default(sDef.INIT_VEC, sDef.L2_LINE_BYTES)
   )
 
   val io = IO(new Bundle {
@@ -34,6 +34,11 @@ class RiscVSystem(implicit val sDef: SystemDef = new DefaultSystemDef)
 
   val cores =
     (0 until sDef.CORE_COUNT).map(id => Module(new Core()(coreConfigs(id))))
+
+  // set hartid from outside
+  for (idx <- (0 until sDef.CORE_COUNT)) {
+    cores(idx).io.hartId := idx.U
+  }
 
   val l2 = Module(new L2Cache(sDef.L2))
   val clint = Module(new CLINT)
