@@ -14,6 +14,8 @@ import freechips.rocketchip.util._
 import meowv64.core.Core
 import meowv64.core.CoreDebug
 import meowv64.core.CoreDef
+import chisel3.experimental.hierarchy.Definition
+import chisel3.experimental.hierarchy.Instance
 
 case class MeowV64CoreParams(
     coredef: CoreDef
@@ -221,6 +223,10 @@ class MeowV64Tile private (
     customDebugSourceNode
 }
 
+object MeowV64TileModuleImp {
+  var definition: Definition[Core] = null
+}
+
 class MeowV64TileModuleImp(outer: MeowV64Tile)
     extends BaseTileModuleImp(outer) {
   // annotate the parameters
@@ -228,9 +234,14 @@ class MeowV64TileModuleImp(outer: MeowV64Tile)
 
   // connect the meowv64 core
   val coredef = outer.meowv64Params.core.coredef
-  val core = Module(
-    new Core()(coredef)
-  )
+  // CAUTION: assume coredef does not change!!
+  // Useful to reduce synthesis time by reusing the same core
+  if (MeowV64TileModuleImp.definition == null) {
+    MeowV64TileModuleImp.definition = Definition(
+      new Core()(coredef)
+    )
+  }
+  val core = Instance(MeowV64TileModuleImp.definition)
 
   // set hartid from outside to reuse core
   core.io.hartId := outer.meowv64Params.hartId.U

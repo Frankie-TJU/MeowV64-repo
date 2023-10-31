@@ -12,6 +12,8 @@ import difftest.DifftestCSRState
 import difftest.DifftestArchIntRegState
 import difftest.DifftestArchFpRegState
 import difftest.DiffCSRStateIO
+import chisel3.experimental.hierarchy.instantiable
+import chisel3.experimental.hierarchy.public
 
 class CoreInt extends Bundle {
   val meip = Bool()
@@ -58,8 +60,9 @@ object CoreState extends ChiselEnum {
   val running, halting, halted, resuming = Value
 }
 
+@instantiable
 class Core(implicit val coredef: CoreDef) extends Module {
-  val io = IO(new Bundle {
+  @public val io = IO(new Bundle {
     val int = Input(new CoreInt)
     val frontend = new CoreFrontend
 

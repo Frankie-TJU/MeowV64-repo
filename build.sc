@@ -125,7 +125,8 @@ object meowv64 extends CommonSbtModule with ScalafmtModule with ScalafixModule {
   )
 
   override def scalacPluginIvyDeps = super.scalacPluginIvyDeps() ++ Agg(
-    getVersion("chisel3-plugin")
+    getVersion("chisel3-plugin"),
+    getVersion("paradise")
   )
 
   override def scalafixIvyDeps = Agg(
