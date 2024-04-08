@@ -3,7 +3,7 @@ import mill.scalalib.publish._
 import scalalib._
 import scalafmt._
 import coursier.maven.MavenRepository
-import $ivy.`com.goyeau::mill-scalafix_mill0.10:0.2.8`
+import $ivy.`com.goyeau::mill-scalafix::0.3.2`
 import com.goyeau.mill.scalafix.ScalafixModule
 
 // learned from https://github.com/OpenXiangShan/fudian/blob/main/build.sc
@@ -137,7 +137,7 @@ object meowv64 extends CommonSbtModule with ScalafmtModule with ScalafixModule {
     super.moduleDeps ++ Seq(hardfloat, cde, rocketChip, inclusiveCache)
 
   object test
-      extends Tests
+      extends ScalaTests
       with TestModule.ScalaTest
       with ScalafmtModule
       with ScalafixModule {
