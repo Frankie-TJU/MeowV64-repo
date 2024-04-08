@@ -48,10 +48,11 @@ $ ./VRiscVSystem -p -t ../../testcases/meow/bin/fib.bin
 > Simulation finished
 ```
 
+Waveform is saved to `dump.vst`.
+
 ## Authors
 
 See `AUTHORS` file
-
 
 ## License
 

@@ -1,7 +1,7 @@
 SRCS:=$(wildcard src/*.S)
 BINS:=$(patsubst src/%.S,bin/%.bin,$(SRCS))
-LINKEDS:=$(patsubst src/%.S,bin/%.bin.linked,$(SRCS))
-ASSEMBLED:=$(patsubst src/%.S,bin/%.bin.assembled,$(SRCS))
+LINKEDS:=$(patsubst src/%.S,bin/%.linked,$(SRCS))
+ASSEMBLED:=$(patsubst src/%.S,bin/%.assembled,$(SRCS))
 HEXS:=$(patsubst src/%.S,hex/%.hex,$(SRCS))
 DUMPS:=$(patsubst src/%.S,dump/%.S,$(SRCS))
 
@@ -12,7 +12,7 @@ PREFIX ?= riscv64-linux-gnu-
 
 .PHONY: list all clean ref
 
-all: $(BINS) $(HEXS) $(DUMPS)
+all: $(BINS) $(LINKEDS) $(HEXS) $(DUMPS)
 
 bin/%.assembled: src/%.S Makefile
 	mkdir -p bin
