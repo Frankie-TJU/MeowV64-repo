@@ -33,5 +33,15 @@ int main()
     // shrink
     *BUFFETS_SHRINK = 4;
   }
-  return !(sum == N * (N - 1) / 2);
+
+  // validate
+  if (sum != N * (N - 1) / 2) {
+    return 1;
+  }
+
+  // empty
+  if (*BUFFETS_SIZE != 0) {
+    return 1;
+  }
+  return 0;
 }

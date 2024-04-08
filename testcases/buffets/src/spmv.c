@@ -2,6 +2,20 @@
 
 #define N 10
 #define NNZ 20
+// compute the following spmv:
+// A=
+// [ 1.0 2.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 ]
+// [ 0.0 0.0 3.0 0.0 4.0 0.0 0.0 0.0 0.0 0.0 ]
+// [ 0.0 0.0 0.0 0.0 0.0 0.0 5.0 0.0 0.0 1.0 ]
+// [ 0.0 0.0 0.0 2.0 0.0 0.0 3.0 0.0 0.0 0.0 ]
+// [ 0.0 0.0 4.0 0.0 5.0 0.0 0.0 0.0 0.0 0.0 ]
+// [ 1.0 2.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 ]
+// [ 0.0 0.0 3.0 0.0 4.0 0.0 0.0 0.0 0.0 0.0 ]
+// [ 0.0 0.0 0.0 0.0 0.0 0.0 5.0 0.0 0.0 1.0 ]
+// [ 0.0 0.0 2.0 0.0 0.0 0.0 3.0 0.0 0.0 0.0 ]
+// [ 0.0 0.0 4.0 0.0 5.0 0.0 0.0 0.0 0.0 0.0 ]
+// x = [ 10.0 20.0 30.0 40.0 50.0 10.0 20.0 30.0 40.0 50.0 ]^T
+// y = Ax = [ 50.0 290.0 150.0 140.0 370.0 50.0 290.0 150.0 140.0 370.0 ]^T
 const double val[NNZ] = {
     1.0, 2.0, 3.0, 4.0, 5.0, 1.0, 2.0, 3.0, 4.0, 5.0,
     1.0, 2.0, 3.0, 4.0, 5.0, 1.0, 2.0, 3.0, 4.0, 5.0,
@@ -29,8 +43,8 @@ void spmv(int r, const double *val, const uint64_t *idx, const double *x,
   }
 }
 
-int spmv_buffets(int r, const double *val, const uint64_t *idx,
-                  const double *x, const uint64_t *ptr, double *y) {
+int spmv_buffets(int r, const double *val, const uint64_t *idx, const double *x,
+                 const uint64_t *ptr, double *y) {
   // setup address generation
   // 8 bytes per loop
   // shift = 3 (8 bytes)
@@ -65,7 +79,27 @@ int spmv_buffets(int r, const double *val, const uint64_t *idx,
 }
 
 int main() {
-  double y[N];
-  // spmv(N, val, idx, x, ptr, y);
-  return spmv_buffets(N, val, idx, x, ptr, y);
+  double y[N] = {50.0, 290.0, 150.0, 140.0, 370.0,
+                 50.0, 290.0, 150.0, 140.0, 370.0};
+  double y1[N];
+  double y2[N];
+  spmv(N, val, idx, x, ptr, y1);
+
+  for (int i = 0; i < N; i++) {
+    if (y1[i] > y[i] + 1e-5 || y1[i] < y[i] - 1e-5) {
+      return 1;
+    }
+  }
+
+  if (spmv_buffets(N, val, idx, x, ptr, y2) != 0) {
+    return 1;
+  }
+
+  for (int i = 0; i < N; i++) {
+    if (y1[i] > y2[i] + 1e-5 || y1[i] < y2[i] - 1e-5) {
+      return 1;
+    }
+  }
+
+  return 0;
 }

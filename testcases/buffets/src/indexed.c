@@ -30,11 +30,17 @@ int main() {
 
   // read data from buffets
   for (int i = 0; i < N; i++) {
+    // read and verify
     uint32_t read = BUFFETS_DATA[0];
     if (read != data[indices[i]]) {
       return 1;
     }
     *BUFFETS_SHRINK = 4;
+  }
+
+  // empty
+  if (*BUFFETS_SIZE != 0) {
+    return 1;
   }
   return 0;
 }
