@@ -30,3 +30,10 @@ void *memcpy(void *__restrict dest, const void *__restrict src, size_t n) {
   }
   return dest;
 }
+
+float fabsf(float num) {
+  if (num > 0)
+    return num;
+  else
+    return -num;
+}

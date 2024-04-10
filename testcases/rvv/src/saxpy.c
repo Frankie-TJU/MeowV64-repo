@@ -60,16 +60,21 @@ void saxpy_vec(size_t n, const float a, const float *x, float *y) {
   }
 }
 
+int fp_eq(float reference, float actual, float relErr) {
+  // if near zero, do absolute error instead.
+  float absErr =
+      relErr * ((fabsf(reference) > relErr) ? fabsf(reference) : relErr);
+  return fabsf(actual - reference) < absErr;
+}
+
 int main() {
   saxpy_golden(N, 55.66, input, output_golden);
   saxpy_vec(N, 55.66, input, output);
-
+  int pass = 1;
   for (int i = 0; i < N; i++) {
-    if (output[i] > output_golden[i] + 1e-5 ||
-        output[i] < output_golden[i] - 1e-5) {
-      return 1;
+    if (!fp_eq(output_golden[i], output[i], 1e-6)) {
+      pass = 0;
     }
   }
-
-  return 0;
+  return (pass == 0);
 }
