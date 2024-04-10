@@ -48,7 +48,7 @@ $ ./VRiscVSystem -p -t ../../testcases/meow/bin/fib.bin
 > Simulation finished
 ```
 
-Waveform is saved to `dump.vst`.
+Waveform is saved to `dump.fst`, you can view it with gktwave.
 
 ## Authors
 
