@@ -50,6 +50,12 @@ $ ./VRiscVSystem -p -t ../../testcases/meow/bin/fib.bin
 
 Waveform is saved to `dump.fst`, you can view it with gktwave.
 
+## RISC-VV Vector Missing Features
+
+The following features are missing from vector extension:
+
+- LMUL != 1 i.e. only use m1 in `vset{i}vl{i}`, pass `-mllvm -riscv-v-fixed-length-vector-lmul-max=1` to clang
+
 ## Authors
 
 See `AUTHORS` file
