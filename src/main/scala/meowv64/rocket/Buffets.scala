@@ -171,7 +171,7 @@ class BuffetsModuleImp(outer: Buffets) extends LazyModuleImp(outer) {
   slave.d.valid := false.B
   switch(state) {
     is(BuffetsState.sIdle) {
-      when(ingress.valid) {
+      when(ingress.valid && empty > ingress.bits.len) {
         ingress.ready := true.B
         state := BuffetsState.sPushing
         pushLen := ingress.bits.len
