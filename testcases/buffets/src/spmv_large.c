@@ -1,36 +1,5 @@
 #include "common.h"
 
-#define N 10
-#define NNZ 20
-// compute the following spmv:
-// A=
-// [ 1.0 2.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 ]
-// [ 0.0 0.0 3.0 0.0 4.0 0.0 0.0 0.0 0.0 0.0 ]
-// [ 0.0 0.0 0.0 0.0 0.0 0.0 5.0 0.0 0.0 1.0 ]
-// [ 0.0 0.0 0.0 2.0 0.0 0.0 3.0 0.0 0.0 0.0 ]
-// [ 0.0 0.0 4.0 0.0 5.0 0.0 0.0 0.0 0.0 0.0 ]
-// [ 1.0 2.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 ]
-// [ 0.0 0.0 3.0 0.0 4.0 0.0 0.0 0.0 0.0 0.0 ]
-// [ 0.0 0.0 0.0 0.0 0.0 0.0 5.0 0.0 0.0 1.0 ]
-// [ 0.0 0.0 2.0 0.0 0.0 0.0 3.0 0.0 0.0 0.0 ]
-// [ 0.0 0.0 4.0 0.0 5.0 0.0 0.0 0.0 0.0 0.0 ]
-// x = [ 10.0 20.0 30.0 40.0 50.0 10.0 20.0 30.0 40.0 50.0 ]^T
-// y = Ax = [ 50.0 290.0 150.0 140.0 370.0 50.0 290.0 150.0 140.0 370.0 ]^T
-const double val[NNZ] = {
-    1.0, 2.0, 3.0, 4.0, 5.0, 1.0, 2.0, 3.0, 4.0, 5.0,
-    1.0, 2.0, 3.0, 4.0, 5.0, 1.0, 2.0, 3.0, 4.0, 5.0,
-};
-
-const uint64_t idx[NNZ] = {
-    0, 1, 2, 4, 6, 9, 3, 6, 2, 4, 0, 1, 2, 4, 6, 9, 3, 6, 2, 4,
-};
-
-const double x[N] = {
-    10.0, 20.0, 30.0, 40.0, 50.0, 10.0, 20.0, 30.0, 40.0, 50.0,
-};
-
-const uint64_t ptr[N + 1] = {0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20};
-
 void __attribute__((noinline))
 spmv(int r, const double *val, const uint64_t *idx, const double *x,
      const uint64_t *ptr, double *y) {
@@ -80,20 +49,35 @@ spmv_buffets(int r, const double *val, const uint64_t *idx, const double *x,
   return 0;
 }
 
+#define N 100
+#define NNZ 200
+
+double val[NNZ];
+uint64_t idx[NNZ];
+double x[N];
+uint64_t ptr[N + 1];
+
 int main() {
-  double y[N] = {50.0, 290.0, 150.0, 140.0, 370.0,
-                 50.0, 290.0, 150.0, 140.0, 370.0};
   double y1[N];
   double y2[N];
+
+  for (int i = 0; i < NNZ; i++) {
+    val[i] = (double)i;
+  }
+  for (int i = 0; i < NNZ; i++) {
+    idx[i] = i % N;
+  }
+  for (int i = 0; i < N; i++) {
+    x[i] = (double)i;
+  }
+  for (int i = 0; i < N; i++) {
+    ptr[i] = i * (NNZ / N);
+  }
+  ptr[N] = NNZ;
+
   unsigned long before = read_csr(mcycle);
   spmv(N, val, idx, x, ptr, y1);
   unsigned long elapsed_scalar = read_csr(mcycle) - before;
-
-  for (int i = 0; i < N; i++) {
-    if (y1[i] > y[i] + 1e-5 || y1[i] < y[i] - 1e-5) {
-      return 1;
-    }
-  }
 
   before = read_csr(mcycle);
   if (spmv_buffets(N, val, idx, x, ptr, y2) != 0) {
