@@ -150,7 +150,7 @@ class AddressGenerationModuleImp(outer: AddressGeneration)
   val currentInstIndex = RegInit(0.U(log2Up(config.configInstWords).W))
   val state = RegInit(AddressGenerationState.sIdle)
   val control = WireInit(0.U(32.W))
-  val iterations = RegInit(0.U(log2Up(config.maxIterations).W))
+  val iterations = RegInit(0.U(log2Up(config.maxIterations + 1).W))
   val currentIteration = RegInit(0.U(log2Up(config.maxIterations + 1).W))
   val inflights = RegInit(
     VecInit.fill(config.maxInflights)(AddressGenerationInflight.empty(config))
