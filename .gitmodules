@@ -22,3 +22,6 @@
 [submodule "submodules/difftest"]
 	path = submodules/difftest
 	url = ../difftest.git
+[submodule "submodules/DRAMsim3"]
+	path = submodules/DRAMsim3
+	url = ../DRAMsim3.git

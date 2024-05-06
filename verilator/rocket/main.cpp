@@ -1,5 +1,7 @@
 #include "VRiscVSystem.h"
+#include "memory_system.h"
 #include <arpa/inet.h>
+#include <deque>
 #include <fcntl.h>
 #include <gmpxx.h>
 #include <iostream>
@@ -37,6 +39,9 @@ bool jtag = false;
 bool jtag_rbb = false;
 // use jtag_vpi protocol
 bool jtag_vpi = false;
+// use DRAMsim3
+bool dram = false;
+dramsim3::MemorySystem *dram_system;
 
 // jtag_vpi state & definitions
 enum JtagVpiState {
@@ -113,64 +118,148 @@ void init() {
   top->interrupts = 0x3;
 }
 
+struct axi_read_request {
+  uint64_t read_id;
+  uint64_t read_addr;
+  uint64_t read_len;
+  uint64_t read_size;
+  bool ready;
+};
+
+const int MAX_ID = 64;
+std::deque<axi_read_request *> axi_read_requests[MAX_ID];
+
+void read_callback(uint64_t addr, void *user_data) {
+  axi_read_request *req = (axi_read_request *)user_data;
+  req->ready = true;
+}
+
+void write_callback(uint64_t addr, void *user_data) { assert(0); }
+
 // step per clock fall
 void step_mem() {
   // handle read
-  static bool pending_read = false;
-  static uint64_t pending_read_id = 0;
-  static uint64_t pending_read_addr = 0;
-  static uint64_t pending_read_len = 0;
-  static uint64_t pending_read_size = 0;
-
-  if (!pending_read) {
-    if (top->mem_axi4_ARVALID) {
-      top->mem_axi4_ARREADY = 1;
-      pending_read = true;
-      pending_read_id = top->mem_axi4_ARID;
-      pending_read_addr = top->mem_axi4_ARADDR;
-      pending_read_len = top->mem_axi4_ARLEN;
-      pending_read_size = top->mem_axi4_ARSIZE;
-    }
-
-    top->mem_axi4_RVALID = 0;
-  } else {
+  if (dram) {
+    // dram sim
     top->mem_axi4_ARREADY = 0;
-
-    top->mem_axi4_RVALID = 1;
-    top->mem_axi4_RID = pending_read_id;
-    mpz_class r_data;
-
-    uint64_t aligned =
-        (pending_read_addr / MEM_AXI_DATA_BYTES) * MEM_AXI_DATA_BYTES;
-    for (int i = 0; i < MEM_AXI_DATA_BYTES / sizeof(mem_t); i++) {
-      uint64_t addr = aligned + i * sizeof(mem_t);
-      mem_t r = memory[addr];
-      mpz_class res = r;
-      res <<= (i * (sizeof(mem_t) * 8));
-      r_data += res;
+    if (top->mem_axi4_ARVALID) {
+      if (dram_system->WillAcceptTransaction(top->mem_axi4_ARADDR, false)) {
+        top->mem_axi4_ARREADY = 1;
+        axi_read_request *new_req = new axi_read_request;
+        new_req->read_id = top->mem_axi4_ARID;
+        new_req->read_addr = top->mem_axi4_ARADDR;
+        new_req->read_len = top->mem_axi4_ARLEN;
+        new_req->read_size = top->mem_axi4_ARSIZE;
+        new_req->ready = false;
+        axi_read_requests[top->mem_axi4_ARID].push_back(new_req);
+        dram_system->AddTransaction(top->mem_axi4_ARADDR, false, new_req);
+      }
     }
 
-    mpz_class mask = 1;
-    mask <<= (1L << pending_read_size) * 8;
-    mask -= 1;
+    // find ready req
+    top->mem_axi4_RVALID = 0;
+    for (int i = 0; i < MAX_ID; i++) {
+      if (!axi_read_requests[i].empty() &&
+          (*axi_read_requests[i].begin())->ready) {
+        axi_read_request *req = *axi_read_requests[i].begin();
+        top->mem_axi4_RVALID = 1;
+        top->mem_axi4_RID = req->read_id;
+        mpz_class r_data;
 
-    mpz_class shifted_mask =
-        mask << ((pending_read_addr & (MEM_AXI_DATA_BYTES - 1)) * 8);
-    r_data &= shifted_mask;
+        uint64_t aligned =
+            (req->read_addr / MEM_AXI_DATA_BYTES) * MEM_AXI_DATA_BYTES;
+        for (int i = 0; i < MEM_AXI_DATA_BYTES / sizeof(mem_t); i++) {
+          uint64_t addr = aligned + i * sizeof(mem_t);
+          mem_t r = memory[addr];
+          mpz_class res = r;
+          res <<= (i * (sizeof(mem_t) * 8));
+          r_data += res;
+        }
 
-    // top->mem_axi4_RDATA = r_data & shifted_mask;
-    memset(top->mem_axi4_RDATA, 0, sizeof(top->mem_axi4_RDATA));
-    mpz_export(top->mem_axi4_RDATA, NULL, -1, 4, -1, 0, r_data.get_mpz_t());
-    top->mem_axi4_RLAST = pending_read_len == 0;
+        mpz_class mask = 1;
+        mask <<= (1L << req->read_size) * 8;
+        mask -= 1;
 
-    // RREADY might be stale without eval()
-    top->eval();
-    if (top->mem_axi4_RREADY) {
-      if (pending_read_len == 0) {
-        pending_read = false;
-      } else {
-        pending_read_addr += 1 << pending_read_size;
-        pending_read_len--;
+        mpz_class shifted_mask =
+            mask << ((req->read_addr & (MEM_AXI_DATA_BYTES - 1)) * 8);
+        r_data &= shifted_mask;
+
+        // top->mem_axi4_RDATA = r_data & shifted_mask;
+        memset(top->mem_axi4_RDATA, 0, sizeof(top->mem_axi4_RDATA));
+        mpz_export(top->mem_axi4_RDATA, NULL, -1, 4, -1, 0, r_data.get_mpz_t());
+        top->mem_axi4_RLAST = req->read_len == 0;
+
+        // RREADY might be stale without eval()
+        top->eval();
+        if (top->mem_axi4_RREADY) {
+          if (req->read_len == 0) {
+            axi_read_requests[i].pop_front();
+          } else {
+            req->read_addr += 1 << req->read_size;
+            req->read_len--;
+          }
+        }
+        break;
+      }
+    }
+  } else {
+    // non-dram sim
+    static bool pending_read = false;
+    static uint64_t pending_read_id = 0;
+    static uint64_t pending_read_addr = 0;
+    static uint64_t pending_read_len = 0;
+    static uint64_t pending_read_size = 0;
+
+    if (!pending_read) {
+      if (top->mem_axi4_ARVALID) {
+        top->mem_axi4_ARREADY = 1;
+        pending_read = true;
+        pending_read_id = top->mem_axi4_ARID;
+        pending_read_addr = top->mem_axi4_ARADDR;
+        pending_read_len = top->mem_axi4_ARLEN;
+        pending_read_size = top->mem_axi4_ARSIZE;
+      }
+
+      top->mem_axi4_RVALID = 0;
+    } else {
+      top->mem_axi4_ARREADY = 0;
+
+      top->mem_axi4_RVALID = 1;
+      top->mem_axi4_RID = pending_read_id;
+      mpz_class r_data;
+
+      uint64_t aligned =
+          (pending_read_addr / MEM_AXI_DATA_BYTES) * MEM_AXI_DATA_BYTES;
+      for (int i = 0; i < MEM_AXI_DATA_BYTES / sizeof(mem_t); i++) {
+        uint64_t addr = aligned + i * sizeof(mem_t);
+        mem_t r = memory[addr];
+        mpz_class res = r;
+        res <<= (i * (sizeof(mem_t) * 8));
+        r_data += res;
+      }
+
+      mpz_class mask = 1;
+      mask <<= (1L << pending_read_size) * 8;
+      mask -= 1;
+
+      mpz_class shifted_mask =
+          mask << ((pending_read_addr & (MEM_AXI_DATA_BYTES - 1)) * 8);
+      r_data &= shifted_mask;
+
+      // top->mem_axi4_RDATA = r_data & shifted_mask;
+      memset(top->mem_axi4_RDATA, 0, sizeof(top->mem_axi4_RDATA));
+      mpz_export(top->mem_axi4_RDATA, NULL, -1, 4, -1, 0, r_data.get_mpz_t());
+      top->mem_axi4_RLAST = pending_read_len == 0;
+
+      // RREADY might be stale without eval()
+      top->eval();
+      if (top->mem_axi4_RREADY) {
+        if (pending_read_len == 0) {
+          pending_read = false;
+        } else {
+          pending_read_addr += 1 << pending_read_size;
+          pending_read_len--;
+        }
       }
     }
   }
@@ -935,7 +1024,7 @@ int main(int argc, char **argv) {
   bool progress = false;
   const char *signature_path = "dump.sig";
   int signature_granularity = 16;
-  while ((opt = getopt(argc, argv, "tpjvs:S:")) != -1) {
+  while ((opt = getopt(argc, argv, "tpjvds:S:")) != -1) {
     switch (opt) {
     case 't':
       trace = true;
@@ -951,6 +1040,12 @@ int main(int argc, char **argv) {
       jtag = true;
       jtag_vpi = true;
       break;
+    case 'd':
+      dram = true;
+      dram_system = new dramsim3::MemorySystem(
+          "../../submodules/DRAMsim3/configs/DDR4_8Gb_x8_3200.ini", "out",
+          read_callback, write_callback);
+      break;
     case 's':
       signature_path = optarg;
       break;
@@ -958,10 +1053,11 @@ int main(int argc, char **argv) {
       sscanf(optarg, "%d", &signature_granularity);
       break;
     default: /* '?' */
-      fprintf(stderr,
-              "Usage: %s [-t] [-p] [-j] [-v] [-s signature] [-S granularity] "
-              "name\n",
-              argv[0]);
+      fprintf(
+          stderr,
+          "Usage: %s [-t] [-p] [-j] [-v] [-d] [-s signature] [-S granularity] "
+          "name\n",
+          argv[0]);
       return 1;
     }
   }
@@ -1059,6 +1155,10 @@ int main(int argc, char **argv) {
       top->clock = 0;
       step_mem();
       step_mmio();
+
+      if (dram) {
+        dram_system->ClockTick();
+      }
     }
 
     if (jtag) {

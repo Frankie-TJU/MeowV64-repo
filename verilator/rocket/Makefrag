@@ -5,9 +5,23 @@ GMP_CFLAGS = $(shell pkg-config --cflags gmp)
 GMP_LDFLAGS = $(shell pkg-config --libs gmp)
 GMPXX_CFLAGS = $(shell pkg-config --cflags gmpxx)
 GMPXX_LDFLAGS = $(shell pkg-config --libs gmpxx)
-VERILATOR_FLAGS = -O3 -Wno-fatal --trace-fst -threads 4 -CFLAGS "-march=native -O3 $(ZLIB_CFLAGS) $(GMP_CFLAGS) $(GMPXX_CFLAGS)" -LDFLAGS "$(ZLIB_LDFLAGS) $(GMP_LDFLAGS) $(GMPXX_LDFLAGS)"
+DRAMSIM3_CFLAGS = -I../../../submodules/DRAMsim3/src -I../../../submodules/DRAMsim3/ext/headers -I../../../submodules/DRAMsim3/ext/fmt/include -DFMT_HEADER_ONLY=1 --std=c++17
+VERILATOR_FLAGS = -O3 -Wno-fatal --trace-fst -threads 4 -CFLAGS "-march=native -O3 $(ZLIB_CFLAGS) $(GMP_CFLAGS) $(GMPXX_CFLAGS) $(DRAMSIM3_CFLAGS)" -LDFLAGS "$(ZLIB_LDFLAGS) $(GMP_LDFLAGS) $(GMPXX_LDFLAGS)"
 CURRENT_DIR = $(shell pwd)
 VERILOG_SRCS = $(CONFIG).v plusarg_reader.v EICG_wrapper.v icDataArray_ext.v btbEntries_ext.v cc_dir_ext.v cc_banks_0_ext.v data_ext.v
+CPP_SRCS = ../rocket/main.cpp \
+	../../submodules/DRAMsim3/src/bankstate.cc \
+	../../submodules/DRAMsim3/src/channel_state.cc \
+	../../submodules/DRAMsim3/src/command_queue.cc \
+	../../submodules/DRAMsim3/src/common.cc \
+	../../submodules/DRAMsim3/src/configuration.cc \
+	../../submodules/DRAMsim3/src/controller.cc \
+	../../submodules/DRAMsim3/src/dram_system.cc \
+	../../submodules/DRAMsim3/src/hmc.cc \
+	../../submodules/DRAMsim3/src/refresh.cc \
+	../../submodules/DRAMsim3/src/simple_stats.cc \
+	../../submodules/DRAMsim3/src/timing.cc \
+	../../submodules/DRAMsim3/src/memory_system.cc
 
 all: VRiscVSystem
 
@@ -18,8 +32,8 @@ firrtl_black_box_resource_files.f:
 %.v: firrtl_black_box_resource_files.f
 	cp ../../build/$(CONFIG)/$@ .
 
-VRiscVSystem: ../rocket/main.cpp $(VERILOG_SRCS)
-	$(VERILATOR) $(VERILATOR_FLAGS) --top-module RiscVSystem --cc $(VERILOG_SRCS) --exe $<
+VRiscVSystem: $(CPP_SRCS) $(VERILOG_SRCS)
+	$(VERILATOR) $(VERILATOR_FLAGS) --top-module RiscVSystem --cc $(VERILOG_SRCS) --exe $(CPP_SRCS)
 	make -j8 -C obj_dir -f VRiscVSystem.mk VRiscVSystem
 	cp obj_dir/VRiscVSystem .
 
