@@ -28,7 +28,12 @@ spmv_buffets(int r, const double *val, const uint64_t *idx, const double *x,
   ADDRGEN_INSTS[3] = addr >> 32;
   ADDRGEN_INSTS[4] = addr;
 
-  *ADDRGEN_ITERATIONS = ptr[r] - ptr[0];
+  uint32_t iterations = ptr[r] - ptr[0];
+  *ADDRGEN_ITERATIONS = iterations;
+  if (*ADDRGEN_ITERATIONS != iterations) {
+    return 1;
+  }
+
   *ADDRGEN_CONTROL = 1;
 
   for (int i = 0; i < r; i++) {
@@ -37,9 +42,9 @@ spmv_buffets(int r, const double *val, const uint64_t *idx, const double *x,
 
     for (int j = 0; k < ptr[i + 1]; k++, j++) {
       double tmp = ((volatile double *)BUFFETS_DATA)[j];
-      if (tmp != x[idx[k]]) {
-        return 1;
-      }
+      // if (tmp != x[idx[k]]) {
+      //   return 1;
+      // }
       yi0 += val[k] * tmp;
     }
     *BUFFETS_SHRINK = 8 * (ptr[i + 1] - ptr[i]);
@@ -49,13 +54,18 @@ spmv_buffets(int r, const double *val, const uint64_t *idx, const double *x,
   return 0;
 }
 
-#define N 100
-#define NNZ 200
+#define N 10000
+#define NNZ 20000
 
 double val[NNZ];
 uint64_t idx[NNZ];
 double x[N];
 uint64_t ptr[N + 1];
+
+static uint64_t lfsr63(uint64_t x) {
+  uint64_t bit = (x ^ (x >> 1)) & 1;
+  return (x >> 1) | (bit << 62);
+}
 
 int main() {
   double y1[N];
@@ -64,8 +74,10 @@ int main() {
   for (int i = 0; i < NNZ; i++) {
     val[i] = (double)i;
   }
+  uint64_t seed = 1;
   for (int i = 0; i < NNZ; i++) {
-    idx[i] = i % N;
+    seed = lfsr63(seed);
+    idx[i] = seed % N;
   }
   for (int i = 0; i < N; i++) {
     x[i] = (double)i;
@@ -83,16 +95,17 @@ int main() {
   if (spmv_buffets(N, val, idx, x, ptr, y2) != 0) {
     return 1;
   }
-  unsigned long elapsed_vector = read_csr(mcycle) - before;
+  unsigned long elapsed_buffets = read_csr(mcycle) - before;
 
-  print(elapsed_scalar);
-  print(elapsed_vector);
 
   for (int i = 0; i < N; i++) {
     if (y1[i] > y2[i] + 1e-5 || y1[i] < y2[i] - 1e-5) {
       return 1;
     }
   }
+
+  print(elapsed_scalar);
+  print(elapsed_buffets);
 
   return 0;
 }

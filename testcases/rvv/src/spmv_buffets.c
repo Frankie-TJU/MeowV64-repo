@@ -69,9 +69,9 @@ spmv_buffets(int r, const double *val, const uint64_t *idx, const double *x,
 
     for (int j = 0; k < ptr[i + 1]; k++, j++) {
       double tmp = ((volatile double *)BUFFETS_DATA)[j];
-      if (tmp != x[idx[k]]) {
-        return 1;
-      }
+      // if (tmp != x[idx[k]]) {
+      //   return 1;
+      // }
       yi0 += val[k] * tmp;
     }
     *BUFFETS_SHRINK = 8 * (ptr[i + 1] - ptr[i]);

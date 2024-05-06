@@ -158,6 +158,9 @@ void step_mem() {
 
     // find ready req
     top->mem_axi4_RVALID = 0;
+    top->mem_axi4_RID = 0;
+    top->mem_axi4_RLAST = 0;
+    memset(top->mem_axi4_RDATA, 0, sizeof(top->mem_axi4_RDATA));
     for (int i = 0; i < MAX_ID; i++) {
       if (!axi_read_requests[i].empty() &&
           (*axi_read_requests[i].begin())->ready) {
