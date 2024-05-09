@@ -5,7 +5,7 @@ cache:
 
 variables:
   MILL_CLI: "-D coursier.cache=$CI_PROJECT_DIR/.cache"
-  PREFIX: "riscv64-unknown-elf-"
+  PREFIX: "riscv64-linux-gnu-"
   GIT_SUBMODULE_STRATEGY: recursive
 
 stages:
