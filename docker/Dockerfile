@@ -1,12 +1,12 @@
 # https://github.com/nightscape/scala-mill/blob/master/Dockerfile
-FROM jiegec/riscv-toolchain
-RUN sed -i 's/deb.debian.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sources.list
-RUN sed -i 's/security.debian.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sources.list
+FROM debian:stable
+RUN sed -i 's/deb.debian.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sources.list.d/debian.sources
+RUN sed -i 's/security.debian.org/mirrors.tuna.tsinghua.edu.cn/g' /etc/apt/sources.list.d/debian.sources
 RUN apt update
-RUN apt install -y wget verilator iverilog curl
-RUN sh -c "curl -L https://github.com/com-lihaoyi/mill/releases/download/0.10.2/0.10.2 > /usr/local/bin/mill && chmod +x /usr/local/bin/mill"
+RUN apt install -y wget verilator iverilog curl gcc-riscv64-unknown-elf gcc-riscv64-linux-gnu
+RUN sh -c "curl -L https://github.com/com-lihaoyi/mill/releases/download/0.11.5/0.11.5 > /usr/local/bin/mill && chmod +x /usr/local/bin/mill"
 RUN apt update
-RUN apt install -y openjdk-11-jdk
+RUN apt install -y openjdk-17-jdk
 RUN touch build.sc
 RUN mill -i resolve _
 RUN rm build.sc
