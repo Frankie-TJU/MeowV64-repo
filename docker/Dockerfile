@@ -17,3 +17,4 @@ RUN apt install -y pkg-config
 RUN apt install -y z3
 RUN apt install -y git
 RUN apt install -y device-tree-compiler
+RUN apt install -y libboost-dev
