@@ -38,6 +38,7 @@ class CoreDebug(implicit val coredef: CoreDef) extends Bundle {
   val fetchPc = UInt(coredef.XLEN.W)
   val minstret = UInt(coredef.XLEN.W)
   val mcycle = UInt(coredef.XLEN.W)
+  val wdh = UInt(coredef.XLEN.W)
 
   // exec
   val iqEmptyMask = UInt(coredef.ISSUE_QUEUES.length.W)
@@ -208,6 +209,7 @@ class Core(implicit val coredef: CoreDef) extends Module {
   CSRHelper.defaults(csr)
   csr.const("mhartid") := io.hartId
   csr.attach("mcycle").connect(ctrl.csr.mcycle)
+  csr.attach("wdh").connect(ctrl.csr.wdh)
   csr.attach("minstret").connect(ctrl.csr.minstret)
   csr.attach("mstatus").connect(ctrl.csr.mstatus)
   csr.attach("mtvec").connect(ctrl.csr.mtvec)
@@ -270,6 +272,7 @@ class Core(implicit val coredef: CoreDef) extends Module {
   exec.toCore.satp := satp
 
   io.debug.mcycle := ctrl.csr.mcycle.rdata
+  io.debug.wdh := ctrl.csr.wdh.rdata
   io.debug.minstret := ctrl.csr.minstret.rdata
   io.debug.iqEmptyMask := exec.toCore.iqEmptyMask
   io.debug.iqFullMask := exec.toCore.iqFullMask
@@ -278,6 +281,8 @@ class Core(implicit val coredef: CoreDef) extends Module {
   io.debug.issueNumBoundedByLSQSize := exec.toCore.issueNumBoundedByLSQSize
   io.debug.retireNum := exec.toCore.retireNum
   io.debug.pc := exec.toCore.retirePc
+
+  ctrl.toRecord <> exec.toRecord
 
   if (coredef.ENABLE_DIFFTEST) {
     val difftestCSR = Module(new DifftestCSRState)
