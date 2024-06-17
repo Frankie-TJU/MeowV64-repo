@@ -17,14 +17,14 @@ bin/common.assembled: common/init.S Makefile
 
 bin/%.assembled: src/%.c src/common.h common/init.S Makefile
 	mkdir -p bin
-	$(PREFIX)gcc -O2 -mcmodel=medany -c $< -march=rv64imafdc_zicsr_zifencei -o $@
+	$(PREFIX)gcc -O2 -mcmodel=medany -fno-tree-loop-distribute-patterns -c $< -march=rv64imafdc_zicsr_zifencei -o $@
 
 bin/%.linked: bin/%.assembled bin/common.assembled
 	$(PREFIX)ld $^ -T common/linker.lds -o $@
 
 bin/%.bin: bin/%.linked
 	cp $< $@
-	$(PREFIX)objcopy -O binary -j .text -j .rodata -j .data $@
+	$(PREFIX)objcopy -O binary -j .text -j .rodata -j .data -j .srodata.cst4 -j .sdata $@
 
 hex/%.hex: bin/%.bin Makefile
 	mkdir -p hex
