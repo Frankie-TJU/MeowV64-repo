@@ -370,6 +370,11 @@ object DecodeInfo {
       VXOR_VI       -> List(Y, N, Y, vector, N, XX, Y, vector, N, XX, N, vectorAlu, IQT.vec),
       VXOR_VX       -> List(Y, N, Y, vector, Y, integer, Y, vector, N, XX, N, vectorAlu, IQT.vec),
       VSLIDEDOWN_VI -> List(Y, N, Y, vector, N, XX, Y, vector, N, XX, N, vectorMisc, IQT.vec),
+      VSLIDEDOWN_VX -> List(Y, N, Y, vector, Y, integer, Y, vector, N, XX, N, vectorMisc, IQT.vec),
+      VSLIDE1DOWN_VX  -> List(Y, N, Y, vector, Y, integer, Y, vector, N, XX, N, vectorMisc, IQT.vec),
+      VSLIDEUP_VI   -> List(Y, N, Y, vector, N, XX, Y, vector, N, XX, N, vectorMisc, IQT.vec),
+      VSLIDEUP_VX   -> List(Y, N, Y, vector, Y, integer, Y, vector, N, XX, N, vectorMisc, IQT.vec),
+      VSLIDE1UP_VX  -> List(Y, N, Y, vector, Y, integer, Y, vector, N, XX, N, vectorMisc, IQT.vec),
       VMV_X_S       -> List(Y, N, Y, integer, N, XX, Y, vector, N, XX, N, vectorMisc, IQT.vec),
       VMV_S_X       -> List(Y, N, Y, vector, Y, integer, N, XX, N, XX, N, vectorMisc, IQT.vec),
       VMV_V_V       -> List(Y, N, Y, vector, Y, vector, N, XX, N, XX, N, vectorMisc, IQT.vec),
@@ -416,7 +421,9 @@ object DecodeInfo {
       VFMSAC_VV    -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
       VFMSAC_VF    -> List(Y, Y, Y, vector, Y, float, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
       VFNMSAC_VV   -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
-      VFNMSAC_VF   -> List(Y, Y, Y, vector, Y, float, Y, vector, Y, vector, Y, vectorFma, IQT.vec)
+      VFNMSAC_VF   -> List(Y, Y, Y, vector, Y, float, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
+      VFSLIDE1DOWN_VF -> List(Y, N, Y, vector, Y, float, Y, vector, N, XX, N, vectorMisc, IQT.vec),
+      VFSLIDE1UP_VF   -> List(Y, N, Y, vector, Y, float, Y, vector, N, XX, N, vectorMisc, IQT.vec),
     )
 
   for (execUnitType <- ExecUnitType.all) {
@@ -821,6 +828,13 @@ object Instructions {
   val VXOR_VI       = BitPat("b001011???????????011?????1010111")
   val VXOR_VX       = BitPat("b001011???????????100?????1010111")
   val VSLIDEDOWN_VI = BitPat("b001111???????????011?????1010111")
+  val VSLIDEDOWN_VX = BitPat("b001111???????????100?????1010111")
+  val VSLIDE1DOWN_VX= BitPat("b001111???????????110?????1010111")
+  val VFSLIDE1DOWN_VF = BitPat("b001111???????????101?????1010111")
+  val VSLIDEUP_VI   = BitPat("b001110???????????011?????1010111")
+  val VSLIDEUP_VX   = BitPat("b001110???????????100?????1010111")
+  val VSLIDE1UP_VX  = BitPat("b001110???????????110?????1010111")
+  val VFSLIDE1UP_VF = BitPat("b001110???????????101?????1010111")
   val VMV_X_S       = BitPat("b0100001?????00000010?????1010111")
   val VMV_S_X       = BitPat("b010000100000?????110?????1010111")
   val VMV_V_V       = BitPat("b010111100000?????000?????1010111")

@@ -187,6 +187,7 @@ object Decoder {
     "VAND_V" -> "001001",
     "VOR_V" -> "001010",
     "VXOR_V" -> "001011",
+    "VSLIDEUP_V" -> "001110",
     "VSLIDEDOWN_V" -> "001111",
     "VMV_S" -> "010000",
     "VMV_V" -> "010111",

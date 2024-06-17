@@ -28,25 +28,64 @@ void diverg(data_t *field, data_t *result) {
   }
 }
 
-data_t self_dot_vector(data_t *field) {
-  *ADDRGEN_CONTROL = 0;
-  ADDRGEN_INSTS[0] = (0 << 31) | ((sizeof(data_t) * GROUP_LEN) << 20) | ((sizeof(data_t) * GROUP_LEN) << 0);
-  uint64_t addr = (uint64_t) field;
-  ADDRGEN_INSTS[1] = addr >> 32;
-  ADDRGEN_INSTS[2] = addr;
-  *ADDRGEN_ITERATIONS = WIDTH * HEIGHT / GROUP_LEN;
-  *ADDRGEN_CONTROL = 1;
+void diverg_vector(data_t *field, data_t *result) {
+  for(int i = 0; i < HEIGHT; ++i) {
+    _Bool solid_boundary = i == 0 || i == HEIGHT - 1;
+    data_t multiplier = solid_boundary ? -3 : -4;
 
+    for(int j = 0; j < WIDTH; j += GROUP_LEN) {
+      data_t left = (j == 0) ? 0 : field[i * WIDTH + (j-1)];
+      data_t right = (j == WIDTH - GROUP_LEN) ? 0 : field[i * WIDTH + j + GROUP_LEN];
+
+      __asm__ volatile(
+        "vle32.v v0, (%0)\n"
+        "vfslide1up.vf v1, v0, %1\n"
+        "vfslide1down.vf v2, v0, %2\n"
+        "vfmadd.vf v0, %3, v1\n"
+        "vfadd.vv v0, v0, v2\n"
+        : 
+        : "r" (field + (i * WIDTH + j)), "f" (left), "f" (right), "f"(multiplier)
+      );
+
+      if(i != 0) {
+        __asm__ volatile(
+          "vle32.v v1, (%0)\n"
+          "vfadd.vv v0, v0, v1\n"
+          : 
+          : "r" (field + ((i - 1) * WIDTH + j))
+        );
+      }
+      if(i != HEIGHT - 1) {
+        __asm__ volatile(
+          "vle32.v v1, (%0)\n"
+          "vfadd.vv v0, v0, v1\n"
+          : 
+          : "r" (field + ((i + 1) * WIDTH + j))
+        );
+      }
+
+      __asm__ volatile(
+        "vse32.v v0, (%0)\n"
+        : 
+        : "r" (result + (i * WIDTH + j))
+      );
+    }
+  }
+}
+
+data_t self_dot_vector(data_t *field) {
   // v1 is accumulator
   __asm__ volatile("vmv.v.i v0, 0");
+  data_t *cur = field;
 
   for(int i = 0; i < WIDTH * HEIGHT / GROUP_LEN; ++i) {
     __asm__ volatile(
       "vle32.v v1, (%0)\n"
       "vfmacc.vv v0, v1, v1\n"
       : 
-      : "r" ((volatile data_t *) BUFFETS_DATA));
-    *BUFFETS_SHRINK = sizeof(data_t) * GROUP_LEN;
+      : "r" (cur)
+    );
+    cur += GROUP_LEN;
   }
 
   data_t accum = 0;
@@ -63,6 +102,8 @@ data_t self_dot_buffet(data_t *field) {
   uint64_t addr = (uint64_t) field;
   ADDRGEN_INSTS[1] = addr >> 32;
   ADDRGEN_INSTS[2] = addr;
+
+  ADDRGEN_INSTS[3] = 0;
   *ADDRGEN_ITERATIONS = WIDTH * HEIGHT;
   *ADDRGEN_CONTROL = 1;
 
@@ -78,6 +119,7 @@ data_t self_dot_buffet(data_t *field) {
 
 data_t self_dot(data_t *field) {
   data_t accum = 0;
+  #pragma GCC unroll 8
   for(int i = 0; i < WIDTH * HEIGHT; ++i) accum += field[i] * field[i];
   return accum;
 }
@@ -93,6 +135,8 @@ data_t dot_buffet(data_t *a, data_t *b) {
   addr = (uint64_t) b;
   ADDRGEN_INSTS[4] = addr >> 32;
   ADDRGEN_INSTS[5] = addr;
+
+  ADDRGEN_INSTS[6] = 0;
   *ADDRGEN_ITERATIONS = WIDTH * HEIGHT;
   *ADDRGEN_CONTROL = 1;
 
@@ -109,19 +153,108 @@ data_t dot_buffet(data_t *a, data_t *b) {
 
 data_t dot(data_t *a, data_t *b) {
   data_t accum = 0;
+  #pragma GCC unroll 8
   for(int i = 0; i < WIDTH * HEIGHT; ++i) accum += a[i] * b[i];
   return accum;
 }
 
+data_t dot_vector(data_t *a, data_t *b) {
+  // v1 is accumulator
+  __asm__ volatile("vmv.v.i v0, 0");
+  data_t *acur = a;
+  data_t *bcur = b;
+
+  for(int i = 0; i < WIDTH * HEIGHT / GROUP_LEN; ++i) {
+    __asm__ volatile(
+      "vle32.v v1, (%0)\n"
+      "vle32.v v2, (%1)\n"
+      "vfmacc.vv v0, v1, v2\n"
+      : 
+      : "r" (acur), "r" (bcur)
+    );
+    acur += GROUP_LEN;
+    bcur += GROUP_LEN;
+  }
+
+  data_t accum = 0;
+  data_t buffer[GROUP_LEN];
+  __asm__ volatile("vse32.v v0, %0\n" : "=m"(buffer));
+  for(int i = 0; i < GROUP_LEN; ++i) accum += buffer[i];
+
+  return accum;
+}
+
 void self_relaxiation(data_t *into, data_t *val, data_t mul) {
+  #pragma GCC unroll 8
   for(int i = 0; i < WIDTH * HEIGHT; ++i)
     into[i] += val[i] * mul;
 }
 
+void self_relaxiation_vector(data_t *into, data_t *val, data_t mul) {
+  data_t *icur = into;
+  data_t *vcur = val;
+  for(int i = 0; i < WIDTH * HEIGHT / GROUP_LEN; ++i) {
+    __asm__ volatile(
+      "vle32.v v0, (%0)\n"
+      "vle32.v v1, (%1)\n"
+      "vfmacc.vf v0, %2, v1\n"
+      "vse32.v v0, (%0)\n"
+      : 
+      : "r" (icur), "r" (vcur), "f" (mul)
+    );
+    icur += GROUP_LEN;
+    vcur += GROUP_LEN;
+  }
+}
+
 void relaxiation(data_t *into, data_t *from, data_t *val, data_t mul) {
+  #pragma GCC unroll 8
   for(int i = 0; i < WIDTH * HEIGHT; ++i)
     into[i] = from[i] + val[i] * mul;
 }
+
+void reverse_relaxiation_vector(data_t *into, data_t *from, data_t mul) {
+  data_t *icur = into;
+  data_t *fcur = from;
+  for(int i = 0; i < WIDTH * HEIGHT / GROUP_LEN; ++i) {
+    __asm__ volatile(
+      "vle32.v v0, (%0)\n"
+      "vle32.v v1, (%1)\n"
+      "vfmacc.vf v1, %2, v0\n"
+      "vse32.v v1, (%0)\n"
+      : 
+      : "r" (icur), "r" (fcur), "f" (mul)
+    );
+    icur += GROUP_LEN;
+    fcur += GROUP_LEN;
+  }
+}
+
+void relaxiation_buffet(data_t *into, data_t *from, data_t *val, data_t mul) {
+  *ADDRGEN_CONTROL = 0;
+  ADDRGEN_INSTS[0] = (0 << 31) | (sizeof(data_t) << 20) | (sizeof(data_t) << 0);
+  uint64_t addr = (uint64_t) from;
+  ADDRGEN_INSTS[1] = addr >> 32;
+  ADDRGEN_INSTS[2] = addr;
+
+  ADDRGEN_INSTS[3] = (0 << 31) | (sizeof(data_t) << 20) | (sizeof(data_t) << 0);
+  addr = (uint64_t) val;
+  ADDRGEN_INSTS[4] = addr >> 32;
+  ADDRGEN_INSTS[5] = addr;
+
+  ADDRGEN_INSTS[6] = 0;
+  *ADDRGEN_ITERATIONS = WIDTH * HEIGHT;
+  *ADDRGEN_CONTROL = 1;
+
+  for(int i = 0; i < WIDTH * HEIGHT; ++i) {
+    data_t f = *((volatile data_t *) BUFFETS_DATA);
+    data_t v = *(((volatile data_t *) BUFFETS_DATA) + 1);
+    into[i] = f + v * mul;
+
+    *BUFFETS_SHRINK = sizeof(data_t) * 2;
+  }
+}
+
 
 void init(data_t *field) {
   for(int i = 0; i < HEIGHT; ++i)
@@ -161,24 +294,26 @@ int main() {
   zero(x, sizeof(data_t) * WIDTH * HEIGHT);
   putstr("x init\n");
 
-  data_t rr = self_dot(r);
+  data_t rr = self_dot_vector(r);
   print(rr * 100000);
   int round = 0;
   while(rr > EPS) {
     print(round);
-    diverg(p, div_p);
-    data_t pAp = dot(p, div_p);
+    diverg_vector(p, div_p);
+    data_t pAp = dot_vector(p, div_p);
     data_t alpha = rr / pAp;
 
-    self_relaxiation(x, p, alpha);
-    self_relaxiation(r, div_p, -alpha);
-    data_t rr_next = dot(r, r);
+    self_relaxiation_vector(x, p, alpha);
+    self_relaxiation_vector(r, div_p, -alpha);
+    data_t rr_next = self_dot_vector(r);
 
     data_t beta = rr_next / rr;
-    relaxiation(p, r, p, beta);
+    reverse_relaxiation_vector(p, r, beta);
 
     rr = rr_next;
     ++round;
+    // break;
+    // if(round > 1) break;
   }
   putstr("Rnd: ");
   print(round);
