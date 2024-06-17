@@ -13,11 +13,11 @@ all: $(BINS) $(HEXS) $(DUMPS) $(ASSEMBLED) $(LINKEDS)
 
 bin/common.assembled: common/init.S Makefile
 	mkdir -p bin
-	$(PREFIX)cpp $< | $(PREFIX)as - -march=rv64imafdc_zicsr_zifencei -o $@
+	$(PREFIX)cpp $< | $(PREFIX)as - -march=rv64imafdcv_zicsr_zifencei -o $@
 
 bin/%.assembled: src/%.c src/common.h common/init.S Makefile
 	mkdir -p bin
-	$(PREFIX)gcc -O2 -mcmodel=medany -fno-tree-loop-distribute-patterns -c $< -march=rv64imafdc_zicsr_zifencei -o $@
+	$(PREFIX)gcc -O2 -mcmodel=medany -fno-tree-loop-distribute-patterns -c $< -march=rv64imafdcv_zicsr_zifencei -o $@
 
 bin/%.linked: bin/%.assembled bin/common.assembled
 	$(PREFIX)ld $^ -T common/linker.lds -o $@

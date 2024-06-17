@@ -6,9 +6,10 @@
 
 typedef long size_t;
 typedef float data_t;
+const size_t GROUP_LEN = 8;
 
-const size_t WIDTH = 10;
-const size_t HEIGHT = 10;
+const size_t WIDTH = 16;
+const size_t HEIGHT = 16;
 const data_t EPS = 1e-3;
 
 void diverg(data_t *field, data_t *result) {
@@ -27,17 +28,88 @@ void diverg(data_t *field, data_t *result) {
   }
 }
 
+data_t self_dot_vector(data_t *field) {
+  *ADDRGEN_CONTROL = 0;
+  ADDRGEN_INSTS[0] = (0 << 31) | ((sizeof(data_t) * GROUP_LEN) << 20) | ((sizeof(data_t) * GROUP_LEN) << 0);
+  uint64_t addr = (uint64_t) field;
+  ADDRGEN_INSTS[1] = addr >> 32;
+  ADDRGEN_INSTS[2] = addr;
+  *ADDRGEN_ITERATIONS = WIDTH * HEIGHT / GROUP_LEN;
+  *ADDRGEN_CONTROL = 1;
+
+  // v1 is accumulator
+  __asm__ volatile("vmv.v.i v0, 0");
+
+  for(int i = 0; i < WIDTH * HEIGHT / GROUP_LEN; ++i) {
+    __asm__ volatile(
+      "vle32.v v1, (%0)\n"
+      "vfmacc.vv v0, v1, v1\n"
+      : 
+      : "r" ((volatile data_t *) BUFFETS_DATA));
+    *BUFFETS_SHRINK = sizeof(data_t) * GROUP_LEN;
+  }
+
+  data_t accum = 0;
+  data_t buffer[GROUP_LEN];
+  __asm__ volatile("vse32.v v0, %0\n" : "=m"(buffer));
+  for(int i = 0; i < GROUP_LEN; ++i) accum += buffer[i];
+
+  return accum;
+}
+
+data_t self_dot_buffet(data_t *field) {
+  *ADDRGEN_CONTROL = 0;
+  ADDRGEN_INSTS[0] = (0 << 31) | (sizeof(data_t) << 20) | (sizeof(data_t) << 0);
+  uint64_t addr = (uint64_t) field;
+  ADDRGEN_INSTS[1] = addr >> 32;
+  ADDRGEN_INSTS[2] = addr;
+  *ADDRGEN_ITERATIONS = WIDTH * HEIGHT;
+  *ADDRGEN_CONTROL = 1;
+
+  data_t accum = 0;
+  for(int i = 0; i < WIDTH * HEIGHT; ++i) {
+    data_t d = *((volatile data_t *) BUFFETS_DATA);
+    accum += d * d;
+    *BUFFETS_SHRINK = sizeof(data_t);
+  }
+
+  return accum;
+}
+
 data_t self_dot(data_t *field) {
   data_t accum = 0;
-  for(int i = 0; i < WIDTH * HEIGHT; ++i)
-    accum += field[i] * field[i];
+  for(int i = 0; i < WIDTH * HEIGHT; ++i) accum += field[i] * field[i];
+  return accum;
+}
+
+data_t dot_buffet(data_t *a, data_t *b) {
+  *ADDRGEN_CONTROL = 0;
+  ADDRGEN_INSTS[0] = (0 << 31) | (sizeof(data_t) << 20) | (sizeof(data_t) << 0);
+  uint64_t addr = (uint64_t) a;
+  ADDRGEN_INSTS[1] = addr >> 32;
+  ADDRGEN_INSTS[2] = addr;
+
+  ADDRGEN_INSTS[3] = (0 << 31) | (sizeof(data_t) << 20) | (sizeof(data_t) << 0);
+  addr = (uint64_t) b;
+  ADDRGEN_INSTS[4] = addr >> 32;
+  ADDRGEN_INSTS[5] = addr;
+  *ADDRGEN_ITERATIONS = WIDTH * HEIGHT;
+  *ADDRGEN_CONTROL = 1;
+
+  data_t accum = 0;
+  for(int i = 0; i < WIDTH * HEIGHT; ++i) {
+    data_t ad = *((volatile data_t *) BUFFETS_DATA);
+    data_t bd = *(((volatile data_t *) BUFFETS_DATA) + 1);
+    accum += ad * bd;
+    *BUFFETS_SHRINK = sizeof(data_t) * 2;
+  }
+
   return accum;
 }
 
 data_t dot(data_t *a, data_t *b) {
   data_t accum = 0;
-  for(int i = 0; i < WIDTH * HEIGHT; ++i)
-    accum += a[i] * b[i];
+  for(int i = 0; i < WIDTH * HEIGHT; ++i) accum += a[i] * b[i];
   return accum;
 }
 
@@ -73,6 +145,8 @@ void putstr(char *s) {
 }
 
 int main() {
+  __asm__ volatile("vsetvli a0, x0, e32");
+
   data_t *r = alloc(sizeof(data_t) * WIDTH * HEIGHT);
   data_t *x = alloc(sizeof(data_t) * WIDTH * HEIGHT);
   data_t *p = alloc(sizeof(data_t) * WIDTH * HEIGHT);
@@ -88,7 +162,6 @@ int main() {
   putstr("x init\n");
 
   data_t rr = self_dot(r);
-  print(r[0] * 100000);
   print(rr * 100000);
   int round = 0;
   while(rr > EPS) {

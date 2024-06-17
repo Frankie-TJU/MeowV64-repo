@@ -26,8 +26,8 @@ case class AddressGenerationConfig(//case classs
     maxIterations: Int = 1024,
     maxInflights: Int = 4,
     addrWidth: Int = 64,
-    bytesWidth: Int = 5,
-    strideWidth: Int = 5,
+    bytesWidth: Int = 7,
+    strideWidth: Int = 7,
     shiftWidth: Int = 2
 ) {
   // power of two
