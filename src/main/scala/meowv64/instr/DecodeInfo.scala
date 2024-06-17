@@ -338,6 +338,9 @@ object DecodeInfo {
       VLE16_V    -> List(Y, Y, Y, vector, Y, integer, N, XX, Y, vector, N, lsu, IQT.vectorMem),
       VLE32_V    -> List(Y, Y, Y, vector, Y, integer, N, XX, Y, vector, N, lsu, IQT.vectorMem),
       VLE64_V    -> List(Y, Y, Y, vector, Y, integer, N, XX, Y, vector, N, lsu, IQT.vectorMem),
+      VLUXEI8_V -> List(Y, Y, Y, vector, Y, integer, Y, vector, Y, vector, Y, lsu, IQT.vectorMem),
+      VLUXEI16_V -> List(Y, Y, Y, vector, Y, integer, Y, vector, Y, vector, Y, lsu, IQT.vectorMem),
+      VLUXEI32_V -> List(Y, Y, Y, vector, Y, integer, Y, vector, Y, vector, Y, lsu, IQT.vectorMem),
       VLUXEI64_V -> List(Y, Y, Y, vector, Y, integer, Y, vector, Y, vector, Y, lsu, IQT.vectorMem),
       VSE8_V     -> List(Y, Y, N, XX, Y, integer, N, XX, Y, vector, N, lsu, IQT.vectorMem),
       VSE16_V    -> List(Y, Y, N, XX, Y, integer, N, XX, Y, vector, N, lsu, IQT.vectorMem),
@@ -787,6 +790,9 @@ object Instructions {
   val VLE16_V    = BitPat("b000000?00000?????101?????0000111")
   val VLE32_V    = BitPat("b000000?00000?????110?????0000111")
   val VLE64_V    = BitPat("b000000?00000?????111?????0000111")
+  val VLUXEI8_V  = BitPat("b000001???????????000?????0000111")
+  val VLUXEI16_V = BitPat("b000001???????????101?????0000111")
+  val VLUXEI32_V = BitPat("b000001???????????110?????0000111")
   val VLUXEI64_V = BitPat("b000001???????????111?????0000111")
 
   // Vector Store
