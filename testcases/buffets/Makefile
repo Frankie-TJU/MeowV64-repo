@@ -24,7 +24,7 @@ bin/%.linked: bin/%.assembled bin/common.assembled
 
 bin/%.bin: bin/%.linked
 	cp $< $@
-	$(PREFIX)objcopy -O binary -j .text -j .rodata -j .data -j .srodata.cst4 -j .sdata $@
+	$(PREFIX)objcopy -O binary -j .text -j .rodata -j .data $@
 
 hex/%.hex: bin/%.bin Makefile
 	mkdir -p hex
