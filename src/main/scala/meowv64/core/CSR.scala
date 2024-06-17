@@ -153,9 +153,7 @@ object CSR {
     0x3b1 -> (("pmpaddr1", false)),
     0x3b2 -> (("pmpaddr2", false)),
     0xb00 -> (("mcycle", true)),
-    0xb01 -> (("wdh", true)),
     0xb02 -> (("minstret", true)),
-    //0xb03 -> (("memRecord", true)),
 
     // Supervisor
     0x100 -> (("sstatus", true)),
@@ -190,7 +188,7 @@ object CSR {
       coredef: CoreDef
   ): (CSRWriter, CSR) = {
     val csr = new CSR(XLEN)
-    val endpoint = Wire(Flipped(new CSRWriter())) // Flipped 是将输入和输出的方向反转
+    val endpoint = Wire(Flipped(new CSRWriter()))
 
     val data = Mux1H(
       addrMap
@@ -221,7 +219,7 @@ object CSR {
       }
     }
 
-    (endpoint, csr) // 返回一个元组
+    (endpoint, csr)
   }
 }
 
@@ -262,7 +260,7 @@ class Status(implicit val coredef: CoreDef) extends Bundle {
 object Status {
   def hardwired(base: Status)(implicit coredef: CoreDef) = {
     val result = Wire(new Status)
-    result := DontCare // DontCare是Chisel的一个函数，用于返回一个不关心的信号
+    result := DontCare
 
     // SD = ((FS==11) OR (XS==11) OR (VS==11))
     result.sd := base.fs === 3.U || base.vs === 3.U

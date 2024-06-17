@@ -133,19 +133,10 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
     val updateVState = Flipped(Valid(new VState))
   })
 
-  val toRecord = IO(new Bundle{
-    var size = Input(UInt(32.W))
-    var writrEn = Input(Bool())
-    var readEn = Input(Bool())
-  }
-  )
-
   val int = IO(Input(new CoreInt))
 
   val csr = IO(new Bundle {
     val mcycle = new CSRPort(coredef.XLEN)
-    val wdh = new CSRPort(coredef.XLEN)
-    //val memRecord = new CSRPort(coredef.XLEN)
     val minstret = new CSRPort(coredef.XLEN)
     val mstatus = new CSRPort(coredef.XLEN)
     val mtvec = new CSRPort(coredef.XLEN)
@@ -193,11 +184,6 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
   val hartId = IO(Input(UInt(32.W)))
 
   val dm = IO(new CoreToDebugModule)
-
-  /*val toRecord = IO(new Bundle {
-    val memRecord = Input(UInt(8.W))
-  })*/
-
   val debugMode = RegInit(false.B)
   dm.halted := debugMode
   toExec.debugMode := debugMode
@@ -273,25 +259,18 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
    */
 
   val mcycle = RegInit(0.U(coredef.XLEN.W))
-  val wdh = RegInit(0.U(coredef.XLEN.W))
   val minstret = RegInit(0.U(coredef.XLEN.W))
   val mcountinhibit = RegInit(0.U(coredef.XLEN.W))
 
-  when(!mcountinhibit(0)) { // mcountinhibit是riscv的寄存器，用来控制是否计数
+  when(!mcountinhibit(0)) {
     mcycle := mcycle + 1.U
-  }
-
-  when(toRecord.writrEn || toRecord.readEn){
-    wdh := wdh + toRecord.size
   }
 
   when(!mcountinhibit(1)) {
     minstret := minstret + toExec.retCnt
   }
-  
-  csr.mcycle <> CSRPort.fromReg(coredef.XLEN, mcycle) // CSRPORT是用来做寄存器的
-  csr.wdh <> CSRPort.fromReg(coredef.XLEN, wdh) // CSRPORT是用来做寄存器的
-  //csr.memRecord <> CSRPort.fromReg(coredef.XLEN, memRecord)
+
+  csr.mcycle <> CSRPort.fromReg(coredef.XLEN, mcycle)
   csr.minstret <> CSRPort.fromReg(coredef.XLEN, minstret)
   csr.mcountinhibit <> CSRPort.fromReg(coredef.XLEN, mcountinhibit)
 

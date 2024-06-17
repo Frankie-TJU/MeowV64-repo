@@ -19,11 +19,11 @@ import freechips.rocketchip.tilelink.TLMasterPortParameters
 import freechips.rocketchip.tilelink.TLMasterToSlaveTransferSizes
 import freechips.rocketchip.tilelink.TLRegisterNode
 
-case class AddressGenerationConfig(//case classs
+case class AddressGenerationConfig(
     configBase: BigInt,
     beatBytes: Int,
-    configInstWords: Int = 32,
-    maxIterations: Int = 1024,
+    configInstWords: Int = 16,
+    maxIterations: Int = 1048576,
     maxInflights: Int = 4,
     addrWidth: Int = 64,
     bytesWidth: Int = 7,
@@ -37,11 +37,9 @@ case class AddressGenerationConfig(//case classs
 object AddressGeneration {
   // addresses
   def STATUS = 0x00
-  def WDH = 0x10
   def CONTROL = 0x20
   def ITERATIONS = 0x40
   def INSTS = 0x60
-  
 
   // config
   def CONFIG_OPCODE = 31
@@ -123,7 +121,6 @@ class AddressGeneration(val config: AddressGenerationConfig)(implicit
   )
 
   // to memory
-  // 以下代码中的TLClientNode是TileLink的客户端节点，用于向TileLink总线发送请求
   val masterNode = TLClientNode(
     Seq(
       TLMasterPortParameters.v1(
@@ -152,13 +149,12 @@ class AddressGenerationModuleImp(outer: AddressGeneration)
   val configInsts = RegInit(VecInit.fill(config.configInstWords)(0.U(32.W)))
   val currentInstIndex = RegInit(0.U(log2Up(config.configInstWords).W))
   val state = RegInit(AddressGenerationState.sIdle)
-  val wdh = RegInit(0.U(32.W))
   val control = WireInit(0.U(32.W))
-  val iterations = RegInit(0.U(log2Up(config.maxIterations).W))
+  val iterations = RegInit(0.U(log2Up(config.maxIterations + 1).W))
   val currentIteration = RegInit(0.U(log2Up(config.maxIterations + 1).W))
-  val inflights = RegInit(//RegInit是一个寄存器初始化
+  val inflights = RegInit(
     VecInit.fill(config.maxInflights)(AddressGenerationInflight.empty(config))
-  )//vecinit是一个向量，fill是填充，fill是填充一个AddressGenerationInflight.empty(config)的向量
+  )
 
   val head = RegInit(0.U(log2Ceil(config.maxInflights).W))
   val tail = RegInit(0.U(log2Ceil(config.maxInflights).W))
@@ -171,13 +167,6 @@ class AddressGenerationModuleImp(outer: AddressGeneration)
         32,
         state.asUInt,
         RegFieldDesc("state", "current state of address generation unit")
-      )
-    ),
-    AddressGeneration.WDH -> Seq(
-      RegField.r(
-        32,
-        wdh.asUInt,
-        RegFieldDesc("wdh", "current state of address generation unit")
       )
     ),
     AddressGeneration.CONTROL -> Seq(
@@ -296,15 +285,13 @@ class AddressGenerationModuleImp(outer: AddressGeneration)
   val reqMask = inflights.map(_.req)
   val reqIndex = PriorityEncoder(reqMask)
   master.a.valid := false.B
-  when(reqMask.reduce(_ || _)) { 
-    //reduce是一个逻辑运算符，_ || _是逻辑或，_是一个占位符,表示一个参数
+  when(reqMask.reduce(_ || _)) {
     val inflight = inflights(reqIndex)
 
-    master.a.bits := master_edge // master edge是一个TileLink的请求
-      .Get(reqIndex, inflight.reqAddr, inflight.reqLgSize) // Get是TileLink的请求类型
-      ._2//_2是TileLink的请求的第二个参数，_2的意思是返回的是TileLink的请求的第二个参数
+    master.a.bits := master_edge
+      .Get(reqIndex, inflight.reqAddr, inflight.reqLgSize)
+      ._2
     master.a.valid := true.B
-    wdh := wdh.asUInt + master.a.bits.size
     when(master.a.fire) {
       inflight.req := false.B
     }
@@ -317,7 +304,7 @@ class AddressGenerationModuleImp(outer: AddressGeneration)
     val recvBytes = (1.U << master.d.bits.size)
     val newRecv = inflight.recv + recvBytes
     inflight.recv := newRecv
-    val offset = inflight.reqAddr(log2Up(config.beatBytes) - 1, 0)//log2Up是向上取整
+    val offset = inflight.reqAddr(log2Up(config.beatBytes) - 1, 0)
     val shift = offset << 3.U
 
     when(inflight.op === AddressGenerationOp.STRIDED) {
