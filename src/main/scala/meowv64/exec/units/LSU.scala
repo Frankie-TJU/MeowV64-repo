@@ -841,9 +841,17 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
             }
           }.otherwise {
             // indexed load
-            vectorReadRespDataComb := vectorReadRespData |
-              (toMem.reader.resp.bits(coredef.XLEN - 1, 0) <<
-                (vectorReadRespIndex << log2Ceil(coredef.XLEN)))
+            // assume SEW matches instruction
+            // so that index count = element count
+            for (vsew <- 0 to 3) {
+              val width = 8 << vsew
+              // handle eew
+              when(vState.vtype.vsew === vsew.U) {
+                vectorReadRespDataComb := vectorReadRespData |
+                  (toMem.reader.resp.bits(width - 1, 0) <<
+                    (vectorReadRespIndex << log2Ceil(width)))
+              }
+            }
           }
 
           when(vectorReadReqIndex === vectorBeats) {

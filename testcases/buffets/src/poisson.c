@@ -278,27 +278,29 @@ void putstr(char *s) {
 }
 
 int main() {
+  // Temporarilly commented by meow
+  // for (int i = 0;i < 1000;i++)
+  //   putstr(".");
+  // putstr("\r\n");
+
   __asm__ volatile("vsetvli a0, x0, e32");
 
   data_t *r = alloc(sizeof(data_t) * WIDTH * HEIGHT);
   data_t *x = alloc(sizeof(data_t) * WIDTH * HEIGHT);
   data_t *p = alloc(sizeof(data_t) * WIDTH * HEIGHT);
   data_t *div_p = alloc(sizeof(data_t) * WIDTH * HEIGHT);
-  print_hex((int) r);
-  print_hex((int) p);
 
+  putstr("Initializing input data\r\n");
   init(p); // p = r
-  putstr("p init\n");
   init(r);
-  putstr("r init\n");
   zero(x, sizeof(data_t) * WIDTH * HEIGHT);
-  putstr("x init\n");
 
   data_t rr = self_dot_vector(r);
-  print(rr * 100000);
+  // print(rr * 100000);
   int round = 0;
+  putstr("Start iterations until eps < 1e-3\r\n");
   while(rr > EPS) {
-    print(round);
+    putstr(".");
     diverg_vector(p, div_p);
     data_t pAp = dot_vector(p, div_p);
     data_t alpha = rr / pAp;
@@ -315,13 +317,15 @@ int main() {
     // break;
     // if(round > 1) break;
   }
-  putstr("Rnd: ");
+  putstr("\r\nFinished at round ");
   print(round);
 
-  for(int i = 0; i < 10; ++i) {
-    for(int j = 0; j < 10; ++j)
-      print(x[i * WIDTH + i] * 100000);
-    _putchar('\n');
+  data_t l2_sum = 0;
+  for(int i = 0; i < HEIGHT; ++i) {
+    for(int j = 0; j < WIDTH; ++j)
+      l2_sum += x[i * WIDTH + i] * x[i * WIDTH + i] ;
   }
+  putstr("Sum of result squared: ");
+  print(l2_sum * 100000);
   return 0;
 }
