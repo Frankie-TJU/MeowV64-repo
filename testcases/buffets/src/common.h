@@ -12,7 +12,9 @@ const uintptr_t BUFFETS_BASE = 0x58000000;
 volatile uint32_t *BUFFETS_SIZE = (uint32_t *)(BUFFETS_BASE + 0x40);
 volatile uint32_t *BUFFETS_SHRINK = (uint32_t *)(BUFFETS_BASE + 0x80);
 
-#define SERIAL ((volatile char *)0x60001000ULL)
+const uintptr_t UART_BASE = 0x60200000;
+volatile uint8_t *UART_THR = (uint8_t *)(UART_BASE + 0x1000);
+volatile uint8_t *UART_LSR = (uint8_t *)(UART_BASE + 0x1014);
 
 #define read_csr(reg)                                                          \
   ({                                                                           \
@@ -21,17 +23,25 @@ volatile uint32_t *BUFFETS_SHRINK = (uint32_t *)(BUFFETS_BASE + 0x80);
     __tmp;                                                                     \
   })
 
-void _putchar(char c) {
-  *SERIAL = c;
+inline void _putchar(char c) {
+  while (!(*UART_LSR & 0x40))
+    ;
+  *UART_THR = c;
 }
 
-void print_hex_delim(unsigned int num, char delim) {
+inline void _puts(char *s) {
+  while (*s) {
+    _putchar(*s++);
+  }
+}
+
+void print_hex_delim(unsigned int num, char *delim) {
   int q;
   char tmp[10];
   char *cur = tmp;
   if (num == 0) {
-    *SERIAL = '0';
-    *SERIAL = delim;
+    _putchar('0');
+    _puts(delim);
   } else {
     while (num) {
       int d = num & 0xF;
@@ -42,19 +52,19 @@ void print_hex_delim(unsigned int num, char delim) {
     }
     while (cur != tmp) {
       cur--;
-      *SERIAL = *cur;
+      _putchar(*cur);
     }
-    *SERIAL = delim;
+    _puts(delim);
   }
 }
 
-void print_delim(unsigned int num, char delim) {
+void print_delim(unsigned int num, char *delim) {
   int q;
   char tmp[10];
   char *cur = tmp;
   if (num == 0) {
-    *SERIAL = '0';
-    *SERIAL = delim;
+    _putchar('0');
+    _puts(delim);
   } else {
     while (num) {
       *cur = (num % 10) + '0';
@@ -63,16 +73,16 @@ void print_delim(unsigned int num, char delim) {
     }
     while (cur != tmp) {
       cur--;
-      *SERIAL = *cur;
+      _putchar(*cur);
     }
-    *SERIAL = delim;
+    _puts(delim);
   }
 }
 
 void print_hex(int num) {
-  print_hex_delim(num, '\n');
+  print_hex_delim(num, "\r\n");
 }
 
 void print(int num) {
-  print_delim(num, '\n');
+  print_delim(num, "\r\n");
 }

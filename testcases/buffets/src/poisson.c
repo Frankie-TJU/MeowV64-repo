@@ -145,6 +145,10 @@ void putstr(char *s) {
 }
 
 int main() {
+  for (int i = 0;i < 1000;i++)
+    putstr(".");
+  putstr("\r\n");
+
   __asm__ volatile("vsetvli a0, x0, e32");
 
   data_t *r = alloc(sizeof(data_t) * WIDTH * HEIGHT);
@@ -152,14 +156,14 @@ int main() {
   data_t *p = alloc(sizeof(data_t) * WIDTH * HEIGHT);
   data_t *div_p = alloc(sizeof(data_t) * WIDTH * HEIGHT);
 
-  putstr("Initializing input data\n");
+  putstr("Initializing input data\r\n");
   init(p); // p = r
   init(r);
   zero(x, sizeof(data_t) * WIDTH * HEIGHT);
 
   data_t rr = self_dot(r);
   int round = 0;
-  putstr("Start iterations until eps < 1e-3\n");
+  putstr("Start iterations until eps < 1e-3\r\n");
   while(rr > EPS) {
     putstr(".");
     diverg(p, div_p);
@@ -176,7 +180,7 @@ int main() {
     rr = rr_next;
     ++round;
   }
-  putstr("\nFinished at round ");
+  putstr("\r\nFinished at round ");
   print(round);
 
   data_t l2_sum = 0;
