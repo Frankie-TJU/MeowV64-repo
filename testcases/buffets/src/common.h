@@ -21,13 +21,40 @@ volatile uint32_t *BUFFETS_SHRINK = (uint32_t *)(BUFFETS_BASE + 0x80);
     __tmp;                                                                     \
   })
 
-void print(int num) {
+void _putchar(char c) {
+  *SERIAL = c;
+}
+
+void print_hex_delim(unsigned int num, char delim) {
   int q;
   char tmp[10];
   char *cur = tmp;
   if (num == 0) {
     *SERIAL = '0';
-    *SERIAL = '\n';
+    *SERIAL = delim;
+  } else {
+    while (num) {
+      int d = num & 0xF;
+      char c = (d < 10) ? (d + '0') : (d - 10 + 'A');
+      *cur = c;
+      ++cur;
+      num >>= 4;
+    }
+    while (cur != tmp) {
+      cur--;
+      *SERIAL = *cur;
+    }
+    *SERIAL = delim;
+  }
+}
+
+void print_delim(unsigned int num, char delim) {
+  int q;
+  char tmp[10];
+  char *cur = tmp;
+  if (num == 0) {
+    *SERIAL = '0';
+    *SERIAL = delim;
   } else {
     while (num) {
       *cur = (num % 10) + '0';
@@ -38,6 +65,14 @@ void print(int num) {
       cur--;
       *SERIAL = *cur;
     }
-    *SERIAL = '\n';
+    *SERIAL = delim;
   }
+}
+
+void print_hex(int num) {
+  print_hex_delim(num, '\n');
+}
+
+void print(int num) {
+  print_delim(num, '\n');
 }

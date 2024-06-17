@@ -11,6 +11,7 @@ SECTIONS {
     .rodata : {
         __srodata_begin = .;
         *(.srodata)
+        *(.srodata.*)
         __rodata_begin = .;
         *(.rodata)
         *(.rodata.*)
