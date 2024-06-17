@@ -77,22 +77,17 @@ int main() {
   data_t *x = alloc(sizeof(data_t) * WIDTH * HEIGHT);
   data_t *p = alloc(sizeof(data_t) * WIDTH * HEIGHT);
   data_t *div_p = alloc(sizeof(data_t) * WIDTH * HEIGHT);
-  print_hex((int) r);
-  print_hex((int) p);
 
+  putstr("Initializing input data\n");
   init(p); // p = r
-  putstr("p init\n");
   init(r);
-  putstr("r init\n");
   zero(x, sizeof(data_t) * WIDTH * HEIGHT);
-  putstr("x init\n");
 
   data_t rr = self_dot(r);
-  print(r[0] * 100000);
-  print(rr * 100000);
   int round = 0;
+  putstr("Start iterations until eps < 1e-3\n");
   while(rr > EPS) {
-    print(round);
+    putstr(".");
     diverg(p, div_p);
     data_t pAp = dot(p, div_p);
     data_t alpha = rr / pAp;
@@ -107,13 +102,15 @@ int main() {
     rr = rr_next;
     ++round;
   }
-  putstr("Rnd: ");
+  putstr("\nFinished at round ");
   print(round);
 
-  for(int i = 0; i < 10; ++i) {
-    for(int j = 0; j < 10; ++j)
-      print(x[i * WIDTH + i] * 100000);
-    _putchar('\n');
+  data_t l2_sum = 0;
+  for(int i = 0; i < HEIGHT; ++i) {
+    for(int j = 0; j < WIDTH; ++j)
+      l2_sum += x[i * WIDTH + i] * x[i * WIDTH + i] ;
   }
+  putstr("Sum of result squared: ");
+  print(l2_sum * 100000);
   return 0;
 }
