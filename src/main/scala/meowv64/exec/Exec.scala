@@ -137,14 +137,6 @@ class Exec(implicit val coredef: CoreDef) extends Module {
     val u = new L1UCPort(coredef.L1D)
   })
 
-
-  val toRecord = IO(new Bundle {
-    var size = Output(UInt(32.W))
-    var writrEn = Output(Bool())
-    var readEn = Output(Bool())
-  })
-
-
   val hartId = IO(Input(UInt(32.W)))
 
   val cdb = Wire(new CDB)
@@ -347,21 +339,6 @@ class Exec(implicit val coredef: CoreDef) extends Module {
   lsu.vState := toCtrl.vState
   lsu.tlbRst := toCtrl.tlbRst
   lsu.status := toCtrl.status
-
-  toRecord.writrEn := false.B
-  toRecord.readEn := false.B
-  toRecord.size := 0.U
-
-
-  when(lsu.toMem.writer.req.valid) {
-    toRecord.writrEn := true.B
-    toRecord.size := lsu.toMem.writer.req.bits.len.asUInt
-  }
-
-  when(lsu.toMem.reader.req.valid) {
-    toRecord.readEn := true.B
-    toRecord.size := 32.U
-  }
 
   // Connect extra ports
   units(0).extras("CSR") <> csrWriter
