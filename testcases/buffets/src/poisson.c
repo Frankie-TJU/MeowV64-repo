@@ -7,10 +7,46 @@
 typedef long size_t;
 typedef float data_t;
 const size_t GROUP_LEN = 8;
+#define HART_CNT 10
 
 const size_t WIDTH = 16;
 const size_t HEIGHT = 16;
+const size_t GROUP_CNT = WIDTH / GROUP_LEN * HEIGHT;
 const data_t EPS = 1e-3;
+
+size_t MY_GROUP_START;
+size_t MY_GROUP_END;
+
+typedef struct {
+  size_t progress;
+  data_t buffer;
+  char _padding[64 - sizeof(size_t) - sizeof(data_t)];
+} hart_t;
+
+hart_t harts[HART_CNT];
+
+data_t global_sync(size_t hartid, data_t my_data) {
+  print_delim(hartid, "");
+  volatile size_t spin = 0;
+  if(hartid != 0) {
+    harts[hartid].buffer = my_data;
+    size_t old_progress = harts[hartid].progress;
+    __atomic_store_n(&harts[hartid].progress, old_progress + 1, __ATOMIC_SEQ_CST);
+    while(__atomic_load_n(&harts[0].progress, __ATOMIC_SEQ_CST) <= old_progress) ++spin; // Spin
+    return harts[0].buffer;
+  } else {
+    size_t old_progress = harts[0].progress;
+    data_t accum = my_data;
+    for(int h = 1; h < HART_CNT; ++h) {
+      while(__atomic_load_n(&harts[h].progress, __ATOMIC_SEQ_CST) <= old_progress) ++spin; // Spin
+      accum += harts[h].buffer;
+    }
+    harts[0].buffer = accum;
+    __atomic_store_n(&harts[0].progress, old_progress + 1, __ATOMIC_SEQ_CST);
+    return accum;
+  }
+  size_t cur_progress = harts[hartid].progress;
+}
 
 void diverg(data_t *field, data_t *result) {
   for(int i = 0; i < HEIGHT; ++i) {
@@ -73,19 +109,19 @@ void diverg_vector(data_t *field, data_t *result) {
   }
 }
 
-data_t self_dot_vector(data_t *field) {
+data_t self_dot_vector(data_t *field, size_t my_grp_start, size_t my_grp_end, size_t hartid) {
   // v1 is accumulator
   __asm__ volatile("vmv.v.i v0, 0");
-  data_t *cur = field;
+  data_t *b = field + my_grp_start * GROUP_LEN;
+  data_t *e = field + my_grp_end * GROUP_LEN;
 
-  for(int i = 0; i < WIDTH * HEIGHT / GROUP_LEN; ++i) {
+  for(data_t *cur = b; cur < e; cur += GROUP_LEN) {
     __asm__ volatile(
       "vle32.v v1, (%0)\n"
       "vfmacc.vv v0, v1, v1\n"
       : 
       : "r" (cur)
     );
-    cur += GROUP_LEN;
   }
 
   data_t accum = 0;
@@ -93,7 +129,7 @@ data_t self_dot_vector(data_t *field) {
   __asm__ volatile("vse32.v v0, %0\n" : "=m"(buffer));
   for(int i = 0; i < GROUP_LEN; ++i) accum += buffer[i];
 
-  return accum;
+  return global_sync(hartid, accum);
 }
 
 data_t self_dot_buffet(data_t *field) {
@@ -277,55 +313,87 @@ void putstr(char *s) {
   for(; *s; ++s) _putchar(*s);
 }
 
-int main() {
+int main(int hartid) {
+  if(hartid >= HART_CNT) return 0;
+
   // Temporarilly commented by meow
   // for (int i = 0;i < 1000;i++)
   //   putstr(".");
   // putstr("\r\n");
 
-  __asm__ volatile("vsetvli a0, x0, e32");
+  size_t group_residue = GROUP_CNT % HART_CNT;
+  size_t self_len = (GROUP_CNT / HART_CNT) + (hartid < group_residue ? 1 : 0);
+  size_t self_start = (GROUP_CNT / HART_CNT) * hartid + (hartid < group_residue ? hartid : group_residue);
+//   volatile size_t meow = 0;
+//   for(int i = 0; i < hartid * 20; ++i) ++meow;
+//   print(self_start);
+//   print(self_start + self_len);
+
+  __asm__ volatile("vsetvli t0, x0, e32" ::: "t0");
 
   data_t *r = alloc(sizeof(data_t) * WIDTH * HEIGHT);
   data_t *x = alloc(sizeof(data_t) * WIDTH * HEIGHT);
   data_t *p = alloc(sizeof(data_t) * WIDTH * HEIGHT);
   data_t *div_p = alloc(sizeof(data_t) * WIDTH * HEIGHT);
 
-  putstr("Initializing input data\r\n");
-  init(p); // p = r
-  init(r);
-  zero(x, sizeof(data_t) * WIDTH * HEIGHT);
+  if(hartid == 0) {
+    putstr("Initializing input data\r\n");
+    init(p); // p = r
+    putstr("p\r\n");
+    init(r);
+    putstr("r\r\n");
+    zero(x, sizeof(data_t) * WIDTH * HEIGHT);
+    putstr("x\r\n");
+  }
 
-  data_t rr = self_dot_vector(r);
-  // print(rr * 100000);
+  if(hartid == 0) putstr("Pre-start\r\n");
+  global_sync(hartid, 0);
+  if(hartid == 0) putstr("Start\r\n");
+
+  data_t rr = self_dot_vector(r, self_start, self_start + self_len, hartid);
+  if(hartid == 0) print(rr * 100000);
+  
   int round = 0;
-  putstr("Start iterations until eps < 1e-3\r\n");
+  if(hartid == 0) putstr("Start iterations until eps < 1e-3\r\n");
   while(rr > EPS) {
-    putstr(".");
+    if(hartid == 0) putstr(".");
     diverg_vector(p, div_p);
     data_t pAp = dot_vector(p, div_p);
     data_t alpha = rr / pAp;
 
     self_relaxiation_vector(x, p, alpha);
     self_relaxiation_vector(r, div_p, -alpha);
-    data_t rr_next = self_dot_vector(r);
+    data_t rr_next = self_dot_vector(r, self_start, self_start + self_len, hartid);
 
     data_t beta = rr_next / rr;
     reverse_relaxiation_vector(p, r, beta);
 
     rr = rr_next;
     ++round;
-    // break;
+    break;
     // if(round > 1) break;
   }
-  putstr("\r\nFinished at round ");
-  print(round);
 
-  data_t l2_sum = 0;
-  for(int i = 0; i < HEIGHT; ++i) {
-    for(int j = 0; j < WIDTH; ++j)
-      l2_sum += x[i * WIDTH + i] * x[i * WIDTH + i] ;
+  global_sync(hartid, 0);
+
+  if(hartid == 0) {
+    putstr("\r\nFinished at round ");
+    print(round);
+
+    for(int i = 0; i < 16; ++i)
+      print(x[i * WIDTH] * 100000);
+
+    data_t l2_sum = 0;
+    for(int i = 0; i < HEIGHT; ++i) {
+      for(int j = 0; j < WIDTH; ++j)
+        l2_sum += x[i * WIDTH + j] * x[i * WIDTH + j];
+    }
+    putstr("Sum of result squared: ");
+    print(l2_sum * 100000);
+
+    return 0;
+  } else {
+    volatile size_t meow;
+    while(1) ++meow;
   }
-  putstr("Sum of result squared: ");
-  print(l2_sum * 100000);
-  return 0;
 }

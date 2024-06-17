@@ -23,13 +23,13 @@ volatile uint8_t *UART_LSR = (uint8_t *)(UART_BASE + 0x1014);
     __tmp;                                                                     \
   })
 
-inline void _putchar(char c) {
+static inline void _putchar(char c) {
   while (!(*UART_LSR & 0x40))
     ;
   *UART_THR = c;
 }
 
-inline void _puts(char *s) {
+static inline void _puts(char *s) {
   while (*s) {
     _putchar(*s++);
   }

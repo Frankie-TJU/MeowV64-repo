@@ -8,6 +8,7 @@ _start:
   csrs mstatus, t0
   
   li sp, 0x88000000
+  csrr a0, mhartid
   jal main
   bnez a0, fail
   
