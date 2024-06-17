@@ -66,6 +66,9 @@ class DelayedMem(implicit val coredef: CoreDef) extends Bundle {
   /** Result should be sign extended
     */
   val sext = Bool()
+  /** Result should be NaN-boxed for float loads
+    */
+  val nan_boxing = Bool()
   val dataValid = Bool()
 
   // TODO: move these big registers to a separate queue
@@ -138,6 +141,21 @@ class DelayedMem(implicit val coredef: CoreDef) extends Bundle {
         }
         is(DCWriteLen.D) {
           ret := raw(63, 0)
+        }
+      }
+    }
+
+    // nan boxing
+    when(nan_boxing) {
+      switch(len) {
+        is(DCWriteLen.H) {
+          ret := Fill(48, 1.U) ## raw(15, 0)
+        }
+        is(DCWriteLen.W) {
+          ret := Fill(32, 1.U) ## raw(31, 0)
+        }
+        is(DCWriteLen.D) {
+          ret := raw
         }
       }
     }
@@ -542,6 +560,9 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
       toExec.setHasMem.valid := true.B
       lsqEntry.op := DelayedMemOp.uncachedLoad
       lsqEntry.addr := addr
+
+      // special handling for fld/flw
+      lsqEntry.nan_boxing := next.instr.instr.op === Decoder.Op("LOAD-FP").ident
 
       switch(next.instr.instr.funct3) {
         is(Decoder.MEM_WIDTH_FUNC("B")) {
