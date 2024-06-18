@@ -43,8 +43,18 @@ void self_relaxiation(data_t *into, data_t *val, data_t mul) {
 }
 
 void relaxiation(data_t *into, data_t *from, data_t *val, data_t mul) {
-  for(int i = 0; i < WIDTH * HEIGHT; ++i)
-    into[i] = from[i] + val[i] * mul;
+  static_assert(WIDTH * HEIGHT % 4 == 0, "");
+  for(int i = 0; i < WIDTH * HEIGHT; i += 4) {
+    __asm__ volatile(
+      "vle32.v v0, 0(%0)\n"
+      "vle32.v v1, 0(%1)\n"
+      "vfmacc.vf v1, %2, v0\n"
+      "vse32.v v1, 0(%3)\n"
+      :
+      : "r" (&val[i]), "r" (&from[i]), "f" (mul), "r" (&into[i])
+      : "memory"
+    );
+  }
 }
 
 void init(data_t *field) {
