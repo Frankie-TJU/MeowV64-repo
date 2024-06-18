@@ -1,8 +1,4 @@
-// #include <stdio.h>
-// #include <string.h>
-// #include <stdlib.h>
 #include "common.h"
-// #include "printf.h"
 
 typedef long size_t;
 typedef float data_t;
@@ -303,14 +299,6 @@ void *alloc(size_t size) {
   void *ret = HEAP_BASE;
   HEAP_BASE = HEAP_BASE + ((size + 63) & (~63)); // Manually 64-byte alignment
   return ret;
-}
-
-void zero(char *mem, int size) {
-  for(int i = 0; i < size; ++i) mem[i] = 0;
-}
-
-void putstr(char *s) {
-  for(; *s; ++s) _putchar(*s);
 }
 
 int main(int hartid) {

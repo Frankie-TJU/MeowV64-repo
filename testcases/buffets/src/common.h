@@ -86,3 +86,12 @@ void print_hex(int num) {
 void print(int num) {
   print_delim(num, "\r\n");
 }
+
+void zero(char *mem, int size) {
+  for(int i = 0; i < size; ++i) mem[i] = 0;
+}
+
+void putstr(char *s) {
+  for(; *s; ++s) _putchar(*s);
+}
+
