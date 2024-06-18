@@ -1,14 +1,16 @@
 #include "common.h"
 #include "printf.h"
+#include "stdalign.h"
 
 #define HART_CNT 2
+
+// static_assert(HART_ALIGN > sizeof(size_t) + sizeof(data_t));
 
 const size_t GROUP_CNT = WIDTH / GROUP_LEN * HEIGHT;
 
 typedef struct {
-  size_t progress;
+  alignas(64) size_t progress;
   data_t buffer;
-  char _padding[64 - sizeof(size_t) - sizeof(data_t)];
 } hart_t;
 
 hart_t harts[HART_CNT];
@@ -40,6 +42,7 @@ data_t global_sync(size_t hartid, data_t my_data) {
     size_t old_progress = harts[0].progress;
     data_t accum = my_data;
     for(int h = 1; h < HART_CNT; ++h) {
+      // printf_("Looking at: %d @ %p\n", h, &harts[h].progress);
       while(__atomic_load_n(&harts[h].progress, __ATOMIC_SEQ_CST) <= old_progress) ++spin; // Spin
       accum += harts[h].buffer;
     }
@@ -185,9 +188,12 @@ void init(data_t *field) {
 }
 
 void *HEAP_BASE = 0x84000000;
-void *alloc(size_t size) {
-  void *ret = HEAP_BASE;
-  HEAP_BASE = HEAP_BASE + ((size + 63) & (~63)); // Manually 64-byte alignment
+void *heap_bump(void *from, size_t size) {
+  return from + ((size + 63) & (~63)); // Manually 64-byte alignment
+}
+void *heap_alloc(void **heap, size_t size) {
+  void *ret = *heap;
+  *heap = heap_bump(*heap, size);
   return ret;
 }
 
@@ -217,10 +223,11 @@ int main(int hartid) {
 
   __asm__ volatile("vsetvli t0, x0, e32" ::: "t0");
 
-  data_t *r = alloc(sizeof(data_t) * WIDTH * HEIGHT);
-  data_t *x = alloc(sizeof(data_t) * WIDTH * HEIGHT);
-  data_t *p = alloc(sizeof(data_t) * WIDTH * HEIGHT);
-  data_t *div_p = alloc(sizeof(data_t) * WIDTH * HEIGHT);
+  void *heap = HEAP_BASE;
+  data_t *r = heap_alloc(&heap, sizeof(data_t) * WIDTH * HEIGHT);
+  data_t *x = heap_alloc(&heap, sizeof(data_t) * WIDTH * HEIGHT);
+  data_t *p = heap_alloc(&heap, sizeof(data_t) * WIDTH * HEIGHT);
+  data_t *div_p = heap_alloc(&heap, sizeof(data_t) * WIDTH * HEIGHT);
 
   if(hartid == 0) {
     putstr("Initializing input data\r\n");
