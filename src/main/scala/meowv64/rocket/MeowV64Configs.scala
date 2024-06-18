@@ -14,6 +14,7 @@ import freechips.rocketchip.subsystem.WithNoSlavePort
 import freechips.rocketchip.system.BaseConfig
 import meowv64.system.DualCoreSystemDef
 import meowv64.system.HexaCoreSystemDef
+import meowv64.system.DecaCoreSystemDef
 import meowv64.system.SingleCoreSystemDef
 import freechips.rocketchip.subsystem.MasterPortParams
 import freechips.rocketchip.subsystem.MemoryBusKey
@@ -136,6 +137,12 @@ class MeowV64DualCoreConfig
 class MeowV64HexaCoreConfig
     extends Config(
       new WithMeowV64Cores(new HexaCoreSystemDef) ++
+        new MeowV64BaseConfig
+    )
+
+class MeowV64DecaCoreConfig
+    extends Config(
+      new WithMeowV64Cores(new DecaCoreSystemDef) ++
         new MeowV64BaseConfig
     )
 
