@@ -32,19 +32,44 @@ data_t self_dot(data_t *field) {
 }
 
 data_t dot(data_t *a, data_t *b) {
+  static_assert(WIDTH * HEIGHT % GROUP_LEN == 0, "");
+  __asm__ volatile("vmv.v.i v0, 0");
+  for(int i = 0; i < WIDTH * HEIGHT; i += GROUP_LEN) {
+    __asm__ volatile(
+      "vle32.v v1, 0(%0)\n"
+      "vle32.v v2, 0(%1)\n"
+      "vfmacc.vv v0, v1, v2\n"
+      :
+      : "r" (&a[i]), "r" (&b[i])
+      : "memory"
+    );
+  }
+
   data_t accum = 0;
-  for(int i = 0; i < WIDTH * HEIGHT; ++i) accum += a[i] * b[i];
+  data_t buffer[GROUP_LEN];
+  __asm__ volatile("vse32.v v0, %0\n" : "=m"(buffer));
+  for(int i = 0; i < GROUP_LEN; ++i) accum += buffer[i];
   return accum;
 }
 
 void self_relaxiation(data_t *into, data_t *val, data_t mul) {
-  for(int i = 0; i < WIDTH * HEIGHT; ++i)
-    into[i] += val[i] * mul;
+  static_assert(WIDTH * HEIGHT % GROUP_LEN == 0, "");
+  for(int i = 0; i < WIDTH * HEIGHT; i += GROUP_LEN) {
+    __asm__ volatile(
+      "vle32.v v0, 0(%0)\n"
+      "vle32.v v1, 0(%1)\n"
+      "vfmacc.vf v1, %2, v0\n"
+      "vse32.v v1, 0(%1)\n"
+      :
+      : "r" (&val[i]), "r" (&into[i]), "f" (mul)
+      : "memory"
+    );
+  }
 }
 
 void relaxiation(data_t *into, data_t *from, data_t *val, data_t mul) {
-  static_assert(WIDTH * HEIGHT % 4 == 0, "");
-  for(int i = 0; i < WIDTH * HEIGHT; i += 4) {
+  static_assert(WIDTH * HEIGHT % 8 == 0, "");
+  for(int i = 0; i < WIDTH * HEIGHT; i += GROUP_LEN) {
     __asm__ volatile(
       "vle32.v v0, 0(%0)\n"
       "vle32.v v1, 0(%1)\n"
