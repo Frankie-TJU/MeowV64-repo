@@ -100,8 +100,8 @@ int main() {
     printf_("Round %d: error = %f in %ld cycles\r\n", round, rr, elapsed_round);
   }
   printf_("Finished computation of %dx%d with EPS %f at round %d after %lld "
-          "cycles\r\n",
-          WIDTH, HEIGHT, EPS, round, elapsed);
+          "cycles (%.2f seconds)\r\n",
+          WIDTH, HEIGHT, EPS, round, elapsed, elapsed / 50000000.0);
 
   data_t l2_sum = 0;
   for (int i = 0; i < HEIGHT; ++i) {
