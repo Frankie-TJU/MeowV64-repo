@@ -91,15 +91,15 @@ void self_relaxiation(data_t *into, data_t *val, data_t mul) {
   }
 }
 
-void relaxiation(data_t *into, data_t *from, data_t *val, data_t mul) {
+void reverse_relaxiation(data_t *into, data_t *from, data_t mul) {
   static_assert(WIDTH * HEIGHT % 8 == 0, "");
   for (int i = 0; i < WIDTH * HEIGHT; i += GROUP_LEN) {
     __asm__ volatile("vle32.v v0, 0(%0)\n"
                      "vle32.v v1, 0(%1)\n"
                      "vfmacc.vf v1, %2, v0\n"
-                     "vse32.v v1, 0(%3)\n"
+                     "vse32.v v1, 0(%0)\n"
                      :
-                     : "r"(&val[i]), "r"(&from[i]), "f"(mul), "r"(&into[i])
+                     : "r"(&into[i]), "r"(&from[i]), "f"(mul)
                      : "memory");
   }
 }
@@ -149,7 +149,7 @@ int main() {
     data_t rr_next = self_dot(r);
 
     data_t beta = rr_next / rr;
-    relaxiation(p, r, p, beta);
+    reverse_relaxiation(p, r, beta);
 
     rr = rr_next;
     unsigned elapsed_round = read_csr(mcycle) - before;
