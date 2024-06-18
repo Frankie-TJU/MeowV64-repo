@@ -79,8 +79,8 @@ int main() {
   data_t rr = self_dot(r);
   int round = 0;
   printf_("Start iterations until eps < %f\r\n", EPS);
+  unsigned long before = read_csr(mcycle);
   while(rr > EPS) {
-    putstr(".");
     diverg(p, div_p);
     data_t pAp = dot(p, div_p);
     data_t alpha = rr / pAp;
@@ -95,8 +95,8 @@ int main() {
     rr = rr_next;
     ++round;
   }
-  putstr("\r\nFinished at round ");
-  print(round);
+  unsigned long elapsed = read_csr(mcycle) - before;
+  printf_("Finished at round %d after %d cycles\r\n", round, elapsed);
 
   data_t l2_sum = 0;
   for(int i = 0; i < HEIGHT; ++i) {
