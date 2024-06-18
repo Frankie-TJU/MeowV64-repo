@@ -11,16 +11,45 @@ const data_t EPS = 1e-3;
 
 void diverg(data_t *field, data_t *result) {
   for(int i = 0; i < HEIGHT; ++i) {
-    for(int j = 0; j < WIDTH; ++j) {
-      _Bool solid_boundary = i == 0 || i == HEIGHT - 1;
-      data_t cur = field[i * WIDTH + j] * (solid_boundary ? -3 : -4);
+    _Bool solid_boundary = i == 0 || i == HEIGHT - 1;
+    data_t multiplier = solid_boundary ? -3 : -4;
 
-      if(j != 0) cur += field[i * WIDTH + (j-1)];
-      if(j != WIDTH - 1) cur += field[i * WIDTH + (j+1)];
-      if(i != 0) cur += field[(i-1) * WIDTH + j];
-      if(i != HEIGHT - 1) cur += field[(i+1) * WIDTH + j];
+    for(int j = 0; j < WIDTH; j += GROUP_LEN) {
+      data_t left = (j == 0) ? 0 : field[i * WIDTH + (j-1)];
+      data_t right = (j == WIDTH - GROUP_LEN) ? 0 : field[i * WIDTH + j + GROUP_LEN];
 
-      result[i * WIDTH + j] = cur;
+      __asm__ volatile(
+        "vle32.v v0, (%0)\n"
+        "vfslide1up.vf v1, v0, %1\n"
+        "vfslide1down.vf v2, v0, %2\n"
+        "vfmadd.vf v0, %3, v1\n"
+        "vfadd.vv v0, v0, v2\n"
+        : 
+        : "r" (field + (i * WIDTH + j)), "f" (left), "f" (right), "f"(multiplier)
+      );
+
+      if(i != 0) {
+        __asm__ volatile(
+          "vle32.v v1, (%0)\n"
+          "vfadd.vv v0, v0, v1\n"
+          : 
+          : "r" (field + ((i - 1) * WIDTH + j))
+        );
+      }
+      if(i != HEIGHT - 1) {
+        __asm__ volatile(
+          "vle32.v v1, (%0)\n"
+          "vfadd.vv v0, v0, v1\n"
+          : 
+          : "r" (field + ((i + 1) * WIDTH + j))
+        );
+      }
+
+      __asm__ volatile(
+        "vse32.v v0, (%0)\n"
+        : 
+        : "r" (result + (i * WIDTH + j))
+      );
     }
   }
 }
