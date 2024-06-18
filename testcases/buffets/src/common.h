@@ -99,6 +99,6 @@ void putstr(char *s) {
 // for poisson
 typedef float data_t;
 const size_t GROUP_LEN = 8;
-const size_t WIDTH = 128;
-const size_t HEIGHT = 128;
+const size_t WIDTH = 16;
+const size_t HEIGHT = 16;
 const data_t EPS = 1e-8;
