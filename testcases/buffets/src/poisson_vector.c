@@ -157,7 +157,9 @@ int main() {
     ++round;
     printf_("Round %d: error = %f in %ld cycles\r\n", round, rr, elapsed_round);
   }
-  printf_("Finished at round %d after %lld cycles\r\n", round, elapsed);
+  printf_("Finished computation of %dx%d with EPS %f at round %d after %lld "
+          "cycles\r\n",
+          WIDTH, HEIGHT, EPS, round, elapsed);
 
   data_t l2_sum = 0;
   for (int i = 0; i < HEIGHT; ++i) {
