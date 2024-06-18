@@ -23,7 +23,10 @@ do
 		vfredusum \
 		vfsub \
 		vle \
-		vluxei \
+		vluxei8 \
+		vluxei16 \
+		vluxei32 \
+		vluxei64 \
 		vmax \
 		vmaxu \
 		vmin \
@@ -38,6 +41,7 @@ do
 		vrsub \
 		vse \
 		vsetvl \
+		vslide \
 		vsll \
 		vxor
 	do

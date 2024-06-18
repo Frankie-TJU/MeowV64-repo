@@ -72,12 +72,23 @@ class VectorMisc(override implicit val coredef: CoreDef)
           }
           is(Decoder.VP_FUNC("VSLIDEUP_V")) {
             switch(pipe.instr.instr.funct3) {
-              is(3.U, 4.U) {
-                // vslideup.vi/vx
-                // FIXME: vx
+              is(3.U) {
+                // vslideup.vi
                 val shift = pipe.instr.instr.rs1
                 for (i <- 0 until lanes) {
-                  res(i) := 0.U
+                  res(i) := rs3Elements(i)
+                  for (j <- 0 to i) {
+                    when(shift === (i - j).U) {
+                      res(i) := rs2Elements(j)
+                    }
+                  }
+                }
+              }
+              is(4.U) {
+                // vslideup.vx
+                val shift = pipe.rs1val(coredef.XLEN - 1, 0)
+                for (i <- 0 until lanes) {
+                  res(i) := rs3Elements(i)
                   for (j <- 0 to i) {
                     when(shift === (i - j).U) {
                       res(i) := rs2Elements(j)
@@ -96,9 +107,21 @@ class VectorMisc(override implicit val coredef: CoreDef)
           }
           is(Decoder.VP_FUNC("VSLIDEDOWN_V")) {
             switch(pipe.instr.instr.funct3) {
-              is(3.U, 4.U) {
-                // vslidedown.vi/vx
+              is(3.U) {
+                // vslidedown.vi
                 val shift = pipe.instr.instr.rs1
+                for (i <- 0 until lanes) {
+                  res(i) := 0.U
+                  for (j <- i until lanes) {
+                    when(shift === (j - i).U) {
+                      res(i) := rs2Elements(j)
+                    }
+                  }
+                }
+              }
+              is(4.U) {
+                // vslidedown.vx
+                val shift = pipe.rs1val(coredef.XLEN - 1, 0)
                 for (i <- 0 until lanes) {
                   res(i) := 0.U
                   for (j <- i until lanes) {
