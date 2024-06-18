@@ -70,6 +70,41 @@ class VectorMisc(override implicit val coredef: CoreDef)
               }
             }
           }
+          is(Decoder.VP_FUNC("VSLIDEUP_V")) {
+            switch(pipe.instr.instr.funct3) {
+              is(3.U) {
+                // vslideup.vi
+                val shift = pipe.instr.instr.rs1
+                for (i <- 0 until lanes) {
+                  res(i) := rs3Elements(i)
+                  for (j <- 0 to i) {
+                    when(shift === (i - j).U) {
+                      res(i) := rs2Elements(j)
+                    }
+                  }
+                }
+              }
+              is(4.U) {
+                // vslideup.vx
+                val shift = pipe.rs1val(coredef.XLEN - 1, 0)
+                for (i <- 0 until lanes) {
+                  res(i) := rs3Elements(i)
+                  for (j <- 0 to i) {
+                    when(shift === (i - j).U) {
+                      res(i) := rs2Elements(j)
+                    }
+                  }
+                }
+              }
+              is(5.U, 6.U) {
+                // v[f]slide1up
+                res(0) := rs1Elements(0)
+                for (i <- 1 until lanes) {
+                  res(i) := rs2Elements(i - 1)
+                }
+              }
+            }
+          }
           is(Decoder.VP_FUNC("VSLIDEDOWN_V")) {
             switch(pipe.instr.instr.funct3) {
               is(3.U) {
@@ -83,6 +118,25 @@ class VectorMisc(override implicit val coredef: CoreDef)
                     }
                   }
                 }
+              }
+              is(4.U) {
+                // vslidedown.vx
+                val shift = pipe.rs1val(coredef.XLEN - 1, 0)
+                for (i <- 0 until lanes) {
+                  res(i) := 0.U
+                  for (j <- i until lanes) {
+                    when(shift === (j - i).U) {
+                      res(i) := rs2Elements(j)
+                    }
+                  }
+                }
+              }
+              is(5.U, 6.U) {
+                // v[f]slide1down
+                for (i <- 0 until lanes - 1) {
+                  res(i) := rs2Elements(i + 1)
+                }
+                res(lanes - 1) := rs1Elements(0)
               }
             }
           }

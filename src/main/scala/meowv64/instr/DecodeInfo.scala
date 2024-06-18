@@ -338,7 +338,7 @@ object DecodeInfo {
       VLE16_V    -> List(Y, Y, Y, vector, Y, integer, N, XX, Y, vector, N, lsu, IQT.vectorMem),
       VLE32_V    -> List(Y, Y, Y, vector, Y, integer, N, XX, Y, vector, N, lsu, IQT.vectorMem),
       VLE64_V    -> List(Y, Y, Y, vector, Y, integer, N, XX, Y, vector, N, lsu, IQT.vectorMem),
-      VLUXEI8_V -> List(Y, Y, Y, vector, Y, integer, Y, vector, Y, vector, Y, lsu, IQT.vectorMem),
+      VLUXEI8_V  -> List(Y, Y, Y, vector, Y, integer, Y, vector, Y, vector, Y, lsu, IQT.vectorMem),
       VLUXEI16_V -> List(Y, Y, Y, vector, Y, integer, Y, vector, Y, vector, Y, lsu, IQT.vectorMem),
       VLUXEI32_V -> List(Y, Y, Y, vector, Y, integer, Y, vector, Y, vector, Y, lsu, IQT.vectorMem),
       VLUXEI64_V -> List(Y, Y, Y, vector, Y, integer, Y, vector, Y, vector, Y, lsu, IQT.vectorMem),
@@ -348,78 +348,85 @@ object DecodeInfo {
       VSE64_V    -> List(Y, Y, N, XX, Y, integer, N, XX, Y, vector, N, lsu, IQT.vectorMem),
 
       // Vector Integer
-      VADD_VV       -> List(Y, N, Y, vector, Y, vector, Y, vector, N, XX, N, vectorAlu, IQT.vec),
-      VADD_VI       -> List(Y, N, Y, vector, N, XX, Y, vector, N, XX, N, vectorAlu, IQT.vec),
-      VADD_VX       -> List(Y, N, Y, vector, Y, integer, Y, vector, N, XX, N, vectorAlu, IQT.vec),
-      VSUB_VV       -> List(Y, N, Y, vector, Y, vector, Y, vector, N, XX, N, vectorAlu, IQT.vec),
-      VSUB_VX       -> List(Y, N, Y, vector, Y, integer, Y, vector, N, XX, N, vectorAlu, IQT.vec),
-      VRSUB_VI      -> List(Y, N, Y, vector, N, XX, Y, vector, N, XX, N, vectorAlu, IQT.vec),
-      VRSUB_VX      -> List(Y, N, Y, vector, Y, integer, Y, vector, N, XX, N, vectorAlu, IQT.vec),
-      VMINU_VV      -> List(Y, N, Y, vector, Y, vector, Y, vector, N, XX, N, vectorAlu, IQT.vec),
-      VMINU_VX      -> List(Y, N, Y, vector, Y, integer, Y, vector, N, XX, N, vectorAlu, IQT.vec),
-      VMIN_VV       -> List(Y, N, Y, vector, Y, vector, Y, vector, N, XX, N, vectorAlu, IQT.vec),
-      VMIN_VX       -> List(Y, N, Y, vector, Y, integer, Y, vector, N, XX, N, vectorAlu, IQT.vec),
-      VMAXU_VV      -> List(Y, N, Y, vector, Y, vector, Y, vector, N, XX, N, vectorAlu, IQT.vec),
-      VMAXU_VX      -> List(Y, N, Y, vector, Y, integer, Y, vector, N, XX, N, vectorAlu, IQT.vec),
-      VMAX_VV       -> List(Y, N, Y, vector, Y, vector, Y, vector, N, XX, N, vectorAlu, IQT.vec),
-      VMAX_VX       -> List(Y, N, Y, vector, Y, integer, Y, vector, N, XX, N, vectorAlu, IQT.vec),
-      VAND_VV       -> List(Y, N, Y, vector, Y, vector, Y, vector, N, XX, N, vectorAlu, IQT.vec),
-      VAND_VI       -> List(Y, N, Y, vector, N, XX, Y, vector, N, XX, N, vectorAlu, IQT.vec),
-      VAND_VX       -> List(Y, N, Y, vector, Y, integer, Y, vector, N, XX, N, vectorAlu, IQT.vec),
-      VOR_VV        -> List(Y, N, Y, vector, Y, vector, Y, vector, N, XX, N, vectorAlu, IQT.vec),
-      VOR_VI        -> List(Y, N, Y, vector, N, XX, Y, vector, N, XX, N, vectorAlu, IQT.vec),
-      VOR_VX        -> List(Y, N, Y, vector, Y, integer, Y, vector, N, XX, N, vectorAlu, IQT.vec),
-      VXOR_VV       -> List(Y, N, Y, vector, Y, vector, Y, vector, N, XX, N, vectorAlu, IQT.vec),
-      VXOR_VI       -> List(Y, N, Y, vector, N, XX, Y, vector, N, XX, N, vectorAlu, IQT.vec),
-      VXOR_VX       -> List(Y, N, Y, vector, Y, integer, Y, vector, N, XX, N, vectorAlu, IQT.vec),
-      VSLIDEDOWN_VI -> List(Y, N, Y, vector, N, XX, Y, vector, N, XX, N, vectorMisc, IQT.vec),
-      VMV_X_S       -> List(Y, N, Y, integer, N, XX, Y, vector, N, XX, N, vectorMisc, IQT.vec),
-      VMV_S_X       -> List(Y, N, Y, vector, Y, integer, N, XX, N, XX, N, vectorMisc, IQT.vec),
-      VMV_V_V       -> List(Y, N, Y, vector, Y, vector, N, XX, N, XX, N, vectorMisc, IQT.vec),
-      VMV_V_I       -> List(Y, N, Y, vector, N, XX, N, XX, N, XX, N, vectorMisc, IQT.vec),
-      VMV_V_X       -> List(Y, N, Y, vector, Y, integer, N, XX, N, XX, N, vectorMisc, IQT.vec),
-      VMULHU_VV     -> List(Y, N, Y, vector, Y, vector, Y, vector, N, XX, N, vectorMul, IQT.vec),
-      VMULHU_VX     -> List(Y, N, Y, vector, Y, integer, Y, vector, N, XX, N, vectorMul, IQT.vec),
-      VSLL_VV       -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorAlu, IQT.vec),
-      VMUL_VV       -> List(Y, N, Y, vector, Y, vector, Y, vector, N, XX, N, vectorMul, IQT.vec),
-      VSLL_VI       -> List(Y, Y, Y, vector, N, XX, Y, vector, Y, vector, Y, vectorAlu, IQT.vec),
-      VSLL_VX       -> List(Y, Y, Y, vector, Y, integer, Y, vector, Y, vector, Y, vectorAlu, IQT.vec),
-      VMUL_VX       -> List(Y, N, Y, vector, Y, integer, Y, vector, N, XX, N, vectorMul, IQT.vec),
-      VMULHSU_VV    -> List(Y, N, Y, vector, Y, vector, Y, vector, N, XX, N, vectorMul, IQT.vec),
-      VMULHSU_VX    -> List(Y, N, Y, vector, Y, integer, Y, vector, N, XX, N, vectorMul, IQT.vec),
-      VMULH_VV      -> List(Y, N, Y, vector, Y, vector, Y, vector, N, XX, N, vectorMul, IQT.vec),
-      VMV1R_V       -> List(Y, N, Y, vector, N, XX, Y, vector, N, XX, N, vectorMisc, IQT.vec),
-      VMULH_VX      -> List(Y, N, Y, vector, Y, integer, Y, vector, N, XX, N, vectorMul, IQT.vec),
+      VADD_VV        -> List(Y, N, Y, vector, Y, vector, Y, vector, N, XX, N, vectorAlu, IQT.vec),
+      VADD_VI        -> List(Y, N, Y, vector, N, XX, Y, vector, N, XX, N, vectorAlu, IQT.vec),
+      VADD_VX        -> List(Y, N, Y, vector, Y, integer, Y, vector, N, XX, N, vectorAlu, IQT.vec),
+      VSUB_VV        -> List(Y, N, Y, vector, Y, vector, Y, vector, N, XX, N, vectorAlu, IQT.vec),
+      VSUB_VX        -> List(Y, N, Y, vector, Y, integer, Y, vector, N, XX, N, vectorAlu, IQT.vec),
+      VRSUB_VI       -> List(Y, N, Y, vector, N, XX, Y, vector, N, XX, N, vectorAlu, IQT.vec),
+      VRSUB_VX       -> List(Y, N, Y, vector, Y, integer, Y, vector, N, XX, N, vectorAlu, IQT.vec),
+      VMINU_VV       -> List(Y, N, Y, vector, Y, vector, Y, vector, N, XX, N, vectorAlu, IQT.vec),
+      VMINU_VX       -> List(Y, N, Y, vector, Y, integer, Y, vector, N, XX, N, vectorAlu, IQT.vec),
+      VMIN_VV        -> List(Y, N, Y, vector, Y, vector, Y, vector, N, XX, N, vectorAlu, IQT.vec),
+      VMIN_VX        -> List(Y, N, Y, vector, Y, integer, Y, vector, N, XX, N, vectorAlu, IQT.vec),
+      VMAXU_VV       -> List(Y, N, Y, vector, Y, vector, Y, vector, N, XX, N, vectorAlu, IQT.vec),
+      VMAXU_VX       -> List(Y, N, Y, vector, Y, integer, Y, vector, N, XX, N, vectorAlu, IQT.vec),
+      VMAX_VV        -> List(Y, N, Y, vector, Y, vector, Y, vector, N, XX, N, vectorAlu, IQT.vec),
+      VMAX_VX        -> List(Y, N, Y, vector, Y, integer, Y, vector, N, XX, N, vectorAlu, IQT.vec),
+      VAND_VV        -> List(Y, N, Y, vector, Y, vector, Y, vector, N, XX, N, vectorAlu, IQT.vec),
+      VAND_VI        -> List(Y, N, Y, vector, N, XX, Y, vector, N, XX, N, vectorAlu, IQT.vec),
+      VAND_VX        -> List(Y, N, Y, vector, Y, integer, Y, vector, N, XX, N, vectorAlu, IQT.vec),
+      VOR_VV         -> List(Y, N, Y, vector, Y, vector, Y, vector, N, XX, N, vectorAlu, IQT.vec),
+      VOR_VI         -> List(Y, N, Y, vector, N, XX, Y, vector, N, XX, N, vectorAlu, IQT.vec),
+      VOR_VX         -> List(Y, N, Y, vector, Y, integer, Y, vector, N, XX, N, vectorAlu, IQT.vec),
+      VXOR_VV        -> List(Y, N, Y, vector, Y, vector, Y, vector, N, XX, N, vectorAlu, IQT.vec),
+      VXOR_VI        -> List(Y, N, Y, vector, N, XX, Y, vector, N, XX, N, vectorAlu, IQT.vec),
+      VXOR_VX        -> List(Y, N, Y, vector, Y, integer, Y, vector, N, XX, N, vectorAlu, IQT.vec),
+      VSLIDEDOWN_VI  -> List(Y, N, Y, vector, N, XX, Y, vector, N, XX, N, vectorMisc, IQT.vec),
+      VSLIDEDOWN_VX  -> List(Y, N, Y, vector, Y, integer, Y, vector, N, XX, N, vectorMisc, IQT.vec),
+      VSLIDE1DOWN_VX -> List(Y, N, Y, vector, Y, integer, Y, vector, N, XX, N, vectorMisc, IQT.vec),
+      VSLIDEUP_VI    -> List(Y, Y, Y, vector, N, XX, Y, vector, Y, vector, Y, vectorMisc, IQT.vec),
+      VSLIDEUP_VX    -> List(Y, Y, Y, vector, Y, integer, Y, vector, Y, vector, Y, vectorMisc, IQT.vec),
+      VSLIDE1UP_VX   -> List(Y, N, Y, vector, Y, integer, Y, vector, N, XX, N, vectorMisc, IQT.vec),
+      VMV_X_S        -> List(Y, N, Y, integer, N, XX, Y, vector, N, XX, N, vectorMisc, IQT.vec),
+      VMV_S_X        -> List(Y, N, Y, vector, Y, integer, N, XX, N, XX, N, vectorMisc, IQT.vec),
+      VMV_V_V        -> List(Y, N, Y, vector, Y, vector, N, XX, N, XX, N, vectorMisc, IQT.vec),
+      VMV_V_I        -> List(Y, N, Y, vector, N, XX, N, XX, N, XX, N, vectorMisc, IQT.vec),
+      VMV_V_X        -> List(Y, N, Y, vector, Y, integer, N, XX, N, XX, N, vectorMisc, IQT.vec),
+      VMULHU_VV      -> List(Y, N, Y, vector, Y, vector, Y, vector, N, XX, N, vectorMul, IQT.vec),
+      VMULHU_VX      -> List(Y, N, Y, vector, Y, integer, Y, vector, N, XX, N, vectorMul, IQT.vec),
+      VSLL_VV        -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorAlu, IQT.vec),
+      VMUL_VV        -> List(Y, N, Y, vector, Y, vector, Y, vector, N, XX, N, vectorMul, IQT.vec),
+      VSLL_VI        -> List(Y, Y, Y, vector, N, XX, Y, vector, Y, vector, Y, vectorAlu, IQT.vec),
+      VSLL_VX        -> List(Y, Y, Y, vector, Y, integer, Y, vector, Y, vector, Y, vectorAlu, IQT.vec),
+      VMUL_VX        -> List(Y, N, Y, vector, Y, integer, Y, vector, N, XX, N, vectorMul, IQT.vec),
+      VMULHSU_VV     -> List(Y, N, Y, vector, Y, vector, Y, vector, N, XX, N, vectorMul, IQT.vec),
+      VMULHSU_VX     -> List(Y, N, Y, vector, Y, integer, Y, vector, N, XX, N, vectorMul, IQT.vec),
+      VMULH_VV       -> List(Y, N, Y, vector, Y, vector, Y, vector, N, XX, N, vectorMul, IQT.vec),
+      VMV1R_V        -> List(Y, N, Y, vector, N, XX, Y, vector, N, XX, N, vectorMisc, IQT.vec),
+      VMULH_VX       -> List(Y, N, Y, vector, Y, integer, Y, vector, N, XX, N, vectorMul, IQT.vec),
 
       // Vector Float
-      VFADD_VV     -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
-      VFADD_VF     -> List(Y, Y, Y, vector, Y, float, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
-      VFREDUSUM_VS -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFloatRedSum, IQT.vec),
-      VFSUB_VV     -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
-      VFSUB_VF     -> List(Y, Y, Y, vector, Y, float, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
-      VFREDOSUM_VS -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFloatRedSum, IQT.vec),
-      VFMV_F_S     -> List(Y, N, Y, float, N, XX, Y, vector, N, XX, N, vectorMisc, IQT.vec),
-      VFMV_S_F     -> List(Y, N, Y, vector, Y, float, N, XX, N, XX, N, vectorMisc, IQT.vec),
-      VFMV_V_F     -> List(Y, N, Y, vector, Y, float, N, XX, N, XX, N, vectorMisc, IQT.vec),
-      VFMUL_VV     -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
-      VFMUL_VF     -> List(Y, Y, Y, vector, Y, float, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
-      VFRSUB_VF    -> List(Y, Y, Y, vector, Y, float, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
-      VFMADD_VV    -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
-      VFMADD_VF    -> List(Y, Y, Y, vector, Y, float, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
-      VFNMADD_VV   -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
-      VFNMADD_VF   -> List(Y, Y, Y, vector, Y, float, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
-      VFMSUB_VV    -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
-      VFMSUB_VF    -> List(Y, Y, Y, vector, Y, float, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
-      VFNMSUB_VV   -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
-      VFNMSUB_VF   -> List(Y, Y, Y, vector, Y, float, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
-      VFMACC_VV    -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
-      VFMACC_VF    -> List(Y, Y, Y, vector, Y, float, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
-      VFNMACC_VV   -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
-      VFNMACC_VF   -> List(Y, Y, Y, vector, Y, float, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
-      VFMSAC_VV    -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
-      VFMSAC_VF    -> List(Y, Y, Y, vector, Y, float, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
-      VFNMSAC_VV   -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
-      VFNMSAC_VF   -> List(Y, Y, Y, vector, Y, float, Y, vector, Y, vector, Y, vectorFma, IQT.vec)
+      VFADD_VV        -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
+      VFADD_VF        -> List(Y, Y, Y, vector, Y, float, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
+      VFREDUSUM_VS    -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFloatRedSum, IQT.vec),
+      VFSUB_VV        -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
+      VFSUB_VF        -> List(Y, Y, Y, vector, Y, float, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
+      VFREDOSUM_VS    -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFloatRedSum, IQT.vec),
+      VFMV_F_S        -> List(Y, N, Y, float, N, XX, Y, vector, N, XX, N, vectorMisc, IQT.vec),
+      VFMV_S_F        -> List(Y, N, Y, vector, Y, float, N, XX, N, XX, N, vectorMisc, IQT.vec),
+      VFMV_V_F        -> List(Y, N, Y, vector, Y, float, N, XX, N, XX, N, vectorMisc, IQT.vec),
+      VFMUL_VV        -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
+      VFMUL_VF        -> List(Y, Y, Y, vector, Y, float, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
+      VFRSUB_VF       -> List(Y, Y, Y, vector, Y, float, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
+      VFMADD_VV       -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
+      VFMADD_VF       -> List(Y, Y, Y, vector, Y, float, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
+      VFNMADD_VV      -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
+      VFNMADD_VF      -> List(Y, Y, Y, vector, Y, float, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
+      VFMSUB_VV       -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
+      VFMSUB_VF       -> List(Y, Y, Y, vector, Y, float, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
+      VFNMSUB_VV      -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
+      VFNMSUB_VF      -> List(Y, Y, Y, vector, Y, float, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
+      VFMACC_VV       -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
+      VFMACC_VF       -> List(Y, Y, Y, vector, Y, float, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
+      VFNMACC_VV      -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
+      VFNMACC_VF      -> List(Y, Y, Y, vector, Y, float, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
+      VFMSAC_VV       -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
+      VFMSAC_VF       -> List(Y, Y, Y, vector, Y, float, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
+      VFNMSAC_VV      -> List(Y, Y, Y, vector, Y, vector, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
+      VFNMSAC_VF      -> List(Y, Y, Y, vector, Y, float, Y, vector, Y, vector, Y, vectorFma, IQT.vec),
+      VFSLIDE1DOWN_VF -> List(Y, N, Y, vector, Y, float, Y, vector, N, XX, N, vectorMisc, IQT.vec),
+      VFSLIDE1UP_VF   -> List(Y, N, Y, vector, Y, float, Y, vector, N, XX, N, vectorMisc, IQT.vec)
     )
 
   for (execUnitType <- ExecUnitType.all) {
@@ -802,48 +809,55 @@ object Instructions {
   val VSE64_V = BitPat("b000000?00000?????111?????0100111")
 
   // Vector Integer
-  val VADD_VV       = BitPat("b000000???????????000?????1010111")
-  val VADD_VI       = BitPat("b000000???????????011?????1010111")
-  val VADD_VX       = BitPat("b000000???????????100?????1010111")
-  val VSUB_VV       = BitPat("b000010???????????000?????1010111")
-  val VSUB_VX       = BitPat("b000010???????????100?????1010111")
-  val VRSUB_VI      = BitPat("b000011???????????011?????1010111")
-  val VRSUB_VX      = BitPat("b000011???????????100?????1010111")
-  val VMINU_VV      = BitPat("b000100???????????000?????1010111")
-  val VMINU_VX      = BitPat("b000100???????????100?????1010111")
-  val VMIN_VV       = BitPat("b000101???????????000?????1010111")
-  val VMIN_VX       = BitPat("b000101???????????100?????1010111")
-  val VMAXU_VV      = BitPat("b000110???????????000?????1010111")
-  val VMAXU_VX      = BitPat("b000110???????????100?????1010111")
-  val VMAX_VV       = BitPat("b000111???????????000?????1010111")
-  val VMAX_VX       = BitPat("b000111???????????100?????1010111")
-  val VAND_VV       = BitPat("b001001???????????000?????1010111")
-  val VAND_VI       = BitPat("b001001???????????011?????1010111")
-  val VAND_VX       = BitPat("b001001???????????100?????1010111")
-  val VOR_VV        = BitPat("b001010???????????000?????1010111")
-  val VOR_VI        = BitPat("b001010???????????011?????1010111")
-  val VOR_VX        = BitPat("b001010???????????100?????1010111")
-  val VXOR_VV       = BitPat("b001011???????????000?????1010111")
-  val VXOR_VI       = BitPat("b001011???????????011?????1010111")
-  val VXOR_VX       = BitPat("b001011???????????100?????1010111")
-  val VSLIDEDOWN_VI = BitPat("b001111???????????011?????1010111")
-  val VMV_X_S       = BitPat("b0100001?????00000010?????1010111")
-  val VMV_S_X       = BitPat("b010000100000?????110?????1010111")
-  val VMV_V_V       = BitPat("b010111100000?????000?????1010111")
-  val VMV_V_I       = BitPat("b010111100000?????011?????1010111")
-  val VMV_V_X       = BitPat("b010111100000?????100?????1010111")
-  val VMULHU_VV     = BitPat("b100100???????????010?????1010111")
-  val VMULHU_VX     = BitPat("b100100???????????110?????1010111")
-  val VSLL_VV       = BitPat("b100101???????????000?????1010111")
-  val VMUL_VV       = BitPat("b100101???????????010?????1010111")
-  val VSLL_VI       = BitPat("b100101???????????011?????1010111")
-  val VSLL_VX       = BitPat("b100101???????????100?????1010111")
-  val VMUL_VX       = BitPat("b100101???????????110?????1010111")
-  val VMULHSU_VV    = BitPat("b100110???????????010?????1010111")
-  val VMULHSU_VX    = BitPat("b100110???????????110?????1010111")
-  val VMULH_VV      = BitPat("b100111???????????010?????1010111")
-  val VMV1R_V       = BitPat("b1001111?????00000011?????1010111")
-  val VMULH_VX      = BitPat("b100111???????????110?????1010111")
+  val VADD_VV         = BitPat("b000000???????????000?????1010111")
+  val VADD_VI         = BitPat("b000000???????????011?????1010111")
+  val VADD_VX         = BitPat("b000000???????????100?????1010111")
+  val VSUB_VV         = BitPat("b000010???????????000?????1010111")
+  val VSUB_VX         = BitPat("b000010???????????100?????1010111")
+  val VRSUB_VI        = BitPat("b000011???????????011?????1010111")
+  val VRSUB_VX        = BitPat("b000011???????????100?????1010111")
+  val VMINU_VV        = BitPat("b000100???????????000?????1010111")
+  val VMINU_VX        = BitPat("b000100???????????100?????1010111")
+  val VMIN_VV         = BitPat("b000101???????????000?????1010111")
+  val VMIN_VX         = BitPat("b000101???????????100?????1010111")
+  val VMAXU_VV        = BitPat("b000110???????????000?????1010111")
+  val VMAXU_VX        = BitPat("b000110???????????100?????1010111")
+  val VMAX_VV         = BitPat("b000111???????????000?????1010111")
+  val VMAX_VX         = BitPat("b000111???????????100?????1010111")
+  val VAND_VV         = BitPat("b001001???????????000?????1010111")
+  val VAND_VI         = BitPat("b001001???????????011?????1010111")
+  val VAND_VX         = BitPat("b001001???????????100?????1010111")
+  val VOR_VV          = BitPat("b001010???????????000?????1010111")
+  val VOR_VI          = BitPat("b001010???????????011?????1010111")
+  val VOR_VX          = BitPat("b001010???????????100?????1010111")
+  val VXOR_VV         = BitPat("b001011???????????000?????1010111")
+  val VXOR_VI         = BitPat("b001011???????????011?????1010111")
+  val VXOR_VX         = BitPat("b001011???????????100?????1010111")
+  val VSLIDEDOWN_VI   = BitPat("b001111???????????011?????1010111")
+  val VSLIDEDOWN_VX   = BitPat("b001111???????????100?????1010111")
+  val VSLIDE1DOWN_VX  = BitPat("b001111???????????110?????1010111")
+  val VFSLIDE1DOWN_VF = BitPat("b001111???????????101?????1010111")
+  val VSLIDEUP_VI     = BitPat("b001110???????????011?????1010111")
+  val VSLIDEUP_VX     = BitPat("b001110???????????100?????1010111")
+  val VSLIDE1UP_VX    = BitPat("b001110???????????110?????1010111")
+  val VFSLIDE1UP_VF   = BitPat("b001110???????????101?????1010111")
+  val VMV_X_S         = BitPat("b0100001?????00000010?????1010111")
+  val VMV_S_X         = BitPat("b010000100000?????110?????1010111")
+  val VMV_V_V         = BitPat("b010111100000?????000?????1010111")
+  val VMV_V_I         = BitPat("b010111100000?????011?????1010111")
+  val VMV_V_X         = BitPat("b010111100000?????100?????1010111")
+  val VMULHU_VV       = BitPat("b100100???????????010?????1010111")
+  val VMULHU_VX       = BitPat("b100100???????????110?????1010111")
+  val VSLL_VV         = BitPat("b100101???????????000?????1010111")
+  val VMUL_VV         = BitPat("b100101???????????010?????1010111")
+  val VSLL_VI         = BitPat("b100101???????????011?????1010111")
+  val VSLL_VX         = BitPat("b100101???????????100?????1010111")
+  val VMUL_VX         = BitPat("b100101???????????110?????1010111")
+  val VMULHSU_VV      = BitPat("b100110???????????010?????1010111")
+  val VMULHSU_VX      = BitPat("b100110???????????110?????1010111")
+  val VMULH_VV        = BitPat("b100111???????????010?????1010111")
+  val VMV1R_V         = BitPat("b1001111?????00000011?????1010111")
+  val VMULH_VX        = BitPat("b100111???????????110?????1010111")
 
   // Vector Float
   val VFADD_VV     = BitPat("b000000???????????001?????1010111")
