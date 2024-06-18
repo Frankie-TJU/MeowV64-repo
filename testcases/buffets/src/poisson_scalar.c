@@ -86,7 +86,7 @@ int main() {
   data_t rr = self_dot(r);
   int round = 0;
   printf_("Start iterations until eps < %f\r\n", EPS);
-  unsigned long elapsed = 0;
+  unsigned long long elapsed = 0;
   while (rr > EPS) {
     unsigned long before = read_csr(mcycle);
     diverg(p, div_p);
@@ -104,9 +104,9 @@ int main() {
     unsigned elapsed_round = read_csr(mcycle) - before;
     elapsed += elapsed_round;
     ++round;
-    printf_("Round %d: error = %f in %d cycles\r\n", round, rr, elapsed_round);
+    printf_("Round %d: error = %f in %ld cycles\r\n", round, rr, elapsed_round);
   }
-  printf_("Finished at round %d after %d cycles\r\n", round, elapsed);
+  printf_("Finished at round %d after %lld cycles\r\n", round, elapsed);
 
   data_t l2_sum = 0;
   for (int i = 0; i < HEIGHT; ++i) {
