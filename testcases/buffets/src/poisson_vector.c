@@ -159,7 +159,7 @@ int main() {
   }
   printf_("Finished computation of %dx%d with EPS %f at round %d after %lld "
           "cycles (%.2f seconds)\r\n",
-          WIDTH, HEIGHT, EPS, round, elapsed, elapsed / 50000000.0);
+          WIDTH, HEIGHT, EPS, round, elapsed, elapsed / FREQ);
 
   data_t l2_sum = 0;
   for (int i = 0; i < HEIGHT; ++i) {

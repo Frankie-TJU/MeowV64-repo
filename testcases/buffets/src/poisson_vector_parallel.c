@@ -2,7 +2,7 @@
 #include "printf.h"
 #include "stdalign.h"
 
-#define HART_CNT 2
+#define HART_CNT 10
 
 // static_assert(HART_ALIGN > sizeof(size_t) + sizeof(data_t));
 
@@ -259,6 +259,7 @@ int main(int hartid) {
   if (hartid == 0)
     putstr("Start iterations until eps < 1e-3\r\n");
   unsigned long long elapsed = 0;
+  bool early_eps_triggered = false;
   while (rr > EPS) {
     unsigned long before;
     if (hartid == 0)
@@ -290,19 +291,24 @@ int main(int hartid) {
     if (hartid == 0) {
       unsigned elapsed_round = read_csr(mcycle) - before;
       elapsed += elapsed_round;
-      printf_("Round %d: error = %f in %ld cycles\r\n", round, rr,
+      printf_("Round %d: error = %.10f in %ld cycles\r\n", round, rr,
               elapsed_round);
+
+      if(rr <= EARLY_EPS && !early_eps_triggered) {
+        early_eps_triggered = true;
+        printf_("Early EPS: Finished computation of %dx%d with EPS %.10f at round %d after %lld "
+                "cycles (%.2f seconds)\r\n",
+                WIDTH, HEIGHT, EPS, round, elapsed, elapsed / FREQ);
+      }
     }
-    // break;
-    // if(round > 1) break;
   }
 
   global_sync(hartid, 0);
 
   if (hartid == 0) {
-    printf_("Finished computation of %dx%d with EPS %f at round %d after %lld "
+    printf_("Finished computation of %dx%d with EPS %.10f at round %d after %lld "
             "cycles (%.2f seconds)\r\n",
-            WIDTH, HEIGHT, EPS, round, elapsed, elapsed / 50000000.0);
+            WIDTH, HEIGHT, EPS, round, elapsed, elapsed / FREQ);
 
     data_t l2_sum = 0;
     for (int i = 0; i < HEIGHT; ++i) {
