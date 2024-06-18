@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <stddef.h>
 
 const uintptr_t ADDRGEN_BASE = 0x59000000;
 volatile uint32_t *ADDRGEN_STATUS = (uint32_t *)(ADDRGEN_BASE + 0x00);
@@ -95,3 +96,9 @@ void putstr(char *s) {
   for(; *s; ++s) _putchar(*s);
 }
 
+// for poisson
+typedef float data_t;
+const size_t GROUP_LEN = 8;
+const size_t WIDTH = 128;
+const size_t HEIGHT = 128;
+const data_t EPS = 1e-8;

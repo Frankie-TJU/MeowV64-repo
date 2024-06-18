@@ -1,14 +1,8 @@
 #include "common.h"
 
-typedef long size_t;
-typedef float data_t;
-const size_t GROUP_LEN = 8;
 #define HART_CNT 10
 
-const size_t WIDTH = 16;
-const size_t HEIGHT = 16;
 const size_t GROUP_CNT = WIDTH / GROUP_LEN * HEIGHT;
-const data_t EPS = 1e-3;
 
 size_t MY_GROUP_START;
 size_t MY_GROUP_END;

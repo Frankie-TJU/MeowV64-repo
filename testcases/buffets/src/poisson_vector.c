@@ -2,13 +2,6 @@
 #include "printf.h"
 #include <assert.h>
 
-typedef float data_t;
-const size_t GROUP_LEN = 8;
-
-const size_t WIDTH = 16;
-const size_t HEIGHT = 16;
-const data_t EPS = 1e-3;
-
 void diverg(data_t *field, data_t *result) {
   for (int i = 0; i < HEIGHT; ++i) {
     _Bool solid_boundary = i == 0 || i == HEIGHT - 1;
