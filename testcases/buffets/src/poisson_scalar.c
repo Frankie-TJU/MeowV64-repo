@@ -10,15 +10,19 @@ const size_t HEIGHT = 16;
 const data_t EPS = 1e-3;
 
 void diverg(data_t *field, data_t *result) {
-  for(int i = 0; i < HEIGHT; ++i) {
-    for(int j = 0; j < WIDTH; ++j) {
+  for (int i = 0; i < HEIGHT; ++i) {
+    for (int j = 0; j < WIDTH; ++j) {
       _Bool solid_boundary = i == 0 || i == HEIGHT - 1;
       data_t cur = field[i * WIDTH + j] * (solid_boundary ? -3 : -4);
 
-      if(j != 0) cur += field[i * WIDTH + (j-1)];
-      if(j != WIDTH - 1) cur += field[i * WIDTH + (j+1)];
-      if(i != 0) cur += field[(i-1) * WIDTH + j];
-      if(i != HEIGHT - 1) cur += field[(i+1) * WIDTH + j];
+      if (j != 0)
+        cur += field[i * WIDTH + (j - 1)];
+      if (j != WIDTH - 1)
+        cur += field[i * WIDTH + (j + 1)];
+      if (i != 0)
+        cur += field[(i - 1) * WIDTH + j];
+      if (i != HEIGHT - 1)
+        cur += field[(i + 1) * WIDTH + j];
 
       result[i * WIDTH + j] = cur;
     }
@@ -27,29 +31,31 @@ void diverg(data_t *field, data_t *result) {
 
 data_t self_dot(data_t *field) {
   data_t accum = 0;
-  for(int i = 0; i < WIDTH * HEIGHT; ++i) accum += field[i] * field[i];
+  for (int i = 0; i < WIDTH * HEIGHT; ++i)
+    accum += field[i] * field[i];
   return accum;
 }
 
 data_t dot(data_t *a, data_t *b) {
   data_t accum = 0;
-  for(int i = 0; i < WIDTH * HEIGHT; ++i) accum += a[i] * b[i];
+  for (int i = 0; i < WIDTH * HEIGHT; ++i)
+    accum += a[i] * b[i];
   return accum;
 }
 
 void self_relaxiation(data_t *into, data_t *val, data_t mul) {
-  for(int i = 0; i < WIDTH * HEIGHT; ++i)
+  for (int i = 0; i < WIDTH * HEIGHT; ++i)
     into[i] += val[i] * mul;
 }
 
 void relaxiation(data_t *into, data_t *from, data_t *val, data_t mul) {
-  for(int i = 0; i < WIDTH * HEIGHT; ++i)
+  for (int i = 0; i < WIDTH * HEIGHT; ++i)
     into[i] = from[i] + val[i] * mul;
 }
 
 void init(data_t *field) {
-  for(int i = 0; i < HEIGHT; ++i)
-    for(int j = 0; j < WIDTH; ++j)
+  for (int i = 0; i < HEIGHT; ++i)
+    for (int j = 0; j < WIDTH; ++j)
       field[i * WIDTH + j] = (j == 0) ? -1 : 0;
 }
 
@@ -61,7 +67,7 @@ void *alloc(size_t size) {
 }
 
 int main() {
-  for (int i = 0;i < 1000;i++)
+  for (int i = 0; i < 1000; i++)
     putstr(".");
   putstr("\r\n");
 
@@ -81,7 +87,7 @@ int main() {
   int round = 0;
   printf_("Start iterations until eps < %f\r\n", EPS);
   unsigned long elapsed = 0;
-  while(rr > EPS) {
+  while (rr > EPS) {
     unsigned long before = read_csr(mcycle);
     diverg(p, div_p);
     data_t pAp = dot(p, div_p);
@@ -103,9 +109,9 @@ int main() {
   printf_("Finished at round %d after %d cycles\r\n", round, elapsed);
 
   data_t l2_sum = 0;
-  for(int i = 0; i < HEIGHT; ++i) {
-    for(int j = 0; j < WIDTH; ++j)
-      l2_sum += x[i * WIDTH + i] * x[i * WIDTH + i] ;
+  for (int i = 0; i < HEIGHT; ++i) {
+    for (int j = 0; j < WIDTH; ++j)
+      l2_sum += x[i * WIDTH + i] * x[i * WIDTH + i];
   }
   printf_("Sum of result squared: %f\r\n", l2_sum);
   return 0;

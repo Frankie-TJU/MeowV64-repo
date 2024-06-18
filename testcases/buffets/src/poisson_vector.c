@@ -10,110 +10,98 @@ const size_t HEIGHT = 16;
 const data_t EPS = 1e-3;
 
 void diverg(data_t *field, data_t *result) {
-  for(int i = 0; i < HEIGHT; ++i) {
+  for (int i = 0; i < HEIGHT; ++i) {
     _Bool solid_boundary = i == 0 || i == HEIGHT - 1;
     data_t multiplier = solid_boundary ? -3 : -4;
 
-    for(int j = 0; j < WIDTH; j += GROUP_LEN) {
-      data_t left = (j == 0) ? 0 : field[i * WIDTH + (j-1)];
-      data_t right = (j == WIDTH - GROUP_LEN) ? 0 : field[i * WIDTH + j + GROUP_LEN];
+    for (int j = 0; j < WIDTH; j += GROUP_LEN) {
+      data_t left = (j == 0) ? 0 : field[i * WIDTH + (j - 1)];
+      data_t right =
+          (j == WIDTH - GROUP_LEN) ? 0 : field[i * WIDTH + j + GROUP_LEN];
 
-      __asm__ volatile(
-        "vle32.v v0, (%0)\n"
-        "vfslide1up.vf v1, v0, %1\n"
-        "vfslide1down.vf v2, v0, %2\n"
-        "vfmadd.vf v0, %3, v1\n"
-        "vfadd.vv v0, v0, v2\n"
-        : 
-        : "r" (field + (i * WIDTH + j)), "f" (left), "f" (right), "f"(multiplier)
-      );
+      __asm__ volatile("vle32.v v0, (%0)\n"
+                       "vfslide1up.vf v1, v0, %1\n"
+                       "vfslide1down.vf v2, v0, %2\n"
+                       "vfmadd.vf v0, %3, v1\n"
+                       "vfadd.vv v0, v0, v2\n"
+                       :
+                       : "r"(field + (i * WIDTH + j)), "f"(left), "f"(right),
+                         "f"(multiplier));
 
-      if(i != 0) {
-        __asm__ volatile(
-          "vle32.v v1, (%0)\n"
-          "vfadd.vv v0, v0, v1\n"
-          : 
-          : "r" (field + ((i - 1) * WIDTH + j))
-        );
+      if (i != 0) {
+        __asm__ volatile("vle32.v v1, (%0)\n"
+                         "vfadd.vv v0, v0, v1\n"
+                         :
+                         : "r"(field + ((i - 1) * WIDTH + j)));
       }
-      if(i != HEIGHT - 1) {
-        __asm__ volatile(
-          "vle32.v v1, (%0)\n"
-          "vfadd.vv v0, v0, v1\n"
-          : 
-          : "r" (field + ((i + 1) * WIDTH + j))
-        );
+      if (i != HEIGHT - 1) {
+        __asm__ volatile("vle32.v v1, (%0)\n"
+                         "vfadd.vv v0, v0, v1\n"
+                         :
+                         : "r"(field + ((i + 1) * WIDTH + j)));
       }
 
-      __asm__ volatile(
-        "vse32.v v0, (%0)\n"
-        : 
-        : "r" (result + (i * WIDTH + j))
-      );
+      __asm__ volatile("vse32.v v0, (%0)\n" : : "r"(result + (i * WIDTH + j)));
     }
   }
 }
 
 data_t self_dot(data_t *field) {
   data_t accum = 0;
-  for(int i = 0; i < WIDTH * HEIGHT; ++i) accum += field[i] * field[i];
+  for (int i = 0; i < WIDTH * HEIGHT; ++i)
+    accum += field[i] * field[i];
   return accum;
 }
 
 data_t dot(data_t *a, data_t *b) {
   static_assert(WIDTH * HEIGHT % GROUP_LEN == 0, "");
   __asm__ volatile("vmv.v.i v0, 0");
-  for(int i = 0; i < WIDTH * HEIGHT; i += GROUP_LEN) {
-    __asm__ volatile(
-      "vle32.v v1, 0(%0)\n"
-      "vle32.v v2, 0(%1)\n"
-      "vfmacc.vv v0, v1, v2\n"
-      :
-      : "r" (&a[i]), "r" (&b[i])
-      : "memory"
-    );
+  for (int i = 0; i < WIDTH * HEIGHT; i += GROUP_LEN) {
+    __asm__ volatile("vle32.v v1, 0(%0)\n"
+                     "vle32.v v2, 0(%1)\n"
+                     "vfmacc.vv v0, v1, v2\n"
+                     :
+                     : "r"(&a[i]), "r"(&b[i])
+                     : "memory");
   }
 
   data_t accum = 0;
   data_t buffer[GROUP_LEN];
   __asm__ volatile("vse32.v v0, %0\n" : "=m"(buffer));
-  for(int i = 0; i < GROUP_LEN; ++i) accum += buffer[i];
+  for (int i = 0; i < GROUP_LEN; ++i)
+    accum += buffer[i];
   return accum;
 }
 
 void self_relaxiation(data_t *into, data_t *val, data_t mul) {
   static_assert(WIDTH * HEIGHT % GROUP_LEN == 0, "");
-  for(int i = 0; i < WIDTH * HEIGHT; i += GROUP_LEN) {
-    __asm__ volatile(
-      "vle32.v v0, 0(%0)\n"
-      "vle32.v v1, 0(%1)\n"
-      "vfmacc.vf v1, %2, v0\n"
-      "vse32.v v1, 0(%1)\n"
-      :
-      : "r" (&val[i]), "r" (&into[i]), "f" (mul)
-      : "memory"
-    );
+  for (int i = 0; i < WIDTH * HEIGHT; i += GROUP_LEN) {
+    __asm__ volatile("vle32.v v0, 0(%0)\n"
+                     "vle32.v v1, 0(%1)\n"
+                     "vfmacc.vf v1, %2, v0\n"
+                     "vse32.v v1, 0(%1)\n"
+                     :
+                     : "r"(&val[i]), "r"(&into[i]), "f"(mul)
+                     : "memory");
   }
 }
 
 void relaxiation(data_t *into, data_t *from, data_t *val, data_t mul) {
   static_assert(WIDTH * HEIGHT % 8 == 0, "");
-  for(int i = 0; i < WIDTH * HEIGHT; i += GROUP_LEN) {
-    __asm__ volatile(
-      "vle32.v v0, 0(%0)\n"
-      "vle32.v v1, 0(%1)\n"
-      "vfmacc.vf v1, %2, v0\n"
-      "vse32.v v1, 0(%3)\n"
-      :
-      : "r" (&val[i]), "r" (&from[i]), "f" (mul), "r" (&into[i])
-      : "memory"
-    );
+  for (int i = 0; i < WIDTH * HEIGHT; i += GROUP_LEN) {
+    __asm__ volatile("vle32.v v0, 0(%0)\n"
+                     "vle32.v v1, 0(%1)\n"
+                     "vfmacc.vf v1, %2, v0\n"
+                     "vse32.v v1, 0(%3)\n"
+                     :
+                     : "r"(&val[i]), "r"(&from[i]), "f"(mul), "r"(&into[i])
+                     : "memory");
   }
 }
 
 void init(data_t *field) {
-  for(int i = 0; i < HEIGHT; ++i)
-    for(int j = 0; j < WIDTH; ++j)
+  for (int i = 0; i < HEIGHT; ++i)
+    for (int j = 0; j < WIDTH; ++j)
       field[i * WIDTH + j] = (j == 0) ? -1 : 0;
 }
 
@@ -125,7 +113,7 @@ void *alloc(size_t size) {
 }
 
 int main() {
-  for (int i = 0;i < 1000;i++)
+  for (int i = 0; i < 1000; i++)
     putstr(".");
   putstr("\r\n");
 
@@ -145,7 +133,7 @@ int main() {
   int round = 0;
   printf_("Start iterations until eps < %f\r\n", EPS);
   unsigned long elapsed = 0;
-  while(rr > EPS) {
+  while (rr > EPS) {
     unsigned long before = read_csr(mcycle);
     diverg(p, div_p);
     data_t pAp = dot(p, div_p);
@@ -167,9 +155,9 @@ int main() {
   printf_("Finished at round %d after %d cycles\r\n", round, elapsed);
 
   data_t l2_sum = 0;
-  for(int i = 0; i < HEIGHT; ++i) {
-    for(int j = 0; j < WIDTH; ++j)
-      l2_sum += x[i * WIDTH + i] * x[i * WIDTH + i] ;
+  for (int i = 0; i < HEIGHT; ++i) {
+    for (int j = 0; j < WIDTH; ++j)
+      l2_sum += x[i * WIDTH + i] * x[i * WIDTH + i];
   }
   printf_("Sum of result squared: %f\r\n", l2_sum);
   return 0;
