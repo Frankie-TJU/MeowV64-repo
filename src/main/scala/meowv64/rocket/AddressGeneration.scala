@@ -24,7 +24,7 @@ case class AddressGenerationConfig(
     beatBytes: Int,
     configInstWords: Int = 16,
     maxIterations: Int = 1048576,
-    maxInflights: Int = 64,
+    maxInflights: Int = 4,
     addrWidth: Int = 64,
     bytesWidth: Int = 7,
     strideWidth: Int = 7,
