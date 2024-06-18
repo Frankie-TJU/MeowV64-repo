@@ -95,7 +95,7 @@ int main() {
 
     self_relaxiation(x, p, alpha);
     self_relaxiation(r, div_p, -alpha);
-    data_t rr_next = dot(r, r);
+    data_t rr_next = self_dot(r);
 
     data_t beta = rr_next / rr;
     relaxiation(p, r, p, beta);

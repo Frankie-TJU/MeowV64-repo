@@ -47,9 +47,21 @@ void diverg(data_t *field, data_t *result) {
 }
 
 data_t self_dot(data_t *field) {
+  static_assert(WIDTH * HEIGHT % GROUP_LEN == 0, "");
+  __asm__ volatile("vmv.v.i v0, 0");
+  for (int i = 0; i < WIDTH * HEIGHT; i += GROUP_LEN) {
+    __asm__ volatile("vle32.v v1, 0(%0)\n"
+                     "vfmacc.vv v0, v1, v1\n"
+                     :
+                     : "r"(&field[i])
+                     : "memory");
+  }
+
   data_t accum = 0;
-  for (int i = 0; i < WIDTH * HEIGHT; ++i)
-    accum += field[i] * field[i];
+  data_t buffer[GROUP_LEN];
+  __asm__ volatile("vse32.v v0, %0\n" : "=m"(buffer));
+  for (int i = 0; i < GROUP_LEN; ++i)
+    accum += buffer[i];
   return accum;
 }
 
@@ -141,7 +153,7 @@ int main() {
 
     self_relaxiation(x, p, alpha);
     self_relaxiation(r, div_p, -alpha);
-    data_t rr_next = dot(r, r);
+    data_t rr_next = self_dot(r);
 
     data_t beta = rr_next / rr;
     relaxiation(p, r, p, beta);
