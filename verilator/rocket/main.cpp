@@ -162,9 +162,14 @@ void step_mem() {
     top->mem_axi4_RLAST = 0;
     memset(top->mem_axi4_RDATA, 0, sizeof(top->mem_axi4_RDATA));
     for (int i = 0; i < MAX_ID; i++) {
-      if (!axi_read_requests[i].empty() &&
-          (*axi_read_requests[i].begin())->ready) {
-        axi_read_request *req = *axi_read_requests[i].begin();
+      // round robin and keep sending the same RID
+      static int last_read_request_queue = 0;
+      int index = (i + last_read_request_queue) % MAX_ID;
+      if (!axi_read_requests[index].empty() &&
+          (*axi_read_requests[index].begin())->ready) {
+        last_read_request_queue = index;
+
+        axi_read_request *req = *axi_read_requests[index].begin();
         top->mem_axi4_RVALID = 1;
         top->mem_axi4_RID = req->read_id;
         mpz_class r_data;
@@ -196,7 +201,9 @@ void step_mem() {
         top->eval();
         if (top->mem_axi4_RREADY) {
           if (req->read_len == 0) {
-            axi_read_requests[i].pop_front();
+            axi_read_requests[index].pop_front();
+            // round robin
+            last_read_request_queue = (index + 1) % MAX_ID;
           } else {
             req->read_addr += 1 << req->read_size;
             req->read_len--;
