@@ -41,9 +41,9 @@ void self_relaxiation(data_t *into, data_t *val, data_t mul) {
     into[i] += val[i] * mul;
 }
 
-void relaxiation(data_t *into, data_t *from, data_t *val, data_t mul) {
+void reverse_relaxiation(data_t *into, data_t *from, data_t mul) {
   for (int i = 0; i < WIDTH * HEIGHT; ++i)
-    into[i] = from[i] + val[i] * mul;
+    into[i] = from[i] + into[i] * mul;
 }
 
 void init(data_t *field) {
@@ -91,7 +91,7 @@ int main() {
     data_t rr_next = self_dot(r);
 
     data_t beta = rr_next / rr;
-    relaxiation(p, r, p, beta);
+    reverse_relaxiation(p, r, beta);
 
     rr = rr_next;
     unsigned elapsed_round = read_csr(mcycle) - before;

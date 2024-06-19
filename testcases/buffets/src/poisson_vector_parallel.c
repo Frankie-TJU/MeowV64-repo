@@ -1,10 +1,9 @@
 #include "common.h"
 #include "printf.h"
 #include "stdalign.h"
+#include <assert.h>
 
 #define HART_CNT 10
-
-// static_assert(HART_ALIGN > sizeof(size_t) + sizeof(data_t));
 
 const size_t GROUP_CNT = WIDTH / GROUP_LEN * HEIGHT;
 
@@ -122,7 +121,8 @@ data_t self_dot(data_t *field, size_t my_grp_start, size_t my_grp_end,
     __asm__ volatile("vle32.v v1, (%0)\n"
                      "vfmacc.vv v0, v1, v1\n"
                      :
-                     : "r"(cur));
+                     : "r"(cur)
+                     : "memory");
   }
 
   data_t accum = 0;
@@ -163,10 +163,10 @@ void self_relaxiation(data_t *into, data_t *val, data_t mul,
        i += GROUP_LEN) {
     __asm__ volatile("vle32.v v0, (%0)\n"
                      "vle32.v v1, (%1)\n"
-                     "vfmacc.vf v0, %2, v1\n"
-                     "vse32.v v0, (%0)\n"
+                     "vfmacc.vf v1, %2, v0\n"
+                     "vse32.v v1, (%1)\n"
                      :
-                     : "r"(&into[i]), "r"(&val[i]), "f"(mul)
+                     : "r"(&val[i]), "r"(&into[i]), "f"(mul)
                      : "memory");
   }
 }
@@ -212,20 +212,15 @@ int main(int hartid) {
   if (hartid >= HART_CNT)
     spin();
 
-  // Temporarilly commented by meow
-  // for (int i = 0;i < 1000;i++)
-  //   putstr(".");
-  // putstr("\r\n");
+  for (int i = 0; i < 1000; i++)
+    putstr(".");
+  putstr("\r\n");
 
   size_t group_residue = GROUP_CNT % HART_CNT;
   size_t self_len = (GROUP_CNT / HART_CNT) + (hartid < group_residue ? 1 : 0);
   size_t self_start = (GROUP_CNT / HART_CNT) * hartid +
                       (hartid < group_residue ? hartid : group_residue);
   size_t self_end = self_start + self_len;
-  //   volatile size_t meow = 0;
-  //   for(int i = 0; i < hartid * 20; ++i) ++meow;
-  //   print(self_start);
-  //   print(self_start + self_len);
 
   __asm__ volatile("vsetvli t0, x0, e32" ::: "t0");
 
@@ -238,26 +233,16 @@ int main(int hartid) {
   if (hartid == 0) {
     putstr("Initializing input data\r\n");
     init(p); // p = r
-    putstr("p\r\n");
     init(r);
-    putstr("r\r\n");
     zero(x, sizeof(data_t) * WIDTH * HEIGHT);
-    putstr("x\r\n");
   }
 
-  if (hartid == 0)
-    putstr("Pre-start\r\n");
   global_sync_nodata(hartid);
-  if (hartid == 0)
-    putstr("Start\r\n");
 
   data_t rr = self_dot(r, self_start, self_end, hartid);
-  if (hartid == 0)
-    printf_("rr = %.10f\n", rr);
-
   int round = 0;
   if (hartid == 0)
-    putstr("Start iterations until eps < 1e-3\r\n");
+    printf_("Start iterations until eps < %f\r\n", EPS);
   unsigned long long elapsed = 0;
   bool early_eps_triggered = false;
   while (rr > EPS) {
@@ -269,19 +254,13 @@ int main(int hartid) {
     global_sync_nodata(hartid);
     data_t pAp = dot(p, div_p, self_start, self_end, hartid);
     data_t alpha = rr / pAp;
-    // if(hartid == 0) {
-    //   printf_("pAp = %.10f\n", pAp);
-    //   printf_("alpha = %.10f\n", alpha);
-    // }
 
     self_relaxiation(x, p, alpha, self_start, self_end, hartid);
     self_relaxiation(r, div_p, -alpha, self_start, self_end, hartid);
     global_sync_nodata(hartid);
     data_t rr_next = self_dot(r, self_start, self_end, hartid);
-    // if(hartid == 0) printf_("rr = %.10f\n", rr_next);
 
     data_t beta = rr_next / rr;
-    // if(hartid == 0) printf_("beta = %.10f\n", beta);
     reverse_relaxiation(p, r, beta, self_start, self_end, hartid);
 
     global_sync_nodata(hartid);
