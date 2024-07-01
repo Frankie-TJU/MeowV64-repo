@@ -212,9 +212,9 @@ int main(int hartid) {
   if (hartid >= HART_CNT)
     spin();
 
-  for (int i = 0; i < 1000; i++)
-    putstr(".");
-  putstr("\r\n");
+  // for (int i = 0; i < 1000; i++)
+  //   putstr(".");
+  // putstr("\r\n");
 
   size_t group_residue = GROUP_CNT % HART_CNT;
   size_t self_len = (GROUP_CNT / HART_CNT) + (hartid < group_residue ? 1 : 0);
