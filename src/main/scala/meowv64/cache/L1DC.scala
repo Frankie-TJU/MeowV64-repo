@@ -584,11 +584,14 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
       written.data := toL2.l1rdata.asTypeOf(written.data)
 
       when(state === MainState.wallocRefill) {
-        written.data(getSublineIdx(waddr)) := MuxBE(
-          wbuf(wbufHead).be,
-          wbuf(wbufHead).sdata,
-          toL2.l1rdata.asTypeOf(written.data)(getSublineIdx(waddr))
-        )
+        val scFailed = wbuf(wbufHead).isCond && !reserveMatch(waddr)
+        when(!scFailed) {
+          written.data(getSublineIdx(waddr)) := MuxBE(
+            wbuf(wbufHead).be,
+            wbuf(wbufHead).sdata,
+            toL2.l1rdata.asTypeOf(written.data)(getSublineIdx(waddr))
+          )
+        }
 
         when(wbuf(wbufHead).isAMO) {
           amoalu.io.rdata := toL2.l1rdata.asTypeOf(written.data)(
@@ -612,11 +615,7 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
 
           when(wbuf(wbufHead).isCond) {
             resValid := false.B
-            when(!reserveMatch(waddr)) {
-              // SC failed
-              pendingWriteRet := 1.U
-              l1writing(victim) := false.B
-            }
+            pendingWriteRet := Mux(reserveMatch(waddr), 0.U, 1.U)
           }.elsewhen(wbuf(wbufHead).isAMO) {
             pendingWriteRet := amoalu.io.rsliced
             pendingWriteMem := amoalu.io.muxed >> (amoalu.io.offset << 3.U)
