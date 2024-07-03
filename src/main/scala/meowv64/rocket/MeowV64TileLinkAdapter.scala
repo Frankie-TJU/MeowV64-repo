@@ -66,9 +66,9 @@ class MeowV64TileLinkAdapter(val coredef: CoreDef)(implicit p: Parameters)
             name = "meowv64-uc",
             sourceId = IdRange(0, 1),
             emits = TLMasterToSlaveTransferSizes(
-              // from 1 to 8 bytes
-              get = TransferSizes(1, 8),
-              putFull = TransferSizes(1, 8)
+              // from 1 to VLEN/8 bytes
+              get = TransferSizes(1, coredef.VLEN / 8),
+              putFull = TransferSizes(1, coredef.VLEN / 8)
             )
           )
         )

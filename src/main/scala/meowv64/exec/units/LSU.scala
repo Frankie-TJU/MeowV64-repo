@@ -32,7 +32,8 @@ import difftest.DifftestUncachedLoadEvent
   *   - us: uncached store
   */
 object DelayedMemOp extends ChiselEnum {
-  val load, uncachedLoad, vectorLoad, vectorIndexedLoad, loadReserved = Value
+  val load, uncachedLoad = Value
+  val vectorLoad, vectorUncachedLoad, vectorIndexedLoad, loadReserved = Value
   val store, uncachedStore, vectorStore = Value
   val exception = Value
 }
@@ -558,7 +559,11 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
     }.elsewhen(load && uncached) {
       // has side effect
       toExec.setHasMem.valid := true.B
-      lsqEntry.op := DelayedMemOp.uncachedLoad
+      when(vectorLoad) {
+        lsqEntry.op := DelayedMemOp.vectorUncachedLoad
+      }.otherwise {
+        lsqEntry.op := DelayedMemOp.uncachedLoad
+      }
       lsqEntry.addr := addr
 
       // special handling for fld/flw
@@ -593,6 +598,11 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
           lsqEntry.sext := false.B
           lsqEntry.len := DCWriteLen.W
         }
+      }
+
+      when(vectorLoad) {
+        // read whole 256b = 32B
+        lsqEntry.len := DCWriteLen.O
       }
 
     }.elsewhen(store) {
@@ -887,8 +897,13 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
 
         retire.bits.info.wb := MuxBE(mask, vectorReadRespDataComb, current.data)
       }
-      is(DelayedMemOp.uncachedLoad) {
-        retire.bits.info.wb := current.getLSB(toMem.uncached.rdata)
+      is(DelayedMemOp.uncachedLoad, DelayedMemOp.vectorUncachedLoad) {
+        when(current.op === DelayedMemOp.uncachedLoad) {
+          retire.bits.info.wb := current.getLSB(toMem.uncached.rdata)
+        }.otherwise{
+          // vector uncached load
+          retire.bits.info.wb := toMem.uncached.rdata
+        }
         when(release.ready) {
           toMem.uncached.req := L1UCReq.read
           when(~toMem.uncached.stall) {

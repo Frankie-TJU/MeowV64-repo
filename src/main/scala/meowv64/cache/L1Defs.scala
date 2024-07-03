@@ -68,6 +68,7 @@ trait CacheOpts {
 trait L1Opts extends CacheOpts {
   // Word width
   val XLEN: Int
+  val VLEN: Int
 
   /** Core <-> L1 transfer size in bits.
     */
@@ -150,10 +151,10 @@ class L1UCPort(val opts: L1Opts) extends Bundle {
   val req = Output(L1UCReq())
   val addr = Output(UInt(opts.ADDR_WIDTH.W))
   val len = Output(DCWriteLen())
-  val wdata = Output(UInt(opts.XLEN.W))
+  val wdata = Output(UInt(opts.VLEN.W))
   val stall = Input(Bool())
 
-  val rdata = Input(UInt(opts.XLEN.W))
+  val rdata = Input(UInt(opts.VLEN.W))
 }
 
 object L1UCPort {

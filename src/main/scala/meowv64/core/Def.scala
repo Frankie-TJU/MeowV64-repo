@@ -510,6 +510,7 @@ abstract class CoreDef {
         val SIZE_BYTES: Int = 2048 // 2KB L1 I
         val TO_CORE_TRANSFER_WIDTH: Int = 64 // 64 bits
         val XLEN: Int = outer.XLEN
+        val VLEN: Int = outer.VLEN
       }
       with L1Opts
 
@@ -521,6 +522,7 @@ abstract class CoreDef {
         val SIZE_BYTES: Int = 2048 // 2KB L1 D
         val TO_CORE_TRANSFER_WIDTH: Int = outer.L1_LINE_BYTES * 8
         val XLEN: Int = outer.XLEN
+        val VLEN: Int = outer.VLEN
 
         val WRITE_BUF_DEPTH: Int = 4
       }
