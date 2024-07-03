@@ -495,12 +495,9 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
         commit()
       }.elsewhen(whit) {
         // Is an write hit, send modify directly
-        toL2.l1req := L1DCPort.L1Req.modify
-
-        when(!toL2.l1stall) {
-          // Commit
-          commit()
-        }
+        // Enters a new state to accept L2 probe during our request,
+        nstate := MainState.wallocRefill
+        victim := OHToUInt(whits)
       }.otherwise {
         // Not hit, goto walloc
         nstate := MainState.walloc
