@@ -14,6 +14,7 @@ abstract class SystemDef(val coreCount: Int) {
 
   val PADDR_WIDTH: Int = 56
   val XLEN: Int = 64
+  val VLEN: Int = 256
 
   val CYCLE_PER_TIMEUNIT: Int = 50 // We're running on 50M
 
@@ -30,6 +31,7 @@ abstract class SystemDef(val coreCount: Int) {
         val SIZE_BYTES: Int = 16384 // 16KB L2
         val WB_DEPTH: Int = 4
         val XLEN: Int = outer.XLEN
+        val VLEN: Int = outer.VLEN
         val AXI_DATA_WIDTH: Int = outer.L2_LINE_BYTES * 8
 
         val MMIO = Seq(
