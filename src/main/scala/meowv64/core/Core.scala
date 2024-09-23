@@ -1,6 +1,7 @@
 package meowv64.core
 
 import chisel3._
+import chisel3.util._
 import chisel3.experimental.ChiselEnum
 import chisel3.util.log2Ceil
 import meowv64.cache._
@@ -71,6 +72,10 @@ class Core(implicit val coredef: CoreDef) extends Module {
 
     // Debug
     val debug = Output(new CoreDebug)
+
+    val toBuffets = new Bundle {
+      val head = Flipped(Decoupled(Vec(32, UInt(8.W))))
+    }
   })
 
   assert(
@@ -98,7 +103,9 @@ class Core(implicit val coredef: CoreDef) extends Module {
   val bpu = Module(new MicroBTB)
   val ras = Module(new RAS)
   val exec = Module(new Exec)
+  exec.toBuffets <> io.toBuffets
   exec.hartId := io.hartId
+
   val regFiles =
     for (regInfo <- coredef.REG_TYPES) yield {
       // add additional read ports for difftest

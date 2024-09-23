@@ -262,4 +262,7 @@ class MeowV64TileModuleImp(outer: MeowV64Tile)
 
   // connect addr gen and buffets
   outer.addrGen.module.egress <> outer.buffets.module.ingress
+
+  // connect buffets fast path
+  outer .buffets.module.fastpath <> core.io.toBuffets
 }

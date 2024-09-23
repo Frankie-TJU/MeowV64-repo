@@ -234,7 +234,7 @@ trait CanHaveCustomMasterAXI4MMIOPort { this: BaseSubsystem =>
 case object FlipMSBInAXI extends config.Field[Boolean](false)
 
 // Size of Buffets per Core
-case object BuffetsSizePerCore extends config.Field[BigInt](0x400L)
+case object BuffetsSizePerCore extends config.Field[BigInt](0x4000L)
 
 // Customize CanHaveMasterAXI4MemPort to allow multiple address ranges
 case object CustomExtMem extends config.Field[Seq[MasterPortParams]](Seq())

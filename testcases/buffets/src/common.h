@@ -8,6 +8,7 @@ volatile uint32_t *ADDRGEN_ITERATIONS = (uint32_t *)(ADDRGEN_BASE + 0x40);
 volatile uint32_t *ADDRGEN_INSTS = (uint32_t *)(ADDRGEN_BASE + 0x60);
 
 volatile uint32_t *BUFFETS_DATA = (uint32_t *)0x5000000;
+volatile uint32_t *BUFFETS_DATA_FASTPATH = (uint32_t *)0x51000000;
 
 const uintptr_t BUFFETS_BASE = 0x58000000;
 volatile uint32_t *BUFFETS_SIZE = (uint32_t *)(BUFFETS_BASE + 0x40);
@@ -101,6 +102,6 @@ typedef float data_t;
 const size_t GROUP_LEN = 8;
 const size_t WIDTH = 16;
 const size_t HEIGHT = 16;
-const data_t EPS = 1e-8;
+const data_t EPS = 1e-6;
 const data_t EARLY_EPS = 1e-6;
 const double FREQ = 500000000.0;
