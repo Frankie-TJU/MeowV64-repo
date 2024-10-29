@@ -109,6 +109,10 @@ static uint64_t lfsr63(uint64_t x) {
 }
 
 int main() {
+  for (int i = 0; i < 1000; i++)
+    putstr(".");
+  putstr("\r\n");
+
   double y1[N];
   double y2[N];
   double y3[N];
