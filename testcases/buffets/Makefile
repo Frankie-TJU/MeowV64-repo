@@ -1,7 +1,10 @@
 SRCS:=$(wildcard src/*.c)
 BINS:=$(patsubst src/%.c,bin/%.bin,$(SRCS)) \
 	bin/poisson_vector-64.bin \
-	bin/poisson_vector-128.bin
+	bin/poisson_vector-128.bin \
+	bin/poisson_vector-256.bin \
+	bin/poisson_vector-512.bin \
+	bin/poisson_vector-1024.bin
 LINKEDS:=$(patsubst src/%.c,bin/%.linked,$(SRCS))
 ASSEMBLED:=$(patsubst src/%.c,bin/%.assembled,$(SRCS))
 HEXS:=$(patsubst src/%.c,hex/%.hex,$(SRCS))
@@ -40,6 +43,27 @@ bin/%-128.bin: src/%.c bin/common.assembled common/linker.lds Makefile
 	$(PREFIX)gcc -DN_OVERRIDE=128 -O2 -mcmodel=medany -fno-tree-loop-distribute-patterns -c $< -march=rv64imafdcv_zicsr_zifencei -o $(patsubst src/%.c,bin/%-128.assembled,$<)
 	$(PREFIX)ld $(patsubst src/%.c,bin/%-128.assembled,$<) bin/common.assembled -T common/linker.lds -o $(patsubst src/%.c,bin/%-128.linked,$<)
 	cp $(patsubst src/%.c,bin/%-128.linked,$<) $@
+	$(PREFIX)objcopy -O binary -j .text -j .rodata -j .data $@
+
+bin/%-256.bin: src/%.c bin/common.assembled common/linker.lds Makefile
+	mkdir -p bin
+	$(PREFIX)gcc -DN_OVERRIDE=256 -O2 -mcmodel=medany -fno-tree-loop-distribute-patterns -c $< -march=rv64imafdcv_zicsr_zifencei -o $(patsubst src/%.c,bin/%-256.assembled,$<)
+	$(PREFIX)ld $(patsubst src/%.c,bin/%-256.assembled,$<) bin/common.assembled -T common/linker.lds -o $(patsubst src/%.c,bin/%-256.linked,$<)
+	cp $(patsubst src/%.c,bin/%-256.linked,$<) $@
+	$(PREFIX)objcopy -O binary -j .text -j .rodata -j .data $@
+
+bin/%-512.bin: src/%.c bin/common.assembled common/linker.lds Makefile
+	mkdir -p bin
+	$(PREFIX)gcc -DN_OVERRIDE=512 -O2 -mcmodel=medany -fno-tree-loop-distribute-patterns -c $< -march=rv64imafdcv_zicsr_zifencei -o $(patsubst src/%.c,bin/%-512.assembled,$<)
+	$(PREFIX)ld $(patsubst src/%.c,bin/%-512.assembled,$<) bin/common.assembled -T common/linker.lds -o $(patsubst src/%.c,bin/%-512.linked,$<)
+	cp $(patsubst src/%.c,bin/%-512.linked,$<) $@
+	$(PREFIX)objcopy -O binary -j .text -j .rodata -j .data $@
+
+bin/%-1024.bin: src/%.c bin/common.assembled common/linker.lds Makefile
+	mkdir -p bin
+	$(PREFIX)gcc -DN_OVERRIDE=1024 -O2 -mcmodel=medany -fno-tree-loop-distribute-patterns -c $< -march=rv64imafdcv_zicsr_zifencei -o $(patsubst src/%.c,bin/%-1024.assembled,$<)
+	$(PREFIX)ld $(patsubst src/%.c,bin/%-1024.assembled,$<) bin/common.assembled -T common/linker.lds -o $(patsubst src/%.c,bin/%-1024.linked,$<)
+	cp $(patsubst src/%.c,bin/%-1024.linked,$<) $@
 	$(PREFIX)objcopy -O binary -j .text -j .rodata -j .data $@
 
 hex/%.hex: bin/%.bin Makefile
