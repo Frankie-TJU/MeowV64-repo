@@ -163,8 +163,15 @@ int main() {
 
   data_t l2_sum = 0;
   for (int i = 0; i < HEIGHT; ++i) {
-    for (int j = 0; j < WIDTH; ++j)
-      l2_sum += x[i * WIDTH + i] * x[i * WIDTH + i];
+    for (int j = 0; j < WIDTH; ++j) {
+      l2_sum += x[i * WIDTH + j] * x[i * WIDTH + j];
+    }
+  }
+  for (int i = 0; i < 10; ++i) {
+    for (int j = 0; j < 10; ++j) {
+      printf_("%f ", x[i * WIDTH + j]);
+    }
+    printf_("\r\n");
   }
   printf_("Sum of result squared: %f\r\n", l2_sum);
   return 0;
