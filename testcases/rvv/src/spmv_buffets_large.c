@@ -2,37 +2,6 @@
 #include "printf.h"
 #include <riscv_vector.h>
 
-#define N 10
-#define NNZ 20
-// compute the following spmv:
-// A=
-// [ 1.0 2.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 ]
-// [ 0.0 0.0 3.0 0.0 4.0 0.0 0.0 0.0 0.0 0.0 ]
-// [ 0.0 0.0 0.0 0.0 0.0 0.0 5.0 0.0 0.0 1.0 ]
-// [ 0.0 0.0 0.0 2.0 0.0 0.0 3.0 0.0 0.0 0.0 ]
-// [ 0.0 0.0 4.0 0.0 5.0 0.0 0.0 0.0 0.0 0.0 ]
-// [ 1.0 2.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 ]
-// [ 0.0 0.0 3.0 0.0 4.0 0.0 0.0 0.0 0.0 0.0 ]
-// [ 0.0 0.0 0.0 0.0 0.0 0.0 5.0 0.0 0.0 1.0 ]
-// [ 0.0 0.0 2.0 0.0 0.0 0.0 3.0 0.0 0.0 0.0 ]
-// [ 0.0 0.0 4.0 0.0 5.0 0.0 0.0 0.0 0.0 0.0 ]
-// x = [ 10.0 20.0 30.0 40.0 50.0 10.0 20.0 30.0 40.0 50.0 ]^T
-// y = Ax = [ 50.0 290.0 150.0 140.0 370.0 50.0 290.0 150.0 140.0 370.0 ]^T
-const double val[NNZ] = {
-    1.0, 2.0, 3.0, 4.0, 5.0, 1.0, 2.0, 3.0, 4.0, 5.0,
-    1.0, 2.0, 3.0, 4.0, 5.0, 1.0, 2.0, 3.0, 4.0, 5.0,
-};
-
-const uint64_t idx[NNZ] = {
-    0, 1, 2, 4, 6, 9, 3, 6, 2, 4, 0, 1, 2, 4, 6, 9, 3, 6, 2, 4,
-};
-
-const double x[N] = {
-    10.0, 20.0, 30.0, 40.0, 50.0, 10.0, 20.0, 30.0, 40.0, 50.0,
-};
-
-const uint64_t ptr[N + 1] = {0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20};
-
 void __attribute__((noinline))
 spmv(int r, const double *val, const uint64_t *idx, const double *x,
      const uint64_t *ptr, double *y) {
@@ -126,24 +95,46 @@ spmv_buffets_rvv(int r, const double *val, const uint64_t *idx, const double *x,
   return 0;
 }
 
+#define N 10000
+#define NNZ 20000
+
+double val[NNZ];
+uint64_t idx[NNZ];
+double x[N];
+uint64_t ptr[N + 1];
+
+static uint64_t lfsr63(uint64_t x) {
+  uint64_t bit = (x ^ (x >> 1)) & 1;
+  return (x >> 1) | (bit << 62);
+}
+
 int main() {
-  double y[N] = {50.0, 290.0, 150.0, 140.0, 370.0,
-                 50.0, 290.0, 150.0, 140.0, 370.0};
   double y1[N];
   double y2[N];
   double y3[N];
   printf_("Matrix: %dx%d with %d nnz\r\n", N, N, NNZ);
 
+  printf_("Generate data\r\n");
+  for (int i = 0; i < NNZ; i++) {
+    val[i] = (double)i;
+  }
+  uint64_t seed = 1;
+  for (int i = 0; i < NNZ; i++) {
+    seed = lfsr63(seed);
+    idx[i] = seed % N;
+  }
+  for (int i = 0; i < N; i++) {
+    x[i] = (double)i;
+  }
+  for (int i = 0; i < N; i++) {
+    ptr[i] = i * (NNZ / N);
+  }
+  ptr[N] = NNZ;
+
   printf_("Run spmv scalar\r\n");
   unsigned long before = read_csr(mcycle);
   spmv(N, val, idx, x, ptr, y1);
   unsigned long elapsed_scalar = read_csr(mcycle) - before;
-
-  for (int i = 0; i < N; i++) {
-    if (y1[i] > y[i] + 1e-5 || y1[i] < y[i] - 1e-5) {
-      return 1;
-    }
-  }
 
   printf_("Run spmv scalar buffets\r\n");
   before = read_csr(mcycle);
@@ -157,17 +148,20 @@ int main() {
   if (spmv_buffets_rvv(N, val, idx, x, ptr, y3) != 0) {
     return 1;
   }
-  unsigned long elapsed_buffets_vector = read_csr(mcycle) - before;
+  unsigned long elapsed_buffets_rvv = read_csr(mcycle) - before;
 
   printf_("Perf spmv scalar: %d cycles\r\n", elapsed_scalar);
   printf_("Perf spmv scalar buffets: %d cycles\r\n", elapsed_buffets);
-  printf_("Perf spmv vector buffets: %d cycles\r\n", elapsed_buffets_vector);
+  printf_("Perf spmv vector buffets: %d cycles\r\n", elapsed_buffets_rvv);
 
   for (int i = 0; i < N; i++) {
     if (y1[i] > y2[i] + 1e-5 || y1[i] < y2[i] - 1e-5) {
       printf_("Mismatch: %f vs %f\r\n", y1[i], y2[i]);
       return 1;
     }
+  }
+
+  for (int i = 0; i < N; i++) {
     if (y1[i] > y3[i] + 1e-5 || y1[i] < y3[i] - 1e-5) {
       printf_("Mismatch: %f vs %f\r\n", y1[i], y3[i]);
       return 1;
