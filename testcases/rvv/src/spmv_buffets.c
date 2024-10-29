@@ -132,6 +132,8 @@ int main() {
   double y1[N];
   double y2[N];
   double y3[N];
+  printf_("Matrix: %dx%d with %d nnz\r\n", N, N, NNZ);
+
   printf_("Run spmv scalar\r\n");
   unsigned long before = read_csr(mcycle);
   spmv(N, val, idx, x, ptr, y1);

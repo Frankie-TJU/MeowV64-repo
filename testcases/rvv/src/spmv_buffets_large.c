@@ -95,8 +95,8 @@ spmv_buffets_rvv(int r, const double *val, const uint64_t *idx, const double *x,
   return 0;
 }
 
-#define N 200
-#define NNZ 400
+#define N 10000
+#define NNZ 20000
 
 double val[NNZ];
 uint64_t idx[NNZ];
@@ -112,6 +112,7 @@ int main() {
   double y1[N];
   double y2[N];
   double y3[N];
+  printf_("Matrix: %dx%d with %d nnz\r\n", N, N, NNZ);
 
   printf_("Generate data\r\n");
   for (int i = 0; i < NNZ; i++) {
