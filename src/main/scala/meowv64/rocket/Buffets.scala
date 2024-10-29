@@ -213,9 +213,14 @@ class BuffetsModuleImp(outer: Buffets) extends LazyModuleImp(outer) {
     is(BuffetsState.sReadDone) {
       enable := true.B
       slave.d.valid := true.B
-      val headInLine = head(log2Ceil(config.beatBytes) - 1, 0)
+      // right shift to put data in LSB
+      // left shift for TileLink alignment
+      val offset = currentAddr(log2Ceil(config.beatBytes) - 1, 0)
+      val reqOffset = currentReq.address(log2Ceil(config.beatBytes) - 1, 0)
       val actualData =
-        readData.asTypeOf(slave.d.bits.data) >> (headInLine << 3.U)
+        readData.asTypeOf(
+          slave.d.bits.data
+        ) >> (offset << 3.U) << (reqOffset << 3.U)
       slave.d.bits := slave_edge.AccessAck(
         currentReq,
         actualData
