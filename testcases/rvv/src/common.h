@@ -13,6 +13,10 @@ const uintptr_t BUFFETS_BASE = 0x58000000;
 volatile uint32_t *BUFFETS_SIZE = (uint32_t *)(BUFFETS_BASE + 0x40);
 volatile uint32_t *BUFFETS_SHRINK = (uint32_t *)(BUFFETS_BASE + 0x80);
 
+const uintptr_t UART_BASE = 0x60200000;
+volatile uint8_t *UART_THR = (uint8_t *)(UART_BASE + 0x1000);
+volatile uint8_t *UART_LSR = (uint8_t *)(UART_BASE + 0x1014);
+
 #define SERIAL ((volatile char *)0x60001000ULL)
 
 #define read_csr(reg)                                                          \
@@ -29,30 +33,16 @@ void puts(const char *s) {
   }
 }
 
-void print(int num) {
-  int q;
-  char tmp[10];
-  char *cur = tmp;
-  if (num == 0) {
-    *SERIAL = '0';
-    *SERIAL = '\n';
-  } else {
-    while (num) {
-      *cur = (num % 10) + '0';
-      ++cur;
-      num = num / 10;
-    }
-    while (cur != tmp) {
-      cur--;
-      *SERIAL = *cur;
-    }
-    *SERIAL = '\n';
-  }
-}
-
 void *memcpy(void *__restrict dest, const void *__restrict src, size_t n) {
   for (size_t i = 0; i < n; i++) {
     ((char *)dest)[i] = ((char *)src)[i];
+  }
+  return dest;
+}
+
+void *memset(void *__restrict dest, int ch, size_t n) {
+  for (size_t i = 0; i < n; i++) {
+    ((char *)dest)[i] = ch;
   }
   return dest;
 }
@@ -62,4 +52,74 @@ float fabsf(float num) {
     return num;
   else
     return -num;
+}
+
+static inline void _putchar(char c) {
+  while (!(*UART_LSR & 0x40))
+    ;
+  *UART_THR = c;
+}
+
+static inline void _puts(char *s) {
+  while (*s) {
+    _putchar(*s++);
+  }
+}
+
+void print_hex_delim(unsigned int num, char *delim) {
+  int q;
+  char tmp[10];
+  char *cur = tmp;
+  if (num == 0) {
+    _putchar('0');
+    _puts(delim);
+  } else {
+    while (num) {
+      int d = num & 0xF;
+      char c = (d < 10) ? (d + '0') : (d - 10 + 'A');
+      *cur = c;
+      ++cur;
+      num >>= 4;
+    }
+    while (cur != tmp) {
+      cur--;
+      _putchar(*cur);
+    }
+    _puts(delim);
+  }
+}
+
+void print_delim(unsigned int num, char *delim) {
+  int q;
+  char tmp[10];
+  char *cur = tmp;
+  if (num == 0) {
+    _putchar('0');
+    _puts(delim);
+  } else {
+    while (num) {
+      *cur = (num % 10) + '0';
+      ++cur;
+      num = num / 10;
+    }
+    while (cur != tmp) {
+      cur--;
+      _putchar(*cur);
+    }
+    _puts(delim);
+  }
+}
+
+void print_hex(int num) { print_hex_delim(num, "\r\n"); }
+
+void print(int num) { print_delim(num, "\r\n"); }
+
+void zero(char *mem, int size) {
+  for (int i = 0; i < size; ++i)
+    mem[i] = 0;
+}
+
+void putstr(char *s) {
+  for (; *s; ++s)
+    _putchar(*s);
 }
