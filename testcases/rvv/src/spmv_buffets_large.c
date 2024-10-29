@@ -30,6 +30,7 @@ spmv_buffets(int r, const double *val, const uint64_t *idx, const double *x,
   ADDRGEN_INSTS[4] = addr;
 
   *ADDRGEN_ITERATIONS = ptr[r] - ptr[0];
+  assert(*ADDRGEN_ITERATIONS == ptr[r] - ptr[0]);
   *ADDRGEN_CONTROL = 1;
 
   for (int i = 0; i < r; i++) {
