@@ -77,7 +77,7 @@ spmv_buffets_rvv(int r, const double *val, const uint64_t *idx, const double *x,
     vfloat64m1_t yi0;
     yi0 = __riscv_vfmv_v_f_f64m1(0.0, vl);
 
-    for (int j = 0; k < ptr[i + 1]; k += 2, j++) {
+    for (int j = 0; k < ptr[i + 1]; k += 2, j += 2) {
       vfloat64m1_t valk = __riscv_vle64_v_f64m1(&val[k], vl);
       double tmp1 = ((volatile double *)BUFFETS_DATA)[j];
       double tmp2 = ((volatile double *)BUFFETS_DATA)[j + 1];
@@ -160,14 +160,14 @@ int main() {
 
   for (int i = 0; i < N; i++) {
     if (y1[i] > y2[i] + 1e-5 || y1[i] < y2[i] - 1e-5) {
-      printf_("Mismatch: %f vs %f\r\n", y1[i], y2[i]);
+      printf_("y1 vs y2 Mismatch: %f vs %f\r\n", y1[i], y2[i]);
       return 1;
     }
   }
 
   for (int i = 0; i < N; i++) {
     if (y1[i] > y3[i] + 1e-5 || y1[i] < y3[i] - 1e-5) {
-      printf_("Mismatch: %f vs %f\r\n", y1[i], y3[i]);
+      printf_("y1 vs y3 Mismatch: %f vs %f\r\n", y1[i], y3[i]);
       return 1;
     }
   }
