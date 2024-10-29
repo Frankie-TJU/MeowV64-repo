@@ -1,5 +1,4 @@
 #include "common.h"
-#include "printf.h"
 #include <riscv_vector.h>
 
 #define N 10

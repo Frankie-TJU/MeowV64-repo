@@ -123,3 +123,16 @@ void putstr(char *s) {
   for (; *s; ++s)
     _putchar(*s);
 }
+
+#define assert(expr) assert_(expr, #expr)
+
+#include "printf.h"
+
+extern int printf_(const char *format, ...);
+void assert_(int res, char *s) {
+  if (!res) {
+    printf_("Assertion failed: %s\r\n", s);
+    for (;;) {
+    }
+  }
+}
