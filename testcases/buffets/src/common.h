@@ -1,5 +1,5 @@
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
 
 const uintptr_t ADDRGEN_BASE = 0x59000000;
 volatile uint32_t *ADDRGEN_STATUS = (uint32_t *)(ADDRGEN_BASE + 0x00);
@@ -80,27 +80,30 @@ void print_delim(unsigned int num, char *delim) {
   }
 }
 
-void print_hex(int num) {
-  print_hex_delim(num, "\r\n");
-}
+void print_hex(int num) { print_hex_delim(num, "\r\n"); }
 
-void print(int num) {
-  print_delim(num, "\r\n");
-}
+void print(int num) { print_delim(num, "\r\n"); }
 
 void zero(char *mem, int size) {
-  for(int i = 0; i < size; ++i) mem[i] = 0;
+  for (int i = 0; i < size; ++i)
+    mem[i] = 0;
 }
 
 void putstr(char *s) {
-  for(; *s; ++s) _putchar(*s);
+  for (; *s; ++s)
+    _putchar(*s);
 }
 
 // for poisson
 typedef float data_t;
 const size_t GROUP_LEN = 8;
+#ifdef N_OVERRIDE
+const size_t WIDTH = N_OVERRIDE;
+const size_t HEIGHT = N_OVERRIDE;
+#else
 const size_t WIDTH = 16;
 const size_t HEIGHT = 16;
+#endif
 const data_t EPS = 1e-8;
 const data_t EARLY_EPS = 1e-6;
 const double FREQ = 500000000.0;

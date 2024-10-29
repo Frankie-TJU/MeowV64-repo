@@ -1,5 +1,6 @@
 SRCS:=$(wildcard src/*.c)
-BINS:=$(patsubst src/%.c,bin/%.bin,$(SRCS))
+BINS:=$(patsubst src/%.c,bin/%.bin,$(SRCS)) \
+	bin/poisson_vector-128.bin
 LINKEDS:=$(patsubst src/%.c,bin/%.linked,$(SRCS))
 ASSEMBLED:=$(patsubst src/%.c,bin/%.assembled,$(SRCS))
 HEXS:=$(patsubst src/%.c,hex/%.hex,$(SRCS))
@@ -24,6 +25,13 @@ bin/%.linked: bin/%.assembled bin/common.assembled
 
 bin/%.bin: bin/%.linked
 	cp $< $@
+	$(PREFIX)objcopy -O binary -j .text -j .rodata -j .data $@
+
+bin/%-128.bin: src/%.c bin/common.assembled common/linker.lds Makefile
+	mkdir -p bin
+	$(PREFIX)gcc -DN_OVERRIDE=128 -O2 -mcmodel=medany -fno-tree-loop-distribute-patterns -c $< -march=rv64imafdcv_zicsr_zifencei -o $(patsubst src/%.c,bin/%-128.assembled,$<)
+	$(PREFIX)ld $(patsubst src/%.c,bin/%-128.assembled,$<) bin/common.assembled -T common/linker.lds -o $(patsubst src/%.c,bin/%-128.linked,$<)
+	cp $(patsubst src/%.c,bin/%-128.linked,$<) $@
 	$(PREFIX)objcopy -O binary -j .text -j .rodata -j .data $@
 
 hex/%.hex: bin/%.bin Makefile
