@@ -13,7 +13,13 @@ int main() {
   printf_("Initialize data\r\n");
   for (count = 0; count < N; count++) {
     for (t = 0; t < N + 1; t++) {
-      matrix[count][t] = 1.0;
+      if (t == count) {
+        matrix[count][t] = 1.0;
+      } else if (t == N) {
+        matrix[count][t] = count;
+      } else {
+        matrix[count][t] = 0.0;
+      }
     }
   }
 
