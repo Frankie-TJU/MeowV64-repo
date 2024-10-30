@@ -191,18 +191,21 @@ int main() {
   printf_("Perf spmv vector buffets: %d cycles\r\n", elapsed_buffets_rvv);
 
   for (int i = 0; i < N; i++) {
-    if (y1[i] > y2[i] + 1e-5 || y1[i] < y2[i] - 1e-5) {
+    float diff = (y1[i] - y2[i]) / max(y1[i], y2[i]);
+    if (diff > 1e-5 || diff < -1e-5) {
       printf_("y1 vs y2 Mismatch: %f vs %f\r\n", y1[i], y2[i]);
       return 1;
     }
   }
 
   for (int i = 0; i < N; i++) {
-    if (y1[i] > y3[i] + 1e-5 || y1[i] < y3[i] - 1e-5) {
+    float diff = (y1[i] - y3[i]) / max(y1[i], y3[i]);
+    if (diff > 1e-5 || diff < -1e-5) {
       printf_("y1 vs y3 Mismatch: %f vs %f\r\n", y1[i], y3[i]);
       return 1;
     }
   }
+  printf_("Result is validated\r\n");
 
   return 0;
 }

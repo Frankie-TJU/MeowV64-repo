@@ -136,3 +136,5 @@ void assert_(int res, char *s) {
     }
   }
 }
+
+#define max(a, b) ((a) > (b) ? (a) : (b))
