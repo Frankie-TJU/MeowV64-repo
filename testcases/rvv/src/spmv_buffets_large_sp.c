@@ -159,7 +159,8 @@ int main() {
     idx[i] = seed % N;
   }
   for (int i = 0; i < N; i++) {
-    x[i] = (float)i;
+    // avoid vectorization, it may use vid.v and vfcvt
+    *(volatile float *)&x[i] = (float)i;
   }
   for (int i = 0; i < N; i++) {
     ptr[i] = i * (NNZ / N);
