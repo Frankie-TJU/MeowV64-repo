@@ -35,6 +35,7 @@ spmv_buffets(int r, const double *val, const uint64_t *idx, const double *x,
 
   for (int i = 0; i < r; i++) {
     uint64_t k = ptr[i];
+    uint64_t start = ptr[i];
     double yi0 = 0;
 
     for (int j = 0; k < ptr[i + 1]; k++, j++) {
@@ -43,8 +44,15 @@ spmv_buffets(int r, const double *val, const uint64_t *idx, const double *x,
       //   return 1;
       // }
       yi0 += val[k] * tmp;
+
+      // avoid overflow
+      if (j + 1 == 64) {
+        *BUFFETS_SHRINK = 8 * (k + 1 - start);
+        start = k + 1;
+        j = -1;
+      }
     }
-    *BUFFETS_SHRINK = 8 * (ptr[i + 1] - ptr[i]);
+    *BUFFETS_SHRINK = 8 * (ptr[i + 1] - start);
 
     y[i] = yi0;
   }
@@ -72,6 +80,7 @@ spmv_buffets_rvv(int r, const double *val, const uint64_t *idx, const double *x,
 
   for (int i = 0; i < r; i++) {
     uint64_t k = ptr[i];
+    uint64_t start = ptr[i];
 
     // TODO: proper strip-mining
     size_t vl = __riscv_vsetvl_e64m1(2);
@@ -83,10 +92,29 @@ spmv_buffets_rvv(int r, const double *val, const uint64_t *idx, const double *x,
       double tmp1 = ((volatile double *)BUFFETS_DATA)[j];
       double tmp2 = ((volatile double *)BUFFETS_DATA)[j + 1];
       double tmp_data[2] = {tmp1, tmp2};
+      /*
+      if (tmp1 != x[idx[k]]) {
+        printf_("tmp1=%f\r\n", tmp1);
+        printf_("x[idx[k]]=%f\r\n", x[idx[k]]);
+        printf_("k=%d\r\n", k);
+        printf_("i=%d\r\n", i);
+        printf_("j=%d\r\n", j);
+        printf_("start=%d\r\n", start);
+        assert(false);
+      }
+      */
       vfloat64m1_t tmp = __riscv_vle64_v_f64m1(tmp_data, vl);
       yi0 = __riscv_vfmacc_vv_f64m1(yi0, valk, tmp, vl);
+
+      // avoid overflow
+      if (j + 2 == 64) {
+        *BUFFETS_SHRINK = 8 * (k + 2 - start);
+        start = k + 2;
+        j = -2;
+      }
     }
-    *BUFFETS_SHRINK = 8 * (ptr[i + 1] - ptr[i]);
+    // assert(k == ptr[i + 1]);
+    *BUFFETS_SHRINK = 8 * (ptr[i + 1] - start);
 
     vfloat64m1_t res;
     res = __riscv_vfmv_v_f_f64m1(0.0, vl);
