@@ -194,7 +194,7 @@ std::vector<data_t> generateRandomSparseMatrix(int N) {
 // 生成随机精确解向量
 std::vector<data_t> generateExactSolution(int N) {
   std::vector<data_t> x(N);
-  srand(13000);
+  my_srand(13000);
   for (auto &val : x) {
     val = my_rand_float() * 4.0;
   }
@@ -294,6 +294,13 @@ int main(int argc, char **argv) {
 
   // 生成随机稀疏矩阵
   std::vector<data_t> dense_matrix = generateRandomSparseMatrix(N);
+
+  // 打印矩阵的前10个元素
+  std::cout << "Dense matrix (first 10 elements):" << std::endl;
+  for (int i = 0; i < std::min(10, N); ++i) {
+    std::cout << std::fixed << std::setprecision(6) << dense_matrix[i] << " ";
+  }
+  std::cout << std::endl << std::endl;
 
   // 生成随机精确解向量
   std::vector<data_t> exact_solution = generateExactSolution(N);
