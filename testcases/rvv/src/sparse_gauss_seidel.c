@@ -28,6 +28,11 @@ void generateRandomSparseMatrix(float *matrix, int N) {
   int target_nnz = N * N / 20;
   int current_nnz = 0;
 
+  // 矩阵清零
+  for (int i = 0; i < N * N; ++i) {
+    matrix[i] = 0.0;
+  }
+
   // 先确保对角元素非零
   for (int i = 0; i < N; ++i) {
     matrix[i * N + i] = 10.0f + fabs(my_rand_float());
@@ -136,19 +141,19 @@ int main() {
   printf_("Initialize A\r\n");
   generateRandomSparseMatrix(matrix, N);
 
-  printf_("\n\nMatrix:\n\n");
+  printf_("\r\n\r\nMatrix:\r\n\r\n");
 
   for (count = 0; count < N && count < 10; count++) {
-    printf_("A[%d]:\t%f\n", count, matrix[count]);
+    printf_("A[%d]:\t%f\r\n", count, matrix[count]);
   }
 
   printf_("Initialize x\r\n");
   generateExactSolution(exact_x, N);
 
-  printf_("\n\nExact solution:\n\n");
+  printf_("\r\n\r\nExact solution:\r\n\r\n");
 
   for (count = 0; count < N && count < 10; count++) {
-    printf_("x[%d]:\t%f\n", count, exact_x[count]);
+    printf_("x[%d]:\t%f\r\n", count, exact_x[count]);
   }
 
   printf_("Initialize sparse A\r\n");
@@ -186,13 +191,13 @@ int main() {
       x[count] = temp;
     }
 
-    printf_("Iteration %d, residual norm: %f\n", iter++, a);
+    printf_("Iteration %d, residual norm: %f\r\n", iter++, a);
   } while (a >= EPS);
 
-  printf_("\n\nSolution:\n\n");
+  printf_("\r\n\r\nSolution:\r\n\r\n");
 
   for (count = 0; count < N && count < 10; count++) {
-    printf_("x[%d]:\t%f vs %f\n", count, x[count], exact_x[count]);
+    printf_("x[%d]:\t%f vs %f\r\n", count, x[count], exact_x[count]);
   }
 
   return 0;
