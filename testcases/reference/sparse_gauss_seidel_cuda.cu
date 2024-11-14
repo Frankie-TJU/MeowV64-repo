@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <chrono>
+#include <cstdlib>
 #include <cuda_runtime.h>
 #include <cusparse.h>
 #include <iomanip>
@@ -8,6 +9,24 @@
 #include <random>
 #include <string>
 #include <vector>
+
+static unsigned long next = 1;
+
+void my_srand(unsigned int seed) { next = seed; }
+
+int my_rand(void) {
+  next = next * 1103515245 + 12345;
+  return (unsigned int)(next / 65536) % 32768;
+}
+
+// 生成[-1.0f, 1.0f]范围的随机浮点数
+float my_rand_float(void) {
+  // 获取0到32767的随机数
+  int r = my_rand();
+
+  // 得到[-1,1]
+  return (float)r / 32767.0f * 2.0f - 1.0f;
+}
 
 // 错误检查宏
 #define CHECK_CUDA(func)                                                       \
@@ -133,8 +152,7 @@ struct CUSPARSEMatrix {
 // 生成随机稀疏矩阵
 std::vector<data_t> generateRandomSparseMatrix(int N) {
   std::vector<data_t> matrix(N * N, 0.0f);
-  std::mt19937 gen(13000);
-  std::uniform_real_distribution<data_t> dis(-1.0f, 1.0f);
+  my_srand(13000);
 
   // 设置目标非零元素数量（大约5%的稀疏度）
   int target_nnz = N * N / 20;
@@ -142,16 +160,16 @@ std::vector<data_t> generateRandomSparseMatrix(int N) {
 
   // 先确保对角元素非零
   for (int i = 0; i < N; ++i) {
-    matrix[i * N + i] = 10.0f + std::abs(dis(gen));
+    matrix[i * N + i] = 10.0f + std::abs(my_rand_float());
     current_nnz++;
   }
 
   // 随机填充剩余的非零元素
   while (current_nnz < target_nnz) {
-    int i = gen() % N;
-    int j = gen() % N;
+    int i = my_rand() % N;
+    int j = my_rand() % N;
     if (i != j && matrix[i * N + j] == 0.0f) {
-      float val = dis(gen);
+      float val = my_rand_float();
       matrix[i * N + j] = val;
       current_nnz++;
     }
@@ -176,10 +194,9 @@ std::vector<data_t> generateRandomSparseMatrix(int N) {
 // 生成随机精确解向量
 std::vector<data_t> generateExactSolution(int N) {
   std::vector<data_t> x(N);
-  std::mt19937 gen(13000);
-  std::uniform_real_distribution<data_t> dis(-4.0f, 4.0f);
+  srand(13000);
   for (auto &val : x) {
-    val = dis(gen);
+    val = my_rand_float() * 4.0;
   }
   return x;
 }
