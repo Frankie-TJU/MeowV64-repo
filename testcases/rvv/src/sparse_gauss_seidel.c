@@ -131,8 +131,22 @@ int main() {
 
   printf_("Initialize A\r\n");
   generateRandomSparseMatrix(matrix, N);
+
+  printf_("\n\nMatrix:\n\n");
+
+  for (count = 0; count < N && count < 10; count++) {
+    printf_("A[%d]:\t%f\n", count, matrix[count]);
+  }
+
   printf_("Initialize x\r\n");
   generateExactSolution(exact_x, N);
+
+  printf_("\n\nExact solution:\n\n");
+
+  for (count = 0; count < N && count < 10; count++) {
+    printf_("x[%d]:\t%f\n", count, exact_x[count]);
+  }
+
   printf_("Initialize sparse A\r\n");
   convertFromDense(N, N, matrix, val, &nnz, idx, ptr);
   printf_("Initialize b\r\n");
@@ -173,7 +187,7 @@ int main() {
 
   printf_("\n\nSolution:\n\n");
 
-  for (count = 0; count < N; count++) {
+  for (count = 0; count < N && count < 10; count++) {
     printf_("x[%d]:\t%f vs %f\n", count, x[count], exact_x[count]);
   }
 
