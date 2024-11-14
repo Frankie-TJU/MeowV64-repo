@@ -106,14 +106,14 @@ void multiplyVector(int rows, int *row_offsets, float *values, int *col_indices,
   }
 }
 
-const int N = 100;
+const int N = 512;
 int nnz = 0;
 
 // dense matrix
 float matrix[N * N];
 float exact_x[N];
 
-const int MAX_NNZ = 100 * 25;
+const int MAX_NNZ = N * (N / 5 + 1);
 
 // csr
 float val[MAX_NNZ];
@@ -126,6 +126,10 @@ float b[N];
 
 // https://www.javatpoint.com/gauss-seidel-method-in-c
 int main() {
+  for (int i = 0; i < 1000; i++)
+    putstr(".");
+  putstr("\r\n");
+
   int count, t, limit;
   float temp, error, a, sum = 0;
 
