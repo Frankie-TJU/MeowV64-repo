@@ -166,7 +166,9 @@ int main() {
   }
 
   int iter = 0;
+  unsigned long total_elapsed = 0;
   do {
+    unsigned long before = read_csr(mcycle);
     a = 0;
 
     for (count = 0; count < N; count++) {
@@ -195,8 +197,12 @@ int main() {
       x[count] = temp;
     }
 
-    printf_("Iteration %d, residual norm: %f\r\n", iter++, a);
+    unsigned long elapsed = read_csr(mcycle) - before;
+    total_elapsed += elapsed;
+    printf_("Iteration %d, residual norm: %f, cycles: %ld\r\n", iter++, a,
+            elapsed);
   } while (a >= EPS);
+  printf_("Finished in cycles: %ld\r\n", total_elapsed);
 
   printf_("\r\n\r\nSolution:\r\n\r\n");
 
