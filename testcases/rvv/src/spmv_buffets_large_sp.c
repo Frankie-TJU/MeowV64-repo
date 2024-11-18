@@ -186,10 +186,6 @@ int main() {
   }
   unsigned long elapsed_buffets_rvv = read_csr(mcycle) - before;
 
-  printf_("Perf spmv scalar: %d cycles\r\n", elapsed_scalar);
-  printf_("Perf spmv scalar buffets: %d cycles\r\n", elapsed_buffets);
-  printf_("Perf spmv vector buffets: %d cycles\r\n", elapsed_buffets_rvv);
-
   for (int i = 0; i < N; i++) {
     float diff = (y1[i] - y2[i]) / max(y1[i], y2[i]);
     if (diff > 1e-5 || diff < -1e-5) {
@@ -206,6 +202,16 @@ int main() {
     }
   }
   printf_("Result is validated\r\n");
+
+  printf_("Result: [%f", y3[0]);
+  for (int i = 1; i < N; i++) {
+    printf_(", %f", y3[i]);
+  }
+  printf_("]\r\n");
+
+  printf_("Perf spmv scalar: %d cycles\r\n", elapsed_scalar);
+  printf_("Perf spmv scalar buffets: %d cycles\r\n", elapsed_buffets);
+  printf_("Perf spmv vector buffets: %d cycles\r\n", elapsed_buffets_rvv);
 
   return 0;
 }

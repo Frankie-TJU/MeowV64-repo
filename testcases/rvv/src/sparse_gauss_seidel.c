@@ -204,11 +204,11 @@ int main() {
   } while (a >= EPS);
   printf_("Finished in cycles: %ld\r\n", total_elapsed);
 
-  printf_("\r\n\r\nSolution:\r\n\r\n");
-
-  for (count = 0; count < N && count < 10; count++) {
-    printf_("x[%d]:\t%f vs %f\r\n", count, x[count], exact_x[count]);
+  printf_("Result: [%f", x[0]);
+  for (int i = 1; i < count; i++) {
+    printf_(", %f", x[i]);
   }
+  printf_("]\r\n");
 
   return 0;
 }

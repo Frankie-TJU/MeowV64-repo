@@ -161,17 +161,17 @@ int main() {
           "cycles (%.2f seconds)\r\n",
           WIDTH, HEIGHT, EPS, round, elapsed, elapsed / FREQ);
 
+  printf_("Result: [%f", x[0]);
+  for (int i = 1; i < HEIGHT * WIDTH; i++) {
+    printf_(", %f", x[i]);
+  }
+  printf_("]\r\n");
+
   data_t l2_sum = 0;
   for (int i = 0; i < HEIGHT; ++i) {
     for (int j = 0; j < WIDTH; ++j) {
       l2_sum += x[i * WIDTH + j] * x[i * WIDTH + j];
     }
-  }
-  for (int i = 0; i < 10; ++i) {
-    for (int j = 0; j < 10; ++j) {
-      printf_("%f ", x[i * WIDTH + j]);
-    }
-    printf_("\r\n");
   }
   printf_("Sum of result squared: %f\r\n", l2_sum);
   return 0;
