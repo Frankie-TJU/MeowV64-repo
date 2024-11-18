@@ -1,4 +1,5 @@
 import sys
+import numpy as np
 
 
 def parse_file(filename):
@@ -14,5 +15,10 @@ def parse_file(filename):
     return res
 
 
+prev = None
 for filename in sys.argv[1:]:
-    print("Got result:", parse_file(filename))
+    res = np.array(parse_file(filename))
+    print("Got result:", res)
+    if prev is not None:
+        print("Mean squared error:", np.mean((res - prev) ** 2))
+    prev = res
