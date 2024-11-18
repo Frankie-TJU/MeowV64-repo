@@ -161,6 +161,10 @@ int main() {
   printf_("Initialize b\r\n");
   multiplyVector(N, ptr, val, idx, exact_x, b);
 
+  for (count = 0; count < N; count++) {
+    x[count] = 0.0;
+  }
+
   int iter = 0;
   do {
     a = 0;
