@@ -29,8 +29,9 @@ verilator_rocket_single_core_test:
     - build
   image: jiegec/meowv64
   script:
+    - mill meowv64.runMain firtoolresolver.Main 1.62.1
     - cd verilator/SingleCoreConfig
-    - make
+    - PATH=$HOME/.cache/llvm-firtool/1.62.1/bin:$PATH make
     - ../common/test.sh
     - ../common/benchmark.sh
 
@@ -40,7 +41,8 @@ verilator_rocket_dual_core_test:
     - build
   image: jiegec/meowv64
   script:
+    - mill meowv64.runMain firtoolresolver.Main 1.62.1
     - cd verilator/DualCoreConfig
-    - make
+    - PATH=$HOME/.cache/llvm-firtool/1.62.1/bin:$PATH make
     - ../common/test.sh
     - ../common/benchmark.sh
