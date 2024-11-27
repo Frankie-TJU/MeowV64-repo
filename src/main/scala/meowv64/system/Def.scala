@@ -1,6 +1,5 @@
 package meowv64.system
 
-import meowv64.cache.L2Opts
 import meowv64.debug.DebugModuleMapping
 import meowv64.interrupt.CLINTMapping
 import meowv64.interrupt.PLICDef
@@ -21,26 +20,6 @@ abstract class SystemDef(val coreCount: Int) {
   val L2_LINE_BYTES: Int = 32 // In bytes
 
   val INTERRUPT_CNT: Int = 15
-
-  object L2
-      extends {
-        val ADDR_WIDTH: Int = outer.PADDR_WIDTH
-        val ASSOC: Int = 4
-        val CORE_COUNT: Int = outer.CORE_COUNT
-        val LINE_BYTES: Int = outer.L2_LINE_BYTES
-        val SIZE_BYTES: Int = 16384 // 16KB L2
-        val WB_DEPTH: Int = 4
-        val XLEN: Int = outer.XLEN
-        val VLEN: Int = outer.VLEN
-        val AXI_DATA_WIDTH: Int = outer.L2_LINE_BYTES * 8
-
-        val MMIO = Seq(
-          CLINTMapping,
-          PLICMapping,
-          DebugModuleMapping
-        )
-      }
-      with L2Opts
 
   object PLIC
       extends {
