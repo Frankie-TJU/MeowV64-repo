@@ -67,9 +67,7 @@ object DCWriteLen extends ChiselEnum {
 
   /** Compute byte enable
     */
-  def toByteEnable(len: DCWriteLen.Type) = MuxLookup(
-    len.asUInt,
-    0.U)(
+  def toByteEnable(len: DCWriteLen.Type) = MuxLookup(len.asUInt, 0.U)(
     Seq(
       DCWriteLen.B.asUInt -> 0x1.U,
       DCWriteLen.H.asUInt -> 0x3.U,
@@ -325,9 +323,7 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
 
   val wlookupAddr = Wire(waddr.cloneType)
   when(state === MainState.idle) {
-    wlookupAddr := MuxLookup(
-      nstate.asUInt,
-      waddr)(
+    wlookupAddr := MuxLookup(nstate.asUInt, waddr)(
       Seq(
         (MainState.reading.asUInt, pipeReadAddr),
         (MainState.readingRefill.asUInt, pipeReadAddr),
@@ -335,9 +331,7 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
       )
     )
   }.otherwise {
-    wlookupAddr := MuxLookup(
-      state.asUInt,
-      waddr)(
+    wlookupAddr := MuxLookup(state.asUInt, waddr)(
       Seq(
         (MainState.reading.asUInt, pipeReadAddr),
         (MainState.readingRefill.asUInt, pipeReadAddr),

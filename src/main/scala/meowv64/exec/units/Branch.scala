@@ -111,9 +111,7 @@ class Branch(override implicit val coredef: CoreDef)
           }
 
           is(Decoder.PRIV_RS2("RET"), Decoder.PRIV_RS2("DRET")) {
-            val t = MuxLookup(
-              pipe.instr.instr.funct7,
-              ExReq.ex)(
+            val t = MuxLookup(pipe.instr.instr.funct7, ExReq.ex)(
               Seq(
                 Integer.parseInt("0011000", 2).U -> ExReq.mret,
                 Integer.parseInt("0001000", 2).U -> ExReq.sret,

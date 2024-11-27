@@ -649,7 +649,7 @@ object Decoder {
       // Parse immediate
       val imm = Wire(SInt(32.W))
       result.uimm := imm.asUInt
-      
+
       imm := 0.S // For R-type
       switch(result.base) {
         is(InstrType.I) {

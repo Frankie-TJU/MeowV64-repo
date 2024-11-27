@@ -161,9 +161,9 @@ class Div(val ROUND_PER_STAGE: Int)(override implicit val coredef: CoreDef)
       qneg := false.B
       rneg := false.B
     }.otherwise {
-      qneg := (op1s(coredef.XLEN - 1) ^ op2s(coredef.XLEN - 1)) && op2s
-        .asUInt
-        .orR
+      qneg := (op1s(coredef.XLEN - 1) ^ op2s(
+        coredef.XLEN - 1
+      )) && op2s.asUInt.orR
       rneg := op1s(coredef.XLEN - 1)
     }
 

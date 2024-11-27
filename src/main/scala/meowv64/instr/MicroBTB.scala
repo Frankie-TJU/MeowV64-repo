@@ -188,7 +188,8 @@ class MicroBTB(implicit val coredef: CoreDef) extends Module {
     val taken = Input(Bool())
   })
 
-  val INLINE_COUNT = coredef.L1I.TO_CORE_TRANSFER_WIDTH / meowv64.core.Const.INSTR_MIN_WIDTH
+  val INLINE_COUNT =
+    coredef.L1I.TO_CORE_TRANSFER_WIDTH / meowv64.core.Const.INSTR_MIN_WIDTH
   val OFFSET_WIDTH = log2Ceil(coredef.L1I.TO_CORE_TRANSFER_BYTES)
   val INDEX_WIDTH = log2Ceil(coredef.BHT_SIZE)
   val INDEX_OFFSET_WIDTH = OFFSET_WIDTH + INDEX_WIDTH
@@ -294,7 +295,9 @@ class MicroBTB(implicit val coredef: CoreDef) extends Module {
 
   val waddr = Mux(doingReset, resetCnt, getIndex(toExec.lpc))
   val data = VecInit(
-    Seq.fill(coredef.L1I.TO_CORE_TRANSFER_WIDTH / meowv64.core.Const.INSTR_MIN_WIDTH)(
+    Seq.fill(
+      coredef.L1I.TO_CORE_TRANSFER_WIDTH / meowv64.core.Const.INSTR_MIN_WIDTH
+    )(
       Mux(doingReset, init, updated)
     )
   )

@@ -34,7 +34,8 @@ class PTE(implicit val coredef: CoreDef) extends Bundle {
 
     MuxLookup(
       level,
-      false.B)(// If level == MAX_SEG - 1, then this is not a super page
+      false.B
+    )( // If level == MAX_SEG - 1, then this is not a super page
       (0 until (MAX_SEG - 1)).map(i =>
         i.U -> segMisaligned.asUInt(MAX_SEG - 2 - i, 0).orR
       )

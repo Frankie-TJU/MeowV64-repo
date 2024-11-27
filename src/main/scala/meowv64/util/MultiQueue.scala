@@ -48,7 +48,7 @@ class MultiQueue[T <: Data](
 
   val wptr = RegInit(0.U(log2Ceil(CNT).W))
   val rptr = RegInit(0.U(log2Ceil(CNT).W))
-  assert (isPow2(CNT))
+  assert(isPow2(CNT))
 
   for (i <- (0 until INPUT)) {
     for (j <- (0 until CNT)) {

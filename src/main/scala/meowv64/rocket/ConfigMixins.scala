@@ -34,7 +34,7 @@ class WithMeowV64Cores(
                   cacheLineBytes = systemDef.L2_LINE_BYTES,
                   inRocketSystem = true
                 ),
-              tileId = i + idOffset,
+              tileId = i + idOffset
             ),
             crossingParams = RocketCrossingParams()
           )

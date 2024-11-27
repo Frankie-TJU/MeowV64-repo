@@ -57,9 +57,7 @@ class VType(implicit coredef: CoreDef) extends Bundle {
   val vlmul = UInt(3.W)
 
   def floatFmt = {
-    MuxLookup(
-      vsew,
-      0.U)(
+    MuxLookup(vsew, 0.U)(
       Seq(
         1.U -> FloatH.fmt,
         2.U -> FloatS.fmt,
@@ -512,9 +510,7 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
   )
   // priority: halt > int
   val intFired =
-    intEnabled && intMask
-      .asUInt
-      .orR && ~debugMode // interrupts are masked in debug mode
+    intEnabled && intMask.asUInt.orR && ~debugMode // interrupts are masked in debug mode
   val haltFired = dm.haltreq && ~debugMode // debug halt is a special interrupt
   toExec.int := intFired || haltFired
   // from non-debug to debug

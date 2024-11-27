@@ -138,7 +138,8 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
   // pc of last cycle
   val s2Pc = RegInit(0.U(coredef.XLEN.W))
   val s2Fault = RegInit(false.B)
-  val s2PcOffset = s2Pc(ICAlign - 1, log2Ceil(meowv64.core.Const.INSTR_MIN_WIDTH / 8))
+  val s2PcOffset =
+    s2Pc(ICAlign - 1, log2Ceil(meowv64.core.Const.INSTR_MIN_WIDTH / 8))
   val s2AlignedPc = s2Pc(coredef.XLEN - 1, ICAlign) ## 0.U(ICAlign.W)
   val s2FullMask = WireInit(
     ((1 << instPerFetchPacket) - 1).U(instPerFetchPacket.W)
@@ -413,7 +414,10 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
       (meowv64.core.Const.INSTR_MIN_WIDTH / 8)
     ))
     val acrossPage =
-      !isInstr16 && addr(12, log2Ceil(meowv64.core.Const.INSTR_MIN_WIDTH / 8)).andR
+      !isInstr16 && addr(
+        12,
+        log2Ceil(meowv64.core.Const.INSTR_MIN_WIDTH / 8)
+      ).andR
     decoded(i).addr := addr
     // compute pc of next instruction
     when(isInstr16) {
@@ -441,13 +445,17 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
     when(requiresTranslate) {
       switch(toCore.satp.mode) {
         is(SatpMode.sv48) {
-          isInvalAddr := headAddr(coredef.XLEN - 1, coredef.VADDR_WIDTH)
-            .asSInt =/= headAddr(coredef.VADDR_WIDTH - 1).asSInt
+          isInvalAddr := headAddr(
+            coredef.XLEN - 1,
+            coredef.VADDR_WIDTH
+          ).asSInt =/= headAddr(coredef.VADDR_WIDTH - 1).asSInt
         }
 
         is(SatpMode.sv39) {
-          isInvalAddr := headAddr(coredef.XLEN - 1, coredef.VADDR_WIDTH - 9)
-            .asSInt =/= headAddr(coredef.VADDR_WIDTH - 10).asSInt
+          isInvalAddr := headAddr(
+            coredef.XLEN - 1,
+            coredef.VADDR_WIDTH - 9
+          ).asSInt =/= headAddr(coredef.VADDR_WIDTH - 10).asSInt
         }
       }
     }
@@ -628,9 +636,7 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
   val pipeSpecBrMask = pipeTaken.zipWithIndex.map({ case (taken, idx) =>
     idx.U < pipeStepping && taken
   })
-  val pipeSpecBrTarget = MuxLookup(
-    true.B,
-    0.U)(
+  val pipeSpecBrTarget = MuxLookup(true.B, 0.U)(
     pipeSpecBrMask.zip(pipeSpecBrTargets)
   )
   pipeSpecBr := VecInit(pipeSpecBrMask).asUInt.orR && RegNext(
@@ -685,7 +691,10 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
     s1FPc := toCtrl.pc
     s1Successive := false.B
     s2Fault := false.B
-    headPtr := toCtrl.pc(ICAlign - 1, log2Ceil(meowv64.core.Const.INSTR_MIN_WIDTH / 8))
+    headPtr := toCtrl.pc(
+      ICAlign - 1,
+      log2Ceil(meowv64.core.Const.INSTR_MIN_WIDTH / 8)
+    )
 
     pendingIRst := toCtrl.iRst
     pendingTLBRst := toCtrl.tlbRst

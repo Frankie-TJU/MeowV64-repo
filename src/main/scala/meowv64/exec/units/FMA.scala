@@ -172,19 +172,13 @@ class FMA(override implicit val coredef: CoreDef)
 
           val op = Cat(neg, sign)
 
-          a := MuxLookup(
-            aSel,
-            rs1valHF)(
+          a := MuxLookup(aSel, rs1valHF)(
             Seq(3.U -> oneHF)
           )
-          b := MuxLookup(
-            bSel,
-            rs1valHF)(
+          b := MuxLookup(bSel, rs1valHF)(
             Seq(1.U -> rs2valHF)
           )
-          c := MuxLookup(
-            cSel,
-            rs2valHF)(
+          c := MuxLookup(cSel, rs2valHF)(
             Seq(2.U -> rs3valHF, 3.U -> zeroHF)
           )
 

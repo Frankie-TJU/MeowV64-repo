@@ -99,8 +99,11 @@ case class MeowV64TileParams(
   val blockerCtrlAddr: Option[BigInt] = None
   val clockSinkParams: ClockSinkParameters = ClockSinkParameters()
 
-  def instantiate(crossing: HierarchicalElementCrossingParamsLike, lookup: LookupByHartIdImpl)(
-      implicit p: Parameters
+  def instantiate(
+      crossing: HierarchicalElementCrossingParamsLike,
+      lookup: LookupByHartIdImpl
+  )(implicit
+      p: Parameters
   ): MeowV64Tile = {
     new MeowV64Tile(this, crossing, lookup)
   }
@@ -262,7 +265,7 @@ class MeowV64TileModuleImp(outer: MeowV64Tile)
 
   // expose debug
   outer.customDebugSourceNode.bundle := core.io.debug
-  
+
   // connect addr gen and buffets
   outer.addrGen.module.egress <> outer.buffets.module.ingress
 }

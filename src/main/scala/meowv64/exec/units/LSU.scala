@@ -64,6 +64,7 @@ class DelayedMem(implicit val coredef: CoreDef) extends Bundle {
   /** Result should be sign extended
     */
   val sext = Bool()
+
   /** Result should be NaN-boxed for float loads
     */
   val nan_boxing = Bool()
@@ -335,13 +336,16 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
     when(requiresTranslate) {
       switch(satp.mode) {
         is(SatpMode.sv48) {
-          inval := addr(coredef.XLEN - 1, coredef.VADDR_WIDTH)
-            .asSInt =/= addr(coredef.VADDR_WIDTH - 1).asSInt
+          inval := addr(coredef.XLEN - 1, coredef.VADDR_WIDTH).asSInt =/= addr(
+            coredef.VADDR_WIDTH - 1
+          ).asSInt
         }
 
         is(SatpMode.sv39) {
-          inval := addr(coredef.XLEN - 1, coredef.VADDR_WIDTH - 9)
-            .asSInt =/= addr(coredef.VADDR_WIDTH - 10).asSInt
+          inval := addr(
+            coredef.XLEN - 1,
+            coredef.VADDR_WIDTH - 9
+          ).asSInt =/= addr(coredef.VADDR_WIDTH - 10).asSInt
         }
       }
     }
@@ -626,7 +630,8 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
       when(amo) {
         lsqEntry.wop := MuxLookup(
           next.instr.instr.funct7(6, 2),
-          DCWriteOp.write)(
+          DCWriteOp.write
+        )(
           Seq(
             Decoder.AMO_FUNC("SC") -> DCWriteOp.cond,
             Decoder.AMO_FUNC("AMOSWAP") -> DCWriteOp.swap,
@@ -810,9 +815,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
           // shift = sew * reqIndex = reqIndex << 3 << vsew
           val shift = (vectorReadReqIndex << 3) << vState.vtype.vsew
           // mask = (1 << sew) - 1
-          val mask = MuxLookup(
-            vState.vtype.vsew,
-            0.U)(
+          val mask = MuxLookup(vState.vtype.vsew, 0.U)(
             Seq(
               0.U -> 0xffL.U, // 8
               1.U -> 0xffffL.U, // 16
@@ -897,7 +900,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
       is(DelayedMemOp.uncachedLoad, DelayedMemOp.vectorUncachedLoad) {
         when(current.op === DelayedMemOp.uncachedLoad) {
           retire.bits.info.wb := current.getLSB(toMem.uncached.rdata)
-        }.otherwise{
+        }.otherwise {
           // vector uncached load
           retire.bits.info.wb := toMem.uncached.rdata
         }

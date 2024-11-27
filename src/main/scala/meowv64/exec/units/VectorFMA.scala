@@ -228,14 +228,10 @@ class VectorFMA(override implicit val coredef: CoreDef)
 
             val op = Cat(neg, sign)
             a := Mux(aSel, rs1valHF, oneHF)
-            b := MuxLookup(
-              bSel,
-              rs1valHF)(
+            b := MuxLookup(bSel, rs1valHF)(
               Seq(1.U -> rs2valHF, 2.U -> rs3valHF)
             )
-            c := MuxLookup(
-              cSel,
-              rs1valHF)(
+            c := MuxLookup(cSel, rs1valHF)(
               Seq(1.U -> rs2valHF, 2.U -> rs3valHF, 3.U -> 0.U)
             )
 

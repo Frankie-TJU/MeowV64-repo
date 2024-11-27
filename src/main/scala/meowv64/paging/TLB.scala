@@ -22,7 +22,7 @@ class TLBReq(implicit val coredef: CoreDef) extends Bundle {
   /** This access is read/write/execute, check dirty and rwx bit
     */
   val access = TLBAccessMode()
-  /* mstatus.MXR (Make eXecutable Readable) */ 
+  /* mstatus.MXR (Make eXecutable Readable) */
   val mxr = Bool()
   val vpn = UInt(coredef.vpnWidth.W)
 }
@@ -65,9 +65,7 @@ class TLB(implicit val coredef: CoreDef) extends Module {
 
   val inStore = VecInit(hitMap).asUInt.orR
   // handle SUM and U bit
-  val modeMismatch = MuxLookup(
-    query.req.bits.mode.asUInt,
-    false.B)(
+  val modeMismatch = MuxLookup(query.req.bits.mode.asUInt, false.B)(
     Seq(
       TLBLookupMode.S.asUInt -> hit.u,
       TLBLookupMode.U.asUInt -> !hit.u

@@ -472,7 +472,8 @@ class Exec(implicit val coredef: CoreDef) extends Module {
       val applicable = Exec.route(toIF.view(idx).instr)
       applicable.suggestName(s"applicable_$idx")
       // Find available issue queue
-      val avails = VecInit(issueQueues.map(_.ingress.instr(idx).ready).toSeq).asUInt
+      val avails =
+        VecInit(issueQueues.map(_.ingress.instr(idx).ready).toSeq).asUInt
       avails.suggestName(s"avails_$idx")
 
       sending := 0.U
