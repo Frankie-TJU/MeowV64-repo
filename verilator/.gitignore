@@ -10,3 +10,4 @@ VRiscVSystem
 !benchmark.log
 log*
 output
+dramsim3epoch.json
