@@ -19,7 +19,6 @@ import meowv64.instr._
 import meowv64.paging.TLBExt
 import meowv64.reg._
 import meowv64.util._
-import difftest._
 import scala.collection.mutable.ArrayBuffer
 import meowv64.core.UpdateFState
 
@@ -144,10 +143,6 @@ class Exec(implicit val coredef: CoreDef) extends Module {
   val renamer = Module(new Renamer)
   renamer.cdb := cdb
   renamer.toExec.flush := toCtrl.ctrl.flush
-
-  // expose renaming mapping
-  val difftest = IO(renamer.difftest.cloneType)
-  difftest := renamer.difftest
 
   // Inflight instr info
   val inflights = Module(
@@ -367,8 +362,8 @@ class Exec(implicit val coredef: CoreDef) extends Module {
   // TODO: asserts Bypass is in unit 0
 
   // collect issue queue free mask to find bottleneck
-  toCore.iqEmptyMask := Cat(issueQueues.map(_.ingress.empty).reverse)
-  toCore.iqFullMask := Cat(issueQueues.map(_.ingress.full).reverse)
+  toCore.iqEmptyMask := Cat(issueQueues.map(_.ingress.empty).reverse.toSeq)
+  toCore.iqFullMask := Cat(issueQueues.map(_.ingress.full).reverse.toSeq)
 
   for (iq <- issueQueues) {
     iq.cdb := cdb
@@ -477,14 +472,14 @@ class Exec(implicit val coredef: CoreDef) extends Module {
       val applicable = Exec.route(toIF.view(idx).instr)
       applicable.suggestName(s"applicable_$idx")
       // Find available issue queue
-      val avails = VecInit(issueQueues.map(_.ingress.instr(idx).ready)).asUInt()
+      val avails = VecInit(issueQueues.map(_.ingress.instr(idx).ready).toSeq).asUInt
       avails.suggestName(s"avails_$idx")
 
       sending := 0.U
 
       when(
         toIF.view(idx).illegal
-          || !applicable.orR()
+          || !applicable.orR
       ) {
         // Is an illegal instruction
         // Forward to bypass unit in integer issue queue
@@ -592,13 +587,13 @@ class Exec(implicit val coredef: CoreDef) extends Module {
     0.U
   )
   // index of first branch instruction
-  val brSel = VecInit(PriorityEncoderOH(brMux.asBools())).asUInt()
+  val brSel = VecInit(PriorityEncoderOH(brMux.asBools)).asUInt
   val brSeled = Wire(Vec(units.size, Bool()))
   // branch result and branch trap target
   val brResults = Wire(Vec(units.size, new ExceptionResult))
   val brTvals = Wire(Vec(units.size, UInt(coredef.XLEN.W)))
 
-  when(brSeled.asUInt.orR()) {
+  when(brSeled.asUInt.orR) {
     // a branch instruction is found
     pendingBr := true.B
     pendingBrTag := OHToUInt(brSel) +% retirePtr // Actually this is always true
@@ -835,30 +830,6 @@ class Exec(implicit val coredef: CoreDef) extends Module {
   renamer.toExec.retire := retireNum
   inflights.reader.accept := retireNum
   assert(inflights.reader.cnt >= retireNum)
-
-  if (coredef.ENABLE_DIFFTEST) {
-    // difftest
-    for (i <- 0 until coredef.ISSUE_NUM) {
-      val difftestInstr = Module(new DifftestInstrCommit)
-      val difftest = Wire(Output(new DiffInstrCommitIO()))
-      difftest := DontCare
-      difftest.coreid := hartId
-      difftest.index := i.U
-
-      // only last instruction might ex
-      // so we only need to check ex if this is the last instruction in the bundle
-      difftest.valid := retireNum > i.U &&
-        ((i + 1).U < retireNum || toCtrl.branch.ex =/= ExReq.ex)
-      difftest.pc := inflights.reader.view(i).addr
-      difftest.robIdx := retirePtr + i.U
-      difftest.isRVC := inflights.reader.view(i).isC
-      difftest.instr := inflights.reader.view(i).instr
-
-      // delay two cycles to match other events
-      difftestInstr.io := RegNext(RegNext(difftest))
-      difftestInstr.io.clock := clock
-    }
-  }
 
   // intAck
   when(retireNext.valid && retireNext.hasMem) {

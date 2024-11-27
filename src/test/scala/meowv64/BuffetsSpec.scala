@@ -6,7 +6,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import chiseltest._
 import freechips.rocketchip.diplomacy.LazyModule
-import chipsalliance.rocketchip.config.Parameters
+import org.chipsalliance.cde.config.Parameters
 import meowv64.rocket.Buffets
 import meowv64.rocket.BuffetsConfig
 import meowv64.rocket.AddressGenerationEgress

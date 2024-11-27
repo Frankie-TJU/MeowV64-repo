@@ -632,7 +632,7 @@ object MuxBE {
 
     for (
       (sel, (w, b), r) <- (
-        be.asBools(),
+        be.asBools,
         wdata.asTypeOf(ret).zip(base.asTypeOf(ret)),
         ret
       ).zipped

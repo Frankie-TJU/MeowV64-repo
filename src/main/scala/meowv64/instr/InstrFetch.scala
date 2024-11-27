@@ -1,7 +1,6 @@
 package meowv64.instr
 
 import chisel3._
-import chisel3.experimental.ChiselEnum
 import chisel3.util._
 import meowv64.cache._
 import meowv64.core._
@@ -106,7 +105,7 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
     val s2Res = Input(
       Valid(
         Vec(
-          coredef.L1I.TO_CORE_TRANSFER_WIDTH / Const.INSTR_MIN_WIDTH,
+          coredef.L1I.TO_CORE_TRANSFER_WIDTH / meowv64.core.Const.INSTR_MIN_WIDTH,
           new BPUResult
         )
       )
@@ -134,12 +133,12 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
   val s1AlignedPc = s1Pc(coredef.XLEN - 1, ICAlign) ## 0.U(ICAlign.W)
 
   val instPerFetchPacket =
-    coredef.L1I.TO_CORE_TRANSFER_WIDTH / Const.INSTR_MIN_WIDTH
+    coredef.L1I.TO_CORE_TRANSFER_WIDTH / meowv64.core.Const.INSTR_MIN_WIDTH
 
   // pc of last cycle
   val s2Pc = RegInit(0.U(coredef.XLEN.W))
   val s2Fault = RegInit(false.B)
-  val s2PcOffset = s2Pc(ICAlign - 1, log2Ceil(Const.INSTR_MIN_WIDTH / 8))
+  val s2PcOffset = s2Pc(ICAlign - 1, log2Ceil(meowv64.core.Const.INSTR_MIN_WIDTH / 8))
   val s2AlignedPc = s2Pc(coredef.XLEN - 1, ICAlign) ## 0.U(ICAlign.W)
   val s2FullMask = WireInit(
     ((1 << instPerFetchPacket) - 1).U(instPerFetchPacket.W)
@@ -213,7 +212,7 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
   s1Successive := s1PipeSuccessive
   for (
     i <-
-      (0 until coredef.L1I.TO_CORE_TRANSFER_WIDTH / Const.INSTR_MIN_WIDTH).reverse
+      (0 until coredef.L1I.TO_CORE_TRANSFER_WIDTH / meowv64.core.Const.INSTR_MIN_WIDTH).reverse
   ) {
     val res = lastS2Res(i)
     when(i.U >= s2PcOffset) {
@@ -261,13 +260,13 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
     /** Mask of valid 16-bit parts
       */
     val mask = UInt(
-      (coredef.L1I.TO_CORE_TRANSFER_WIDTH / Const.INSTR_MIN_WIDTH).W
+      (coredef.L1I.TO_CORE_TRANSFER_WIDTH / meowv64.core.Const.INSTR_MIN_WIDTH).W
     )
 
     /** Last bit of valid 16-bit parts, for BTB predictions
       */
     val last = UInt(
-      (coredef.L1I.TO_CORE_TRANSFER_WIDTH / Const.INSTR_MIN_WIDTH).W
+      (coredef.L1I.TO_CORE_TRANSFER_WIDTH / meowv64.core.Const.INSTR_MIN_WIDTH).W
     )
 
     /** Whether this fetch packet is successive, i.e. the next packet of
@@ -279,7 +278,7 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
       */
     val pred =
       Vec(
-        coredef.L1I.TO_CORE_TRANSFER_WIDTH / Const.INSTR_MIN_WIDTH,
+        coredef.L1I.TO_CORE_TRANSFER_WIDTH / meowv64.core.Const.INSTR_MIN_WIDTH,
         new BPUResult
       )
 
@@ -411,10 +410,10 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
 
     decoded(i).instr := instr
     val addr = ICQueue.reader.view(0).addr + (decodePtr(i) << log2Ceil(
-      (Const.INSTR_MIN_WIDTH / 8)
+      (meowv64.core.Const.INSTR_MIN_WIDTH / 8)
     ))
     val acrossPage =
-      !isInstr16 && addr(12, log2Ceil(Const.INSTR_MIN_WIDTH / 8)).andR()
+      !isInstr16 && addr(12, log2Ceil(meowv64.core.Const.INSTR_MIN_WIDTH / 8)).andR
     decoded(i).addr := addr
     // compute pc of next instruction
     when(isInstr16) {
@@ -434,21 +433,21 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
     val headAddr = ICQueue.reader.view(0).addr
     val isInvalAddr = WireDefault(
       // Fetch cannot be uncached. We are also ignoring tlb.query.uncached
-      headAddr(coredef.XLEN - 1, coredef.PADDR_WIDTH).asSInt() =/= headAddr(
+      headAddr(coredef.XLEN - 1, coredef.PADDR_WIDTH).asSInt =/= headAddr(
         coredef.PADDR_WIDTH - 1
-      ).asSInt()
+      ).asSInt
     )
 
     when(requiresTranslate) {
       switch(toCore.satp.mode) {
         is(SatpMode.sv48) {
           isInvalAddr := headAddr(coredef.XLEN - 1, coredef.VADDR_WIDTH)
-            .asSInt() =/= headAddr(coredef.VADDR_WIDTH - 1).asSInt()
+            .asSInt =/= headAddr(coredef.VADDR_WIDTH - 1).asSInt
         }
 
         is(SatpMode.sv39) {
           isInvalAddr := headAddr(coredef.XLEN - 1, coredef.VADDR_WIDTH - 9)
-            .asSInt() =/= headAddr(coredef.VADDR_WIDTH - 10).asSInt()
+            .asSInt =/= headAddr(coredef.VADDR_WIDTH - 10).asSInt
         }
       }
     }
@@ -476,7 +475,7 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
     decodedRASPush(i) := false.B
 
     val targetAddress = (decoded(i).instr.imm
-      +% decoded(i).addr.asSInt()).asUInt()
+      +% decoded(i).addr.asSInt).asUInt
     decoded(i).pred.isBr := false.B
     when(instr.op === Decoder.Op("JAL").ident) {
       // force predict branch to be taken if it was not predicted in BPU
@@ -510,7 +509,7 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
       // compute target address for BRANCH instructions
       // will be written to BPU later
       decoded(i).pred.targetAddress := (decoded(i).instr.imm
-        +% decoded(i).addr.asSInt()).asUInt()
+        +% decoded(i).addr.asSInt).asUInt
       decoded(i).pred.isBr := true.B
     }.otherwise {
       decoded(i).pred.valid := false.B
@@ -631,7 +630,7 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
   })
   val pipeSpecBrTarget = MuxLookup(
     true.B,
-    0.U,
+    0.U)(
     pipeSpecBrMask.zip(pipeSpecBrTargets)
   )
   pipeSpecBr := VecInit(pipeSpecBrMask).asUInt.orR && RegNext(
@@ -655,7 +654,7 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
     s2Fault := false.B
     headPtr := pipeSpecBrTarget(
       ICAlign - 1,
-      log2Ceil(Const.INSTR_MIN_WIDTH / 8)
+      log2Ceil(meowv64.core.Const.INSTR_MIN_WIDTH / 8)
     )
 
     pendingIRst := false.B
@@ -686,7 +685,7 @@ class InstrFetch(implicit val coredef: CoreDef) extends Module {
     s1FPc := toCtrl.pc
     s1Successive := false.B
     s2Fault := false.B
-    headPtr := toCtrl.pc(ICAlign - 1, log2Ceil(Const.INSTR_MIN_WIDTH / 8))
+    headPtr := toCtrl.pc(ICAlign - 1, log2Ceil(meowv64.core.Const.INSTR_MIN_WIDTH / 8))
 
     pendingIRst := toCtrl.iRst
     pendingTLBRst := toCtrl.tlbRst

@@ -1,7 +1,6 @@
 package meowv64.core
 
 import chisel3._
-import chisel3.experimental.ChiselEnum
 import chisel3.util._
 
 object CSRHelper {
@@ -17,7 +16,7 @@ object CSRHelper {
     ret
   }
 
-  def defaults(csr: CSR) {
+  def defaults(csr: CSR) = {
     csr.readers("mvendorid") := 0.U(csr.XLEN.W)
     csr.readers("marchid") := 0.U(csr.XLEN.W)
     csr.readers("mimpid") := 0.U(csr.XLEN.W)
@@ -34,7 +33,7 @@ class CSRPort(val XLEN: Int) extends Bundle {
   val wdata = Input(UInt(XLEN.W))
   val write = Input(Bool())
 
-  def connect(ano: CSRPort) {
+  def connect(ano: CSRPort) = {
     this.rdata := ano.rdata
     ano.wdata := this.wdata
     ano.write := this.write

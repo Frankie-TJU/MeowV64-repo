@@ -40,9 +40,9 @@ class AMOALU(val opts: L1DOpts) extends Module {
   /** Memory, sign extended to 64 bits
     */
   val rextended = Wire(SInt(opts.XLEN.W))
-  rextended := shiftedRData.asSInt()
+  rextended := shiftedRData.asSInt
 
-  val rconverted = rextended.asUInt()
+  val rconverted = rextended.asUInt
 
   /** Return register: memory sign extended to 64 bits
     */
@@ -57,12 +57,12 @@ class AMOALU(val opts: L1DOpts) extends Module {
   val wdataSigned = Wire(SInt(opts.XLEN.W))
   val wdataUnsigned = Wire(UInt(opts.XLEN.W))
   wdataUnsigned := io.wdata
-  wdataSigned := io.wdata.asSInt()
+  wdataSigned := io.wdata.asSInt
 
   when(io.length === DCWriteLen.W) {
     wdataUnsigned := io.wdata(31, 0)
-    wdataSigned := io.wdata(31, 0).asSInt()
-    rextended := shiftedRData(31, 0).asSInt()
+    wdataSigned := io.wdata(31, 0).asSInt
+    rextended := shiftedRData(31, 0).asSInt
     rraw := shiftedRData(31, 0)
   }
 
@@ -92,7 +92,7 @@ class AMOALU(val opts: L1DOpts) extends Module {
     }
 
     is(DCWriteOp.max) {
-      filtered := rextended.max(wdataSigned).asUInt()
+      filtered := rextended.max(wdataSigned).asUInt
     }
 
     is(DCWriteOp.maxu) {
@@ -100,7 +100,7 @@ class AMOALU(val opts: L1DOpts) extends Module {
     }
 
     is(DCWriteOp.min) {
-      filtered := rextended.min(wdataSigned).asUInt()
+      filtered := rextended.min(wdataSigned).asUInt
     }
 
     is(DCWriteOp.minu) {

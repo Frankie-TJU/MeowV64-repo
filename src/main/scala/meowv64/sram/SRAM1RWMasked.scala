@@ -102,8 +102,8 @@ class SRAM1RWMaskedMemInner(
   withClock(RW0_clk) {
     val lastReadBlockAddr = RegNext(blockAddr)
     val readData = Wire(Vec(widthConcat, UInt(blockType.width.W)))
-    for ((data, i) <- readData zipWithIndex) {
-      val dataToSelect = for ((block, j) <- sramArray(i) zipWithIndex) yield {
+    for ((data, i) <- readData.zipWithIndex) {
+      val dataToSelect = for ((block, j) <- sramArray(i).zipWithIndex) yield {
         (
           lastReadBlockAddr === j.asUInt,
           block.io.Q
@@ -160,41 +160,4 @@ class SRAM1RWMaskedMem(
   sram.RW0_wmask := masks.asUInt
   RW0_rdata := sram.RW0_rdata
   sram.RW0_wdata := RW0_rdata
-}
-
-object SRAM1RWMaskedMem extends App {
-  new ChiselStage().execute(
-    Array("-X", "verilog", "-o", s"data_ext.v"),
-    Seq(
-      ChiselGeneratorAnnotation(() =>
-        new SRAM1RWMaskedMem(
-          256,
-          2048,
-          8,
-          SRAM1RWMaskedBlockType.SRAM1RWMasked_64_128,
-          "data_ext"
-        )
-      ),
-      RunFirrtlTransformAnnotation(Dependency(PrefixModulesPass)),
-      ModulePrefix("data_ext", "SRAM1RWMaskedMem")
-    )
-  )
-  for (width <- Seq(152, 192)) {
-    new ChiselStage().execute(
-      Array("-X", "verilog", "-o", s"cc_dir_${width}_ext.v"),
-      Seq(
-        ChiselGeneratorAnnotation(() =>
-          new SRAM1RWMaskedMem(
-            width,
-            2048,
-            width / 8,
-            SRAM1RWMaskedBlockType.SRAM1RWMasked_64_128,
-            "cc_dir_ext"
-          )
-        ),
-        RunFirrtlTransformAnnotation(Dependency(PrefixModulesPass)),
-        ModulePrefix("cc_dir_ext", "SRAM1RWMaskedMem")
-      )
-    )
-  }
 }

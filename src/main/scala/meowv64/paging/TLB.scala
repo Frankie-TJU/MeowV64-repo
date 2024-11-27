@@ -1,7 +1,6 @@
 package meowv64.paging
 
 import chisel3._
-import chisel3.experimental.ChiselEnum
 import chisel3.util._
 import chisel3.util.random.LFSR
 import meowv64.core.CoreDef
@@ -64,11 +63,11 @@ class TLB(implicit val coredef: CoreDef) extends Module {
   val refilling = Reg(UInt())
   val ptwFaulted = RegInit(false.B)
 
-  val inStore = VecInit(hitMap).asUInt().orR()
+  val inStore = VecInit(hitMap).asUInt.orR
   // handle SUM and U bit
   val modeMismatch = MuxLookup(
-    query.req.bits.mode.asUInt(),
-    false.B,
+    query.req.bits.mode.asUInt,
+    false.B)(
     Seq(
       TLBLookupMode.S.asUInt -> hit.u,
       TLBLookupMode.U.asUInt -> !hit.u
@@ -134,7 +133,7 @@ class TLB(implicit val coredef: CoreDef) extends Module {
 
       val random = LFSR(log2Ceil(coredef.TLB_SIZE))
       val invalids = storage.map(!_.v)
-      val hasInvalid = VecInit(invalids).asUInt().orR
+      val hasInvalid = VecInit(invalids).asUInt.orR
       val victim = Mux(
         hasInvalid,
         PriorityEncoder(invalids),

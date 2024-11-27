@@ -1,6 +1,6 @@
 package meowv64.rocket
 
-import freechips.rocketchip.config.Config
+import org.chipsalliance.cde.config.Config
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.tile._
 import meowv64.core.CoreDef
@@ -13,10 +13,8 @@ import meowv64.system.SystemDef
 class WithMeowV64Cores(
     systemDef: SystemDef = new SingleCoreSystemDef,
     overrideIdOffset: Option[Int] = None,
-    initVec: Option[BigInt] = None,
-    enableDifftest: Boolean = false
+    initVec: Option[BigInt] = None
 ) extends Config((_, _, up) => {
-      case XLen => 64
       // Set to line bytes
       case CacheBlockBytes => systemDef.L2_LINE_BYTES
       case MemoryBusKey =>
@@ -34,10 +32,9 @@ class WithMeowV64Cores(
                 .default(
                   initVec = initVec.getOrElse(systemDef.INIT_VEC),
                   cacheLineBytes = systemDef.L2_LINE_BYTES,
-                  inRocketSystem = true,
-                  enableDifftest = enableDifftest
+                  inRocketSystem = true
                 ),
-              hartId = i + idOffset,
+              tileId = i + idOffset,
             ),
             crossingParams = RocketCrossingParams()
           )

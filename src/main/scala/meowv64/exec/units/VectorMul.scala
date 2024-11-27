@@ -86,8 +86,8 @@ class VectorMul(override implicit val coredef: CoreDef)
               is(0x27.U) {
                 // vmulh
                 ext.neg(i)(lane) := op1(width - 1) ^ op2(width - 1)
-                ext.x1(i)(lane) := op1.abs().asUInt
-                ext.x2(i)(lane) := op2.abs().asUInt
+                ext.x1(i)(lane) := op1.abs.asUInt
+                ext.x2(i)(lane) := op2.abs.asUInt
               }
 
               is(0x24.U) {
@@ -102,7 +102,7 @@ class VectorMul(override implicit val coredef: CoreDef)
                 // signed vs2, not rs1 in mulhsu
                 ext.neg(i)(lane) := op2(width - 1)
                 ext.x1(i)(lane) := op1.asUInt
-                ext.x2(i)(lane) := op2.abs().asUInt
+                ext.x2(i)(lane) := op2.abs.asUInt
               }
             }
 
@@ -137,7 +137,7 @@ class VectorMul(override implicit val coredef: CoreDef)
               val signed = added.asSInt
 
               when(prev.neg(i)(lane)) {
-                ext.x1(i)(lane) := (-signed).asUInt()(2 * width - 1, width)
+                ext.x1(i)(lane) := (-signed).asUInt(2 * width - 1, width)
               }.otherwise {
                 ext.x1(i)(lane) := signed(2 * width - 1, width)
               }

@@ -1,17 +1,12 @@
 package meowv64.core
 
 import chisel3._
-import chisel3.experimental.ChiselEnum
 import chisel3.util.log2Ceil
 import meowv64.cache._
 import meowv64.exec.Exec
 import meowv64.instr._
 import meowv64.paging.PTW
 import meowv64.reg._
-import difftest.DifftestCSRState
-import difftest.DifftestArchIntRegState
-import difftest.DifftestArchFpRegState
-import difftest.DiffCSRStateIO
 import chisel3.experimental.hierarchy.instantiable
 import chisel3.experimental.hierarchy.public
 
@@ -60,9 +55,8 @@ object CoreState extends ChiselEnum {
   val running, halting, halted, resuming = Value
 }
 
-@instantiable
 class Core(implicit val coredef: CoreDef) extends Module {
-  @public val io = IO(new Bundle {
+  val io = IO(new Bundle {
     val int = Input(new CoreInt)
     val frontend = new CoreFrontend
 
@@ -101,19 +95,11 @@ class Core(implicit val coredef: CoreDef) extends Module {
   exec.hartId := io.hartId
   val regFiles =
     for (regInfo <- coredef.REG_TYPES) yield {
-      // add additional read ports for difftest
-      val readPortCount = coredef
-        .REG_READ_PORT_COUNT(regInfo.regType) + (if (
-                                                   (regInfo == coredef.REG_INT || regInfo == coredef.REG_FLOAT) && coredef.ENABLE_DIFFTEST
-                                                 ) { 32 }
-                                                 else {
-                                                   0
-                                                 })
       val reg = Module(
         new RegFile(
           regInfo.width,
           regInfo.physRegs,
-          readPortCount,
+          coredef.REG_READ_PORT_COUNT(regInfo.regType),
           coredef.REG_WRITE_PORT_COUNT(regInfo.regType),
           // hardwire x0 to zero
           FIXED_ZERO = regInfo.fixedZero
@@ -278,60 +264,4 @@ class Core(implicit val coredef: CoreDef) extends Module {
   io.debug.issueNumBoundedByLSQSize := exec.toCore.issueNumBoundedByLSQSize
   io.debug.retireNum := exec.toCore.retireNum
   io.debug.pc := exec.toCore.retirePc
-
-  if (coredef.ENABLE_DIFFTEST) {
-    val difftestCSR = Module(new DifftestCSRState)
-    val difftest = Wire(Output(new DiffCSRStateIO()))
-    difftest := DontCare
-    difftest.coreid := io.hartId
-    difftest.priviledgeMode := ctrl.toExec.priv.asUInt
-    difftest.mstatus := csr.readers("mstatus")
-    difftest.sstatus := csr.readers("sstatus")
-    difftest.mepc := csr.readers("mepc")
-    difftest.sepc := csr.readers("sepc")
-    difftest.mtval := csr.readers("mtval")
-    difftest.stval := csr.readers("stval")
-    difftest.mtvec := csr.readers("mtvec")
-    difftest.stvec := csr.readers("stvec")
-    difftest.mcause := csr.readers("mcause")
-    difftest.scause := csr.readers("scause")
-    difftest.satp := csr.readers("satp")
-    difftest.mip := csr.readers("mip")
-    difftest.mie := csr.readers("mie")
-    difftest.mscratch := csr.readers("mscratch")
-    difftest.sscratch := csr.readers("sscratch")
-    difftest.mideleg := csr.readers("mideleg")
-    difftest.medeleg := csr.readers("medeleg")
-    difftest.fcsr := csr.readers("fcsr")
-    difftest.vstart := csr.readers("vstart")
-    difftest.vcsr := csr.readers("vcsr")
-    difftest.vl := csr.readers("vl")
-    difftest.vtype := csr.readers("vtype")
-    difftestCSR.io := RegNext(RegNext(difftest))
-    difftestCSR.io.clock := clock
-
-    val difftestArchIntReg = Module(new DifftestArchIntRegState)
-    difftestArchIntReg.io.clock := clock
-    difftestArchIntReg.io.coreid := io.hartId
-    for (i <- 0 until 32) {
-      val readPortOffset = coredef
-        .REG_READ_PORT_COUNT(coredef.REG_INT.regType)
-      val physReg = exec.difftest.intCommittedMap(i.U)
-      regFiles(0).io.reads(readPortOffset + i).addr := physReg
-      difftestArchIntReg.io
-        .gpr(i) := regFiles(0).io.reads(readPortOffset + i).data
-    }
-
-    val difftestArchFpReg = Module(new DifftestArchFpRegState)
-    difftestArchFpReg.io.clock := clock
-    difftestArchFpReg.io.coreid := io.hartId
-    for (i <- 0 until 32) {
-      val readPortOffset = coredef
-        .REG_READ_PORT_COUNT(coredef.REG_FLOAT.regType)
-      val physReg = exec.difftest.fpCommittedMap(i.U)
-      regFiles(1).io.reads(readPortOffset + i).addr := physReg
-      difftestArchFpReg.io
-        .fpr(i) := regFiles(1).io.reads(readPortOffset + i).data
-    }
-  }
 }

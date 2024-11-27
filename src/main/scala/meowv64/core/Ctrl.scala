@@ -1,13 +1,9 @@
 package meowv64.core
 
 import chisel3._
-import chisel3.experimental.ChiselEnum
 import chisel3.util._
 import meowv64.debug.DebugModule
 import meowv64.exec.ExceptionResult
-import difftest.DifftestTrapEvent
-import difftest.DifftestArchEvent
-import _root_.difftest.DiffArchEventIO
 
 class StageCtrl extends Bundle {
   val stall = Input(Bool())
@@ -63,7 +59,7 @@ class VType(implicit coredef: CoreDef) extends Bundle {
   def floatFmt = {
     MuxLookup(
       vsew,
-      0.U,
+      0.U)(
       Seq(
         1.U -> FloatH.fmt,
         2.U -> FloatS.fmt,
@@ -231,7 +227,7 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
     assert(!toIF.ctrl.stall)
     assert(!toExec.ctrl.stall)
 
-    // pc := alignedPC + (Const.INSTR_MIN_WIDTH / 8 * coredef.FETCH_NUM).U
+    // pc := alignedPC + (meowv64.core.Const.INSTR_MIN_WIDTH / 8 * coredef.FETCH_NUM).U
     toIF.pc := baddr
     toIF.iRst := br.req.iRst
     toIF.tlbRst := br.req.tlbRst
@@ -240,7 +236,7 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
   }
   /*
     // printf(p"PC: ${Hexadecimal(io.pc)}\n")
-    pc := pc + (Const.INSTR_MIN_WIDTH / 8 * coredef.FETCH_NUM).U
+    pc := pc + (meowv64.core.Const.INSTR_MIN_WIDTH / 8 * coredef.FETCH_NUM).U
   }
    */
 
@@ -506,7 +502,7 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
 
   // Interrupts
   // only low 12 bits are valid
-  val intMask: UInt = (ie.asUInt & ip.asUInt())(11, 0)
+  val intMask: UInt = (ie.asUInt & ip.asUInt)(11, 0)
   val intCause = PriorityEncoder(intMask)
   val intDeleg = priv =/= PrivLevel.M && mideleg(intCause)
   val intEnabled = Mux(
@@ -517,8 +513,8 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
   // priority: halt > int
   val intFired =
     intEnabled && intMask
-      .asUInt()
-      .orR() && ~debugMode // interrupts are masked in debug mode
+      .asUInt
+      .orR && ~debugMode // interrupts are masked in debug mode
   val haltFired = dm.haltreq && ~debugMode // debug halt is a special interrupt
   toExec.int := intFired || haltFired
   // from non-debug to debug
@@ -557,7 +553,7 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
     // For other traps, stval is set to zero
     tval := 0.U
   }.otherwise {
-    cause := (false.B << (coredef.XLEN - 1)) | br.req.exType.asUInt()
+    cause := (false.B << (coredef.XLEN - 1)) | br.req.exType.asUInt
   }
 
   // Exception delegated to S-mode
@@ -646,7 +642,7 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
 
         status.mpie := status.mie
         status.mie := false.B
-        status.mpp := priv.asUInt()
+        status.mpp := priv.asUInt
 
         priv := PrivLevel.M
       }
@@ -657,7 +653,7 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
 
     status.mie := status.mpie
     status.mpie := true.B
-    status.mpp := PrivLevel.U.asUInt()
+    status.mpp := PrivLevel.U.asUInt
 
     priv := status.mpp.asTypeOf(PrivLevel.Type())
   }.elsewhen(br.req.ex === ExReq.sret) {
@@ -666,7 +662,7 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
 
     status.sie := status.spie
     status.spie := true.B
-    status.spp := PrivLevel.U.asUInt()
+    status.spp := PrivLevel.U.asUInt
 
     priv := status.spp.asTypeOf(PrivLevel.Type())
   }.elsewhen(br.req.ex === ExReq.dret) {
@@ -675,38 +671,6 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
     debugMode := false.B
 
     priv := dcsr.prv.asTypeOf(PrivLevel.Type())
-  }
-
-  if (coredef.ENABLE_DIFFTEST) {
-    // trap
-    val difftestTrap = Module(new DifftestTrapEvent)
-    difftestTrap.io.clock := clock
-    difftestTrap.io.coreid := hartId
-    difftestTrap.io.valid := false.B
-    difftestTrap.io.code := 0.U
-    difftestTrap.io.pc := nepc
-    difftestTrap.io.cycleCnt := mcycle
-    difftestTrap.io.instrCnt := minstret
-    difftestTrap.io.hasWFI := false.B
-
-    val difftestArch = Module(new DifftestArchEvent)
-    val difftest = Wire(Output(new DiffArchEventIO()))
-    difftest := DontCare
-    difftest.coreid := hartId
-    when(intFired && toExec.intAck) {
-      difftest.intrNO := intCause
-    }.otherwise {
-      difftest.intrNO := 0.U
-    }
-    when(ex) {
-      difftest.cause := cause
-    }.otherwise {
-      difftest.cause := 0.U
-    }
-    difftest.exceptionPC := nepc
-
-    difftestArch.io := RegNext(RegNext(difftest))
-    difftestArch.io.clock := clock
   }
 
   // Avoid Vivado naming collision. Com'on, Xilinx, write *CORRECT* code plz

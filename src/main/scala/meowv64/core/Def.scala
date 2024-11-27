@@ -500,8 +500,6 @@ abstract class CoreDef {
 
   val IN_ROCKET_SYSTEM: Boolean = false
 
-  val ENABLE_DIFFTEST: Boolean = false
-
   object L1I
       extends {
         val ADDR_WIDTH: Int = outer.PADDR_WIDTH
@@ -539,14 +537,12 @@ object CoreDef {
   def default(
       initVec: BigInt,
       cacheLineBytes: Int,
-      inRocketSystem: Boolean = false,
-      enableDifftest: Boolean = false
+      inRocketSystem: Boolean = false
   ) = {
     new CoreDef {
       override val INIT_VEC = initVec
       override val L1_LINE_BYTES: Int = cacheLineBytes
       override val IN_ROCKET_SYSTEM: Boolean = inRocketSystem
-      override val ENABLE_DIFFTEST: Boolean = enableDifftest
     }
   }
 }

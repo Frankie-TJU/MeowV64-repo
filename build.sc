@@ -8,15 +8,16 @@ import com.goyeau.mill.scalafix.ScalafixModule
 
 // learned from https://github.com/OpenXiangShan/fudian/blob/main/build.sc
 val defaultVersions = Map(
-  "chisel3" -> ("edu.berkeley.cs", "3.5.6", false),
-  "chisel3-plugin" -> ("edu.berkeley.cs", "3.5.6", true),
-  "paradise" -> ("org.scalamacros", "2.1.1", true),
-  "json4s-jackson" -> ("org.json4s", "3.6.1", false),
-  "chiseltest" -> ("edu.berkeley.cs", "0.5.1", false),
-  "scalatest" -> ("org.scalatest", "3.2.10", false)
+  "chisel" -> ("org.chipsalliance", "6.6.0", false),
+  "chisel-plugin" -> ("org.chipsalliance", "6.6.0", true),
+  "json4s-jackson" -> ("org.json4s", "4.0.6", false),
+  "chiseltest" -> ("edu.berkeley.cs", "0.6.0-RC3", false),
+  "scalatest" -> ("org.scalatest", "3.2.15", false),
+  "sourcecode" -> ("com.lihaoyi", "0.3.1", false),
+  "mainargs" -> ("com.lihaoyi", "0.5.0", false),
 )
 
-val commonScalaVersion = "2.12.13"
+val commonScalaVersion = "2.13.15"
 
 def getVersion(dep: String) = {
   val (org, ver, cross) = defaultVersions(dep)
@@ -38,7 +39,7 @@ trait CommonScalaModule extends ScalaModule {
   }
 
   def scalacOptions = super.scalacOptions() ++
-    Seq("-Ywarn-unused", "-Ywarn-adapted-args", "-deprecation") // for scalafix
+    Seq("-Ywarn-unused", "-deprecation") // for scalafix
 
 }
 
@@ -53,25 +54,43 @@ trait CommonSbtModule extends SbtModule {
   }
 
   def scalacOptions = super.scalacOptions() ++
-    Seq("-Ywarn-unused", "-Ywarn-adapted-args", "-deprecation") // for scalafix
+    Seq("-Ywarn-unused", "-deprecation") // for scalafix
 
 }
 
 object hardfloat extends CommonSbtModule {
-  override def millSourcePath = os.pwd / "submodules" / "berkeley-hardfloat"
+  override def millSourcePath = os.pwd / "submodules" / "berkeley-hardfloat" / "hardfloat"
 
   override def ivyDeps = super.ivyDeps() ++ Agg(
-    getVersion("chisel3")
+    getVersion("chisel")
   )
 
   override def scalacPluginIvyDeps = super.scalacPluginIvyDeps() ++ Agg(
-    getVersion("chisel3-plugin")
+    getVersion("chisel-plugin")
   )
 }
 
 object cde extends CommonScalaModule {
   override def millSourcePath =
     os.pwd / "submodules" / "cde" / "cde"
+}
+
+object diplomacy extends CommonScalaModule {
+  override def millSourcePath = os.pwd / "submodules" / "diplomacy" / "diplomacy"
+
+  override def ivyDeps = super.ivyDeps() ++ Agg(
+    getVersion("chisel"),
+    getVersion("sourcecode"),
+  )
+
+  override def moduleDeps =
+    super.moduleDeps ++ Seq(
+      cde
+    )
+
+  override def scalacPluginIvyDeps = super.scalacPluginIvyDeps() ++ Agg(
+    getVersion("chisel-plugin")
+  )
 }
 
 object rocketChipMacros extends CommonScalaModule {
@@ -86,21 +105,21 @@ object rocketChip extends CommonSbtModule {
   override def millSourcePath = os.pwd / "submodules" / "rocket-chip"
 
   override def ivyDeps = super.ivyDeps() ++ Agg(
-    getVersion("chisel3"),
+    getVersion("chisel"),
+    getVersion("mainargs"),
     getVersion("json4s-jackson"),
     ivy"org.scala-lang:scala-reflect:$commonScalaVersion"
   )
 
   override def scalacPluginIvyDeps = super.scalacPluginIvyDeps() ++ Agg(
-    getVersion("chisel3-plugin"),
-    getVersion("paradise")
+    getVersion("chisel-plugin"),
   )
 
   override def moduleDeps =
-    super.moduleDeps ++ Seq(hardfloat, rocketChipMacros, cde)
+    super.moduleDeps ++ Seq(hardfloat, rocketChipMacros, cde, diplomacy)
 
   override def scalacOptions = super.scalacOptions() ++
-    Seq("-deprecation", "-unchecked", "-Xsource:2.11")
+    Seq("-deprecation", "-unchecked")
 }
 
 object inclusiveCache extends CommonScalaModule {
@@ -108,7 +127,7 @@ object inclusiveCache extends CommonScalaModule {
     os.pwd / "submodules" / "block-inclusivecache-sifive" / "design" / "craft" / "inclusivecache"
 
   override def scalacPluginIvyDeps = super.scalacPluginIvyDeps() ++ Agg(
-    getVersion("chisel3-plugin")
+    getVersion("chisel-plugin")
   )
 
   override def moduleDeps =
@@ -119,14 +138,13 @@ object meowv64 extends CommonSbtModule with ScalafmtModule with ScalafixModule {
   override def millSourcePath = os.pwd
 
   override def ivyDeps = super.ivyDeps() ++ Agg(
-    getVersion("chisel3"),
+    getVersion("chisel"),
     getVersion("scalatest"),
     getVersion("chiseltest")
   )
 
   override def scalacPluginIvyDeps = super.scalacPluginIvyDeps() ++ Agg(
-    getVersion("chisel3-plugin"),
-    getVersion("paradise")
+    getVersion("chisel-plugin"),
   )
 
   override def scalafixIvyDeps = Agg(
@@ -148,7 +166,7 @@ object meowv64 extends CommonSbtModule with ScalafmtModule with ScalafixModule {
     )
 
     override def scalacPluginIvyDeps = super.scalacPluginIvyDeps() ++ Agg(
-      getVersion("chisel3-plugin")
+      getVersion("chisel-plugin")
     )
   }
 }

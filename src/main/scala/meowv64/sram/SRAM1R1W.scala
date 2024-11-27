@@ -4,8 +4,6 @@ import chisel3._
 import chisel3.util._
 import chisel3.stage.ChiselStage
 import chisel3.stage.ChiselGeneratorAnnotation
-import firrtl.stage.RunFirrtlTransformAnnotation
-import firrtl.options.Dependency
 
 // `depth` elements
 // each element has `width` bits
@@ -117,8 +115,8 @@ class SRAM1R1WMemInner(
   withClock(R0_clk) {
     val lastReadBlockAddr = RegNext(readBlockAddr)
     val readData = Wire(Vec(widthConcat, UInt(blockType.width.W)))
-    for ((data, i) <- readData zipWithIndex) {
-      val dataToSelect = for ((block, j) <- sramArray(i) zipWithIndex) yield {
+    for ((data, i) <- readData.zipWithIndex) {
+      val dataToSelect = for ((block, j) <- sramArray(i).zipWithIndex) yield {
         (
           lastReadBlockAddr === j.asUInt,
           block.io.QA
@@ -178,39 +176,4 @@ class SRAM1R1WMem(
     sram.W0_data := writeData(i)
   }
   R0_data := readData.asUInt
-}
-
-object SRAM1R1WMem extends App {
-  new ChiselStage().execute(
-    Array("-X", "verilog", "-o", s"btbEntries_ext.v"),
-    Seq(
-      ChiselGeneratorAnnotation(() =>
-        new SRAM1R1WMem(
-          420,
-          32,
-          105,
-          SRAM1R1WBlockType.SRAM1R1W_128_32,
-          "btbEntries_ext"
-        )
-      ),
-      RunFirrtlTransformAnnotation(Dependency(PrefixModulesPass)),
-      ModulePrefix("btbEntries_ext", "SRAM1R1WMem")
-    )
-  )
-  new ChiselStage().execute(
-    Array("-X", "verilog", "-o", s"icDataArray_ext.v"),
-    Seq(
-      ChiselGeneratorAnnotation(() =>
-        new SRAM1R1WMem(
-          512,
-          32,
-          256,
-          SRAM1R1WBlockType.SRAM1R1W_128_32,
-          "icDataArray_ext"
-        )
-      ),
-      RunFirrtlTransformAnnotation(Dependency(PrefixModulesPass)),
-      ModulePrefix("icDataArray_ext", "SRAM1R1WMem")
-    )
-  )
 }

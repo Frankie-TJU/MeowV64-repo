@@ -1,7 +1,7 @@
 package meowv64.instr
 
 import chisel3._
-import chisel3.experimental.ChiselEnum
+
 import chisel3.util._
 import meowv64.core._
 
@@ -103,7 +103,7 @@ class BPUResult(implicit val coredef: CoreDef) extends Bundle {
     when(this.valid) {
       // saturating add
       ret.history := Mux(
-        this.history.andR(),
+        this.history.andR,
         (-1).S(coredef.BHT_WIDTH.W).asUInt,
         this.history + 1.U
       )
@@ -125,7 +125,7 @@ class BPUResult(implicit val coredef: CoreDef) extends Bundle {
     when(this.valid) {
       // saturating sub
       ret.history := Mux(
-        this.history.orR(),
+        this.history.orR,
         this.history - 1.U,
         0.U
       )
@@ -171,7 +171,7 @@ class MicroBTB(implicit val coredef: CoreDef) extends Module {
     val s2Res = Output(
       Valid(
         Vec(
-          coredef.L1I.TO_CORE_TRANSFER_WIDTH / Const.INSTR_MIN_WIDTH,
+          coredef.L1I.TO_CORE_TRANSFER_WIDTH / meowv64.core.Const.INSTR_MIN_WIDTH,
           new BPUResult
         )
       )
@@ -188,7 +188,7 @@ class MicroBTB(implicit val coredef: CoreDef) extends Module {
     val taken = Input(Bool())
   })
 
-  val INLINE_COUNT = coredef.L1I.TO_CORE_TRANSFER_WIDTH / Const.INSTR_MIN_WIDTH
+  val INLINE_COUNT = coredef.L1I.TO_CORE_TRANSFER_WIDTH / meowv64.core.Const.INSTR_MIN_WIDTH
   val OFFSET_WIDTH = log2Ceil(coredef.L1I.TO_CORE_TRANSFER_BYTES)
   val INDEX_WIDTH = log2Ceil(coredef.BHT_SIZE)
   val INDEX_OFFSET_WIDTH = OFFSET_WIDTH + INDEX_WIDTH
@@ -197,7 +197,7 @@ class MicroBTB(implicit val coredef: CoreDef) extends Module {
   def getIndex(addr: UInt) = addr(INDEX_OFFSET_WIDTH - 1, OFFSET_WIDTH)
   def getTag(addr: UInt) = addr(coredef.VADDR_WIDTH - 1, INDEX_OFFSET_WIDTH)
   def getOffset(addr: UInt) =
-    addr(OFFSET_WIDTH - 1, log2Ceil(Const.INSTR_MIN_WIDTH / 8))
+    addr(OFFSET_WIDTH - 1, log2Ceil(meowv64.core.Const.INSTR_MIN_WIDTH / 8))
   def toAligned(addr: UInt) = getTag(addr) ## getIndex(addr) ## 0.U(
     OFFSET_WIDTH.W
   ) // The input address should be aligned anyway
@@ -258,7 +258,7 @@ class MicroBTB(implicit val coredef: CoreDef) extends Module {
   val updateOffset = getOffset(toExec.lpc)
   assert(
     updateOffset.getWidth == log2Ceil(
-      coredef.L1I.TO_CORE_TRANSFER_WIDTH / Const.INSTR_MIN_WIDTH
+      coredef.L1I.TO_CORE_TRANSFER_WIDTH / meowv64.core.Const.INSTR_MIN_WIDTH
     )
   )
 
@@ -270,7 +270,7 @@ class MicroBTB(implicit val coredef: CoreDef) extends Module {
   }
 
   val updated = history.update(toExec.taken, updateTag)
-  val updateMask = UIntToOH(updateOffset).asBools()
+  val updateMask = UIntToOH(updateOffset).asBools
 
   val we = updateMask.map(bit => {
     val ret = WireDefault(bit)
@@ -294,7 +294,7 @@ class MicroBTB(implicit val coredef: CoreDef) extends Module {
 
   val waddr = Mux(doingReset, resetCnt, getIndex(toExec.lpc))
   val data = VecInit(
-    Seq.fill(coredef.L1I.TO_CORE_TRANSFER_WIDTH / Const.INSTR_MIN_WIDTH)(
+    Seq.fill(coredef.L1I.TO_CORE_TRANSFER_WIDTH / meowv64.core.Const.INSTR_MIN_WIDTH)(
       Mux(doingReset, init, updated)
     )
   )
@@ -324,7 +324,7 @@ class MicroBTB(implicit val coredef: CoreDef) extends Module {
 
   when(doingReset) {
     resetCnt := resetCnt +% 1.U
-    when(resetCnt.andR()) {
+    when(resetCnt.andR) {
       doingReset := false.B
     }
   }

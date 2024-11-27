@@ -40,34 +40,43 @@ class MultiQueue[T <: Data](
   reader.cnt := valids.min(OUTPUT.U)
   writer.accept := readies.min(INPUT.U)
 
-  val enqs = VecInit(queues.map(_.io.enq))
-  val deqs = VecInit(queues.map(_.io.deq))
-
-  for (enq <- enqs) enq.noenq()
-  for (deq <- deqs) deq.nodeq()
+  for (queue <- queues) {
+    queue.io.enq.valid := false.B
+    queue.io.enq.bits := DontCare
+    queue.io.deq.ready := false.B
+  }
 
   val wptr = RegInit(0.U(log2Ceil(CNT).W))
   val rptr = RegInit(0.U(log2Ceil(CNT).W))
   assert (isPow2(CNT))
 
   for (i <- (0 until INPUT)) {
-    when(writer.cnt > i.U) {
-      enqs(wptr + i.U).enq(writer.view(i))
-      assert(enqs(wptr + i.U).fire)
+    for (j <- (0 until CNT)) {
+      when(wptr + i.U === j.U) {
+        when(writer.cnt > i.U) {
+          queues(j).io.enq.bits := writer.view(i)
+          queues(j).io.enq.valid := true.B
+          assert(queues(j).io.enq.fire)
+        }
+      }
     }
   }
 
   for (i <- (0 until OUTPUT)) {
-    when(deqs(rptr + i.U).valid) {
-      reader.view(i) := deqs(rptr + i.U).bits
-    } otherwise {
-      // set to zero when invalid
-      reader.view(i) := 0.U.asTypeOf(gen)
-    }
+    // set to zero when invalid
+    reader.view(i) := 0.U.asTypeOf(gen)
 
-    when(reader.accept > i.U) {
-      deqs(rptr + i.U).deq()
-      assert(deqs(rptr + i.U).fire)
+    for (j <- (0 until CNT)) {
+      when(rptr + i.U === j.U) {
+        when(queues(j).io.deq.valid) {
+          reader.view(i) := queues(j).io.deq.bits
+        }
+
+        when(reader.accept > i.U) {
+          queues(j).io.deq.ready := true.B
+          assert(queues(j).io.deq.fire)
+        }
+      }
     }
   }
 

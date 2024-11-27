@@ -1,8 +1,6 @@
 package meowv64
 
 import chisel3.stage.ChiselGeneratorAnnotation
-import firrtl.options.Dependency
-import firrtl.stage.RunFirrtlTransformAnnotation
 import meowv64.system.RiscVSystem
 import meowv64.system.SystemDef
 
@@ -23,7 +21,6 @@ object Main extends App {
   val annotations =
     Seq(
       ChiselGeneratorAnnotation(() => new RiscVSystem()(conf)),
-      RunFirrtlTransformAnnotation(Dependency(ZeroInit))
     )
 
   (new chisel3.stage.ChiselStage()).execute(

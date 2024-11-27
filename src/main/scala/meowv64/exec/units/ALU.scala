@@ -23,7 +23,7 @@ class ALU(override implicit val coredef: CoreDef)
         || pipe.instr.instr.op === Decoder.Op("OP").ident
     )
 
-    val op1f = pipe.rs1val.asSInt()
+    val op1f = pipe.rs1val.asSInt
     val op2f = Wire(SInt(coredef.XLEN.W))
 
     val useSub = Wire(Bool())
@@ -34,7 +34,7 @@ class ALU(override implicit val coredef: CoreDef)
       op2f := pipe.instr.instr.imm
       useSub := false.B
     }.otherwise {
-      op2f := pipe.rs2val.asSInt()
+      op2f := pipe.rs2val.asSInt
       useSub := pipe.instr.instr.funct7(5)
     }
 
@@ -43,11 +43,11 @@ class ALU(override implicit val coredef: CoreDef)
 
     when(isDWord) {
       // Is 64-bit instr
-      op1 := op1f.asSInt();
-      op2 := op2f.asSInt();
+      op1 := op1f.asSInt;
+      op2 := op2f.asSInt;
     }.otherwise {
-      op1 := op1f(31, 0).asSInt();
-      op2 := op2f(31, 0).asSInt();
+      op1 := op1f(31, 0).asSInt;
+      op2 := op2f(31, 0).asSInt;
     }
 
     switch(pipe.instr.instr.funct3) {

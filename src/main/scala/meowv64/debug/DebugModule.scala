@@ -1,7 +1,6 @@
 package meowv64.debug
 
 import chisel3._
-import chisel3.experimental.ChiselEnum
 import chisel3.util._
 import meowv64.cache.DCWriteLen
 import meowv64.cache.L1ICPort

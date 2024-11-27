@@ -98,8 +98,8 @@ class SRAM1RWMemInner(
   withClock(RW0_clk) {
     val lastReadBlockAddr = RegNext(blockAddr)
     val readData = Wire(Vec(widthConcat, UInt(blockType.width.W)))
-    for ((data, i) <- readData zipWithIndex) {
-      val dataToSelect = for ((block, j) <- sramArray(i) zipWithIndex) yield {
+    for ((data, i) <- readData.zipWithIndex) {
+      val dataToSelect = for ((block, j) <- sramArray(i).zipWithIndex) yield {
         (
           lastReadBlockAddr === j.asUInt,
           block.io.Q
@@ -152,39 +152,4 @@ class SRAM1RWMem(
     sram.RW0_wdata := writeData(i)
   }
   RW0_rdata := readData.asUInt
-}
-
-object SRAM1RWMem extends App {
-  new ChiselStage().execute(
-    Array("-X", "verilog", "-o", s"data_ext.v"),
-    Seq(
-      ChiselGeneratorAnnotation(() =>
-        new SRAM1RWMem(
-          256,
-          2048,
-          8,
-          SRAM1RWBlockType.SRAM1RW_16_128,
-          "data_ext"
-        )
-      ),
-      RunFirrtlTransformAnnotation(Dependency(PrefixModulesPass)),
-      ModulePrefix("data_ext", "SRAM1RWMem")
-    )
-  )
-  new ChiselStage().execute(
-    Array("-X", "verilog", "-o", s"cc_dir_ext.v"),
-    Seq(
-      ChiselGeneratorAnnotation(() =>
-        new SRAM1RWMem(
-          152,
-          2048,
-          19,
-          SRAM1RWBlockType.SRAM1RW_16_128,
-          "cc_dir_ext"
-        )
-      ),
-      RunFirrtlTransformAnnotation(Dependency(PrefixModulesPass)),
-      ModulePrefix("cc_dir_ext", "SRAM1RWMem")
-    )
-  )
 }

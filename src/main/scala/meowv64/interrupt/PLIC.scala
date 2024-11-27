@@ -101,7 +101,7 @@ class PLIC(val pdef: PLICDef) extends Module {
     Vec(pdef.CONTEXT_COUNT, UInt((pdef.MAX_PRIORITY + 1).W))
   )
   for ((casted, enable) <- castedEnables.zip(enables)) {
-    casted := enable.asUInt()
+    casted := enable.asUInt
   }
   val castedSource = Wire(
     Vec(Math.ceil((pdef.MAX_SOURCE + 1) / 32f).toInt, UInt(32.W))
@@ -110,7 +110,7 @@ class PLIC(val pdef: PLICDef) extends Module {
 
   // Priority > Threshold
   val qualifieds = thresholds.map((threshold) =>
-    VecInit(masked.map(priority => priority > threshold)).asUInt()
+    VecInit(masked.map(priority => priority > threshold)).asUInt
   )
 
   // Qualified and enabled
@@ -120,12 +120,12 @@ class PLIC(val pdef: PLICDef) extends Module {
 
   // Gated inputs
   val gated = claimed.foldLeft(source)({ case (acc, claimed) =>
-    acc & ~(claimed.asUInt())
+    acc & ~(claimed.asUInt)
   })
 
   // Gated & effective
   val outputs = effectives.map((effective) => effective & gated)
-  eints := outputs.map(output => output.orR())
+  eints := outputs.map(output => output.orR)
 
   // Most prioritized interrupt
   val claiming = VecInit(outputs.map((output) => PriorityEncoderOH(output)))

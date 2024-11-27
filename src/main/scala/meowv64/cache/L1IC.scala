@@ -1,7 +1,6 @@
 package meowv64.cache
 
 import chisel3._
-import chisel3.experimental.ChiselEnum
 import chisel3.util._
 import chisel3.util.log2Ceil
 
@@ -129,7 +128,7 @@ class L1IC(opts: L1Opts) extends Module {
   }
 
   val rand = chisel3.util.random.LFSR(8)
-  val victim = RegInit(0.U(log2Ceil(opts.ASSOC)))
+  val victim = RegInit(0.U(log2Ceil(opts.ASSOC).W))
 
   nstate := state
   state := nstate
@@ -174,7 +173,7 @@ class L1IC(opts: L1Opts) extends Module {
 
         validArray := 0.U
       }.elsewhen(pipeRead) {
-        when(pipeHitMap.asUInt().orR) {
+        when(pipeHitMap.asUInt.orR) {
           toCPU.data.valid := true.B
           toCPU.data.bits := rdata(getTransferOffset(pipeAddr))
         }.otherwise {
@@ -211,7 +210,7 @@ class L1IC(opts: L1Opts) extends Module {
 
         writerAddr := getIndex(pipeAddr)
         writerTag := getTag(pipeAddr)
-        writerMask := mask.asBools()
+        writerMask := mask.asBools
         writerData := dataView
 
         validArray := validArray.bitSet(Cat(victim, writerAddr), true.B)

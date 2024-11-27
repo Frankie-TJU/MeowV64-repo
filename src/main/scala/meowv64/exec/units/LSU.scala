@@ -1,7 +1,6 @@
 package meowv64.exec.units
 
 import chisel3._
-import chisel3.experimental.ChiselEnum
 import chisel3.util._
 import freechips.rocketchip.util.UIntIsOneOf
 import meowv64.cache._
@@ -19,8 +18,6 @@ import meowv64.paging._
 import meowv64.reg.RegType
 
 import scala.collection.mutable
-import difftest.DifftestStoreEvent
-import difftest.DifftestUncachedLoadEvent
 
 /** DelayedMem = Delayed memory access, memory accesses that have side-effects
   * and thus needs to be preformed in-order.
@@ -115,20 +112,20 @@ class DelayedMem(implicit val coredef: CoreDef) extends Bundle {
       sret := DontCare
       switch(len) {
         is(DCWriteLen.B) {
-          sret := raw(7, 0).asSInt()
+          sret := raw(7, 0).asSInt
         }
         is(DCWriteLen.H) {
-          sret := raw(15, 0).asSInt()
+          sret := raw(15, 0).asSInt
         }
         is(DCWriteLen.W) {
-          sret := raw(31, 0).asSInt()
+          sret := raw(31, 0).asSInt
         }
         is(DCWriteLen.D) {
-          sret := raw(63, 0).asSInt()
+          sret := raw(63, 0).asSInt
         }
       }
 
-      ret := sret.asUInt()
+      ret := sret.asUInt
     }.otherwise {
       switch(len) {
         is(DCWriteLen.B) {
@@ -284,7 +281,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   val tlb = Module(new TLB)
   val requiresTranslate = satp.mode =/= SatpMode.bare && (
     priv <= PrivLevel.S
-      || status.mprv && (status.mpp =/= PrivLevel.M.asUInt())
+      || status.mprv && (status.mpp =/= PrivLevel.M.asUInt)
   )
   // Note that, while SUM is ordinarily ignored when not executing in S-mode, it
   // is in effect when MPRV=1 and MPP=S.
@@ -330,21 +327,21 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   // Utils
   def isInvalAddr(addr: UInt) = {
     val inval = WireDefault(
-      addr(coredef.XLEN - 1, coredef.PADDR_WIDTH).asSInt() =/= addr(
+      addr(coredef.XLEN - 1, coredef.PADDR_WIDTH).asSInt =/= addr(
         coredef.PADDR_WIDTH - 1
-      ).asSInt()
+      ).asSInt
     )
 
     when(requiresTranslate) {
       switch(satp.mode) {
         is(SatpMode.sv48) {
           inval := addr(coredef.XLEN - 1, coredef.VADDR_WIDTH)
-            .asSInt() =/= addr(coredef.VADDR_WIDTH - 1).asSInt()
+            .asSInt =/= addr(coredef.VADDR_WIDTH - 1).asSInt
         }
 
         is(SatpMode.sv39) {
           inval := addr(coredef.XLEN - 1, coredef.VADDR_WIDTH - 9)
-            .asSInt() =/= addr(coredef.VADDR_WIDTH - 10).asSInt()
+            .asSInt =/= addr(coredef.VADDR_WIDTH - 10).asSInt
         }
       }
     }
@@ -629,7 +626,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
       when(amo) {
         lsqEntry.wop := MuxLookup(
           next.instr.instr.funct7(6, 2),
-          DCWriteOp.write,
+          DCWriteOp.write)(
           Seq(
             Decoder.AMO_FUNC("SC") -> DCWriteOp.cond,
             Decoder.AMO_FUNC("AMOSWAP") -> DCWriteOp.swap,
@@ -815,7 +812,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
           // mask = (1 << sew) - 1
           val mask = MuxLookup(
             vState.vtype.vsew,
-            0.U,
+            0.U)(
             Seq(
               0.U -> 0xffL.U, // 8
               1.U -> 0xffffL.U, // 16
@@ -1038,56 +1035,4 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
     vectorReadRespIndex := 0.U
   }
 
-  if (coredef.ENABLE_DIFFTEST) {
-    // store event
-    val difftestStore = Module(new DifftestStoreEvent)
-    val storeData = WireInit(0.U(256.W))
-    difftestStore.io.clock := clock
-    difftestStore.io.coreid := hartId
-    difftestStore.io.valid := false.B
-    difftestStore.io.storeData := storeData.asTypeOf(difftestStore.io.storeData)
-    when(toMem.writer.req.fire) {
-      difftestStore.io.valid := true.B
-      difftestStore.io.storeAddr := toMem.writer.req.bits.addr
-      when(toMem.writer.req.bits.op === DCWriteOp.write) {
-        // normal write
-        storeData := toMem.writer.req.bits.wdata
-      }.elsewhen(toMem.writer.req.bits.op === DCWriteOp.cond) {
-        // sc
-        when(toMem.writer.rdata === 0.U) {
-          // sc success
-          storeData := toMem.writer.req.bits.wdata
-        }.otherwise {
-          // sc failed
-          difftestStore.io.valid := false.B
-        }
-      }.elsewhen(toMem.writer.req.bits.op === DCWriteOp.commitLR) {
-        // lr
-        difftestStore.io.valid := false.B
-      }.otherwise {
-        // handle atomic
-        storeData := toMem.writer.atomic_written
-      }
-      difftestStore.io.storeMask := toMem.writer.req.bits.be >> toMem.writer.req.bits
-        .addr(4, 0)
-    }
-    when(toMem.uncached.req === L1UCReq.write && !toMem.uncached.stall) {
-      difftestStore.io.valid := true.B
-      difftestStore.io.storeAddr := toMem.uncached.addr
-      storeData := toMem.uncached.wdata
-      difftestStore.io.storeMask := DCWriteLen.toByteEnable(toMem.uncached.len)
-    }
-    assert(
-      !(toMem.writer.req.fire && toMem.uncached.req === L1UCReq.write && toMem.uncached.stall)
-    )
-
-    // uncached load
-    val difftestLoad = Module(new DifftestUncachedLoadEvent)
-    difftestLoad.io.clock := clock
-    difftestLoad.io.coreid := hartId
-    difftestLoad.io.valid := toMem.uncached.req === L1UCReq.read && !toMem.uncached.stall
-    difftestLoad.io.addr := toMem.uncached.addr
-    difftestLoad.io.len := toMem.uncached.len.asUInt
-    difftestLoad.io.data := toMem.uncached.rdata
-  }
 }

@@ -2,7 +2,6 @@ package meowv64.cache
 
 import chisel3.Module
 import chisel3._
-import chisel3.experimental._
 import chisel3.util._
 import meowv64.cache.L1DCPort.L1Req
 import meowv64.data._
@@ -225,7 +224,7 @@ class L2Cache(val opts: L2Opts) extends Module {
     dirWriter.dir.validate()
   }
 
-  def writeData(idx: UInt, addr: UInt, data: UInt) {
+  def writeData(idx: UInt, addr: UInt, data: UInt) = {
     assume(data.getWidth == opts.LINE_WIDTH)
 
     val mask = Wire(Vec(opts.ASSOC, Bool()))
@@ -238,7 +237,7 @@ class L2Cache(val opts: L2Opts) extends Module {
     dataWriter.mask := mask
   }
 
-  def writeDir(idx: UInt, addr: UInt, dir: L2DirEntry) {
+  def writeDir(idx: UInt, addr: UInt, dir: L2DirEntry) = {
     val mask = Wire(Vec(opts.ASSOC, Bool()))
     for ((m, i) <- mask.zipWithIndex) {
       m := i.U === idx
@@ -249,7 +248,7 @@ class L2Cache(val opts: L2Opts) extends Module {
     dirWriter.mask := mask
   }
 
-  def writeDirAll(addr: UInt, dir: L2DirEntry) {
+  def writeDirAll(addr: UInt, dir: L2DirEntry) = {
     val mask = Wire(Vec(opts.ASSOC, Bool()))
     for ((m, i) <- mask.zipWithIndex) {
       m := true.B
@@ -302,8 +301,8 @@ class L2Cache(val opts: L2Opts) extends Module {
   }
 
   def getMMIOMap(addr: UInt) =
-    VecInit(opts.MMIO.map((mapping) => isInMapping(addr, mapping))).asUInt()
-  def isMMIO(addr: UInt) = getMMIOMap(addr).orR()
+    VecInit(opts.MMIO.map((mapping) => isInMapping(addr, mapping))).asUInt
+  def isMMIO(addr: UInt) = getMMIOMap(addr).orR
 
   // Refillers
   val misses = RegInit(VecInit(Seq.fill(opts.CORE_COUNT * 2)(false.B)))
@@ -360,7 +359,7 @@ class L2Cache(val opts: L2Opts) extends Module {
     (0 until opts.CORE_COUNT * 2).map(idx =>
       misses(idx) && addrs(idx) === targetAddr
     )
-  ).asUInt().orR
+  ).asUInt.orR
 
   // Compute directory lookups & delayed data fetch
   val lookups = directories.read(targetIndex)
@@ -368,7 +367,7 @@ class L2Cache(val opts: L2Opts) extends Module {
   val datas = l2DataArray.read(targetIndex)
   val pipeLookups = RegNext(lookups)
   val hits = lookups.map(_.hit(targetAddr))
-  val hit = VecInit(hits).asUInt().orR
+  val hit = VecInit(hits).asUInt.orR
   val pipeHit = RegNext(hit)
   val hitCount = PopCount(hits)
   when(state =/= L2MainState.reset) {
@@ -382,7 +381,7 @@ class L2Cache(val opts: L2Opts) extends Module {
     wbFifo.map(ent => ent.valid && ent.lineaddr === targetAddr >> OFFSET_LENGTH)
   val fifoHitCnt = PopCount(fifoHits)
   assert(fifoHitCnt <= 1.U)
-  val fifoHit = VecInit(fifoHits).asUInt().orR
+  val fifoHit = VecInit(fifoHits).asUInt.orR
   val fifoHitData = Mux1H(fifoHits, wbFifo.map(_.data))
 
   // Randomly picks victim, even if it's not full yet, because I'm lazy
@@ -410,7 +409,7 @@ class L2Cache(val opts: L2Opts) extends Module {
     }
   }
 
-  def stepRefiller(ptr: UInt) {
+  def stepRefiller(ptr: UInt) = {
     when(ptr === (opts.CORE_COUNT * 3 - 1).U) {
       ptr := 0.U
     }.otherwise {
@@ -435,7 +434,7 @@ class L2Cache(val opts: L2Opts) extends Module {
     })
   )
 
-  def step() {
+  def step() = {
     target := nextEventful
   }
 
@@ -707,11 +706,11 @@ class L2Cache(val opts: L2Opts) extends Module {
         // M
         val hasDirty = VecInit(
           lookups(victim).states.map(_ === L2DirState.modified)
-        ).asUInt().orR
+        ).asUInt.orR
         // M or S
         val hasShared = VecInit(
           lookups(victim).states.map(_ =/= L2DirState.vacant)
-        ).asUInt().orR
+        ).asUInt.orR
 
         when(hasDirty) {
           // the core is in M
@@ -1101,7 +1100,7 @@ class L2Cache(val opts: L2Opts) extends Module {
               (d.req === L1UCReq.read && isMMIO(d.addr))
           )
         ).asUInt
-          .orR()
+          .orR
       ) {
         assert(ucWalkPtr === 0.U)
         assert(ucSendStage === UCSendStage.idle)
@@ -1227,7 +1226,7 @@ class L2Cache(val opts: L2Opts) extends Module {
           req.addr := pipeUCAddr
           req.len := pipeUCLen
           req.wdata := pipeUCData // TODO: wstrb
-          for ((m, e) <- mmio.zip(pipeMMIOMap.asBools())) {
+          for ((m, e) <- mmio.zip(pipeMMIOMap.asBools)) {
             when(e) {
               m.req.enq(req)
             }
@@ -1248,7 +1247,7 @@ class L2Cache(val opts: L2Opts) extends Module {
           val lastCycleRdata =
             Mux1H(pipeMMIOMap, mmio.map(m => RegNext(m.resp.bits)))
 
-          val valid = VecInit(validMap).asUInt.orR()
+          val valid = VecInit(validMap).asUInt.orR
           val lastCycleValid = RegNext(valid)
 
           directs(ucWalkPtr).rdata := Mux(

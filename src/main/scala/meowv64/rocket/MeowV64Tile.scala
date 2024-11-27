@@ -1,10 +1,10 @@
 package meowv64.rocket
 
 import chisel3._
-import freechips.rocketchip.config._
+import org.chipsalliance.cde.config._
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.interrupts._
-import freechips.rocketchip.prci.ClockSinkParameters
+import freechips.rocketchip.prci.{ClockSinkParameters, ClockCrossingType}
 import freechips.rocketchip.rocket._
 import freechips.rocketchip.subsystem.RocketCrossingParams
 import freechips.rocketchip.subsystem._
@@ -29,10 +29,13 @@ case class MeowV64CoreParams(
   val useAtomics: Boolean = true
   val useAtomicsOnlyForIO: Boolean = false
   val useCompressed: Boolean = true
-  override val useBitManip: Boolean = false
   override val useVector: Boolean = true
   val useSCIE: Boolean = false
   val useRVE: Boolean = false
+  val useConditionalZero: Boolean = false
+  val useZba: Boolean = false
+  val useZbb: Boolean = false
+  val useZbs: Boolean = false
   val mulDiv: Option[MulDivParams] = Some(MulDivParams())
   val fpu: Option[FPUParams] = Some(FPUParams())
   val fetchWidth: Int = 2
@@ -57,10 +60,14 @@ case class MeowV64CoreParams(
   val nPTECacheEntries: Int = 8 // TODO: Check
   val mtvecInit: Option[BigInt] = Some(BigInt(0))
   val mtvecWritable: Boolean = true
+  val traceHasWdata: Boolean = false
+  val xLen: Int = 64
+  val pgLevels: Int = 3
 
   override def lrscCycles: Int = 80
 
   override def vLen = 256
+  override def eLen = 64
 
   override def vMemDataBits = 256
 }
@@ -75,7 +82,7 @@ case class MeowV64TileAttachParams(
 
 case class MeowV64TileParams(
     coredef: CoreDef,
-    hartId: Int,
+    tileId: Int,
     name: Option[String] = Some("meowv64_tile")
 ) extends InstantiableTileParams[MeowV64Tile] {
   val core: MeowV64CoreParams = MeowV64CoreParams(
@@ -92,11 +99,14 @@ case class MeowV64TileParams(
   val blockerCtrlAddr: Option[BigInt] = None
   val clockSinkParams: ClockSinkParameters = ClockSinkParameters()
 
-  def instantiate(crossing: TileCrossingParamsLike, lookup: LookupByHartIdImpl)(
+  def instantiate(crossing: HierarchicalElementCrossingParamsLike, lookup: LookupByHartIdImpl)(
       implicit p: Parameters
   ): MeowV64Tile = {
     new MeowV64Tile(this, crossing, lookup)
   }
+
+  val baseName = "meowv64tile"
+  val uniqueName = s"${baseName}_$tileId"
 }
 
 class MeowV64Tile private (
@@ -113,12 +123,12 @@ class MeowV64Tile private (
     */
   def this(
       params: MeowV64TileParams,
-      crossing: TileCrossingParamsLike,
+      crossing: HierarchicalElementCrossingParamsLike,
       lookup: LookupByHartIdImpl
   )(implicit p: Parameters) =
     this(params, crossing.crossingType, lookup, p)
 
-  val intOutwardNode = IntIdentityNode()
+  val intOutwardNode = None
   val slaveNode = TLIdentityNode()
   val masterNode = visibilityNode
 
@@ -142,7 +152,7 @@ class MeowV64Tile private (
     }
 
   ResourceBinding {
-    Resource(cpuDevice, "reg").bind(ResourceAddress(staticIdForMetadataUseOnly))
+    Resource(cpuDevice, "reg").bind(ResourceAddress(tileId))
   }
 
   override lazy val module = new MeowV64TileModuleImp(this)
@@ -234,17 +244,10 @@ class MeowV64TileModuleImp(outer: MeowV64Tile)
 
   // connect the meowv64 core
   val coredef = outer.meowv64Params.core.coredef
-  // CAUTION: assume coredef does not change!!
-  // Useful to reduce synthesis time by reusing the same core
-  if (MeowV64TileModuleImp.definition == null) {
-    MeowV64TileModuleImp.definition = Definition(
-      new Core()(coredef)
-    )
-  }
-  val core = Instance(MeowV64TileModuleImp.definition)
+  val core = Module(new Core()(coredef))
 
   // set hartid from outside to reuse core
-  core.io.hartId := outer.meowv64Params.hartId.U
+  core.io.hartId := outer.meowv64Params.tileId.U
 
   // wire frontend io to adapter
   core.io.frontend <> outer.adapter.module.frontend
@@ -259,7 +262,7 @@ class MeowV64TileModuleImp(outer: MeowV64Tile)
 
   // expose debug
   outer.customDebugSourceNode.bundle := core.io.debug
-
+  
   // connect addr gen and buffets
   outer.addrGen.module.egress <> outer.buffets.module.ingress
 }

@@ -1,7 +1,6 @@
 package meowv64.cache
 
 import chisel3._
-import chisel3.experimental.ChiselEnum
 import chisel3.util._
 import chisel3.util.log2Ceil
 import meowv64.cache.L1DCPort.L1Req
@@ -70,7 +69,7 @@ object DCWriteLen extends ChiselEnum {
     */
   def toByteEnable(len: DCWriteLen.Type) = MuxLookup(
     len.asUInt,
-    0.U,
+    0.U)(
     Seq(
       DCWriteLen.B.asUInt -> 0x1.U,
       DCWriteLen.H.asUInt -> 0x3.U,
@@ -318,7 +317,7 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
   nstate := state
   state := nstate
 
-  val l2data = RegInit(0.U(opts.LINE_BYTES))
+  val l2data = RegInit(0.U(opts.LINE_BYTES.W))
 
   val waddr = wbuf(wbufHead).aligned
   val nwaddr = wbuf(wbufHead +% 1.U).aligned
@@ -328,21 +327,21 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
   when(state === MainState.idle) {
     wlookupAddr := MuxLookup(
       nstate.asUInt,
-      waddr,
+      waddr)(
       Seq(
-        (MainState.reading.asUInt(), pipeReadAddr),
-        (MainState.readingRefill.asUInt(), pipeReadAddr),
-        (MainState.readingSpin.asUInt(), pipeReadAddr)
+        (MainState.reading.asUInt, pipeReadAddr),
+        (MainState.readingRefill.asUInt, pipeReadAddr),
+        (MainState.readingSpin.asUInt, pipeReadAddr)
       )
     )
   }.otherwise {
     wlookupAddr := MuxLookup(
-      state.asUInt(),
-      waddr,
+      state.asUInt,
+      waddr)(
       Seq(
-        (MainState.reading.asUInt(), pipeReadAddr),
-        (MainState.readingRefill.asUInt(), pipeReadAddr),
-        (MainState.readingSpin.asUInt(), pipeReadAddr)
+        (MainState.reading.asUInt, pipeReadAddr),
+        (MainState.readingRefill.asUInt, pipeReadAddr),
+        (MainState.readingSpin.asUInt, pipeReadAddr)
       )
     )
   }
@@ -426,7 +425,7 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
 
       assert(wbufHead =/= wbufTail)
 
-      def commit() {
+      def commit() = {
         val hitMask = VecInit(
           wlookups.map(lookup => lookup.valid && lookup.tag === getTag(waddr))
         )
@@ -521,7 +520,7 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
           opts.OFFSET_WIDTH.W
         )
         toL2.l1req := L1DCPort.L1Req.writeback
-        toL2.l1wdata := wlookups(victim).data.asUInt()
+        toL2.l1wdata := wlookups(victim).data.asUInt
 
         val invalid = Wire(new DLine(opts))
         invalid := DontCare
@@ -546,7 +545,7 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
           opts.OFFSET_WIDTH.W
         )
         toL2.l1req := L1DCPort.L1Req.writeback
-        toL2.l1wdata := wlookups(victim).data.asUInt()
+        toL2.l1wdata := wlookups(victim).data.asUInt
 
         val invalid = Wire(new DLine(opts))
         invalid := DontCare
@@ -642,7 +641,7 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
   // Handle write interface
   // This operates synchronously
   val wmHits = wbuf.map(ev => ev.valid && ev.aligned === w.aligned)
-  val wmHit = VecInit(wmHits).asUInt().orR
+  val wmHit = VecInit(wmHits).asUInt.orR
   val wmHitHead = wbuf(wbufHead).valid && wbuf(wbufHead).aligned === w.aligned
 
   w.rdata := pendingWriteRet
@@ -731,10 +730,10 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
 
   val hits =
     lookups.map(line => line.valid && line.tag === getTag(pipeReadAddr))
-  val hit = VecInit(hits).asUInt().orR
+  val hit = VecInit(hits).asUInt.orR
   val storeJustWrittenData = RegNext(writingData)
   val storeJustWritten = (
-    RegNext(writing).asUInt().orR && RegNext(writingAddr) === getIndex(
+    RegNext(writing).asUInt.orR && RegNext(writingAddr) === getIndex(
       pipeReadAddr
     ) && (
       storeJustWrittenData.valid && storeJustWrittenData.tag === getTag(
@@ -807,7 +806,7 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
   toL2.l2valid := false.B
   toL2.l2dirty := false.B
   toL2.l2wdata := 0.U
-  val mainWriting = l1writing.asUInt().orR
+  val mainWriting = l1writing.asUInt.orR
   val lookupReady = !mainWriting && RegNext(toL2.l2stall && !mainWriting)
   // FIXME: impl this
   val resCancelDelay = RegInit(0.U(5.W)) // Up to 32
@@ -817,7 +816,7 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
     lookups.map(line =>
       (
         line.valid && line.tag === getTag(toL2.l2addr),
-        line.data.asUInt()
+        line.data.asUInt
       )
     )
   )
@@ -835,7 +834,7 @@ class L1DC(val opts: L1DOpts)(implicit coredef: CoreDef) extends Module {
     // assert(toL2.l1stall) // L2req can only happen when l2 is processing other ports' requests
     // Nope that may happen. Suppose we are to victimize a line held by this L1
 
-    assert(!toL2.l2addr(IGNORED_WIDTH - 1, 0).orR())
+    assert(!toL2.l2addr(IGNORED_WIDTH - 1, 0).orR)
 
     queryAddr := toL2.l2addr
     toL2.l2stall := true.B

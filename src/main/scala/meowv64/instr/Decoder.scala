@@ -6,6 +6,7 @@ import chisel3.internal.firrtl.Width
 import chisel3.util._
 import meowv64.instr.Decoder.InstrType
 import meowv64.reg.RegType
+import scala.collection.MapView
 
 /** Instruction Decoder We only supports 32-bit length instructions
   */
@@ -76,7 +77,7 @@ object Decoder {
     "SYSTEM" -> spec("11100", InstrType.I) // Sort of
   )
 
-  val BRANCH_FUNC: Map[String, UInt] = Map(
+  val BRANCH_FUNC: MapView[String, UInt] = Map(
     "BEQ" -> "000",
     "BNE" -> "001",
     "BLT" -> "100",
@@ -85,7 +86,7 @@ object Decoder {
     "BGEU" -> "111"
   ).mapValues(Integer.parseInt(_, 2).U(3.W))
 
-  val MEM_WIDTH_FUNC: Map[String, UInt] = Map(
+  val MEM_WIDTH_FUNC: MapView[String, UInt] = Map(
     "B" -> "000",
     "H" -> "001",
     "W" -> "010",
@@ -96,7 +97,7 @@ object Decoder {
   ).mapValues(Integer.parseInt(_, 2).U(3.W))
 
   // IMM verison is identical, except that we have no SUBI
-  val OP_FUNC: Map[String, UInt] = Map(
+  val OP_FUNC: MapView[String, UInt] = Map(
     "ADD/SUB" -> "000",
     "SLL" -> "001",
     "SLT" -> "010",
@@ -107,12 +108,12 @@ object Decoder {
     "AND" -> "111"
   ).mapValues(Integer.parseInt(_, 2).U(3.W))
 
-  val MEM_MISC_FUNC: Map[String, UInt] = Map(
+  val MEM_MISC_FUNC: MapView[String, UInt] = Map(
     "FENCE" -> "000",
     "FENCE.I" -> "001"
   ).mapValues(Integer.parseInt(_, 2).U(3.W))
 
-  val SYSTEM_FUNC: Map[String, UInt] = Map(
+  val SYSTEM_FUNC: MapView[String, UInt] = Map(
     "PRIV" -> "000",
     "CSRRW" -> "001",
     "CSRRS" -> "010",
@@ -122,11 +123,11 @@ object Decoder {
     "CSRRCI" -> "111"
   ).mapValues(Integer.parseInt(_, 2).U(3.W))
 
-  val PRIV_FUNCT7: Map[String, UInt] = Map(
+  val PRIV_FUNCT7: MapView[String, UInt] = Map(
     "SFENCE.VMA" -> "0001001"
   ).mapValues(Integer.parseInt(_, 2).U(7.W))
 
-  val PRIV_RS2: Map[String, UInt] = Map(
+  val PRIV_RS2: MapView[String, UInt] = Map(
     "ECALL" -> "00000",
     "EBREAK" -> "00001",
     "RET" -> "00010",
@@ -135,7 +136,7 @@ object Decoder {
   ).mapValues(Integer.parseInt(_, 2).U(5.W))
 
   val MULDIV_FUNCT7: UInt = Integer.parseInt("0000001", 2).U(7.W)
-  val MULDIV_FUNC: Map[String, UInt] = Map(
+  val MULDIV_FUNC: MapView[String, UInt] = Map(
     "MUL" -> "000",
     "MULH" -> "001",
     "MULHSU" -> "010",
@@ -146,7 +147,7 @@ object Decoder {
     "REMU" -> "111"
   ).mapValues(Integer.parseInt(_, 2).U(3.W))
 
-  val AMO_FUNC: Map[String, UInt] = Map(
+  val AMO_FUNC: MapView[String, UInt] = Map(
     "LR" -> "00010",
     "SC" -> "00011",
     "AMOSWAP" -> "00001",
@@ -160,7 +161,7 @@ object Decoder {
     "AMOMAXU" -> "11100"
   ).mapValues(Integer.parseInt(_, 2).U(5.W))
 
-  val FP_FUNC: Map[String, UInt] = Map(
+  val FP_FUNC: MapView[String, UInt] = Map(
     "FADD" -> "00000",
     "FSUB" -> "00001",
     "FMUL" -> "00010",
@@ -176,7 +177,7 @@ object Decoder {
     "FMV.H/W/D.X" -> "11110"
   ).mapValues(Integer.parseInt(_, 2).U(5.W))
 
-  val VP_FUNC: Map[String, UInt] = Map(
+  val VP_FUNC: MapView[String, UInt] = Map(
     "VADD_V" -> "000000",
     "VSUB_V" -> "000010",
     "VRSUB_V" -> "000011",
@@ -210,7 +211,7 @@ object Decoder {
       val isInstr16 = WireDefault(false.B)
       val ui = self.asUInt
 
-      when(!ui.orR()) {
+      when(!ui.orR) {
         // Defined illegal instr
         result := DontCare
         result.base := InstrType.RESERVED
@@ -253,17 +254,17 @@ object Decoder {
       val rs1e = ui(11, 7)
       val rs2e = ui(6, 2)
 
-      // Helper for assigning unsigned immediates
-      val uimm = Wire(UInt(32.W))
-      result.imm := uimm.asSInt()
-      uimm := DontCare
+      // Helper for assigning signed immediates
+      val imm = Wire(SInt(32.W))
+      result.uimm := imm.asUInt
+      imm := DontCare
 
       // RD position will differ by instr
 
       def fail() = {
         result.info := DecodeInfo.illegal
         result.base := InstrType.RESERVED
-        result.imm := 0.S
+        result.uimm := 0.U
 
         // illegal instruction
         result.funct7 := 0.U
@@ -281,7 +282,7 @@ object Decoder {
           result.rd := rs2t
           result.rs1 := 2.U // sp
           result.rs2 := DontCare
-          uimm := ui(10, 7) ## ui(12, 11) ## ui(5) ## ui(6) ## 0.U(2.W)
+          result.uimm := ui(10, 7) ## ui(12, 11) ## ui(5) ## ui(6) ## 0.U(2.W)
           result.funct3 := OP_FUNC("ADD/SUB") // ADDI
           result.info := DecodeInfo.assign(Instructions.ADDI)
         }
@@ -290,7 +291,7 @@ object Decoder {
           result.rs1 := rs1t
           result.rs2 := DontCare
           result.rd := rs2t
-          uimm := ui(6, 5) ## ui(12, 10) ## 0.U(3.W)
+          result.uimm := ui(6, 5) ## ui(12, 10) ## 0.U(3.W)
           result.funct3 := MEM_WIDTH_FUNC("D")
           result.info := DecodeInfo.assign(Instructions.FLD)
         }
@@ -299,7 +300,7 @@ object Decoder {
           result.rs1 := rs1t
           result.rs2 := DontCare
           result.rd := rs2t
-          uimm := ui(5) ## ui(12, 10) ## ui(6) ## 0.U(2.W)
+          result.uimm := ui(5) ## ui(12, 10) ## ui(6) ## 0.U(2.W)
           result.funct3 := MEM_WIDTH_FUNC("W")
           result.info := DecodeInfo.assign(Instructions.LW)
         }
@@ -308,7 +309,7 @@ object Decoder {
           result.rs1 := rs1t
           result.rs2 := DontCare
           result.rd := rs2t
-          uimm := ui(6, 5) ## ui(12, 10) ## 0.U(3.W)
+          result.uimm := ui(6, 5) ## ui(12, 10) ## 0.U(3.W)
           result.funct3 := MEM_WIDTH_FUNC("D")
           result.info := DecodeInfo.assign(Instructions.LD)
         }
@@ -320,7 +321,7 @@ object Decoder {
           result.rs1 := rs1t
           result.rs2 := rs2t
           result.rd := DontCare
-          uimm := ui(6, 5) ## ui(12, 10) ## 0.U(3.W)
+          result.uimm := ui(6, 5) ## ui(12, 10) ## 0.U(3.W)
           result.funct3 := MEM_WIDTH_FUNC("D")
           result.info := DecodeInfo.assign(Instructions.FSD)
         }
@@ -329,7 +330,7 @@ object Decoder {
           result.rs1 := rs1t
           result.rs2 := rs2t
           result.rd := DontCare
-          uimm := ui(5) ## ui(12, 10) ## ui(6) ## 0.U(2.W)
+          result.uimm := ui(5) ## ui(12, 10) ## ui(6) ## 0.U(2.W)
           result.funct3 := MEM_WIDTH_FUNC("W")
           result.info := DecodeInfo.assign(Instructions.SW)
         }
@@ -338,7 +339,7 @@ object Decoder {
           result.rs1 := rs1t
           result.rs2 := rs2t
           result.rd := DontCare
-          uimm := ui(6, 5) ## ui(12, 10) ## 0.U(3.W)
+          result.uimm := ui(6, 5) ## ui(12, 10) ## 0.U(3.W)
           result.funct3 := MEM_WIDTH_FUNC("D")
           result.info := DecodeInfo.assign(Instructions.SD)
         }
@@ -348,7 +349,7 @@ object Decoder {
           result.rd := rs1e
           result.rs1 := rs1e
           result.rs2 := DontCare
-          result.imm := (ui(12) ## ui(6, 2)).asSInt
+          imm := (ui(12) ## ui(6, 2)).asSInt
           result.funct3 := OP_FUNC("ADD/SUB") // Can only be ADDI
           result.info := DecodeInfo.assign(Instructions.ADDI)
         }
@@ -357,7 +358,7 @@ object Decoder {
           result.rd := rs1e
           result.rs1 := rs1e
           result.rs2 := DontCare
-          result.imm := (ui(12) ## ui(6, 2)).asSInt
+          imm := (ui(12) ## ui(6, 2)).asSInt
           result.funct3 := OP_FUNC("ADD/SUB") // Can only be ADDI
           result.info := DecodeInfo.assign(Instructions.ADDIW)
         }
@@ -366,7 +367,7 @@ object Decoder {
           result.rd := rs1e
           result.rs1 := 0.U
           result.rs2 := DontCare
-          result.imm := (ui(12) ## ui(6, 2)).asSInt
+          imm := (ui(12) ## ui(6, 2)).asSInt
           result.funct3 := OP_FUNC("OR")
           result.info := DecodeInfo.assign(Instructions.ORI)
         }
@@ -376,7 +377,7 @@ object Decoder {
             result.rd := 2.U // sp
             result.rs1 := 2.U // sp
             result.rs2 := DontCare
-            result.imm := (ui(12) ## ui(4, 3) ## ui(5) ## ui(2) ## ui(
+            imm := (ui(12) ## ui(4, 3) ## ui(5) ## ui(2) ## ui(
               6
             )).asSInt << 4
             result.funct3 := OP_FUNC("ADD/SUB") // ADDI
@@ -386,7 +387,7 @@ object Decoder {
             result.rd := rs1e
             result.rs1 := DontCare
             result.rs2 := DontCare
-            result.imm := (ui(12) ## ui(6, 2)).asSInt << 12
+            imm := (ui(12) ## ui(6, 2)).asSInt << 12
             result.funct3 := DontCare
             result.info := DecodeInfo.assign(Instructions.LUI)
           }
@@ -397,7 +398,7 @@ object Decoder {
             result.rs1 := rs1t
             result.rs2 := DontCare
             result.rd := rs1t
-            result.imm := (0.U(1.W) ## ui(12) ## ui(6, 2)).asSInt
+            imm := (0.U(1.W) ## ui(12) ## ui(6, 2)).asSInt
             result.funct3 := OP_FUNC("SRL/SRA")
             result.funct7 := ui(11, 10) ## 0.U(5.W)
             when(ui(10) === 0.U) {
@@ -410,7 +411,7 @@ object Decoder {
             result.rs1 := rs1t
             result.rs2 := DontCare
             result.rd := rs1t
-            result.imm := (ui(12) ## ui(6, 2)).asSInt
+            imm := (ui(12) ## ui(6, 2)).asSInt
             result.funct3 := OP_FUNC("AND")
             result.info := DecodeInfo.assign(Instructions.ANDI)
           }.otherwise { // OP MISC
@@ -418,7 +419,7 @@ object Decoder {
             result.rs1 := rs1t
             result.rs2 := rs2t
             result.rd := rs1t
-            result.imm := DontCare
+            imm := DontCare
 
             switch(ui(12) ## ui(6, 5)) {
               is("000".asBits(3.W)) { // SUB
@@ -471,7 +472,7 @@ object Decoder {
           result.rs1 := DontCare
           result.rs2 := DontCare
           result.rd := 0.U // Ignore result
-          result.imm := (
+          imm := (
             ui(12) ## ui(8) ## ui(10, 9) ## ui(6) ## ui(7) ## ui(2) ## ui(
               11
             ) ## ui(5, 3) ## 0.U(1.W)
@@ -484,7 +485,7 @@ object Decoder {
           result.rs1 := rs1t
           result.rs2 := 0.U // Compare with zero
           result.rd := DontCare
-          result.imm := (ui(12) ## ui(6, 5) ## ui(2) ## ui(11, 10) ## ui(
+          imm := (ui(12) ## ui(6, 5) ## ui(2) ## ui(11, 10) ## ui(
             4,
             3
           ) ## 0.U(1.W)).asSInt
@@ -496,7 +497,7 @@ object Decoder {
           result.rs1 := rs1t
           result.rs2 := 0.U // Compare with zero
           result.rd := DontCare
-          result.imm := (ui(12) ## ui(6, 5) ## ui(2) ## ui(11, 10) ## ui(
+          imm := (ui(12) ## ui(6, 5) ## ui(2) ## ui(11, 10) ## ui(
             4,
             3
           ) ## 0.U(1.W)).asSInt
@@ -505,7 +506,7 @@ object Decoder {
         }
 
         is("10000".asBits(5.W)) { // SLLI
-          result.imm := (0.U(1.W) ## ui(12) ## ui(6, 2)).asSInt
+          imm := (0.U(1.W) ## ui(12) ## ui(6, 2)).asSInt
           result.rs1 := rs1e
           result.rd := rs1e
           result.funct3 := OP_FUNC("SLL")
@@ -517,7 +518,7 @@ object Decoder {
           result.rs1 := 2.U // x2 = sp
           result.rs2 := DontCare
           result.rd := rs1e
-          uimm := ui(4, 2) ## ui(12) ## ui(6, 5) ## 0.U(3.W)
+          result.uimm := ui(4, 2) ## ui(12) ## ui(6, 5) ## 0.U(3.W)
           result.funct3 := MEM_WIDTH_FUNC("D")
           result.info := DecodeInfo.assign(Instructions.FLD)
         }
@@ -526,7 +527,7 @@ object Decoder {
           result.rs1 := 2.U // x2 = sp
           result.rs2 := DontCare
           result.rd := rs1e
-          uimm := ui(3, 2) ## ui(12) ## ui(6, 4) ## 0.U(2.W)
+          result.uimm := ui(3, 2) ## ui(12) ## ui(6, 4) ## 0.U(2.W)
           result.funct3 := MEM_WIDTH_FUNC("W")
           result.info := DecodeInfo.assign(Instructions.LW)
         }
@@ -535,14 +536,14 @@ object Decoder {
           result.rs1 := 2.U // x2 = sp
           result.rs2 := DontCare
           result.rd := rs1e
-          uimm := ui(4, 2) ## ui(12) ## ui(6, 5) ## 0.U(3.W)
+          result.uimm := ui(4, 2) ## ui(12) ## ui(6, 5) ## 0.U(3.W)
           result.funct3 := MEM_WIDTH_FUNC("D")
           result.info := DecodeInfo.assign(Instructions.LD)
         }
         is("10100".asBits(5.W)) { // J[AL]R/MV/ADD
           when(ui(12) === 0.U) {
             when(rs2e === 0.U) { // JR
-              result.imm := 0.S
+              imm := 0.S
 
               result.rs2 := 0.U
               result.rs1 := rs1e
@@ -554,7 +555,7 @@ object Decoder {
               result.rd := rs1e
               result.rs1 := 0.U
               result.rs2 := rs2e
-              result.imm := DontCare
+              result.uimm := DontCare
               result.funct3 := OP_FUNC("OR")
               result.info := DecodeInfo.assign(Instructions.OR)
             }
@@ -564,7 +565,7 @@ object Decoder {
               result.rs1 := 0.U
               result.rs2 := PRIV_RS2("EBREAK")
               result.rd := 0.U
-              result.imm := 0.S
+              imm := 0.S
               result.funct3 := 0.U
               result.funct7 := 0.U
               result.info := DecodeInfo.assign(Instructions.EBREAK)
@@ -573,7 +574,7 @@ object Decoder {
               result.rs1 := rs1e
               result.rs2 := DontCare
               result.rd := 1.U // x1 = ra
-              result.imm := 0.S
+              imm := 0.S
               result.funct3 := DontCare
               result.info := DecodeInfo.assign(Instructions.JALR)
             }.otherwise { // ADD
@@ -581,7 +582,7 @@ object Decoder {
               result.rs1 := rs1e
               result.rs2 := rs2e
               result.rd := rs1e
-              result.imm := DontCare
+              imm := DontCare
               result.funct3 := OP_FUNC("ADD/SUB")
               result.funct7 := "0000000".asBits(7.W)
               result.info := DecodeInfo.assign(Instructions.ADD)
@@ -593,7 +594,7 @@ object Decoder {
           result.rs1 := 2.U // x2 = sp
           result.rs2 := rs2e
           result.rd := DontCare
-          uimm := ui(9, 7) ## ui(12, 10) ## 0.U(3.W)
+          result.uimm := ui(9, 7) ## ui(12, 10) ## 0.U(3.W)
           result.funct3 := MEM_WIDTH_FUNC("D")
           result.info := DecodeInfo.assign(Instructions.FSD)
         }
@@ -602,7 +603,7 @@ object Decoder {
           result.rs1 := 2.U // x2 = sp
           result.rs2 := rs2e
           result.rd := DontCare
-          uimm := ui(8, 7) ## ui(12, 9) ## 0.U(2.W)
+          result.uimm := ui(8, 7) ## ui(12, 9) ## 0.U(2.W)
           result.funct3 := MEM_WIDTH_FUNC("W")
           result.info := DecodeInfo.assign(Instructions.SW)
         }
@@ -611,7 +612,7 @@ object Decoder {
           result.rs1 := 2.U // x2 = sp
           result.rs2 := rs2e
           result.rd := DontCare
-          uimm := ui(9, 7) ## ui(12, 10) ## 0.U(3.W)
+          result.uimm := ui(9, 7) ## ui(12, 10) ## 0.U(3.W)
           result.funct3 := MEM_WIDTH_FUNC("D")
           result.info := DecodeInfo.assign(Instructions.SD)
         }
@@ -646,24 +647,27 @@ object Decoder {
       result.rs2 := ui(24, 20)
 
       // Parse immediate
-      result.imm := 0.S // For R-type
+      val imm = Wire(SInt(32.W))
+      result.uimm := imm.asUInt
+      
+      imm := 0.S // For R-type
       switch(result.base) {
         is(InstrType.I) {
-          result.imm := ui(31, 20).asSInt
+          imm := ui(31, 20).asSInt
         }
         is(InstrType.S) {
-          result.imm := (ui(31, 25) ## ui(11, 7)).asSInt
+          imm := (ui(31, 25) ## ui(11, 7)).asSInt
         }
         is(InstrType.B) {
-          result.imm := (ui(31) ## ui(7) ## ui(30, 25) ## ui(11, 8) ## 0.U(
+          imm := (ui(31) ## ui(7) ## ui(30, 25) ## ui(11, 8) ## 0.U(
             1.W
           )).asSInt
         }
         is(InstrType.U) {
-          result.imm := ui(31, 12).asSInt << 12
+          imm := ui(31, 12).asSInt << 12
         }
         is(InstrType.J) {
-          result.imm := (ui(31) ## ui(19, 12) ## ui(20) ## ui(30, 21) ## 0.U(
+          imm := (ui(31) ## ui(19, 12) ## ui(20) ## ui(30, 21) ## 0.U(
             1.W
           )).asSInt
         }
@@ -704,7 +708,8 @@ class Instr extends Bundle {
   val base = InstrType()
 
   // Immediate
-  val imm = SInt(32.W)
+  val uimm = UInt(32.W)
+  def imm = uimm.asSInt
 
   // Registers
   val rs1 = UInt(5.W)
@@ -729,7 +734,7 @@ class Instr extends Bundle {
   override def toPrintable: Printable = {
     // Reverse check op
     p"Instr: \n" +
-      p"  Base: ${Decimal(base.asUInt())}\n" +
+      p"  Base: ${Decimal(base.asUInt)}\n" +
       p"  Op:   0b${Binary(op)}\n" +
       p"  Imm:  0x${Hexadecimal(imm)}\n" +
       p"  RS1:  x${Decimal(rs1)}\n" +

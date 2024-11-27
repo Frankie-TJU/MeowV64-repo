@@ -59,8 +59,8 @@ class Mul(override implicit val coredef: CoreDef)
 
           is(Decoder.MULDIV_FUNC("MULH")) {
             ext.neg := op1(63) ^ op2(63)
-            ext.x1 := op1.abs().asUInt
-            ext.x2 := op2.abs().asUInt
+            ext.x1 := op1.abs.asUInt
+            ext.x2 := op2.abs.asUInt
           }
 
           is(Decoder.MULDIV_FUNC("MULHU")) {
@@ -71,7 +71,7 @@ class Mul(override implicit val coredef: CoreDef)
 
           is(Decoder.MULDIV_FUNC("MULHSU")) {
             ext.neg := op1(63)
-            ext.x1 := op1.abs().asUInt
+            ext.x1 := op1.abs.asUInt
             ext.x2 := op2.asUInt
           }
         }
@@ -106,7 +106,7 @@ class Mul(override implicit val coredef: CoreDef)
         // Can only be MULW
         val extended = Wire(SInt(coredef.XLEN.W))
         extended := prev.x1(31, 0).asSInt
-        ext.x1 := extended.asUInt()
+        ext.x1 := extended.asUInt
       }.otherwise {
         val added = Wire(UInt((coredef.XLEN * 2).W))
         added := prev.x1 +& ((prev.mid1 +& prev.mid2) << 32) +& (prev.x2 << 64)
@@ -116,7 +116,7 @@ class Mul(override implicit val coredef: CoreDef)
           val signed = added.asSInt
 
           when(prev.neg) {
-            ext.x1 := (-signed).asUInt()(127, 64)
+            ext.x1 := (-signed).asUInt(127, 64)
           }.otherwise {
             ext.x1 := signed(127, 64)
           }

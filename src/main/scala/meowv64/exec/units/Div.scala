@@ -36,7 +36,7 @@ class Div(val ROUND_PER_STAGE: Int)(override implicit val coredef: CoreDef)
     round := 0.U
   }
 
-  val stall = !idle && !round.andR()
+  val stall = !idle && !round.andR
 
   def map(stage: Int, pipe: PipeInstr, _ext: Option[DivExt]): (DivExt, Bool) = {
     if (stage == 0) {
@@ -68,15 +68,15 @@ class Div(val ROUND_PER_STAGE: Int)(override implicit val coredef: CoreDef)
       when(
         isUnsigned
       ) { // Unsigned
-        init.r := op1s.asUInt()
-        init.d := op2s.asUInt()
+        init.r := op1s.asUInt
+        init.d := op2s.asUInt
         init.q := 0.U
       }.otherwise { // Signed
         init.q := 0.U
         when(op1s < 0.S) {
-          init.r := (-op1s).asUInt()
+          init.r := (-op1s).asUInt
         }.otherwise {
-          init.r := op1s.asUInt()
+          init.r := op1s.asUInt
         }
 
         when(op2s < 0.S) {
@@ -162,8 +162,8 @@ class Div(val ROUND_PER_STAGE: Int)(override implicit val coredef: CoreDef)
       rneg := false.B
     }.otherwise {
       qneg := (op1s(coredef.XLEN - 1) ^ op2s(coredef.XLEN - 1)) && op2s
-        .asUInt()
-        .orR()
+        .asUInt
+        .orR
       rneg := op1s(coredef.XLEN - 1)
     }
 
@@ -182,15 +182,15 @@ class Div(val ROUND_PER_STAGE: Int)(override implicit val coredef: CoreDef)
     val fr = Wire(SInt(coredef.XLEN.W))
 
     when(qneg) {
-      sq := -q.asSInt()
+      sq := -q.asSInt
     }.otherwise {
-      sq := q.asSInt()
+      sq := q.asSInt
     }
 
     when(rneg) {
-      sr := -r.asSInt()
+      sr := -r.asSInt
     }.otherwise {
-      sr := r.asSInt()
+      sr := r.asSInt
     }
 
     when(isDWord) {
@@ -210,7 +210,7 @@ class Div(val ROUND_PER_STAGE: Int)(override implicit val coredef: CoreDef)
     val info = WireDefault(RetireInfo.vacant(regInfo))
 
     val extended = Wire(SInt(coredef.XLEN.W))
-    info.wb := extended.asUInt()
+    info.wb := extended.asUInt
 
     when(
       pipe.instr.instr.funct3 === Decoder.MULDIV_FUNC("DIV")

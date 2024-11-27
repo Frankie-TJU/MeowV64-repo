@@ -174,17 +174,17 @@ class FMA(override implicit val coredef: CoreDef)
 
           a := MuxLookup(
             aSel,
-            rs1valHF,
+            rs1valHF)(
             Seq(3.U -> oneHF)
           )
           b := MuxLookup(
             bSel,
-            rs1valHF,
+            rs1valHF)(
             Seq(1.U -> rs2valHF)
           )
           c := MuxLookup(
             cSel,
-            rs2valHF,
+            rs2valHF)(
             Seq(2.U -> rs3valHF, 3.U -> zeroHF)
           )
 

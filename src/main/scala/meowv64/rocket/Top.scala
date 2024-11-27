@@ -1,12 +1,13 @@
 package meowv64.rocket
 
-import chipsalliance.rocketchip.config.Parameters
+import org.chipsalliance.cde.config
+import org.chipsalliance.cde.config.Parameters
 import chisel3._
 import chisel3.experimental.dataview._
 import freechips.rocketchip.devices.debug.Debug
 import freechips.rocketchip.devices.tilelink.BootROM
 import freechips.rocketchip.devices.tilelink.BootROMLocated
-import freechips.rocketchip.diplomacy.BundleBridgeNexusNode
+import org.chipsalliance.diplomacy.bundlebridge.BundleBridgeNexusNode
 import freechips.rocketchip.diplomacy.LazyModule
 import freechips.rocketchip.jtag.JTAGIO
 import freechips.rocketchip.subsystem._
@@ -25,12 +26,12 @@ import freechips.rocketchip.amba.axi4.AXI4IdIndexer
 import freechips.rocketchip.tilelink.TLToAXI4
 import freechips.rocketchip.tilelink.TLWidthWidget
 import freechips.rocketchip.diplomacy.InModuleBody
-import chipsalliance.rocketchip.config
 import freechips.rocketchip.diplomacy.MemoryDevice
 import freechips.rocketchip.diplomacy.RegionType
 
 class RiscVSystem(implicit val p: Parameters) extends Module {
-  val target = Module(LazyModule(new RocketTop).module)
+  val top = LazyModule(new RocketTop)
+  val target = Module(top.module)
 
   require(target.mem_axi4.size == 1)
   require(target.mmio_axi4.size == 1)
@@ -63,12 +64,15 @@ class RiscVSystem(implicit val p: Parameters) extends Module {
     case None =>
   }
 
+  top.io_clocks.get.elements.values.foreach(_.clock := clock)
   // ndreset can reset all harts
-  val childReset = reset.asBool | target.debug.map(_.ndreset).getOrElse(false.B)
-  target.reset := childReset
+  val childReset = (reset.asBool | top.debug
+    .map { debug => AsyncResetReg(debug.ndreset) }
+    .getOrElse(false.B)).asBool
+  top.io_clocks.get.elements.values.foreach(_.reset := childReset)
 
   // setup jtag
-  val systemJtag = target.debug.get.systemjtag.get
+  val systemJtag = top.debug.get.systemjtag.get
   systemJtag.jtag.TCK := jtag.TCK
   systemJtag.jtag.TMS := jtag.TMS
   systemJtag.jtag.TDI := jtag.TDI
@@ -84,11 +88,11 @@ class RiscVSystem(implicit val p: Parameters) extends Module {
   // otherwise the internal logic(e.g. TLXbar) might not function
   // if reset deasserted before TCK rises
   systemJtag.reset := reset.asAsyncReset
-  target.resetctrl.foreach { rc =>
+  top.resetctrl.foreach { rc =>
     rc.hartIsInReset.foreach { _ := childReset }
   }
 
-  Debug.connectDebugClockAndReset(target.debug, clock)
+  Debug.connectDebugClockAndReset(top.debug, clock)
 
   mem_axi4 <> target.mem_axi4.head.viewAs[StandardAXI4Bundle]
   mmio_axi4 <> target.mmio_axi4.head.viewAs[StandardAXI4Bundle]
@@ -139,13 +143,13 @@ class RocketTop(implicit p: Parameters)
 
   // expose debug
   val customDebugNexus = BundleBridgeNexusNode[CoreDebug]()
-  val tileCustomDebugNodes = tiles
+  val tileCustomDebugNodes = totalTiles
     .flatMap {
-      case tile: MeowV64Tile =>
+      case tile: (Int, MeowV64Tile) =>
         Some(tile)
       case _ => None
     }
-    .map { _.customDebugNode }
+    .map { _._2.customDebugNode }
 
   tileCustomDebugNodes.foreach { customDebugNexus := _ }
 }
@@ -176,7 +180,6 @@ class RocketTopModule(outer: RocketTop)
   } else {
     None
   }
-
 }
 
 // Customize CanHaveMasterAXI4MMIOPort to allow multiple address ranges
@@ -216,14 +219,14 @@ trait CanHaveCustomMasterAXI4MMIOPort { this: BaseSubsystem =>
     )
   )
 
-  sbus.coupleTo(s"port_named_$portName") {
+  viewpointBus.coupleTo(s"port_named_$portName") {
     (mmioAXI4Node
       := AXI4Buffer()
       := AXI4UserYanker()
-      := AXI4Deinterleaver(sbus.blockBytes)
+      := AXI4Deinterleaver(viewpointBus.blockBytes)
       := AXI4IdIndexer(mmioPortParam.idBits)
       := TLToAXI4()
-      := TLWidthWidget(sbus.beatBytes)
+      := TLWidthWidget(viewpointBus.beatBytes)
       := _)
   }
 
@@ -246,6 +249,7 @@ trait CanHaveCustomMasterAXI4MemPort { this: BaseSubsystem =>
   private val portName = "axi4"
   private val device = new MemoryDevice
   private val idBits = memPortParam.idBits
+  private val mbus = tlBusWrapperLocationMap.get(MBUS).getOrElse(viewpointBus)
 
   // validate
   for (param <- memPortParams) {

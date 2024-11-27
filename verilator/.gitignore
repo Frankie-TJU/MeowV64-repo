@@ -11,3 +11,4 @@ VRiscVSystem
 log*
 output
 dramsim3epoch.json
+.stamp

@@ -10,7 +10,7 @@ VERILATOR_TRACE ?= --trace-fst
 VERILATOR_THREADS ?= 4
 VERILATOR_FLAGS ?= -O3 -Wno-fatal $(VERILATOR_TRACE) -threads $(VERILATOR_THREADS) -CFLAGS "-march=native -O3 $(ZLIB_CFLAGS) $(GMP_CFLAGS) $(GMPXX_CFLAGS) $(DRAMSIM3_CFLAGS)" -LDFLAGS "$(ZLIB_LDFLAGS) $(GMP_LDFLAGS) $(GMPXX_LDFLAGS)"
 CURRENT_DIR = $(shell pwd)
-VERILOG_SRCS = $(CONFIG).v plusarg_reader.v EICG_wrapper.v icDataArray_ext.v btbEntries_ext.v cc_dir_ext.v cc_banks_0_ext.v data_ext.v
+VERILOG_SRCS = $(CONFIG).v EICG_wrapper.v plusarg_reader.v
 CPP_SRCS = ../rocket/main.cpp \
 	../../submodules/DRAMsim3/src/bankstate.cc \
 	../../submodules/DRAMsim3/src/channel_state.cc \
@@ -27,11 +27,11 @@ CPP_SRCS = ../rocket/main.cpp \
 
 all: VRiscVSystem
 
-firrtl_black_box_resource_files.f:
+.stamp:
 	cd ../../ && CONFIG=$(CONFIG) ./generate.sh
-	cp ../../build/$(CONFIG)/$@ .
+	touch $@
 
-%.v: firrtl_black_box_resource_files.f
+%.v: .stamp
 	cp ../../build/$(CONFIG)/$@ .
 
 VRiscVSystem: $(CPP_SRCS) $(VERILOG_SRCS)
@@ -43,4 +43,4 @@ clean-verilator:
 	rm -rf obj_dir VRiscVSystem
 
 clean:
-	rm -rf $(VERILOG_SRCS) obj_dir *.f
+	rm -rf $(VERILOG_SRCS) obj_dir .stamp
