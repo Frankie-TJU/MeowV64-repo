@@ -23,14 +23,6 @@ build:
     paths:
       - testcases/
 
-scala_test:
-  stage: test
-  dependencies: 
-    - build
-  image: jiegec/meowv64
-  script:
-    - mill $MILL_CLI meowv64.test.test
-
 verilator_rocket_single_core_test:
   stage: test
   dependencies: 

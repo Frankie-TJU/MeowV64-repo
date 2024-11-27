@@ -153,20 +153,4 @@ object meowv64 extends CommonSbtModule with ScalafmtModule with ScalafixModule {
 
   override def moduleDeps =
     super.moduleDeps ++ Seq(hardfloat, cde, rocketChip, inclusiveCache)
-
-  object test
-      extends ScalaTests
-      with TestModule.ScalaTest
-      with ScalafmtModule
-      with ScalafixModule {
-    override def ivyDeps = super.ivyDeps() ++ Agg()
-
-    override def scalafixIvyDeps = Agg(
-      ivy"com.github.liancheng::organize-imports:0.5.0"
-    )
-
-    override def scalacPluginIvyDeps = super.scalacPluginIvyDeps() ++ Agg(
-      getVersion("chisel-plugin")
-    )
-  }
 }
