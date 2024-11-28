@@ -430,7 +430,8 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
   }
 
   // readonly, can only set by vsetvl
-  val resetVState = 0.U.asTypeOf(new VState)
+  val resetVState = Wire(new VState)
+  resetVState := 0.U.asTypeOf(new VState)
   resetVState.vtype.vill := true.B
   val vState = RegInit(resetVState)
   csr.vl.rdata := vState.vl
