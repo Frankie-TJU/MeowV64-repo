@@ -466,7 +466,7 @@ class Ctrl(implicit coredef: CoreDef) extends Module {
   csr.dcsr.rdata := (
     // debugver=4 mprven=1
     4.U(4.W) ## 0.U(12.W) ## dcsr.ebreakm ## 0.U(1.W) ##
-      dcsr.ebreaks ## dcsr.ebreaku ## 0.U(3.U) ##
+      dcsr.ebreaks ## dcsr.ebreaku ## 0.U(3.W) ##
       dcsr.cause ## 0.U(1.W) ## 1.U(1.W) ## 0.U(1.W) ##
       dcsr.step ## dcsr.prv
   )
