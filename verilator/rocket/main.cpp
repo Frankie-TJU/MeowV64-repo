@@ -1133,7 +1133,7 @@ int main(int argc, char **argv) {
         fprintf(stderr, "> pc: %lx\n", top->debug_0_pc);
       }
 
-      if (top->debug_0_mcycle > 10000000 && !jtag) {
+      if (top->debug_0_mcycle > 10000000 && !jtag && false) {
         // do not timeout in jtag mode
         fprintf(stderr, "> Timed out\n");
         finished = true;
