@@ -86,6 +86,10 @@ class Exec(implicit val coredef: CoreDef) extends Module {
     val retirePc = Output(UInt(coredef.XLEN.W))
   })
 
+  val toBuffets = IO(new Bundle {
+    val head = Flipped(Decoupled(Vec(32, UInt(8.W))))
+  })
+
   val csrWriter = IO(new CSRWriter())
 
   // We don't stall now
@@ -162,6 +166,7 @@ class Exec(implicit val coredef: CoreDef) extends Module {
   // Units
   val lsu = Module(new LSU).suggestName("LSU")
   lsu.hartId := hartId
+  lsu.toBuffets <> toBuffets
 
   // collect execution units dynamically
   // Issue Queue -> Port -> Execution Unit

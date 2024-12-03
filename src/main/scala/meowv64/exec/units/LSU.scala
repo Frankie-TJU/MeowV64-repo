@@ -218,6 +218,10 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
     val writer = new CoreDCWriter(coredef.L1D)
     val uncached = new L1UCPort(coredef.L1D)
   })
+  val toBuffets = IO(new Bundle {
+    val head = Flipped(Decoupled(Vec(32, UInt(8.W))))
+  })
+  val BUFFETS_FASTPATH = 0x51000000
 
   // pass fsd/fsw data from FloatToMem
   val toFloat = IO(Flipped(Valid(new FloatToMemReq)))
@@ -680,6 +684,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
   toMem.uncached.len := current.len
   toMem.uncached.req := L1UCReq.idle
   release.valid := false.B
+  toBuffets.head.ready := false.B
 
   // compute write back value from reader
   val shifted =
@@ -898,18 +903,33 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
         retire.bits.info.wb := MuxBE(mask, vectorReadRespDataComb, current.data)
       }
       is(DelayedMemOp.uncachedLoad, DelayedMemOp.vectorUncachedLoad) {
-        when(current.op === DelayedMemOp.uncachedLoad) {
-          retire.bits.info.wb := current.getLSB(toMem.uncached.rdata)
-        }.otherwise {
-          // vector uncached load
-          retire.bits.info.wb := toMem.uncached.rdata
-        }
-        when(release.ready) {
-          toMem.uncached.req := L1UCReq.read
-          when(~toMem.uncached.stall) {
+        when(current.addr === BUFFETS_FASTPATH.U) {
+          when(current.op === DelayedMemOp.uncachedLoad) {
+            retire.bits.info.wb := current.getLSB(toBuffets.head.bits.asUInt)
+          }.otherwise{
+            // vector uncached load
+            retire.bits.info.wb := toBuffets.head.bits.asUInt
+          }
+          when(release.ready && toBuffets.head.valid) {
             retire.valid := true.B
             release.valid := true.B
             advance := true.B
+            toBuffets.head.ready := true.B
+          }
+        }.otherwise {
+          when(current.op === DelayedMemOp.uncachedLoad) {
+            retire.bits.info.wb := current.getLSB(toMem.uncached.rdata)
+          }.otherwise{
+            // vector uncached load
+            retire.bits.info.wb := toMem.uncached.rdata
+          }
+          when(release.ready) {
+            toMem.uncached.req := L1UCReq.read
+            when(~toMem.uncached.stall) {
+              retire.valid := true.B
+              release.valid := true.B
+              advance := true.B
+            }
           }
         }
       }

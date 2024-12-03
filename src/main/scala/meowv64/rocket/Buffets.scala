@@ -73,6 +73,9 @@ class BuffetsModuleImp(outer: Buffets) extends LazyModuleImp(outer) {
   val ingress = IO(
     Flipped(Decoupled(new AddressGenerationEgress(config.beatBytes)))
   )
+  val fastpath = IO(new Bundle {
+    val head = Decoupled(Vec(config.beatBytes, UInt(8.W)))
+  })
 
   val words = config.memorySize / config.beatBytes
 
@@ -116,6 +119,11 @@ class BuffetsModuleImp(outer: Buffets) extends LazyModuleImp(outer) {
   val shrinkIO = Wire(Decoupled(UInt(log2Ceil(config.memorySize + 1).W)))
   val shrinkQueue = Queue(shrinkIO)
   shrinkQueue.ready := false.B
+
+  fastpath.head.bits := data(head(
+    log2Ceil(config.memorySize) - 1,
+    log2Ceil(config.beatBytes)
+  ))
 
   outer.registerNode.regmap(
     Buffets.HEAD -> Seq(
@@ -165,17 +173,22 @@ class BuffetsModuleImp(outer: Buffets) extends LazyModuleImp(outer) {
   val currentReq = Reg(slave.a.bits.cloneType)
   val currentAddr = Reg(UInt(log2Ceil(config.memorySize).W))
 
+  fastpath.head.valid := state === BuffetsState.sIdle && size >= config.beatBytes.U
+
   ingress.ready := false.B
   req.ready := false.B
   slave.d.valid := false.B
   switch(state) {
     is(BuffetsState.sIdle) {
-      when(ingress.valid && empty > ingress.bits.len) {
+      when(fastpath.head.fire) {
+        head := head + config.beatBytes.U
+        size := size - config.beatBytes.U
+        empty := empty + config.beatBytes.U
+      }.elsewhen(ingress.valid && empty > ingress.bits.len) {
         ingress.ready := true.B
         state := BuffetsState.sPushing
         pushLen := ingress.bits.len
         newData := ingress.bits.data
-
       }.elsewhen(shrinkQueue.valid) {
         shrinkQueue.ready := true.B
 
