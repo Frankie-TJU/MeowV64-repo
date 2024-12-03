@@ -5,9 +5,11 @@ BINS:=$(patsubst src/%.c,bin/%.bin,$(SRCS)) \
 	bin/poisson_vector-256.bin \
 	bin/poisson_vector-512.bin \
 	bin/poisson_vector-1024.bin \
+	bin/poisson_vector_parallel-16.bin \
 	bin/poisson_vector_parallel-64.bin \
 	bin/poisson_vector_parallel-128.bin \
 	bin/poisson_vector_parallel-256.bin \
+	bin/poisson_vector_parallel_buffets-16.bin \
 	bin/poisson_vector_parallel_buffets-64.bin \
 	bin/poisson_vector_parallel_buffets-128.bin \
 	bin/poisson_vector_parallel_buffets-256.bin
@@ -35,6 +37,13 @@ bin/%.linked: bin/%.assembled bin/common.assembled
 
 bin/%.bin: bin/%.linked
 	cp $< $@
+	$(PREFIX)objcopy -O binary -j .text -j .rodata -j .data $@
+
+bin/%-16.bin: src/%.c bin/common.assembled common/linker.lds Makefile
+	mkdir -p bin
+	$(PREFIX)gcc -DN_OVERRIDE=16 -O2 -mcmodel=medany -fno-tree-loop-distribute-patterns -c $< -march=rv64imafdcv_zicsr_zifencei -o $(patsubst src/%.c,bin/%-16.assembled,$<)
+	$(PREFIX)ld $(patsubst src/%.c,bin/%-16.assembled,$<) bin/common.assembled -T common/linker.lds -o $(patsubst src/%.c,bin/%-16.linked,$<)
+	cp $(patsubst src/%.c,bin/%-16.linked,$<) $@
 	$(PREFIX)objcopy -O binary -j .text -j .rodata -j .data $@
 
 bin/%-64.bin: src/%.c bin/common.assembled common/linker.lds Makefile
