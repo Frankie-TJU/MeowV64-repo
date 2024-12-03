@@ -4,7 +4,10 @@ BINS:=$(patsubst src/%.c,bin/%.bin,$(SRCS)) \
 	bin/poisson_vector-128.bin \
 	bin/poisson_vector-256.bin \
 	bin/poisson_vector-512.bin \
-	bin/poisson_vector-1024.bin
+	bin/poisson_vector-1024.bin \
+	bin/poisson_vector_parallel-64.bin \
+	bin/poisson_vector_parallel-128.bin \
+	bin/poisson_vector_parallel-256.bin
 LINKEDS:=$(patsubst src/%.c,bin/%.linked,$(SRCS))
 ASSEMBLED:=$(patsubst src/%.c,bin/%.assembled,$(SRCS))
 HEXS:=$(patsubst src/%.c,hex/%.hex,$(SRCS))
