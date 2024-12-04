@@ -126,9 +126,6 @@ spmv_buffets_rvv(int r, const float *val, const uint32_t *idx, const float *x,
   return 0;
 }
 
-#define N 5000
-#define NNZ 20000
-
 float val[NNZ];
 uint32_t idx[NNZ];
 float x[N];
