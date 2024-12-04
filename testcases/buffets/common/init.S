@@ -7,7 +7,7 @@ _start:
   li t0, MSTATUS_FS | MSTATUS_XS | MSTATUS_VS
   csrs mstatus, t0
   
-  li sp, 0x88000000
+  li sp, 0x8F000000
   csrr a0, mhartid
   slli t0, a0, 20 # 1M Stack
   sub sp, sp, t0

@@ -1,4 +1,5 @@
 SRCS:=$(wildcard src/*.c)
+HDRS:=$(wildcard src/*.h)
 BINS:=$(patsubst src/%.c,bin/%.bin,$(SRCS))
 LINKEDS:=$(patsubst src/%.c,bin/%.linked,$(SRCS))
 ASSEMBLED:=$(patsubst src/%.c,bin/%.assembled,$(SRCS))
@@ -16,7 +17,7 @@ bin/common.assembled: common/init.S Makefile
 	mkdir -p bin
 	$(PREFIX)cpp $< | $(PREFIX)as - -march=rv64imafdc_zicsr_zifencei -o $@
 
-bin/%.assembled: src/%.c src/common.h common/init.S Makefile
+bin/%.assembled: src/%.c src/common.h common/init.S Makefile $(HDRS)
 	mkdir -p bin
 	clang-$(LLVM_VERSION) -O2 -mllvm -riscv-v-fixed-length-vector-lmul-max=1 -target riscv64-unknown-elf -fno-vectorize -nostdlib -mcmodel=medany -c $< -march=rv64imafdcv_zicsr_zifencei -o $@
 

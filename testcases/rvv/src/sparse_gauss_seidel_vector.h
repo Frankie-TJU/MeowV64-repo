@@ -246,5 +246,6 @@ int main(int hartid) {
   }
   printf_("]\r\n");
 
+  printf_("Finished in cycles: %ld\r\n", total_elapsed);
   return 0;
 }

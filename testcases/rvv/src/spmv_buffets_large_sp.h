@@ -126,9 +126,6 @@ spmv_buffets_rvv(int r, const float *val, const uint32_t *idx, const float *x,
   return 0;
 }
 
-#define N 5000
-#define NNZ 20000
-
 float val[NNZ];
 uint32_t idx[NNZ];
 float x[N];
@@ -146,12 +143,11 @@ int main() {
 
   float y1[N];
   float y2[N];
-  float y3[N];
   printf_("Matrix: %dx%d with %d nnz\r\n", N, N, NNZ);
 
   printf_("Generate data\r\n");
   for (int i = 0; i < NNZ; i++) {
-    val[i] = (float)i;
+    val[i] = (float)i / (float)NNZ;
   }
   uint64_t seed = 1;
   for (int i = 0; i < NNZ; i++) {
@@ -160,7 +156,7 @@ int main() {
   }
   for (int i = 0; i < N; i++) {
     // avoid vectorization, it may use vid.v and vfcvt
-    *(volatile float *)&x[i] = (float)i;
+    *(volatile float *)&x[i] = (float)i / (float)N;
   }
   for (int i = 0; i < N; i++) {
     ptr[i] = i * (NNZ / N);
@@ -172,16 +168,9 @@ int main() {
   spmv(N, val, idx, x, ptr, y1);
   unsigned long elapsed_scalar = read_csr(mcycle) - before;
 
-  printf_("Run spmv scalar buffets\r\n");
-  before = read_csr(mcycle);
-  if (spmv_buffets(N, val, idx, x, ptr, y2) != 0) {
-    return 1;
-  }
-  unsigned long elapsed_buffets = read_csr(mcycle) - before;
-
   printf_("Run spmv vector buffets\r\n");
   before = read_csr(mcycle);
-  if (spmv_buffets_rvv(N, val, idx, x, ptr, y3) != 0) {
+  if (spmv_buffets_rvv(N, val, idx, x, ptr, y2) != 0) {
     return 1;
   }
   unsigned long elapsed_buffets_rvv = read_csr(mcycle) - before;
@@ -194,23 +183,16 @@ int main() {
     }
   }
 
-  for (int i = 0; i < N; i++) {
-    float diff = (y1[i] - y3[i]) / max(y1[i], y3[i]);
-    if (diff > 1e-5 || diff < -1e-5) {
-      printf_("y1 vs y3 Mismatch: %f vs %f\r\n", y1[i], y3[i]);
-      return 1;
-    }
-  }
   printf_("Result is validated\r\n");
 
-  printf_("Result: [%f", y3[0]);
+  printf_("Perf spmv vector buffets: %d cycles\r\n", elapsed_buffets_rvv);
+
+  printf_("Result: [%f", y2[0]);
   for (int i = 1; i < N; i++) {
-    printf_(", %f", y3[i]);
+    printf_(", %f", y2[i]);
   }
   printf_("]\r\n");
 
-  printf_("Perf spmv scalar: %d cycles\r\n", elapsed_scalar);
-  printf_("Perf spmv scalar buffets: %d cycles\r\n", elapsed_buffets);
   printf_("Perf spmv vector buffets: %d cycles\r\n", elapsed_buffets_rvv);
 
   return 0;

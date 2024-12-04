@@ -167,12 +167,8 @@ int main() {
   }
   printf_("]\r\n");
 
-  data_t l2_sum = 0;
-  for (int i = 0; i < HEIGHT; ++i) {
-    for (int j = 0; j < WIDTH; ++j) {
-      l2_sum += x[i * WIDTH + j] * x[i * WIDTH + j];
-    }
-  }
-  printf_("Sum of result squared: %f\r\n", l2_sum);
+  printf_("Finished computation of %dx%d with EPS %f at round %d after %lld "
+          "cycles (%.2f seconds)\r\n",
+          WIDTH, HEIGHT, EPS, round, elapsed, elapsed / FREQ);
   return 0;
 }
