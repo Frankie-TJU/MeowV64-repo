@@ -116,7 +116,7 @@ void multiplyVector(int rows, int *row_offsets, float *values, int *col_indices,
   }
 }
 
-const int N = 256;
+// const int N = 512;
 int nnz = 0;
 
 // dense matrix
@@ -136,8 +136,18 @@ float x[N];
 // value on the rhs
 float b[N];
 
+[[noreturn]] void spin() {
+  volatile size_t meow;
+  while (1)
+    ++meow;
+}
+
 // https://www.javatpoint.com/gauss-seidel-method-in-c
-int main() {
+int main(int hartid) {
+  if (hartid != 0) {
+    spin();
+  }
+
   for (int i = 0; i < 1000; i++)
     putstr(".");
   putstr("\r\n");
