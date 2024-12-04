@@ -43,7 +43,7 @@ class WithCustomMMIOPort
           idBits = 4
         ),
         MasterPortParams(
-          // 0x2_000_0000 ~ 0x3_0000_0000
+          // 0x2_0000_0000 ~ 0x3_0000_0000
           base = BigInt("200000000", 16),
           size = BigInt("100000000", 16),
           beatBytes = 8,

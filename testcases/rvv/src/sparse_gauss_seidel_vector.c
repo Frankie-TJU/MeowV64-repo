@@ -1,4 +1,5 @@
 #include "common.h"
+#include <riscv_vector.h>
 
 static unsigned long next = 1;
 
@@ -182,7 +183,30 @@ int main() {
 
       // spmv-like
       float d = diag[count]; // diagonal
-      for (t = ptr[count]; t < ptr[count + 1]; t++) {
+
+      size_t vl = __riscv_vsetvl_e32m1(4);
+      vfloat32m1_t yi0;
+      yi0 = __riscv_vfmv_v_f_f32m1(0.0, vl);
+
+      for (t = ptr[count]; t + 4 < ptr[count + 1]; t += 4) {
+        // sum += val[t] * x[idx[t]];
+        vfloat32m1_t valt = __riscv_vle32_v_f32m1(&val[t], vl);
+
+        // compute byte offset
+        vuint32m1_t idx_t = __riscv_vle32_v_u32m1(&idx[t], vl);
+        vuint32m1_t idx_t_mul = __riscv_vsll_vx_u32m1(idx_t, 2, vl);
+
+        // load x[idx[t]]
+        vfloat32m1_t x_idx_t = __riscv_vluxei32(x, idx_t_mul, vl);
+
+        yi0 = __riscv_vfmacc_vv_f32m1(yi0, valt, x_idx_t, vl);
+      }
+      vfloat32m1_t tmp = __riscv_vfmv_v_f_f32m1(0.0, vl);
+      tmp = __riscv_vfredosum_vs_f32m1_f32m1(yi0, tmp, vl);
+
+      // the remainder
+      sum = __riscv_vfmv_f_s_f32m1_f32(tmp);
+      for (; t < ptr[count + 1]; t++) {
         sum += val[t] * x[idx[t]];
       }
 

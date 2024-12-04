@@ -172,7 +172,7 @@ void multiplyVector(int rows, int *row_offsets, float *values, int *col_indices,
   }
 }
 
-const int N = 512;
+const int N = 256;
 int nnz = 0;
 
 // dense matrix
