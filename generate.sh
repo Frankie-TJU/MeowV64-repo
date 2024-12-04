@@ -11,4 +11,4 @@ mill meowv64.runMain \
 	--dir $PWD/${DEST} \
 	--config ${CONFIG} \
 	--top meowv64.rocket.RiscVSystem
-firtool --lowering-options=disallowLocalVariables,mitigateVivadoArrayIndexConstPropBug --lower-memories --disable-all-randomization ${DEST}/RiscVSystem.fir -o ${DEST}/${CONFIG}.v
+firtool --lowering-options=disallowLocalVariables,mitigateVivadoArrayIndexConstPropBug,disallowPackedStructAssignments --lower-memories --disable-all-randomization ${DEST}/RiscVSystem.fir -o ${DEST}/${CONFIG}.v
