@@ -1,5 +1,62 @@
 #include "common.h"
 
+#define HART_CNT 10
+
+typedef struct {
+  __attribute__((aligned(64))) size_t progress;
+  float buffer;
+} hart_t;
+
+hart_t harts[HART_CNT];
+
+void global_sync_nodata(size_t hartid) {
+  volatile size_t spin = 0;
+  if (hartid != 0) {
+    size_t old_progress = harts[hartid].progress;
+    __atomic_store_n(&harts[hartid].progress, old_progress + 1,
+                     __ATOMIC_SEQ_CST);
+    while (__atomic_load_n(&harts[0].progress, __ATOMIC_SEQ_CST) <=
+           old_progress)
+      ++spin; // Spin
+  } else {
+    size_t old_progress = harts[0].progress;
+    for (int h = 1; h < HART_CNT; ++h)
+      while (__atomic_load_n(&harts[h].progress, __ATOMIC_SEQ_CST) <=
+             old_progress)
+        ++spin; // Spin
+    __atomic_store_n(&harts[0].progress, old_progress + 1, __ATOMIC_SEQ_CST);
+  }
+}
+
+float global_sync(size_t hartid, float my_data) {
+  volatile size_t spin = 0;
+  if (hartid != 0) {
+    harts[hartid].buffer = my_data;
+    size_t old_progress = harts[hartid].progress;
+    __atomic_store_n(&harts[hartid].progress, old_progress + 1,
+                     __ATOMIC_SEQ_CST);
+    while (__atomic_load_n(&harts[0].progress, __ATOMIC_SEQ_CST) <=
+           old_progress)
+      ++spin; // Spin
+    // print_delim(hartid, "");
+    return harts[0].buffer;
+  } else {
+    size_t old_progress = harts[0].progress;
+    float accum = my_data;
+    for (int h = 1; h < HART_CNT; ++h) {
+      while (__atomic_load_n(&harts[h].progress, __ATOMIC_SEQ_CST) <=
+             old_progress)
+        ++spin; // Spin
+      accum += harts[h].buffer;
+    }
+    harts[0].buffer = accum;
+    __atomic_store_n(&harts[0].progress, old_progress + 1, __ATOMIC_SEQ_CST);
+    // print_delim(hartid, "");
+    return accum;
+  }
+}
+
+// random generator
 static unsigned long next = 1;
 
 void my_srand(unsigned int seed) { next = seed; }
@@ -135,40 +192,44 @@ float x[N];
 // value on the rhs
 float b[N];
 
-// https://www.javatpoint.com/gauss-seidel-method-in-c
-int main() {
-  for (int i = 0; i < 1000; i++)
-    putstr(".");
-  putstr("\r\n");
+[[noreturn]] void spin() {
+  volatile size_t meow;
+  while (1)
+    ++meow;
+}
 
+// https://www.javatpoint.com/gauss-seidel-method-in-c
+int main(int hartid) {
   int count, t, limit;
   float temp, error, a, sum = 0;
 
-  printf_("Initialize A\r\n");
-  generateRandomSparseMatrix(matrix, N);
+  if (hartid == 0) {
+    printf_("Initialize A\r\n");
+    generateRandomSparseMatrix(matrix, N);
 
-  printf_("\r\n\r\nMatrix:\r\n\r\n");
+    printf_("\r\n\r\nMatrix:\r\n\r\n");
 
-  for (count = 0; count < N && count < 10; count++) {
-    printf_("A[%d]:\t%f\r\n", count, matrix[count]);
-  }
+    for (count = 0; count < N && count < 10; count++) {
+      printf_("A[%d]:\t%f\r\n", count, matrix[count]);
+    }
 
-  printf_("Initialize x\r\n");
-  generateExactSolution(exact_x, N);
+    printf_("Initialize x\r\n");
+    generateExactSolution(exact_x, N);
 
-  printf_("\r\n\r\nExact solution:\r\n\r\n");
+    printf_("\r\n\r\nExact solution:\r\n\r\n");
 
-  for (count = 0; count < N && count < 10; count++) {
-    printf_("x[%d]:\t%f\r\n", count, exact_x[count]);
-  }
+    for (count = 0; count < N && count < 10; count++) {
+      printf_("x[%d]:\t%f\r\n", count, exact_x[count]);
+    }
 
-  printf_("Initialize sparse A\r\n");
-  convertFromDense(N, N, matrix, val, &nnz, idx, ptr, diag);
-  printf_("Initialize b\r\n");
-  multiplyVector(N, ptr, val, idx, exact_x, b, diag);
+    printf_("Initialize sparse A\r\n");
+    convertFromDense(N, N, matrix, val, &nnz, idx, ptr, diag);
+    printf_("Initialize b\r\n");
+    multiplyVector(N, ptr, val, idx, exact_x, b, diag);
 
-  for (count = 0; count < N; count++) {
-    x[count] = 0.0;
+    for (count = 0; count < N; count++) {
+      x[count] = 0.0;
+    }
   }
 
   int iter = 0;
@@ -182,9 +243,20 @@ int main() {
 
       // spmv-like
       float d = diag[count]; // diagonal
-      for (t = ptr[count]; t < ptr[count + 1]; t++) {
+
+      size_t total_len = ptr[count + 1] - ptr[count];
+      size_t group_residue = total_len % HART_CNT;
+      size_t self_len =
+          (total_len / HART_CNT) + (hartid < group_residue ? 1 : 0);
+      size_t self_start = (total_len / HART_CNT) * hartid +
+                          (hartid < group_residue ? hartid : group_residue);
+      size_t self_end = self_start + self_len;
+
+      global_sync_nodata(hartid);
+      for (t = ptr[count] + self_start; t < ptr[count] + self_end; t++) {
         sum += val[t] * x[idx[t]];
       }
+      sum = global_sync(hartid, sum);
 
       temp = (b[count] - sum) / d;
       error = temp - x[count];
@@ -196,21 +268,31 @@ int main() {
         a = error;
       }
 
-      x[count] = temp;
+      global_sync_nodata(hartid);
+      if (hartid == 0) {
+        x[count] = temp;
+      }
     }
 
     unsigned long elapsed = read_csr(mcycle) - before;
     total_elapsed += elapsed;
-    printf_("Iteration %d, residual norm: %f, cycles: %ld\r\n", iter++, a,
-            elapsed);
+    if (hartid == 0) {
+      printf_("Iteration %d, residual norm: %f, cycles: %ld\r\n", iter++, a,
+              elapsed);
+    }
   } while (a >= EPS);
-  printf_("Finished in cycles: %ld\r\n", total_elapsed);
 
-  printf_("Result: [%f", x[0]);
-  for (int i = 1; i < count; i++) {
-    printf_(", %f", x[i]);
+  if (hartid == 0) {
+    printf_("Finished in cycles: %ld\r\n", total_elapsed);
+
+    printf_("Result: [%f", x[0]);
+    for (int i = 1; i < count; i++) {
+      printf_(", %f", x[i]);
+    }
+    printf_("]\r\n");
+  } else {
+    spin();
   }
-  printf_("]\r\n");
 
   return 0;
 }
