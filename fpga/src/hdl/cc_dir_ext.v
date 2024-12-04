@@ -1,1 +1,0 @@
-../../../build/meowv64.rocket.MeowV64FPGAConfig/cc_dir_ext.v
