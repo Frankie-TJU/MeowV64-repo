@@ -118,9 +118,10 @@ data_t self_dot(data_t *field, size_t my_grp_start, size_t my_grp_end,
   data_t *e = field + my_grp_end * GROUP_LEN;
 
   *ADDRGEN_CONTROL = 0;
-  ADDRGEN_INSTS[0] = (0 << 31) | (sizeof(data_t[GROUP_LEN]) << 20) | (sizeof(data_t[GROUP_LEN]) << 0);
-  ADDRGEN_INSTS[1] = ((uint64_t) b) >> 32;
-  ADDRGEN_INSTS[2] = ((uint64_t) b);
+  ADDRGEN_INSTS[0] = (0 << 31) | (sizeof(data_t[GROUP_LEN]) << 20) |
+                     (sizeof(data_t[GROUP_LEN]) << 0);
+  ADDRGEN_INSTS[1] = ((uint64_t)b) >> 32;
+  ADDRGEN_INSTS[2] = ((uint64_t)b);
 
   size_t iters = my_grp_end - my_grp_start;
   ADDRGEN_INSTS[3] = 0;
@@ -150,13 +151,15 @@ data_t dot(data_t *a, data_t *b, size_t my_grp_start, size_t my_grp_end,
   __asm__ volatile("vmv.v.i v0, 0");
 
   *ADDRGEN_CONTROL = 0;
-  ADDRGEN_INSTS[0] = (0 << 31) | (sizeof(data_t[GROUP_LEN]) << 20) | (sizeof(data_t[GROUP_LEN]) << 0);
-  ADDRGEN_INSTS[1] = ((uint64_t) (a + my_grp_start * GROUP_LEN)) >> 32;
-  ADDRGEN_INSTS[2] = ((uint64_t) (a + my_grp_start * GROUP_LEN));
+  ADDRGEN_INSTS[0] = (0 << 31) | (sizeof(data_t[GROUP_LEN]) << 20) |
+                     (sizeof(data_t[GROUP_LEN]) << 0);
+  ADDRGEN_INSTS[1] = ((uint64_t)(a + my_grp_start * GROUP_LEN)) >> 32;
+  ADDRGEN_INSTS[2] = ((uint64_t)(a + my_grp_start * GROUP_LEN));
 
-  ADDRGEN_INSTS[3] = (0 << 31) | (sizeof(data_t[GROUP_LEN]) << 20) | (sizeof(data_t[GROUP_LEN]) << 0);
-  ADDRGEN_INSTS[4] = ((uint64_t) (b + my_grp_start * GROUP_LEN)) >> 32;
-  ADDRGEN_INSTS[5] = ((uint64_t) (b + my_grp_start * GROUP_LEN));
+  ADDRGEN_INSTS[3] = (0 << 31) | (sizeof(data_t[GROUP_LEN]) << 20) |
+                     (sizeof(data_t[GROUP_LEN]) << 0);
+  ADDRGEN_INSTS[4] = ((uint64_t)(b + my_grp_start * GROUP_LEN)) >> 32;
+  ADDRGEN_INSTS[5] = ((uint64_t)(b + my_grp_start * GROUP_LEN));
 
   size_t iters = my_grp_end - my_grp_start;
   ADDRGEN_INSTS[6] = 0;
@@ -187,9 +190,10 @@ void self_relaxiation(data_t *into, data_t *val, data_t mul,
   data_t *e = val + my_grp_end * GROUP_LEN;
 
   *ADDRGEN_CONTROL = 0;
-  ADDRGEN_INSTS[0] = (0 << 31) | (sizeof(data_t[GROUP_LEN]) << 20) | (sizeof(data_t[GROUP_LEN]) << 0);
-  ADDRGEN_INSTS[1] = ((uint64_t) b) >> 32;
-  ADDRGEN_INSTS[2] = ((uint64_t) b);
+  ADDRGEN_INSTS[0] = (0 << 31) | (sizeof(data_t[GROUP_LEN]) << 20) |
+                     (sizeof(data_t[GROUP_LEN]) << 0);
+  ADDRGEN_INSTS[1] = ((uint64_t)b) >> 32;
+  ADDRGEN_INSTS[2] = ((uint64_t)b);
 
   size_t iters = my_grp_end - my_grp_start;
   ADDRGEN_INSTS[3] = 0;
@@ -216,9 +220,10 @@ void reverse_relaxiation(data_t *into, data_t *from, data_t mul,
   data_t *e = from + my_grp_end * GROUP_LEN;
 
   *ADDRGEN_CONTROL = 0;
-  ADDRGEN_INSTS[0] = (0 << 31) | (sizeof(data_t[GROUP_LEN]) << 20) | (sizeof(data_t[GROUP_LEN]) << 0);
-  ADDRGEN_INSTS[1] = ((uint64_t) b) >> 32;
-  ADDRGEN_INSTS[2] = ((uint64_t) b);
+  ADDRGEN_INSTS[0] = (0 << 31) | (sizeof(data_t[GROUP_LEN]) << 20) |
+                     (sizeof(data_t[GROUP_LEN]) << 0);
+  ADDRGEN_INSTS[1] = ((uint64_t)b) >> 32;
+  ADDRGEN_INSTS[2] = ((uint64_t)b);
 
   size_t iters = my_grp_end - my_grp_start;
   ADDRGEN_INSTS[3] = 0;
@@ -324,9 +329,10 @@ int main(int hartid) {
       printf_("Round %d: error = %.10f in %ld cycles\r\n", round, rr,
               elapsed_round);
 
-      if(rr <= EARLY_EPS && !early_eps_triggered) {
+      if (rr <= EARLY_EPS && !early_eps_triggered) {
         early_eps_triggered = true;
-        printf_("Early EPS: Finished computation of %dx%d with EPS %.10f at round %d after %lld "
+        printf_("Early EPS: Finished computation of %dx%d with EPS %.10f at "
+                "round %d after %lld "
                 "cycles (%.2f seconds)\r\n",
                 WIDTH, HEIGHT, EPS, round, elapsed, elapsed / FREQ);
       }
@@ -336,9 +342,10 @@ int main(int hartid) {
   global_sync(hartid, 0);
 
   if (hartid == 0) {
-    printf_("Finished computation of %dx%d with EPS %.10f at round %d after %lld "
-            "cycles (%.2f seconds)\r\n",
-            WIDTH, HEIGHT, EPS, round, elapsed, elapsed / FREQ);
+    printf_(
+        "Finished computation of %dx%d with EPS %.10f at round %d after %lld "
+        "cycles (%.2f seconds)\r\n",
+        WIDTH, HEIGHT, EPS, round, elapsed, elapsed / FREQ);
 
     data_t l2_sum = 0;
     for (int i = 0; i < HEIGHT; ++i) {

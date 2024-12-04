@@ -74,7 +74,8 @@ void generateExactSolution(float *x, int N) {
 const float EPS = 1e-3f;
 
 void convertFromDense(int rows, int cols, float *dense_matrix, float *values,
-                      int *out_nnz, int *col_indices, int *row_offsets) {
+                      int *out_nnz, int *col_indices, int *row_offsets,
+                      float *diags) {
   int nnz = 0;
   row_offsets[0] = 0;
 
@@ -83,11 +84,13 @@ void convertFromDense(int rows, int cols, float *dense_matrix, float *values,
     for (int j = 0; j < cols; ++j) {
       float val = dense_matrix[i * cols + j];
       if (fabs(val) > EPS) {
-        values[nnz] = val;
-        col_indices[nnz] = j;
-        nnz++;
         if (i == j) {
           has_diagonal = true;
+          diags[i] = val;
+        } else {
+          values[nnz] = val;
+          col_indices[nnz] = j;
+          nnz++;
         }
       }
     }
@@ -96,18 +99,19 @@ void convertFromDense(int rows, int cols, float *dense_matrix, float *values,
     assert(has_diagonal);
   }
 
-  printf_("Matrix info: %dx%d, NNZ: %d\r\n", rows, cols, nnz);
-  printf_("Sparsity: %f%%\r\n", (float)nnz / (rows * cols) * 100);
+  printf_("Matrix info: %dx%d, NNZ: %d\r\n", rows, cols, nnz + rows);
+  printf_("Sparsity: %f%%\r\n", (float)(nnz + rows) / (rows * cols) * 100);
   *out_nnz = nnz;
 }
 
 void multiplyVector(int rows, int *row_offsets, float *values, int *col_indices,
-                    float *x, float *b) {
+                    float *x, float *b, float *diag) {
   for (int i = 0; i < rows; ++i) {
     b[i] = 0.0f;
     for (int j = row_offsets[i]; j < row_offsets[i + 1]; ++j) {
       b[i] += values[j] * x[col_indices[j]];
     }
+    b[i] += diag[i] * x[i];
   }
 }
 
@@ -124,6 +128,8 @@ const int MAX_NNZ = N * (N / 5 + 1);
 float val[MAX_NNZ];
 int idx[MAX_NNZ];
 int ptr[N + 1];
+// diagonals
+float diag[N];
 // answer
 float x[N];
 // value on the rhs
@@ -157,9 +163,9 @@ int main() {
   }
 
   printf_("Initialize sparse A\r\n");
-  convertFromDense(N, N, matrix, val, &nnz, idx, ptr);
+  convertFromDense(N, N, matrix, val, &nnz, idx, ptr, diag);
   printf_("Initialize b\r\n");
-  multiplyVector(N, ptr, val, idx, exact_x, b);
+  multiplyVector(N, ptr, val, idx, exact_x, b, diag);
 
   for (count = 0; count < N; count++) {
     x[count] = 0.0;
@@ -174,14 +180,10 @@ int main() {
     for (count = 0; count < N; count++) {
       sum = 0;
 
-      // spmv
-      float d;
+      // spmv-like
+      float d = diag[count]; // diagonal
       for (t = ptr[count]; t < ptr[count + 1]; t++) {
-        if (idx[t] == count) {
-          d = val[t];
-        } else {
           sum += val[t] * x[idx[t]];
-        }
       }
 
       temp = (b[count] - sum) / d;
