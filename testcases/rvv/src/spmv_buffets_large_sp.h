@@ -148,7 +148,7 @@ int main() {
 
   printf_("Generate data\r\n");
   for (int i = 0; i < NNZ; i++) {
-    val[i] = (float)i;
+    val[i] = (float)i / (float)NNZ;
   }
   uint64_t seed = 1;
   for (int i = 0; i < NNZ; i++) {
@@ -157,7 +157,7 @@ int main() {
   }
   for (int i = 0; i < N; i++) {
     // avoid vectorization, it may use vid.v and vfcvt
-    *(volatile float *)&x[i] = (float)i;
+    *(volatile float *)&x[i] = (float)i / (float)N;
   }
   for (int i = 0; i < N; i++) {
     ptr[i] = i * (NNZ / N);
