@@ -52,13 +52,6 @@ void init(data_t *field) {
       field[i * WIDTH + j] = (j == 0) ? -1 : 0;
 }
 
-void *HEAP_BASE = 0x84000000;
-void *alloc(size_t size) {
-  void *ret = HEAP_BASE;
-  HEAP_BASE = HEAP_BASE + ((size + 63) & (~63)); // Manually 64-byte alignment
-  return ret;
-}
-
 int main() {
   for (int i = 0; i < 1000; i++)
     putstr(".");
@@ -66,10 +59,11 @@ int main() {
 
   __asm__ volatile("vsetvli t0, x0, e32" ::: "t0");
 
-  data_t *r = alloc(sizeof(data_t) * WIDTH * HEIGHT);
-  data_t *x = alloc(sizeof(data_t) * WIDTH * HEIGHT);
-  data_t *p = alloc(sizeof(data_t) * WIDTH * HEIGHT);
-  data_t *div_p = alloc(sizeof(data_t) * WIDTH * HEIGHT);
+  void *heap = HEAP_BASE;
+  data_t *r = heap_alloc(&heap, sizeof(data_t) * WIDTH * HEIGHT);
+  data_t *x = heap_alloc(&heap, sizeof(data_t) * WIDTH * HEIGHT);
+  data_t *p = heap_alloc(&heap, sizeof(data_t) * WIDTH * HEIGHT);
+  data_t *div_p = heap_alloc(&heap, sizeof(data_t) * WIDTH * HEIGHT);
 
   putstr("Initializing input data\r\n");
   init(p); // p = r

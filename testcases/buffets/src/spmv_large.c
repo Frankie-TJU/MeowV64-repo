@@ -1,8 +1,8 @@
 #include "common.h"
 
-void __attribute__((noinline))
-spmv(int r, const double *val, const uint64_t *idx, const double *x,
-     const uint64_t *ptr, double *y) {
+void __attribute__((noinline)) spmv(int r, const double *val,
+                                    const uint64_t *idx, const double *x,
+                                    const uint64_t *ptr, double *y) {
   for (int i = 0; i < r; i++) {
     uint64_t k;
     double yi0 = 0;
@@ -13,20 +13,14 @@ spmv(int r, const double *val, const uint64_t *idx, const double *x,
   }
 }
 
-int __attribute__((noinline))
-spmv_buffets(int r, const double *val, const uint64_t *idx, const double *x,
-             const uint64_t *ptr, double *y) {
+int __attribute__((noinline)) spmv_buffets(int r, const double *val,
+                                           const uint64_t *idx, const double *x,
+                                           const uint64_t *ptr, double *y) {
   // setup address generation
   // 8 bytes per loop
   // shift = 3 (8 bytes)
   // stride = 8
-  ADDRGEN_INSTS[0] = (1 << 31) | (8 << 20) | (3 << 10) | (8 << 0);
-  uint64_t addr = (uint64_t)&idx[0];
-  ADDRGEN_INSTS[1] = addr >> 32;
-  ADDRGEN_INSTS[2] = addr;
-  addr = (uint64_t)&x[0];
-  ADDRGEN_INSTS[3] = addr >> 32;
-  ADDRGEN_INSTS[4] = addr;
+  addrgen_indexed(0, 8, 3, 8, idx, x);
 
   uint32_t iterations = ptr[r] - ptr[0];
   *ADDRGEN_ITERATIONS = iterations;
@@ -96,7 +90,6 @@ int main() {
     return 1;
   }
   unsigned long elapsed_buffets = read_csr(mcycle) - before;
-
 
   for (int i = 0; i < N; i++) {
     if (y1[i] > y2[i] + 1e-5 || y1[i] < y2[i] - 1e-5) {

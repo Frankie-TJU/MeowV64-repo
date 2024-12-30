@@ -1,10 +1,10 @@
 #include "VRiscVSystem.h"
 #include "memory_system.h"
 #include <arpa/inet.h>
+#include <bits/getopt_core.h>
 #include <deque>
 #include <fcntl.h>
 #include <gmpxx.h>
-#include <iostream>
 #include <map>
 #include <netinet/tcp.h>
 #include <signal.h>
@@ -123,6 +123,8 @@ struct axi_read_request {
   uint64_t read_addr;
   uint64_t read_len;
   uint64_t read_size;
+  uint64_t dram_read_bytes;
+  bool dram_pending;
   bool ready;
 };
 
@@ -131,10 +133,15 @@ std::deque<axi_read_request *> axi_read_requests[MAX_ID];
 
 void read_callback(uint64_t addr, void *user_data) {
   axi_read_request *req = (axi_read_request *)user_data;
-  req->ready = true;
+  req->dram_read_bytes +=
+      dram_system->GetBurstLength() * dram_system->GetBusBits() / 8;
+  req->dram_pending = false;
 }
 
 void write_callback(uint64_t addr, void *user_data) { assert(0); }
+
+uint64_t memory_read_bytes = 0;
+uint64_t memory_write_bytes = 0;
 
 // step per clock fall
 void step_mem() {
@@ -150,9 +157,33 @@ void step_mem() {
         new_req->read_addr = top->mem_axi4_ARADDR;
         new_req->read_len = top->mem_axi4_ARLEN;
         new_req->read_size = top->mem_axi4_ARSIZE;
+        new_req->dram_read_bytes = 0;
+        new_req->dram_pending = true;
         new_req->ready = false;
         axi_read_requests[top->mem_axi4_ARID].push_back(new_req);
         dram_system->AddTransaction(top->mem_axi4_ARADDR, false, new_req);
+        memory_read_bytes +=
+            (1 << top->mem_axi4_ARSIZE) * (1 + top->mem_axi4_ARLEN);
+      }
+    }
+
+    // find not ready req but need more dram transactions
+    for (int i = 0; i < MAX_ID; i++) {
+      if (!axi_read_requests[i].empty()) {
+        axi_read_request *req = *axi_read_requests[i].begin();
+        if (!req->ready && !req->dram_pending) {
+          if (req->dram_read_bytes >=
+              (1 << req->read_size) * (1 + req->read_len)) {
+            // done
+            req->ready = true;
+          } else {
+            // try more
+            uint64_t addr = req->read_addr + req->dram_read_bytes;
+            if (dram_system->WillAcceptTransaction(addr, false)) {
+              dram_system->AddTransaction(addr, false, req);
+            }
+          }
+        }
       }
     }
 
@@ -228,6 +259,8 @@ void step_mem() {
         pending_read_addr = top->mem_axi4_ARADDR;
         pending_read_len = top->mem_axi4_ARLEN;
         pending_read_size = top->mem_axi4_ARSIZE;
+        memory_read_bytes +=
+            (1 << top->mem_axi4_ARSIZE) * (1 + top->mem_axi4_ARLEN);
       }
 
       top->mem_axi4_RVALID = 0;
@@ -291,6 +324,8 @@ void step_mem() {
       pending_write_size = top->mem_axi4_AWSIZE;
       pending_write_id = top->mem_axi4_AWID;
       pending_write_finished = false;
+      memory_write_bytes +=
+          (1 << top->mem_axi4_AWSIZE) * (1 + top->mem_axi4_AWLEN);
     }
     top->mem_axi4_WREADY = 0;
     top->mem_axi4_BVALID = 0;
@@ -1034,7 +1069,8 @@ int main(int argc, char **argv) {
   bool progress = false;
   const char *signature_path = "dump.sig";
   int signature_granularity = 16;
-  while ((opt = getopt(argc, argv, "tpjvds:S:")) != -1) {
+  std::string dramsim_config = "../common/DDR4_8Gb_x8_8b_3200.ini";
+  while ((opt = getopt(argc, argv, "tpjvdD:s:S:")) != -1) {
     switch (opt) {
     case 't':
       trace = true;
@@ -1052,9 +1088,10 @@ int main(int argc, char **argv) {
       break;
     case 'd':
       dram = true;
-      dram_system = new dramsim3::MemorySystem(
-          "../../submodules/DRAMsim3/configs/DDR4_8Gb_x8_3200.ini", "out",
-          read_callback, write_callback);
+      break;
+    case 'D':
+      dram = true;
+      dramsim_config = optarg;
       break;
     case 's':
       signature_path = optarg;
@@ -1063,17 +1100,25 @@ int main(int argc, char **argv) {
       sscanf(optarg, "%d", &signature_granularity);
       break;
     default: /* '?' */
-      fprintf(
-          stderr,
-          "Usage: %s [-t] [-p] [-j] [-v] [-d] [-s signature] [-S granularity] "
-          "name\n",
-          argv[0]);
+      fprintf(stderr,
+              "Usage: %s [-t] [-p] [-j] [-v] [-d] [-D config] [-s signature] "
+              "[-S granularity] "
+              "name\n",
+              argv[0]);
       return 1;
     }
   }
 
   if (optind < argc) {
     load_file(argv[optind]);
+  }
+
+  if (dram) {
+    fprintf(stderr, "> Using dramsim3 config %s\n", dramsim_config.c_str());
+    dram_system = new dramsim3::MemorySystem(dramsim_config, "out",
+                                             read_callback, write_callback);
+    fprintf(stderr, "> DRAM tCK=%.2lf BL=%d Width=%d\n", dram_system->GetTCK(),
+            dram_system->GetBurstLength(), dram_system->GetBusBits());
   }
 
   top = new VRiscVSystem;
@@ -1118,6 +1163,16 @@ int main(int argc, char **argv) {
 
   fprintf(stderr, "> Simulation started\n");
   uint64_t begin = get_time_us();
+  // main_time = 10k: clock rise
+  // main_time = 10k+5: clock fall
+  // we simulate our core at 0.5 GHz
+  // clock period = 2ns
+  double clock_period = 2;
+  // dram system tCK time
+  // for DDR4-3200, tCK=2/3.2=0.625 ns
+  double dram_clock_period = dram_system->GetTCK();
+  // maintain tCK ratio
+  double time_diff = 0;
   while (!Verilated::gotFinish() && !finished) {
     if (main_time > 50) {
       top->reset = 0;
@@ -1167,7 +1222,11 @@ int main(int argc, char **argv) {
       step_mmio();
 
       if (dram) {
-        dram_system->ClockTick();
+        time_diff += clock_period;
+        while (time_diff > dram_clock_period) {
+          time_diff -= dram_clock_period;
+          dram_system->ClockTick();
+        }
       }
     }
 
@@ -1211,17 +1270,20 @@ int main(int argc, char **argv) {
   fprintf(stderr, "> Cycles when issue num is bounded by LSQ size: %.2lf%%\n",
           issue_num_bounded_by_lsq_size * 100.0 / cycles);
 
-  fprintf(stderr, "> Issue Num:");
+  fprintf(stderr, "> Issue num:");
   for (int i = 0; i <= ISSUE_NUM; i++) {
     fprintf(stderr, " %d=%.2lf%%", i, issue_num[i] * 100.0 / cycles);
   }
   fprintf(stderr, "\n");
 
-  fprintf(stderr, "> Retire Num:");
+  fprintf(stderr, "> Retire num:");
   for (int i = 0; i <= ISSUE_NUM; i++) {
     fprintf(stderr, " %d=%.2lf%%", i, retire_num[i] * 100.0 / cycles);
   }
   fprintf(stderr, "\n");
+
+  fprintf(stderr, "> Memory access: %ld bytes read, %ld bytes written\n",
+          memory_read_bytes, memory_write_bytes);
 
   if (begin_signature && end_signature) {
     if (begin_signature_override) {

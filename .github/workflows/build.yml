@@ -37,7 +37,7 @@ jobs:
         autoconf 
         ./configure --target=riscv64-unknown-elf
         make 
-        cd ../meow 
+        cd ../custom
         make PREFIX=riscv64-unknown-elf-
         cd ../..
     - name: Test

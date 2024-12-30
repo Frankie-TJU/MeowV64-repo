@@ -192,22 +192,6 @@ void init(data_t *field) {
       field[i * WIDTH + j] = (j == 0) ? -1 : 0;
 }
 
-void *HEAP_BASE = 0x84000000;
-void *heap_bump(void *from, size_t size) {
-  return from + ((size + 63) & (~63)); // Manually 64-byte alignment
-}
-void *heap_alloc(void **heap, size_t size) {
-  void *ret = *heap;
-  *heap = heap_bump(*heap, size);
-  return ret;
-}
-
-[[noreturn]] void spin() {
-  volatile size_t meow;
-  while (1)
-    ++meow;
-}
-
 int main(int hartid) {
   if (hartid >= HART_CNT)
     spin();
@@ -273,9 +257,10 @@ int main(int hartid) {
       printf_("Round %d: error = %.10f in %ld cycles\r\n", round, rr,
               elapsed_round);
 
-      if(rr <= EARLY_EPS && !early_eps_triggered) {
+      if (rr <= EARLY_EPS && !early_eps_triggered) {
         early_eps_triggered = true;
-        printf_("Early EPS: Finished computation of %dx%d with EPS %.10f at round %d after %lld "
+        printf_("Early EPS: Finished computation of %dx%d with EPS %.10f at "
+                "round %d after %lld "
                 "cycles (%.2f seconds)\r\n",
                 WIDTH, HEIGHT, EPS, round, elapsed, elapsed / FREQ);
       }
@@ -285,9 +270,10 @@ int main(int hartid) {
   global_sync(hartid, 0);
 
   if (hartid == 0) {
-    printf_("Finished computation of %dx%d with EPS %.10f at round %d after %lld "
-            "cycles (%.2f seconds)\r\n",
-            WIDTH, HEIGHT, EPS, round, elapsed, elapsed / FREQ);
+    printf_(
+        "Finished computation of %dx%d with EPS %.10f at round %d after %lld "
+        "cycles (%.2f seconds)\r\n",
+        WIDTH, HEIGHT, EPS, round, elapsed, elapsed / FREQ);
 
     data_t l2_sum = 0;
     for (int i = 0; i < HEIGHT; ++i) {

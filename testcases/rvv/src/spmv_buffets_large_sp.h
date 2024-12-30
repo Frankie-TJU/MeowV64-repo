@@ -1,9 +1,9 @@
 #include "common.h"
 #include <riscv_vector.h>
 
-void __attribute__((noinline))
-spmv(int r, const float *val, const uint32_t *idx, const float *x,
-     const uint32_t *ptr, float *y) {
+void __attribute__((noinline)) spmv(int r, const float *val,
+                                    const uint32_t *idx, const float *x,
+                                    const uint32_t *ptr, float *y) {
   for (int i = 0; i < r; i++) {
     uint32_t k;
     float yi0 = 0;
@@ -14,20 +14,14 @@ spmv(int r, const float *val, const uint32_t *idx, const float *x,
   }
 }
 
-int __attribute__((noinline))
-spmv_buffets(int r, const float *val, const uint32_t *idx, const float *x,
-             const uint32_t *ptr, float *y) {
+int __attribute__((noinline)) spmv_buffets(int r, const float *val,
+                                           const uint32_t *idx, const float *x,
+                                           const uint32_t *ptr, float *y) {
   // setup address generation
   // 4 bytes per loop
   // shift = 2 (4 bytes)
   // stride = 4
-  ADDRGEN_INSTS[0] = (1 << 31) | (4 << 20) | (2 << 10) | (4 << 0);
-  uint64_t addr = (uint64_t)&idx[0];
-  ADDRGEN_INSTS[1] = addr >> 32;
-  ADDRGEN_INSTS[2] = addr;
-  addr = (uint64_t)&x[0];
-  ADDRGEN_INSTS[3] = addr >> 32;
-  ADDRGEN_INSTS[4] = addr;
+  addrgen_indexed(0, 4, 2, 4, &idx[0], x);
 
   *ADDRGEN_ITERATIONS = ptr[r] - ptr[0];
   assert(*ADDRGEN_ITERATIONS == ptr[r] - ptr[0]);
@@ -59,20 +53,15 @@ spmv_buffets(int r, const float *val, const uint32_t *idx, const float *x,
   return 0;
 }
 
-int __attribute__((noinline))
-spmv_buffets_rvv(int r, const float *val, const uint32_t *idx, const float *x,
-                 const uint32_t *ptr, float *y) {
+int __attribute__((noinline)) spmv_buffets_rvv(int r, const float *val,
+                                               const uint32_t *idx,
+                                               const float *x,
+                                               const uint32_t *ptr, float *y) {
   // setup address generation
   // 4 bytes per loop
   // shift = 2 (4 bytes)
   // stride = 4
-  ADDRGEN_INSTS[0] = (1 << 31) | (4 << 20) | (2 << 10) | (4 << 0);
-  uint64_t addr = (uint64_t)&idx[0];
-  ADDRGEN_INSTS[1] = addr >> 32;
-  ADDRGEN_INSTS[2] = addr;
-  addr = (uint64_t)&x[0];
-  ADDRGEN_INSTS[3] = addr >> 32;
-  ADDRGEN_INSTS[4] = addr;
+  addrgen_indexed(0, 4, 2, 4, &idx[0], x);
 
   *ADDRGEN_ITERATIONS = ptr[r] - ptr[0];
   assert(*ADDRGEN_ITERATIONS == ptr[r] - ptr[0]);

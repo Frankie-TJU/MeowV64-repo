@@ -166,22 +166,6 @@ void init(data_t *field) {
       field[i * WIDTH + j] = (j == 0) ? -1 : 0;
 }
 
-void *HEAP_BASE = 0x84000000;
-void *heap_bump(void *from, size_t size) {
-  return from + ((size + 63) & (~63)); // Manually 64-byte alignment
-}
-void *heap_alloc(void **heap, size_t size) {
-  void *ret = *heap;
-  *heap = heap_bump(*heap, size);
-  return ret;
-}
-
-[[noreturn]] void spin() {
-  volatile size_t meow;
-  while (1)
-    ++meow;
-}
-
 int main(int hartid) {
   if (hartid != 0)
     spin();

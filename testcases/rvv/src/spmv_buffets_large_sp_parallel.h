@@ -58,13 +58,7 @@ spmv_buffets_rvv(int hartid, int r, const float *val, const uint32_t *idx,
   // 4 bytes per loop
   // shift = 2 (4 bytes)
   // stride = 4
-  ADDRGEN_INSTS[0] = (1 << 31) | (4 << 20) | (2 << 10) | (4 << 0);
-  uint64_t addr = (uint64_t)&idx[ptr[self_start]];
-  ADDRGEN_INSTS[1] = addr >> 32;
-  ADDRGEN_INSTS[2] = addr;
-  addr = (uint64_t)&x[0];
-  ADDRGEN_INSTS[3] = addr >> 32;
-  ADDRGEN_INSTS[4] = addr;
+  addrgen_indexed(0, 4, 2, 4, &idx[ptr[self_start]], x);
 
   *ADDRGEN_ITERATIONS = ptr[self_end] - ptr[self_start];
   assert(*ADDRGEN_ITERATIONS == ptr[self_end] - ptr[self_start]);

@@ -28,8 +28,8 @@ Run testcase in simulation:
 
 ```shell
 $ cd verilator/SingleCoreConfig
-$ ./VRiscVSystem -p -t ../../testcases/meow/bin/fib.bin
-> Loaded 310 bytes from BIN ../../testcases/meow/bin/fib.bin
+$ ./VRiscVSystem -p -t ../../testcases/custom/bin/fib.bin
+> Loaded 310 bytes from BIN ../../testcases/custom/bin/fib.bin
 > Using tohost at 60000000
 > Using fromhost at 60000040
 > Enable tracing

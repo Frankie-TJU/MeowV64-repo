@@ -12,10 +12,7 @@ int main() {
   // setup address generation
   // 4 bytes per loop
   // stride = 4
-  ADDRGEN_INSTS[0] = (0 << 31) | (4 << 20) | (4 << 0);
-  uint64_t addr = (uint64_t)&data[0];
-  ADDRGEN_INSTS[1] = addr >> 32;
-  ADDRGEN_INSTS[2] = addr;
+  addrgen_strided(0, 4, 4, data);
   *ADDRGEN_ITERATIONS = N;
   *ADDRGEN_CONTROL = 1;
 

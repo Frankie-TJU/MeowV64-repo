@@ -17,7 +17,7 @@ build:
   image: jiegec/meowv64
   script:
     - cd testcases
-    - make
+    - make custom riscv-tests
     - cd ..
   artifacts:
     paths:

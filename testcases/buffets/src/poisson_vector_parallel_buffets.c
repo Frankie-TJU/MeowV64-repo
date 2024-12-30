@@ -118,13 +118,11 @@ data_t self_dot(data_t *field, size_t my_grp_start, size_t my_grp_end,
   data_t *e = field + my_grp_end * GROUP_LEN;
 
   *ADDRGEN_CONTROL = 0;
-  ADDRGEN_INSTS[0] = (0 << 31) | (sizeof(data_t[GROUP_LEN]) << 20) |
-                     (sizeof(data_t[GROUP_LEN]) << 0);
-  ADDRGEN_INSTS[1] = ((uint64_t)b) >> 32;
-  ADDRGEN_INSTS[2] = ((uint64_t)b);
+  int offset = addrgen_strided(0, sizeof(data_t[GROUP_LEN]),
+                               sizeof(data_t[GROUP_LEN]), b);
+  ADDRGEN_INSTS[offset] = 0;
 
   size_t iters = my_grp_end - my_grp_start;
-  ADDRGEN_INSTS[3] = 0;
   *ADDRGEN_ITERATIONS = iters;
   *ADDRGEN_CONTROL = 1;
 
@@ -151,18 +149,17 @@ data_t dot(data_t *a, data_t *b, size_t my_grp_start, size_t my_grp_end,
   __asm__ volatile("vmv.v.i v0, 0");
 
   *ADDRGEN_CONTROL = 0;
-  ADDRGEN_INSTS[0] = (0 << 31) | (sizeof(data_t[GROUP_LEN]) << 20) |
-                     (sizeof(data_t[GROUP_LEN]) << 0);
-  ADDRGEN_INSTS[1] = ((uint64_t)(a + my_grp_start * GROUP_LEN)) >> 32;
-  ADDRGEN_INSTS[2] = ((uint64_t)(a + my_grp_start * GROUP_LEN));
+  int offset =
+      addrgen_strided(0, sizeof(data_t[GROUP_LEN]), sizeof(data_t[GROUP_LEN]),
+                      a + my_grp_start * GROUP_LEN);
 
-  ADDRGEN_INSTS[3] = (0 << 31) | (sizeof(data_t[GROUP_LEN]) << 20) |
-                     (sizeof(data_t[GROUP_LEN]) << 0);
-  ADDRGEN_INSTS[4] = ((uint64_t)(b + my_grp_start * GROUP_LEN)) >> 32;
-  ADDRGEN_INSTS[5] = ((uint64_t)(b + my_grp_start * GROUP_LEN));
+  offset =
+      addrgen_strided(offset, sizeof(data_t[GROUP_LEN]),
+                      sizeof(data_t[GROUP_LEN]), b + my_grp_start * GROUP_LEN);
+
+  ADDRGEN_INSTS[offset] = 0;
 
   size_t iters = my_grp_end - my_grp_start;
-  ADDRGEN_INSTS[6] = 0;
   *ADDRGEN_ITERATIONS = iters;
   *ADDRGEN_CONTROL = 1;
 
@@ -190,13 +187,11 @@ void self_relaxiation(data_t *into, data_t *val, data_t mul,
   data_t *e = val + my_grp_end * GROUP_LEN;
 
   *ADDRGEN_CONTROL = 0;
-  ADDRGEN_INSTS[0] = (0 << 31) | (sizeof(data_t[GROUP_LEN]) << 20) |
-                     (sizeof(data_t[GROUP_LEN]) << 0);
-  ADDRGEN_INSTS[1] = ((uint64_t)b) >> 32;
-  ADDRGEN_INSTS[2] = ((uint64_t)b);
+  int offset = addrgen_strided(0, sizeof(data_t[GROUP_LEN]),
+                               sizeof(data_t[GROUP_LEN]), b);
+  ADDRGEN_INSTS[offset] = 0;
 
   size_t iters = my_grp_end - my_grp_start;
-  ADDRGEN_INSTS[3] = 0;
   *ADDRGEN_ITERATIONS = iters;
   *ADDRGEN_CONTROL = 1;
 
@@ -220,13 +215,11 @@ void reverse_relaxiation(data_t *into, data_t *from, data_t mul,
   data_t *e = from + my_grp_end * GROUP_LEN;
 
   *ADDRGEN_CONTROL = 0;
-  ADDRGEN_INSTS[0] = (0 << 31) | (sizeof(data_t[GROUP_LEN]) << 20) |
-                     (sizeof(data_t[GROUP_LEN]) << 0);
-  ADDRGEN_INSTS[1] = ((uint64_t)b) >> 32;
-  ADDRGEN_INSTS[2] = ((uint64_t)b);
+  int offset = addrgen_strided(0, sizeof(data_t[GROUP_LEN]),
+                               sizeof(data_t[GROUP_LEN]), b);
+  ADDRGEN_INSTS[offset] = 0;
 
   size_t iters = my_grp_end - my_grp_start;
-  ADDRGEN_INSTS[3] = 0;
   *ADDRGEN_ITERATIONS = iters;
   *ADDRGEN_CONTROL = 1;
 
@@ -246,22 +239,6 @@ void init(data_t *field) {
   for (int i = 0; i < HEIGHT; ++i)
     for (int j = 0; j < WIDTH; ++j)
       field[i * WIDTH + j] = (j == 0) ? -1 : 0;
-}
-
-void *HEAP_BASE = 0x84000000;
-void *heap_bump(void *from, size_t size) {
-  return from + ((size + 63) & (~63)); // Manually 64-byte alignment
-}
-void *heap_alloc(void **heap, size_t size) {
-  void *ret = *heap;
-  *heap = heap_bump(*heap, size);
-  return ret;
-}
-
-[[noreturn]] void spin() {
-  volatile size_t meow;
-  while (1)
-    ++meow;
 }
 
 int main(int hartid) {

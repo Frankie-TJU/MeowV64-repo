@@ -22,12 +22,8 @@ case class AddressGenerationConfig(
     configBase: BigInt,
     beatBytes: Int,
     configInstWords: Int = 16,
-    maxIterations: Int = 134217728,
     maxInflights: Int = 4,
     addrWidth: Int = 64,
-    bytesWidth: Int = 7,
-    strideWidth: Int = 7,
-    shiftWidth: Int = 2
 ) {
   // power of two
   assert((maxInflights & (maxInflights - 1)) == 0)
@@ -41,10 +37,36 @@ object AddressGeneration {
   def INSTS = 0x60
 
   // config
-  def CONFIG_OPCODE = 31
-  def CONFIG_BYTES = 20
+  // opcode[31:27]
+  def CONFIG_OPCODE = 27
+  def CONFIG_OPCODE_WIDTH = 5
+  // rs1[26:25]
+  def CONFIG_RS1 = 25
+  def CONFIG_RS1_WIDTH = 2
+  // rd[24:23]
+  def CONFIG_RD = 23
+  def CONFIG_RD_WIDTH = 2
+  // bytes[19:13]
+  def CONFIG_BYTES = 13
+  def CONFIG_BYTES_WIDTH = 7
+  // rs2[22:21]
+  def CONFIG_RS2 = 21
+  def CONFIG_RS2_WIDTH = 2
+  // indexedShift[12:10]
   def CONFIG_INDEXED_SHIFT = 10
+  def CONFIG_INDEXED_SHIFT_WIDTH = 3
+  // stride[9:0]
   def CONFIG_STRIDE = 0
+  def CONFIG_STRIDE_WIDTH = 10
+  // addr[24:0]
+  def CONFIG_ADDR = 0
+  def CONFIG_ADDR_WIDTH = 25
+  // imm[23:0]
+  def CONFIG_IMM = 0
+  def CONFIG_IMM_WIDTH = 23
+
+  def REG_COUNT = 4
+  def REG_WIDTH = 32
 }
 
 object AddressGenerationState extends ChiselEnum {
@@ -52,7 +74,7 @@ object AddressGenerationState extends ChiselEnum {
 }
 
 object AddressGenerationOp extends ChiselEnum {
-  val STRIDED, INDEXED = Value
+  val STRIDED, INDEXED, LOOP, LOAD, ADD, ADDI = Value
 }
 
 class AddressGenerationInflight(config: AddressGenerationConfig)
@@ -62,14 +84,14 @@ class AddressGenerationInflight(config: AddressGenerationConfig)
 
   // params
   val op = AddressGenerationOp()
-  val bytes = UInt(config.bytesWidth.W)
+  val bytes = UInt(AddressGeneration.CONFIG_BYTES_WIDTH.W)
   val indexedBase = UInt(config.addrWidth.W)
-  val indexedShift = UInt(config.shiftWidth.W)
+  val indexedShift = UInt(AddressGeneration.CONFIG_INDEXED_SHIFT_WIDTH.W)
 
   // progress
-  val recv = UInt(config.bytesWidth.W)
-  val data = UInt(((1 << config.bytesWidth) * 8).W)
-  val index = UInt(((1 << config.bytesWidth) * 8).W)
+  val recv = UInt(AddressGeneration.CONFIG_BYTES_WIDTH.W)
+  val data = UInt(((1 << AddressGeneration.CONFIG_BYTES_WIDTH) * 8).W)
+  val index = UInt(((1 << AddressGeneration.CONFIG_BYTES_WIDTH) * 8).W)
   val gotIndex = Bool()
 
   // current TileLink request
@@ -149,8 +171,10 @@ class AddressGenerationModuleImp(outer: AddressGeneration)
   val currentInstIndex = RegInit(0.U(log2Up(config.configInstWords).W))
   val state = RegInit(AddressGenerationState.sIdle)
   val control = WireInit(0.U(32.W))
-  val iterations = RegInit(0.U(log2Up(config.maxIterations + 1).W))
-  val currentIteration = RegInit(0.U(log2Up(config.maxIterations + 1).W))
+  val iterations = RegInit(0.U(AddressGeneration.REG_WIDTH.W))
+  val regs = RegInit(
+    VecInit.fill(AddressGeneration.REG_COUNT)(0.U(AddressGeneration.REG_WIDTH.W))
+  )
   val inflights = RegInit(
     VecInit.fill(config.maxInflights)(AddressGenerationInflight.empty(config))
   )
@@ -210,28 +234,30 @@ class AddressGenerationModuleImp(outer: AddressGeneration)
       val arg2 = configInsts(currentInstIndex + 2.U)
       val arg3 = configInsts(currentInstIndex + 3.U)
       val arg4 = configInsts(currentInstIndex + 4.U)
-      val currentOpcode = currentInst(31, 31)
+
+      // see fields in BUFFETS.md
+      val currentOpcode = currentInst(29, 27)
       val currentBytes = currentInst(
-        AddressGeneration.CONFIG_BYTES + config.bytesWidth - 1,
+        AddressGeneration.CONFIG_BYTES + AddressGeneration.CONFIG_BYTES_WIDTH - 1,
         AddressGeneration.CONFIG_BYTES
       )
       val currentStride = currentInst(
-        AddressGeneration.CONFIG_STRIDE + config.strideWidth - 1,
+        AddressGeneration.CONFIG_STRIDE + AddressGeneration.CONFIG_STRIDE_WIDTH - 1,
         AddressGeneration.CONFIG_STRIDE
       )
       val currentIndexedShift = currentInst(
-        AddressGeneration.CONFIG_INDEXED_SHIFT + config.shiftWidth - 1,
+        AddressGeneration.CONFIG_INDEXED_SHIFT + AddressGeneration.CONFIG_INDEXED_SHIFT_WIDTH - 1,
         AddressGeneration.CONFIG_INDEXED_SHIFT
       )
 
       val full = tail +% 1.U === head
       when(currentInst === 0.U) {
         // next loop
-        when(currentIteration + 1.U === iterations) {
-          currentIteration := 0.U
+        when(regs(0) + 1.U === iterations) {
+          regs(0) := 0.U
           state := AddressGenerationState.sFinishing
         }.otherwise {
-          currentIteration := currentIteration + 1.U
+          regs(0) := regs(0) + 1.U
         }
         currentInstIndex := 0.U
       }.otherwise {
@@ -255,7 +281,7 @@ class AddressGenerationModuleImp(outer: AddressGeneration)
 
           // initial TileLink request
           inflights(tail).req := true.B
-          inflights(tail).reqAddr := base + currentStride * currentIteration
+          inflights(tail).reqAddr := base + currentStride * regs(0)
 
           // ceil currentBytes up
           when(currentBytes <= config.beatBytes.U) {

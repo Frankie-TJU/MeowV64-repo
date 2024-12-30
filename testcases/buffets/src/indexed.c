@@ -18,13 +18,7 @@ int main() {
   // 4 bytes per loop
   // shift = 2 (4 bytes)
   // stride = 4
-  ADDRGEN_INSTS[0] = (1 << 31) | (4 << 20) | (2 << 10) | (4 << 0);
-  uint64_t addr = (uint64_t)&indices[0];
-  ADDRGEN_INSTS[1] = addr >> 32;
-  ADDRGEN_INSTS[2] = addr;
-  addr = (uint64_t)&data[0];
-  ADDRGEN_INSTS[3] = addr >> 32;
-  ADDRGEN_INSTS[4] = addr;
+  addrgen_indexed(0, 4, 2, 4, &indices[0], &data[0]);
   *ADDRGEN_ITERATIONS = N;
   *ADDRGEN_CONTROL = 1;
 

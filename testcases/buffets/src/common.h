@@ -108,3 +108,41 @@ const size_t HEIGHT = 16;
 const data_t EPS = 1e-6;
 const data_t EARLY_EPS = 1e-6;
 const double FREQ = 500000000.0;
+
+[[noreturn]] void spin() {
+  volatile size_t meow;
+  while (1)
+    ++meow;
+}
+
+void *HEAP_BASE = (void *)0x84000000;
+void *heap_bump(void *from, size_t size) {
+  return from + ((size + 63) & (~63)); // Manually 64-byte alignment
+}
+void *heap_alloc(void **heap, size_t size) {
+  void *ret = *heap;
+  *heap = heap_bump(*heap, size);
+  return ret;
+}
+
+// helper to setup address generation
+int addrgen_indexed(int offset, int bytes, int shift, int stride,
+                    const void *indices, const void *data) {
+  ADDRGEN_INSTS[offset++] =
+      (1 << 27) | (bytes << 13) | (shift << 10) | (stride << 0);
+  uint64_t addr = (uint64_t)indices;
+  ADDRGEN_INSTS[offset++] = addr >> 32;
+  ADDRGEN_INSTS[offset++] = addr;
+  addr = (uint64_t)data;
+  ADDRGEN_INSTS[offset++] = addr >> 32;
+  ADDRGEN_INSTS[offset++] = addr;
+  return offset;
+}
+
+int addrgen_strided(int offset, int bytes, int stride, void *data) {
+  ADDRGEN_INSTS[offset++] = (0 << 27) | (bytes << 13) | (stride << 0);
+  uint64_t addr = (uint64_t)data;
+  ADDRGEN_INSTS[offset++] = addr >> 32;
+  ADDRGEN_INSTS[offset++] = addr;
+  return offset;
+}
