@@ -1170,7 +1170,7 @@ int main(int argc, char **argv) {
   double clock_period = 2;
   // dram system tCK time
   // for DDR4-3200, tCK=2/3.2=0.625 ns
-  double dram_clock_period = dram_system->GetTCK();
+  double dram_clock_period = dram_system ? dram_system->GetTCK() : 0.0;
   // maintain tCK ratio
   double time_diff = 0;
   while (!Verilated::gotFinish() && !finished) {
