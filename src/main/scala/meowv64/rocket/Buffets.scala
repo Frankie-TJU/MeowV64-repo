@@ -47,7 +47,7 @@ class Buffets(val config: BuffetsConfig)(implicit p: Parameters)
   val device = new SimpleDevice("buffets", Seq("custom,buffets"))
 
   val registerNode = TLRegisterNode(
-    address = Seq(AddressSet(config.configBase, 0xfff)),
+    address = Seq(AddressSet(config.configBase, 0xffff)),
     device = device,
     beatBytes = config.beatBytes
   )
@@ -66,6 +66,14 @@ object Buffets {
   def SIZE = 0x40
   def EMPTY = 0x60
   def SHRINK = 0x80
+
+  // performance counters
+  def PERF_BYTES_PUSHED = 0x1000
+  def PERF_COUNT_PUSHED = 0x1020
+  def PERF_BYTES_POPPED = 0x1040
+  def PERF_COUNT_POPPED = 0x1060
+  def PERF_BYTES_READ = 0x1080
+  def PERF_COUNT_READ = 0x10a0
 }
 
 class BuffetsModuleImp(outer: Buffets) extends LazyModuleImp(outer) {
@@ -116,14 +124,30 @@ class BuffetsModuleImp(outer: Buffets) extends LazyModuleImp(outer) {
   val size = RegInit(0.U(log2Ceil(config.memorySize + 1).W))
   val empty = RegInit(config.memorySize.U(log2Ceil(config.memorySize + 1).W))
 
+  // performance counters
+  // number of bytes pushed to buffets
+  val bytesPushed = RegInit(0.U(64.W))
+  // number of times when data is pushed to buffets
+  val countPushed = RegInit(0.U(64.W))
+  // number of bytes popped from buffets
+  val bytesPopped = RegInit(0.U(64.W))
+  // number of times when data is popped from buffets
+  val countPopped = RegInit(0.U(64.W))
+  // number of bytes read from buffets
+  val bytesRead = RegInit(0.U(64.W))
+  // number of times when data is read from buffets
+  val countRead = RegInit(0.U(64.W))
+
   val shrinkIO = Wire(Decoupled(UInt(log2Ceil(config.memorySize + 1).W)))
   val shrinkQueue = Queue(shrinkIO)
   shrinkQueue.ready := false.B
 
-  fastpath.head.bits := data(head(
-    log2Ceil(config.memorySize) - 1,
-    log2Ceil(config.beatBytes)
-  ))
+  fastpath.head.bits := data(
+    head(
+      log2Ceil(config.memorySize) - 1,
+      log2Ceil(config.beatBytes)
+    )
+  )
 
   outer.registerNode.regmap(
     Buffets.HEAD -> Seq(
@@ -160,6 +184,57 @@ class BuffetsModuleImp(outer: Buffets) extends LazyModuleImp(outer) {
         shrinkIO,
         RegFieldDesc("shrink", "shrink bytes")
       )
+    ),
+    Buffets.PERF_BYTES_PUSHED -> Seq(
+      RegField(
+        bytesPushed.getWidth,
+        bytesPushed,
+        RegFieldDesc("bytesPushed", "number of bytes pushed to buffets")
+      )
+    ),
+    Buffets.PERF_COUNT_PUSHED -> Seq(
+      RegField(
+        countPushed.getWidth,
+        countPushed,
+        RegFieldDesc(
+          "countPushed",
+          "number of times when data is pushed to buffets"
+        )
+      )
+    ),
+    Buffets.PERF_BYTES_POPPED -> Seq(
+      RegField(
+        bytesPopped.getWidth,
+        bytesPopped,
+        RegFieldDesc("bytesPopped", "number of bytes popped from buffets")
+      )
+    ),
+    Buffets.PERF_COUNT_POPPED -> Seq(
+      RegField(
+        countPopped.getWidth,
+        countPopped,
+        RegFieldDesc(
+          "countPopped",
+          "number of times when data is popped from buffets"
+        )
+      )
+    ),
+    Buffets.PERF_BYTES_READ -> Seq(
+      RegField(
+        bytesRead.getWidth,
+        bytesRead,
+        RegFieldDesc("bytesRead", "number of bytes read from buffets")
+      )
+    ),
+    Buffets.PERF_COUNT_READ -> Seq(
+      RegField(
+        countRead.getWidth,
+        countRead,
+        RegFieldDesc(
+          "countRead",
+          "number of times when data is read from buffets"
+        )
+      )
     )
   )
 
@@ -189,6 +264,9 @@ class BuffetsModuleImp(outer: Buffets) extends LazyModuleImp(outer) {
         state := BuffetsState.sPushing
         pushLen := ingress.bits.len
         newData := ingress.bits.data
+
+        bytesPushed := bytesPushed + ingress.bits.len
+        countPushed := countPushed + 1.U
       }.elsewhen(shrinkQueue.valid) {
         shrinkQueue.ready := true.B
 
@@ -196,6 +274,9 @@ class BuffetsModuleImp(outer: Buffets) extends LazyModuleImp(outer) {
         head := head + shrink
         size := size - shrink
         empty := empty + shrink
+
+        bytesPopped := bytesPopped + shrink
+        countPopped := countPopped + 1.U
       }.elsewhen(req.valid) {
         // accept when ready
         val offset = req.bits.address(log2Ceil(config.memorySize) - 1, 0)
@@ -205,6 +286,9 @@ class BuffetsModuleImp(outer: Buffets) extends LazyModuleImp(outer) {
           currentAddr := req.bits.address + head
           when(req.bits.opcode === TLMessages.Get) {
             state := BuffetsState.sReading
+
+            bytesRead := bytesRead + (1.U << req.bits.size)
+            countRead := countRead + 1.U
           }.elsewhen(req.bits.opcode === TLMessages.PutFullData) {
             state := BuffetsState.sWriting
           }.otherwise {

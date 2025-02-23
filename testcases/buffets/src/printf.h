@@ -30,6 +30,9 @@
 //
 ///////////////////////////////////////////////////////////////////////////////
 
+#ifndef __PRINTF_H__
+#define __PRINTF_H__
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdarg.h>
@@ -912,3 +915,5 @@ int fctprintf(void (*out)(char character, void* arg), void* arg, const char* for
   va_end(va);
   return ret;
 }
+
+#endif

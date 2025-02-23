@@ -104,5 +104,6 @@ int main() {
     }
   }
 
+  dump_buffets();
   return 0;
 }

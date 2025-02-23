@@ -100,5 +100,6 @@ int main() {
   print(elapsed_scalar);
   print(elapsed_buffets);
 
+  dump_buffets();
   return 0;
 }

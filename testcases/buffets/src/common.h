@@ -6,6 +6,22 @@ volatile uint32_t *ADDRGEN_STATUS = (uint32_t *)(ADDRGEN_BASE + 0x00);
 volatile uint32_t *ADDRGEN_CONTROL = (uint32_t *)(ADDRGEN_BASE + 0x20);
 volatile uint32_t *ADDRGEN_ITERATIONS = (uint32_t *)(ADDRGEN_BASE + 0x40);
 volatile uint32_t *ADDRGEN_INSTS = (uint32_t *)(ADDRGEN_BASE + 0x60);
+volatile uint64_t *ADDRGEN_PERF_BYTES_READ =
+    (uint64_t *)(ADDRGEN_BASE + 0x1000);
+volatile uint64_t *ADDRGEN_PERF_COUNT_READ =
+    (uint64_t *)(ADDRGEN_BASE + 0x1020);
+volatile uint64_t *ADDRGEN_PERF_BYTES_EGRESS =
+    (uint64_t *)(ADDRGEN_BASE + 0x1040);
+volatile uint64_t *ADDRGEN_PERF_COUNT_INST =
+    (uint64_t *)(ADDRGEN_BASE + 0x1060);
+volatile uint64_t *ADDRGEN_PERF_COUNT_INDEXED =
+    (uint64_t *)(ADDRGEN_BASE + 0x1080);
+volatile uint64_t *ADDRGEN_PERF_COUNT_STRIDED =
+    (uint64_t *)(ADDRGEN_BASE + 0x10A0);
+volatile uint64_t *ADDRGEN_PERF_COUNT_ACTIVE =
+    (uint64_t *)(ADDRGEN_BASE + 0x10C0);
+volatile uint64_t *ADDRGEN_PERF_COUNT_FULL =
+    (uint64_t *)(ADDRGEN_BASE + 0x10E0);
 
 volatile uint32_t *BUFFETS_DATA = (uint32_t *)0x5000000;
 volatile uint32_t *BUFFETS_DATA_FASTPATH = (uint32_t *)0x51000000;
@@ -13,6 +29,18 @@ volatile uint32_t *BUFFETS_DATA_FASTPATH = (uint32_t *)0x51000000;
 const uintptr_t BUFFETS_BASE = 0x58000000;
 volatile uint32_t *BUFFETS_SIZE = (uint32_t *)(BUFFETS_BASE + 0x40);
 volatile uint32_t *BUFFETS_SHRINK = (uint32_t *)(BUFFETS_BASE + 0x80);
+volatile uint64_t *BUFFETS_PERF_BYTES_PUSHED =
+    (uint64_t *)(BUFFETS_BASE + 0x1000);
+volatile uint64_t *BUFFETS_PERF_COUNT_PUSHED =
+    (uint64_t *)(BUFFETS_BASE + 0x1020);
+volatile uint64_t *BUFFETS_PERF_BYTES_POPPED =
+    (uint64_t *)(BUFFETS_BASE + 0x1040);
+volatile uint64_t *BUFFETS_PERF_COUNT_POPPED =
+    (uint64_t *)(BUFFETS_BASE + 0x1060);
+volatile uint64_t *BUFFETS_PERF_BYTES_READ =
+    (uint64_t *)(BUFFETS_BASE + 0x1080);
+volatile uint64_t *BUFFETS_PERF_COUNT_READ =
+    (uint64_t *)(BUFFETS_BASE + 0x10A0);
 
 const uintptr_t UART_BASE = 0x60200000;
 volatile uint8_t *UART_THR = (uint8_t *)(UART_BASE + 0x1000);
@@ -145,4 +173,24 @@ int addrgen_strided(int offset, int bytes, int stride, void *data) {
   ADDRGEN_INSTS[offset++] = addr >> 32;
   ADDRGEN_INSTS[offset++] = addr;
   return offset;
+}
+
+#include "printf.h"
+
+void dump_buffets() {
+  printf_("AddrGen: %ld bytes read\r\n", *ADDRGEN_PERF_BYTES_READ);
+  printf_("AddrGen: %ld times read\r\n", *ADDRGEN_PERF_COUNT_READ);
+  printf_("AddrGen: %ld bytes egress\r\n", *ADDRGEN_PERF_BYTES_EGRESS);
+  printf_("AddrGen: %ld insts\r\n", *ADDRGEN_PERF_COUNT_INST);
+  printf_("AddrGen: %ld indexed insts\r\n", *ADDRGEN_PERF_COUNT_INDEXED);
+  printf_("AddrGen: %ld strided insts\r\n", *ADDRGEN_PERF_COUNT_STRIDED);
+  printf_("AddrGen: %ld active cycles\r\n", *ADDRGEN_PERF_COUNT_ACTIVE);
+  printf_("AddrGen: %ld full cycles\r\n", *ADDRGEN_PERF_COUNT_FULL);
+
+  printf_("Buffets: %ld bytes pushed\r\n", *BUFFETS_PERF_BYTES_PUSHED);
+  printf_("Buffets: %ld times pushed\r\n", *BUFFETS_PERF_COUNT_PUSHED);
+  printf_("Buffets: %ld bytes popped\r\n", *BUFFETS_PERF_BYTES_POPPED);
+  printf_("Buffets: %ld times popped\r\n", *BUFFETS_PERF_COUNT_POPPED);
+  printf_("Buffets: %ld bytes read\r\n", *BUFFETS_PERF_BYTES_READ);
+  printf_("Buffets: %ld count read\r\n", *BUFFETS_PERF_COUNT_READ);
 }

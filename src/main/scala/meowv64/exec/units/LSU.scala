@@ -906,7 +906,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
         when(current.addr === BUFFETS_FASTPATH.U) {
           when(current.op === DelayedMemOp.uncachedLoad) {
             retire.bits.info.wb := current.getLSB(toBuffets.head.bits.asUInt)
-          }.otherwise{
+          }.otherwise {
             // vector uncached load
             retire.bits.info.wb := toBuffets.head.bits.asUInt
           }
@@ -919,7 +919,7 @@ class LSU(implicit val coredef: CoreDef) extends Module with UnitSelIO {
         }.otherwise {
           when(current.op === DelayedMemOp.uncachedLoad) {
             retire.bits.info.wb := current.getLSB(toMem.uncached.rdata)
-          }.otherwise{
+          }.otherwise {
             // vector uncached load
             retire.bits.info.wb := toMem.uncached.rdata
           }

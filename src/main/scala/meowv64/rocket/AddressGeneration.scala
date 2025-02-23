@@ -23,7 +23,7 @@ case class AddressGenerationConfig(
     beatBytes: Int,
     configInstWords: Int = 16,
     maxInflights: Int = 4,
-    addrWidth: Int = 64,
+    addrWidth: Int = 64
 ) {
   // power of two
   assert((maxInflights & (maxInflights - 1)) == 0)
@@ -35,6 +35,16 @@ object AddressGeneration {
   def CONTROL = 0x20
   def ITERATIONS = 0x40
   def INSTS = 0x60
+
+  // performance counters
+  def PERF_BYTES_READ = 0x1000
+  def PERF_COUNT_READ = 0x1020
+  def PERF_BYTES_EGRESS = 0x1040
+  def PERF_COUNT_INST = 0x1060
+  def PERF_COUNT_INDEXED = 0x1080
+  def PERF_COUNT_STRIDED = 0x10a0
+  def PERF_COUNT_ACTIVE = 0x10c0
+  def PERF_COUNT_FULL = 0x10e0
 
   // config
   // opcode[31:27]
@@ -136,7 +146,7 @@ class AddressGeneration(val config: AddressGenerationConfig)(implicit
   val device = new SimpleDevice("addrgen", Seq("custom,addrgen"))
 
   val registerNode = TLRegisterNode(
-    address = Seq(AddressSet(config.configBase, 0xfff)),
+    address = Seq(AddressSet(config.configBase, 0xffff)),
     device = device,
     beatBytes = config.beatBytes
   )
@@ -173,7 +183,9 @@ class AddressGenerationModuleImp(outer: AddressGeneration)
   val control = WireInit(0.U(32.W))
   val iterations = RegInit(0.U(AddressGeneration.REG_WIDTH.W))
   val regs = RegInit(
-    VecInit.fill(AddressGeneration.REG_COUNT)(0.U(AddressGeneration.REG_WIDTH.W))
+    VecInit.fill(AddressGeneration.REG_COUNT)(
+      0.U(AddressGeneration.REG_WIDTH.W)
+    )
   )
   val inflights = RegInit(
     VecInit.fill(config.maxInflights)(AddressGenerationInflight.empty(config))
@@ -183,6 +195,24 @@ class AddressGenerationModuleImp(outer: AddressGeneration)
   val tail = RegInit(0.U(log2Ceil(config.maxInflights).W))
 
   val (master, master_edge) = outer.masterNode.out(0)
+
+  // performance counters
+  // number of bytes read from memory
+  val bytesRead = RegInit(0.U(64.W))
+  // number of transactions to read from memory
+  val countRead = RegInit(0.U(64.W))
+  // number of bytes sent to buffets
+  val bytesEgress = RegInit(0.U(64.W))
+  // number of instructions executed
+  val countInst = RegInit(0.U(64.W))
+  // number of indexed instructions executed
+  val countIndexed = RegInit(0.U(64.W))
+  // number of strided instructions executed
+  val countStrided = RegInit(0.U(64.W))
+  // number of cycles when address generation is active
+  val countActive = RegInit(0.U(64.W))
+  // number of cycles when inflight queue is full
+  val countFull = RegInit(0.U(64.W))
 
   outer.registerNode.regmap(
     AddressGeneration.STATUS -> Seq(
@@ -217,6 +247,68 @@ class AddressGenerationModuleImp(outer: AddressGeneration)
         )
       }),
       false
+    ),
+    AddressGeneration.PERF_BYTES_READ -> Seq(
+      RegField(
+        bytesRead.getWidth,
+        bytesRead,
+        RegFieldDesc("bytesRead", "number of bytes read from memory")
+      )
+    ),
+    AddressGeneration.PERF_COUNT_READ -> Seq(
+      RegField(
+        countRead.getWidth,
+        countRead,
+        RegFieldDesc("countRead", "number of transactions to read from memory")
+      )
+    ),
+    AddressGeneration.PERF_BYTES_EGRESS -> Seq(
+      RegField(
+        bytesEgress.getWidth,
+        bytesEgress,
+        RegFieldDesc("bytesEgress", "number of bytes sent to buffets")
+      )
+    ),
+    AddressGeneration.PERF_COUNT_INST -> Seq(
+      RegField(
+        countInst.getWidth,
+        countInst,
+        RegFieldDesc("countInst", "number of instructions executed")
+      )
+    ),
+    AddressGeneration.PERF_COUNT_INDEXED -> Seq(
+      RegField(
+        countIndexed.getWidth,
+        countIndexed,
+        RegFieldDesc("countIndexed", "number of indexed instructions executed")
+      )
+    ),
+    AddressGeneration.PERF_COUNT_STRIDED -> Seq(
+      RegField(
+        countStrided.getWidth,
+        countStrided,
+        RegFieldDesc("countStrided", "number of strided instructions executed")
+      )
+    ),
+    AddressGeneration.PERF_COUNT_ACTIVE -> Seq(
+      RegField(
+        countActive.getWidth,
+        countActive,
+        RegFieldDesc(
+          "countActive",
+          "number of cycles when address generation is active"
+        )
+      )
+    ),
+    AddressGeneration.PERF_COUNT_FULL -> Seq(
+      RegField(
+        countFull.getWidth,
+        countFull,
+        RegFieldDesc(
+          "countFull",
+          "number of cycles when inflight queue is full"
+        )
+      )
     )
   )
 
@@ -253,6 +345,7 @@ class AddressGenerationModuleImp(outer: AddressGeneration)
       val full = tail +% 1.U === head
       when(currentInst === 0.U) {
         // next loop
+        countInst := countInst + 1.U
         when(regs(0) + 1.U === iterations) {
           regs(0) := 0.U
           state := AddressGenerationState.sFinishing
@@ -262,6 +355,8 @@ class AddressGenerationModuleImp(outer: AddressGeneration)
         currentInstIndex := 0.U
       }.otherwise {
         when(~full) {
+          countInst := countInst + 1.U
+
           inflights(tail) := AddressGenerationInflight.empty(config)
           inflights(tail).valid := true.B
           inflights(tail).done := false.B
@@ -292,11 +387,17 @@ class AddressGenerationModuleImp(outer: AddressGeneration)
 
           tail := tail + 1.U
           when(op === AddressGenerationOp.STRIDED) {
+            countStrided := countStrided + 1.U
             currentInstIndex := currentInstIndex + 3.U
           }.otherwise {
+            countIndexed := countIndexed + 1.U
             currentInstIndex := currentInstIndex + 5.U
           }
         }
+      }
+
+      when(full) {
+        countFull := countFull + 1.U
       }
     }
     is(AddressGenerationState.sFinishing) {
@@ -304,6 +405,10 @@ class AddressGenerationModuleImp(outer: AddressGeneration)
         state := AddressGenerationState.sIdle
       }
     }
+  }
+
+  when(state =/= AddressGenerationState.sIdle) {
+    countActive := countActive + 1.U
   }
 
   // send requests
@@ -331,6 +436,9 @@ class AddressGenerationModuleImp(outer: AddressGeneration)
     inflight.recv := newRecv
     val offset = inflight.reqAddr(log2Up(config.beatBytes) - 1, 0)
     val shift = offset << 3.U
+
+    bytesRead := bytesRead + recvBytes
+    countRead := countRead + 1.U
 
     when(inflight.op === AddressGenerationOp.STRIDED) {
       // strided
@@ -391,6 +499,7 @@ class AddressGenerationModuleImp(outer: AddressGeneration)
       egress.bits.data := inflight.data
       egress.bits.len := inflight.bytes
       when(egress.fire) {
+        bytesEgress := bytesEgress + inflight.bytes
         inflight.valid := false.B
         head := head +% 1.U
       }

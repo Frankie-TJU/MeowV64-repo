@@ -1,4 +1,5 @@
 #include "common.h"
+#include "printf.h"
 
 #define N 100
 uint32_t data[N];
@@ -36,5 +37,7 @@ int main() {
   if (*BUFFETS_SIZE != 0) {
     return 1;
   }
+
+  dump_buffets();
   return 0;
 }

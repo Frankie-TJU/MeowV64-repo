@@ -35,6 +35,7 @@ int main() {
   if (sum != N * (N - 1) / 2) {
     return 1;
   }
-
+  
+  dump_buffets();
   return 0;
 }
