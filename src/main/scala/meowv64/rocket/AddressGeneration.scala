@@ -80,7 +80,7 @@ object AddressGeneration {
 }
 
 object AddressGenerationState extends ChiselEnum {
-  val sIdle, sWorking, sFinishing = Value
+  val sIdle, sWorking, sWaitingForLoad, sFinishing = Value
 }
 
 object AddressGenerationOp extends ChiselEnum {
@@ -210,8 +210,12 @@ class AddressGenerationModuleImp(outer: AddressGeneration)
 
   val head = RegInit(0.U(log2Ceil(config.maxInflights).W))
   val tail = RegInit(0.U(log2Ceil(config.maxInflights).W))
+  val full = tail +% 1.U === head
 
   val (master, master_edge) = outer.masterNode.out(0)
+
+  // register destination when waiting for load
+  val waitingForLoadRD = RegInit(0.U(AddressGeneration.CONFIG_RD_WIDTH.W))
 
   // performance counters
   // number of bytes read from memory
@@ -374,22 +378,34 @@ class AddressGenerationModuleImp(outer: AddressGeneration)
         AddressGeneration.CONFIG_IMM + AddressGeneration.CONFIG_IMM_WIDTH - 1,
         AddressGeneration.CONFIG_IMM
       )
+      val currentAddr = currentInst(
+        AddressGeneration.CONFIG_ADDR + AddressGeneration.CONFIG_ADDR_WIDTH - 1,
+        AddressGeneration.CONFIG_ADDR
+      )
 
-      val full = tail +% 1.U === head
       switch(currentOpcode) {
         is(AddressGenerationOp.LOOP) {
-          // next loop
-          countInst := countInst + 1.U
+          // loop instruction
+          // regs[rs1] + 1 == iterations
           when(readRegs(currentRS1) + 1.U === iterations) {
+            // stop and regs[rs1] = 0
             writeRegs(currentRS1, 0.U)
             state := AddressGenerationState.sFinishing
+            currentInstIndex := 0.U
           }.otherwise {
+            // regs[rs1] ++
             writeRegs(currentRS1, readRegs(currentRS1) + 1.U)
+            // goto addr
+            currentInstIndex := currentAddr
           }
-          currentInstIndex := 0.U
+          countInst := countInst + 1.U
         }
-        is(AddressGenerationOp.STRIDED, AddressGenerationOp.INDEXED) {
-          // strided/indexed
+        is(
+          AddressGenerationOp.STRIDED,
+          AddressGenerationOp.INDEXED,
+          AddressGenerationOp.LOAD
+        ) {
+          // strided/indexed/load
           when(~full) {
             countInst := countInst + 1.U
 
@@ -424,16 +440,23 @@ class AddressGenerationModuleImp(outer: AddressGeneration)
 
             tail := tail + 1.U
             when(currentOpcode === AddressGenerationOp.STRIDED) {
+              // strided load
               countStrided := countStrided + 1.U
               currentInstIndex := currentInstIndex + 3.U
-            }.otherwise {
+            }.elsewhen(currentOpcode === AddressGenerationOp.INDEXED) {
+              // indexed load
               countIndexed := countIndexed + 1.U
               currentInstIndex := currentInstIndex + 5.U
+            }.elsewhen(currentOpcode === AddressGenerationOp.LOAD) {
+              // load to reg
+              currentInstIndex := currentInstIndex + 3.U
+              waitingForLoadRD := currentRD
+              // return to sWorking when data is read
+              state := AddressGenerationState.sWaitingForLoad
+            }.otherwise {
+              assert(false.B)
             }
           }
-        }
-        is(AddressGenerationOp.LOAD) {
-          // TODO
         }
         is(AddressGenerationOp.ADD) {
           // regs[rd] = regs[rs1] + regs[rs2]
@@ -449,16 +472,16 @@ class AddressGenerationModuleImp(outer: AddressGeneration)
           currentInstIndex := currentInstIndex + 1.U
         }
       }
-
-      when(full) {
-        countFull := countFull + 1.U
-      }
     }
     is(AddressGenerationState.sFinishing) {
       when(head === tail) {
         state := AddressGenerationState.sIdle
       }
     }
+  }
+
+  when(full) {
+    countFull := countFull + 1.U
   }
 
   when(state =/= AddressGenerationState.sIdle) {
@@ -505,7 +528,7 @@ class AddressGenerationModuleImp(outer: AddressGeneration)
         inflight.reqAddr := inflight.reqAddr + recvBytes
       }
       inflight.data := master.d.bits.data >> shift
-    }.otherwise {
+    }.elsewhen(inflight.op === AddressGenerationOp.INDEXED) {
       // indexed
       when(!inflight.gotIndex) {
         inflight.gotIndex := true.B
@@ -538,6 +561,14 @@ class AddressGenerationModuleImp(outer: AddressGeneration)
         // done
         inflight.done := true.B
       }
+    }.elsewhen(inflight.op === AddressGenerationOp.LOAD) {
+      // load data to register
+      assert(state === AddressGenerationState.sWaitingForLoad)
+      state := AddressGenerationState.sWorking
+      writeRegs(waitingForLoadRD, master.d.bits.data >> shift)
+      inflight.done := true.B
+    }.otherwise {
+      assert(false.B)
     }
   }
 
@@ -549,13 +580,20 @@ class AddressGenerationModuleImp(outer: AddressGeneration)
   when(head =/= tail) {
     val inflight = inflights(head)
     when(inflight.done) {
-      egress.valid := true.B
-      egress.bits.data := inflight.data
-      egress.bits.len := inflight.bytes
-      when(egress.fire) {
-        bytesEgress := bytesEgress + inflight.bytes
-        inflight.valid := false.B
+      when(inflight.op === AddressGenerationOp.LOAD) {
+        // do nothing
         head := head +% 1.U
+        inflight.valid := false.B
+      }.otherwise {
+        // send to buffets
+        egress.valid := true.B
+        egress.bits.data := inflight.data
+        egress.bits.len := inflight.bytes
+        when(egress.fire) {
+          bytesEgress := bytesEgress + inflight.bytes
+          inflight.valid := false.B
+          head := head +% 1.U
+        }
       }
     }
   }

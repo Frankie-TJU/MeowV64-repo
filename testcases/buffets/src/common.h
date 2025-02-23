@@ -179,6 +179,25 @@ int addrgen_strided(int offset, int bytes, int stride, void *data) {
   return offset;
 }
 
+int addrgen_strided_ex(int offset, int rs1, int bytes, int stride, void *data) {
+  ADDRGEN_INSTS[offset++] =
+      (1 << 27) | (rs1 << 25) | (bytes << 13) | (stride << 0);
+  uint64_t addr = (uint64_t)data;
+  ADDRGEN_INSTS[offset++] = addr >> 32;
+  ADDRGEN_INSTS[offset++] = addr;
+  return offset;
+}
+
+int addrgen_load(int offset, int rs1, int rd, int bytes, int stride,
+                 void *data) {
+  ADDRGEN_INSTS[offset++] =
+      (3 << 27) | (rs1 << 25) | (rd << 23) | (bytes << 13) | (stride << 0);
+  uint64_t addr = (uint64_t)data;
+  ADDRGEN_INSTS[offset++] = addr >> 32;
+  ADDRGEN_INSTS[offset++] = addr;
+  return offset;
+}
+
 #include "printf.h"
 
 void dump_buffets() {
