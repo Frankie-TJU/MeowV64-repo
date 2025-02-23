@@ -164,5 +164,7 @@ int main() {
   printf_("Finished computation of %dx%d with EPS %f at round %d after %lld "
           "cycles (%.2f seconds)\r\n",
           WIDTH, HEIGHT, EPS, round, elapsed, elapsed / FREQ);
+
+  dump_buffets();
   return 0;
 }

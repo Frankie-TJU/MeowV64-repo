@@ -143,7 +143,7 @@ void assert_(int res, char *s) {
 int addrgen_indexed(int offset, int bytes, int shift, int stride,
                     const void *indices, const void *data) {
   ADDRGEN_INSTS[offset++] =
-      (1 << 27) | (bytes << 13) | (shift << 10) | (stride << 0);
+      (2 << 27) | (bytes << 13) | (shift << 10) | (stride << 0);
   uint64_t addr = (uint64_t)indices;
   ADDRGEN_INSTS[offset++] = addr >> 32;
   ADDRGEN_INSTS[offset++] = addr;

@@ -56,23 +56,23 @@ fields:
 
 instructions:
 
-1. strided: read `bytes` bytes from `base + regs[rs1] * stride` as data
+1. loop: `regs[rs1]++`, if `regs[rs1] == iterations`, then stop and set `regs[rs1]` as `0`; otherwise, goto address `addr`
 	1. \[31:27\]: opcode, 0b00000
+	3. \[26:25\]: rs1
+	3. \[24:0\]: addr
+2. strided: read `bytes` bytes from `base + regs[rs1] * stride` as data
+	1. \[31:27\]: opcode, 0b00001
 	2. \[26:25\]: rs1
 	3. \[19:13\]: bytes
 	4. \[9:0\]: stride
 	5. two 32-bit arguments: baseHigh, baseLow
-2. indexed: read `bytes` bytes from `base + regs[rs1] * stride` as index, read `bytes` bytes from `indexedBase + (index << indexedShift)` as data
-	1. \[31:27\]: opcode, 0b00001
+3. indexed: read `bytes` bytes from `base + regs[rs1] * stride` as index, read `bytes` bytes from `indexedBase + (index << indexedShift)` as data
+	1. \[31:27\]: opcode, 0b00010
 	2. \[26:25\]: rs1
 	3. \[19:13\]: bytes
 	4. \[12:10\]: indexedShift
 	5. \[9:0\]: stride
 	6. four 32-bit arguments: baseHigh, baseLow, indexedBaseHigh, indexedBaseLow
-3. loop: `regs[rs1]++`, if `regs[rs1] == iterations`, then stop; otherwise, goto address `addr`
-	1. \[31:27\]: opcode, 0b00010
-	3. \[26:25\]: rs1
-	3. \[24:0\]: addr
 4. load: read `bytes` bytes from `base + regs[rs1] * stride` into `regs[rd]`
 	1. \[31:27\]: opcode, 0b00011
 	2. \[26:25\]: rs1
@@ -85,8 +85,8 @@ instructions:
 	2. \[26:25\]: rs1
 	3. \[24:23\]: rd
 	4. \[22:21\]: rs2
-6. addi: compute sum of `immediate` and `regs[rs1]` and write to `regs[rd]`
+6. addi: compute sum of signed `immediate` and `regs[rs1]` and write to `regs[rd]`
 	1. \[31:27\]: opcode, 0b00101
 	2. \[26:25\]: rs1
 	3. \[24:23\]: rd
-	4. \[22:0\]: imm
+	4. \[22:0\]: simm

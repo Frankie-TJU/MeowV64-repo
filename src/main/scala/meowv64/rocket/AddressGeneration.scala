@@ -84,7 +84,7 @@ object AddressGenerationState extends ChiselEnum {
 }
 
 object AddressGenerationOp extends ChiselEnum {
-  val STRIDED, INDEXED, LOOP, LOAD, ADD, ADDI = Value
+  val LOOP, STRIDED, INDEXED, LOAD, ADD, ADDI = Value
 }
 
 class AddressGenerationInflight(config: AddressGenerationConfig)
@@ -190,6 +190,23 @@ class AddressGenerationModuleImp(outer: AddressGeneration)
   val inflights = RegInit(
     VecInit.fill(config.maxInflights)(AddressGenerationInflight.empty(config))
   )
+
+  // add wrapper to handle zero reg
+  def readRegs(index: UInt): UInt = {
+    val res = Wire(UInt(AddressGeneration.REG_WIDTH.W))
+    when(index === (AddressGeneration.REG_COUNT - 1).U) {
+      res := 0.U
+    }.otherwise {
+      res := regs(index)
+    }
+    res
+  }
+
+  def writeRegs(index: UInt, data: UInt) = {
+    when(index =/= (AddressGeneration.REG_COUNT - 1).U) {
+      regs(index) := data
+    }
+  }
 
   val head = RegInit(0.U(log2Ceil(config.maxInflights).W))
   val tail = RegInit(0.U(log2Ceil(config.maxInflights).W))
@@ -328,7 +345,7 @@ class AddressGenerationModuleImp(outer: AddressGeneration)
       val arg4 = configInsts(currentInstIndex + 4.U)
 
       // see fields in BUFFETS.md
-      val currentOpcode = currentInst(29, 27)
+      val currentOpcode = AddressGenerationOp.safe(currentInst(29, 27))._1
       val currentBytes = currentInst(
         AddressGeneration.CONFIG_BYTES + AddressGeneration.CONFIG_BYTES_WIDTH - 1,
         AddressGeneration.CONFIG_BYTES
@@ -341,58 +358,95 @@ class AddressGenerationModuleImp(outer: AddressGeneration)
         AddressGeneration.CONFIG_INDEXED_SHIFT + AddressGeneration.CONFIG_INDEXED_SHIFT_WIDTH - 1,
         AddressGeneration.CONFIG_INDEXED_SHIFT
       )
+      val currentRS1 = currentInst(
+        AddressGeneration.CONFIG_RS1 + AddressGeneration.CONFIG_RS1_WIDTH - 1,
+        AddressGeneration.CONFIG_RS1
+      )
+      val currentRS2 = currentInst(
+        AddressGeneration.CONFIG_RS2 + AddressGeneration.CONFIG_RS2_WIDTH - 1,
+        AddressGeneration.CONFIG_RS2
+      )
+      val currentRD = currentInst(
+        AddressGeneration.CONFIG_RD + AddressGeneration.CONFIG_RD_WIDTH - 1,
+        AddressGeneration.CONFIG_RD
+      )
+      val currentIMM = currentInst(
+        AddressGeneration.CONFIG_IMM + AddressGeneration.CONFIG_IMM_WIDTH - 1,
+        AddressGeneration.CONFIG_IMM
+      )
 
       val full = tail +% 1.U === head
-      when(currentInst === 0.U) {
-        // next loop
-        countInst := countInst + 1.U
-        when(regs(0) + 1.U === iterations) {
-          regs(0) := 0.U
-          state := AddressGenerationState.sFinishing
-        }.otherwise {
-          regs(0) := regs(0) + 1.U
-        }
-        currentInstIndex := 0.U
-      }.otherwise {
-        when(~full) {
+      switch(currentOpcode) {
+        is(AddressGenerationOp.LOOP) {
+          // next loop
           countInst := countInst + 1.U
-
-          inflights(tail) := AddressGenerationInflight.empty(config)
-          inflights(tail).valid := true.B
-          inflights(tail).done := false.B
-
-          // params
-          val op = AddressGenerationOp.safe(currentOpcode)._1
-          inflights(tail).op := op
-          inflights(tail).bytes := currentBytes
-          val base = arg1 ## arg2
-          val indexedBase = arg3 ## arg4
-          inflights(tail).indexedBase := indexedBase
-          inflights(tail).indexedShift := currentIndexedShift
-          inflights(tail).data := 0.U
-
-          // progress
-          inflights(tail).recv := 0.U
-
-          // initial TileLink request
-          inflights(tail).req := true.B
-          inflights(tail).reqAddr := base + currentStride * regs(0)
-
-          // ceil currentBytes up
-          when(currentBytes <= config.beatBytes.U) {
-            inflights(tail).reqLgSize := Log2(currentBytes - 1.U) + 1.U
+          when(readRegs(currentRS1) + 1.U === iterations) {
+            writeRegs(currentRS1, 0.U)
+            state := AddressGenerationState.sFinishing
           }.otherwise {
-            inflights(tail).reqLgSize := log2Ceil(config.beatBytes).U
+            writeRegs(currentRS1, readRegs(currentRS1) + 1.U)
           }
+          currentInstIndex := 0.U
+        }
+        is(AddressGenerationOp.STRIDED, AddressGenerationOp.INDEXED) {
+          // strided/indexed
+          when(~full) {
+            countInst := countInst + 1.U
 
-          tail := tail + 1.U
-          when(op === AddressGenerationOp.STRIDED) {
-            countStrided := countStrided + 1.U
-            currentInstIndex := currentInstIndex + 3.U
-          }.otherwise {
-            countIndexed := countIndexed + 1.U
-            currentInstIndex := currentInstIndex + 5.U
+            inflights(tail) := AddressGenerationInflight.empty(config)
+            inflights(tail).valid := true.B
+            inflights(tail).done := false.B
+
+            // params
+            inflights(tail).op := currentOpcode
+            inflights(tail).bytes := currentBytes
+            val base = arg1 ## arg2
+            val indexedBase = arg3 ## arg4
+            inflights(tail).indexedBase := indexedBase
+            inflights(tail).indexedShift := currentIndexedShift
+            inflights(tail).data := 0.U
+
+            // progress
+            inflights(tail).recv := 0.U
+
+            // initial TileLink request
+            inflights(tail).req := true.B
+            inflights(tail).reqAddr := base + currentStride * readRegs(
+              currentRS1
+            )
+
+            // ceil currentBytes up
+            when(currentBytes <= config.beatBytes.U) {
+              inflights(tail).reqLgSize := Log2(currentBytes - 1.U) + 1.U
+            }.otherwise {
+              inflights(tail).reqLgSize := log2Ceil(config.beatBytes).U
+            }
+
+            tail := tail + 1.U
+            when(currentOpcode === AddressGenerationOp.STRIDED) {
+              countStrided := countStrided + 1.U
+              currentInstIndex := currentInstIndex + 3.U
+            }.otherwise {
+              countIndexed := countIndexed + 1.U
+              currentInstIndex := currentInstIndex + 5.U
+            }
           }
+        }
+        is(AddressGenerationOp.LOAD) {
+          // TODO
+        }
+        is(AddressGenerationOp.ADD) {
+          // regs[rd] = regs[rs1] + regs[rs2]
+          writeRegs(currentRD, readRegs(currentRS1) + readRegs(currentRS2))
+          currentInstIndex := currentInstIndex + 1.U
+        }
+        is(AddressGenerationOp.ADDI) {
+          // regs[rd] = regs[rs1] + simm
+          writeRegs(
+            currentRD,
+            (readRegs(currentRS1).asSInt + currentIMM.asSInt).asUInt
+          )
+          currentInstIndex := currentInstIndex + 1.U
         }
       }
 
