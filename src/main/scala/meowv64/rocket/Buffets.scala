@@ -74,6 +74,8 @@ object Buffets {
   def PERF_COUNT_POPPED = 0x1060
   def PERF_BYTES_READ = 0x1080
   def PERF_COUNT_READ = 0x10a0
+  def PERF_COUNT_READ_STALL_CYCLES = 0x10c0
+  def PERF_COUNT_PUSH_STALL_CYCLES = 0x10e0
 }
 
 class BuffetsModuleImp(outer: Buffets) extends LazyModuleImp(outer) {
@@ -137,6 +139,10 @@ class BuffetsModuleImp(outer: Buffets) extends LazyModuleImp(outer) {
   val bytesRead = RegInit(0.U(64.W))
   // number of times when data is read from buffets
   val countRead = RegInit(0.U(64.W))
+  // number of cycles when read is stalled
+  val countReadStallCycles = RegInit(0.U(64.W))
+  // number of cycles when push is stalled
+  val countPushStallCycles = RegInit(0.U(64.W))
 
   val shrinkIO = Wire(Decoupled(UInt(log2Ceil(config.memorySize + 1).W)))
   val shrinkQueue = Queue(shrinkIO)
@@ -233,6 +239,26 @@ class BuffetsModuleImp(outer: Buffets) extends LazyModuleImp(outer) {
         RegFieldDesc(
           "countRead",
           "number of times when data is read from buffets"
+        )
+      )
+    ),
+    Buffets.PERF_COUNT_READ_STALL_CYCLES -> Seq(
+      RegField(
+        countReadStallCycles.getWidth,
+        countReadStallCycles,
+        RegFieldDesc(
+          "countReadStallCycles",
+          "number of cycles when read is stalled"
+        )
+      )
+    ),
+    Buffets.PERF_COUNT_PUSH_STALL_CYCLES -> Seq(
+      RegField(
+        countPushStallCycles.getWidth,
+        countPushStallCycles,
+        RegFieldDesc(
+          "countPushStallCycles",
+          "number of cycles when push is stalled"
         )
       )
     )
@@ -361,5 +387,15 @@ class BuffetsModuleImp(outer: Buffets) extends LazyModuleImp(outer) {
       empty := empty - pushLen
       state := BuffetsState.sIdle
     }
+  }
+
+  when(ingress.valid && !ingress.ready) {
+    // push is stalled
+    countPushStallCycles := countPushStallCycles + 1.U
+  }
+
+  when(req.valid && !req.ready) {
+    // read is stalled
+    countReadStallCycles := countReadStallCycles + 1.U
   }
 }

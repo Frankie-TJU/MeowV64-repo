@@ -41,6 +41,10 @@ volatile uint64_t *BUFFETS_PERF_BYTES_READ =
     (uint64_t *)(BUFFETS_BASE + 0x1080);
 volatile uint64_t *BUFFETS_PERF_COUNT_READ =
     (uint64_t *)(BUFFETS_BASE + 0x10A0);
+volatile uint64_t *BUFFETS_PERF_COUNT_READ_STALL_CYCLES =
+    (uint64_t *)(BUFFETS_BASE + 0x10C0);
+volatile uint64_t *BUFFETS_PERF_COUNT_PUSH_STALL_CYCLES =
+    (uint64_t *)(BUFFETS_BASE + 0x10E0);
 
 const uintptr_t UART_BASE = 0x60200000;
 volatile uint8_t *UART_THR = (uint8_t *)(UART_BASE + 0x1000);
@@ -193,4 +197,8 @@ void dump_buffets() {
   printf_("Buffets: %ld times popped\r\n", *BUFFETS_PERF_COUNT_POPPED);
   printf_("Buffets: %ld bytes read\r\n", *BUFFETS_PERF_BYTES_READ);
   printf_("Buffets: %ld count read\r\n", *BUFFETS_PERF_COUNT_READ);
+  printf_("Buffets: %ld read cycles stalled\r\n",
+          *BUFFETS_PERF_COUNT_READ_STALL_CYCLES);
+  printf_("Buffets: %ld push cycles stalled\r\n",
+          *BUFFETS_PERF_COUNT_PUSH_STALL_CYCLES);
 }
