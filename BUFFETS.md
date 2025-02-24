@@ -60,13 +60,13 @@ instructions:
 	1. \[31:27\]: opcode, 0b00000
 	3. \[26:25\]: rs1
 	3. \[24:0\]: addr
-2. strided: read `bytes` bytes from `base + regs[rs1] * stride` as data
+2. strided: read `bytes` bytes from `base + regs[rs1] * stride` as data, send to buffets
 	1. \[31:27\]: opcode, 0b00001
 	2. \[26:25\]: rs1
 	3. \[19:13\]: bytes
 	4. \[9:0\]: stride
 	5. two 32-bit arguments: baseHigh, baseLow
-3. indexed: read `bytes` bytes from `base + regs[rs1] * stride` as index, read `bytes` bytes from `indexedBase + (index << indexedShift)` as data
+3. indexed: read `bytes` bytes from `base + regs[rs1] * stride` as index, read `bytes` bytes from `indexedBase + (index << indexedShift)` as data, send to buffets
 	1. \[31:27\]: opcode, 0b00010
 	2. \[26:25\]: rs1
 	3. \[19:13\]: bytes
