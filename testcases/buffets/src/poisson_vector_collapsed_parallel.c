@@ -5,19 +5,19 @@
 
 #define PERSONALITY_CNT 10
 
-#define COMPUTE_LIMIT(id) \
-  size_t group_residue = GROUP_CNT % PERSONALITY_CNT; \
-  size_t self_len = (GROUP_CNT / PERSONALITY_CNT) + (id < group_residue ? 1 : 0); \
-  size_t my_grp_start = (GROUP_CNT / PERSONALITY_CNT) * id + \
-                      (id < group_residue ? id : group_residue); \
-  size_t my_grp_end = my_grp_start + self_len; \
-
+#define COMPUTE_LIMIT(id)                                                      \
+  size_t group_residue = GROUP_CNT % PERSONALITY_CNT;                          \
+  size_t self_len =                                                            \
+      (GROUP_CNT / PERSONALITY_CNT) + (id < group_residue ? 1 : 0);            \
+  size_t my_grp_start = (GROUP_CNT / PERSONALITY_CNT) * id +                   \
+                        (id < group_residue ? id : group_residue);             \
+  size_t my_grp_end = my_grp_start + self_len;
 
 const size_t GROUP_CNT = WIDTH / GROUP_LEN * HEIGHT;
 const size_t ROW_GROUP_LEN = WIDTH / GROUP_LEN;
 
 void diverg(data_t *field, data_t *result) {
-  for(size_t hartid = 0; hartid < PERSONALITY_CNT; ++hartid) {
+  for (size_t hartid = 0; hartid < PERSONALITY_CNT; ++hartid) {
     COMPUTE_LIMIT(hartid);
 
     int gj = my_grp_start % ROW_GROUP_LEN;
@@ -58,7 +58,9 @@ void diverg(data_t *field, data_t *result) {
                            : "r"(field + ((i + 1) * WIDTH + j)));
         }
 
-        __asm__ volatile("vse32.v v0, (%0)\n" : : "r"(result + (i * WIDTH + j)));
+        __asm__ volatile("vse32.v v0, (%0)\n"
+                         :
+                         : "r"(result + (i * WIDTH + j)));
       }
 
       gj = 0;
@@ -68,7 +70,7 @@ void diverg(data_t *field, data_t *result) {
 
 data_t self_dot(data_t *field) {
   data_t outer_accum = 0;
-  for(size_t hartid = 0; hartid < PERSONALITY_CNT; ++hartid) {
+  for (size_t hartid = 0; hartid < PERSONALITY_CNT; ++hartid) {
     COMPUTE_LIMIT(hartid);
 
     // v1 is accumulator
@@ -97,7 +99,7 @@ data_t self_dot(data_t *field) {
 
 data_t dot(data_t *a, data_t *b) {
   data_t outer_accum = 0;
-  for(size_t hartid = 0; hartid < PERSONALITY_CNT; ++hartid) {
+  for (size_t hartid = 0; hartid < PERSONALITY_CNT; ++hartid) {
     COMPUTE_LIMIT(hartid);
 
     // v1 is accumulator
@@ -126,7 +128,7 @@ data_t dot(data_t *a, data_t *b) {
 
 void self_relaxiation(data_t *into, data_t *val, data_t mul) {
   data_t outer_accum = 0;
-  for(size_t hartid = 0; hartid < PERSONALITY_CNT; ++hartid) {
+  for (size_t hartid = 0; hartid < PERSONALITY_CNT; ++hartid) {
     COMPUTE_LIMIT(hartid);
 
     for (int i = my_grp_start * GROUP_LEN; i < my_grp_end * GROUP_LEN;
@@ -144,7 +146,7 @@ void self_relaxiation(data_t *into, data_t *val, data_t mul) {
 
 void reverse_relaxiation(data_t *into, data_t *from, data_t mul) {
   data_t outer_accum = 0;
-  for(size_t hartid = 0; hartid < PERSONALITY_CNT; ++hartid) {
+  for (size_t hartid = 0; hartid < PERSONALITY_CNT; ++hartid) {
     COMPUTE_LIMIT(hartid);
 
     for (int i = my_grp_start * GROUP_LEN; i < my_grp_end * GROUP_LEN;
@@ -215,9 +217,10 @@ int main(int hartid) {
       printf_("Round %d: error = %.10f in %ld cycles\r\n", round, rr,
               elapsed_round);
 
-      if(rr <= EARLY_EPS && !early_eps_triggered) {
+      if (rr <= EARLY_EPS && !early_eps_triggered) {
         early_eps_triggered = true;
-        printf_("Early EPS: Finished computation of %dx%d with EPS %.10f at round %d after %lld "
+        printf_("Early EPS: Finished computation of %dx%d with EPS %.10f at "
+                "round %d after %lld "
                 "cycles (%.2f seconds)\r\n",
                 WIDTH, HEIGHT, EPS, round, elapsed, elapsed / FREQ);
       }
@@ -225,9 +228,10 @@ int main(int hartid) {
   }
 
   if (hartid == 0) {
-    printf_("Finished computation of %dx%d with EPS %.10f at round %d after %lld "
-            "cycles (%.2f seconds)\r\n",
-            WIDTH, HEIGHT, EPS, round, elapsed, elapsed / FREQ);
+    printf_(
+        "Finished computation of %dx%d with EPS %.10f at round %d after %lld "
+        "cycles (%.2f seconds)\r\n",
+        WIDTH, HEIGHT, EPS, round, elapsed, elapsed / FREQ);
 
     data_t l2_sum = 0;
     for (int i = 0; i < HEIGHT; ++i) {

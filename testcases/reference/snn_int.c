@@ -29,12 +29,13 @@ struct Neuron {
   int c;
   int d;
 
-  // stat
-  long long fire_count;
-
   struct Synapse *synapses;
   int num_synapses;
 };
+
+#ifndef NEURONS_PER_POPULATION
+#define NEURONS_PER_POPULATION 10
+#endif
 
 // [time][neuron]
 #define MAX_TIME 10000
@@ -62,14 +63,14 @@ int myrand(void) {
 #define max(a, b) ((a) > (b) ? (a) : (b))
 
 int main(int argc, char *argv[]) {
-  N = 0;   // number of neurons
-  P = 0;   // number of spike sources
-  S = 0;   // number of synapses
-  T = 100; // number of timesteps
-  max_delay = 10;
+  N = 0;         // number of neurons
+  P = 0;         // number of spike sources
+  S = 0;         // number of synapses
+  T = 100;       // number of timesteps
+  max_delay = 1; // maximum delay is 1
 
-  int N1 = 10;   // number of neurons in one population
-  int prob = 10; // probability of synapse connection (1/10)
+  int N1 = NEURONS_PER_POPULATION; // number of neurons in one population
+  int prob = 10;                   // probability of synapse connection (1/10)
 
   // init data
   printf_("Initialize data\r\n");
@@ -127,6 +128,9 @@ int main(int argc, char *argv[]) {
   }
   P++;
 
+  printf_("Got %d neurons, %d synapses, %d spike sources, %d timesteps\r\n", N,
+          S, P, T);
+  int sum_fire_count = 0;
   for (int t = 1; t <= T; t++) {
     printf_("Timestep %d begin\r\n", t);
     int fire_count = 0;
@@ -137,7 +141,7 @@ int main(int argc, char *argv[]) {
       if (spike_sources[s].r > myrand()) {
         // add event
         for (int i = 0; i < spike_sources[s].num_synapses; i++) {
-          input[(t + spike_sources[s].synapses[i].d) % max_delay]
+          input[(t + spike_sources[s].synapses[i].d) % (max_delay + 1)]
                [spike_sources[s].synapses[i].target_neuron] +=
               spike_sources[s].synapses[i].w;
         }
@@ -149,20 +153,19 @@ int main(int argc, char *argv[]) {
       int old_v = neurons[n].v;
       int old_u = neurons[n].u;
       int new_v = old_v + dt * (old_v * old_v / 25 + 5 * old_v + 140 - old_u) +
-                  input[t % max_delay][n];
+                  input[t % (max_delay + 1)][n];
       int new_u = old_u + dt * neurons[n].a * (neurons[n].b * old_v - old_u);
 
-      input[t % max_delay][n] = 0.0;
+      input[t % (max_delay + 1)][n] = 0.0;
 
       if (new_v >= 30) {
         new_v = neurons[n].c;
         new_u = new_u + neurons[n].d;
 
-        neurons[n].fire_count++;
         fire_count++;
         // fire
         for (int i = 0; i < neurons[n].num_synapses; i++) {
-          input[(t + neurons[n].synapses[i].d) % max_delay]
+          input[(t + neurons[n].synapses[i].d) % (max_delay + 1)]
                [neurons[n].synapses[i].target_neuron] +=
               neurons[n].synapses[i].w;
         }
@@ -173,22 +176,9 @@ int main(int argc, char *argv[]) {
     }
 
     printf_("Timestep %d fire %d times\r\n", t, fire_count);
+    sum_fire_count += fire_count;
   }
 
-  int min_v = neurons[0].v;
-  int max_v = neurons[0].v;
-  long long min_fire_count = neurons[0].fire_count;
-  long long max_fire_count = neurons[0].fire_count;
-  long long sum_fire_count = neurons[0].fire_count;
-  for (int n = 1; n < N; n++) {
-    min_v = min(min_v, neurons[n].v);
-    max_v = max(max_v, neurons[n].v);
-    min_fire_count = min(min_fire_count, neurons[n].fire_count);
-    max_fire_count = max(max_fire_count, neurons[n].fire_count);
-    sum_fire_count = sum_fire_count + neurons[n].fire_count;
-  }
-  printf_("Voltage min/max: %d %d\n", min_v, max_v);
-  printf_("Fire count min/max/sum: %lld %lld %lld\n", min_fire_count,
-          max_fire_count, sum_fire_count);
+  printf_("Fire rate: %d\n", sum_fire_count);
   return 0;
 }
