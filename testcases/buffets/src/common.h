@@ -57,6 +57,27 @@ volatile uint8_t *UART_LSR = (uint8_t *)(UART_BASE + 0x1014);
     __tmp;                                                                     \
   })
 
+void *memcpy(void *__restrict dest, const void *__restrict src, size_t n) {
+  for (size_t i = 0; i < n; i++) {
+    ((char *)dest)[i] = ((char *)src)[i];
+  }
+  return dest;
+}
+
+void *memset(void *__restrict dest, int ch, size_t n) {
+  for (size_t i = 0; i < n; i++) {
+    ((char *)dest)[i] = ch;
+  }
+  return dest;
+}
+
+float fabsf(float num) {
+  if (num > 0)
+    return num;
+  else
+    return -num;
+}
+
 static inline void _putchar(char c) {
   while (!(*UART_LSR & 0x40))
     ;
@@ -68,6 +89,8 @@ static inline void _puts(char *s) {
     _putchar(*s++);
   }
 }
+
+#define puts _puts
 
 void print_hex_delim(unsigned int num, char *delim) {
   int q;
@@ -127,19 +150,20 @@ void putstr(char *s) {
     _putchar(*s);
 }
 
-// for poisson
-typedef float data_t;
-const size_t GROUP_LEN = 8;
-#ifdef N_OVERRIDE
-const size_t WIDTH = N_OVERRIDE;
-const size_t HEIGHT = N_OVERRIDE;
-#else
-const size_t WIDTH = 16;
-const size_t HEIGHT = 16;
-#endif
-const data_t EPS = 1e-6;
-const data_t EARLY_EPS = 1e-6;
-const double FREQ = 500000000.0;
+#define assert(expr) assert_(expr, #expr)
+
+#include "printf.h"
+
+extern int printf_(const char *format, ...);
+void assert_(int res, char *s) {
+  if (!res) {
+    printf_("Assertion failed: %s\r\n", s);
+    for (;;) {
+    }
+  }
+}
+
+#define max(a, b) ((a) > (b) ? (a) : (b))
 
 [[noreturn]] void spin() {
   volatile size_t meow;
@@ -197,8 +221,6 @@ int addrgen_load(int offset, int rs1, int rd, int bytes, int stride,
   ADDRGEN_INSTS[offset++] = addr;
   return offset;
 }
-
-#include "printf.h"
 
 void dump_buffets() {
   printf_("AddrGen: %ld bytes read\r\n", *ADDRGEN_PERF_BYTES_READ);

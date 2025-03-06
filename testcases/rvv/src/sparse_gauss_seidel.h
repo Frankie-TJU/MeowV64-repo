@@ -140,7 +140,6 @@ float b[N];
     ++meow;
 }
 
-
 // https://www.javatpoint.com/gauss-seidel-method-in-c
 int main(int hartid) {
   if (hartid != 0)

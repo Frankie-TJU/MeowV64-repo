@@ -1,5 +1,6 @@
 #include "common.h"
 #include "printf.h"
+#include "poisson.h"
 #include "stdalign.h"
 #include <assert.h>
 
