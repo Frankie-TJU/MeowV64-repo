@@ -131,12 +131,6 @@ static uint64_t lfsr63(uint64_t x) {
   return (x >> 1) | (bit << 62);
 }
 
-[[noreturn]] void spin() {
-  volatile size_t meow;
-  while (1)
-    ++meow;
-}
-
 float y1[N];
 float y2[N];
 

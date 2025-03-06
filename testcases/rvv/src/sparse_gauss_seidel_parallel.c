@@ -192,12 +192,6 @@ float x[N];
 // value on the rhs
 float b[N];
 
-[[noreturn]] void spin() {
-  volatile size_t meow;
-  while (1)
-    ++meow;
-}
-
 // https://www.javatpoint.com/gauss-seidel-method-in-c
 int main(int hartid) {
   int count, t, limit;
