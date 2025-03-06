@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <assert.h>
 
 #define printf_ printf
 
@@ -10,8 +11,8 @@ int dt;
 
 struct Synapse {
   int target_neuron;
-  int w;
-  int d;
+  int w; // weight
+  int d; // delay
 };
 
 struct SpikeSource {
@@ -42,7 +43,7 @@ struct Neuron {
 #define MAX_NEURON 1024
 #define MAX_SOURCES 1024
 #define MAX_SYNAPSES 1024
-int input[MAX_TIME][MAX_NEURON] = {0};
+int input[MAX_TIME][MAX_NEURON];
 
 struct Neuron neurons[MAX_NEURON];
 struct SpikeSource spike_sources[MAX_SOURCES];
@@ -77,6 +78,8 @@ int main(int argc, char *argv[]) {
 
   // first population
   for (int n = 0; n < N1; n++) {
+    neurons[N].v = neurons[N].u = neurons[N].a = neurons[N].b = neurons[N].c =
+        neurons[N].d = 0;
     neurons[N].synapses = &synapses[S];
     neurons[N].num_synapses = 0;
     for (int m = 0; m < N1; m++) {
@@ -85,8 +88,8 @@ int main(int argc, char *argv[]) {
         neurons[N].num_synapses++;
         // connection to second population
         synapses[S].target_neuron = m + N1;
-        synapses[S].d = 1;
         synapses[S].w = 30;
+        synapses[S].d = 1;
         S++;
       }
     }
@@ -96,6 +99,8 @@ int main(int argc, char *argv[]) {
 
   // second population
   for (int n = 0; n < N1; n++) {
+    neurons[N].v = neurons[N].u = neurons[N].a = neurons[N].b = neurons[N].c =
+        neurons[N].d = 0;
     neurons[N].synapses = &synapses[S];
     neurons[N].num_synapses = 0;
     for (int m = 0; m < N1; m++) {
@@ -104,8 +109,8 @@ int main(int argc, char *argv[]) {
         neurons[N].num_synapses++;
         // connection to first population
         synapses[S].target_neuron = m;
-        synapses[S].d = 1;
         synapses[S].w = 30;
+        synapses[S].d = 1;
         S++;
       }
     }
@@ -115,18 +120,27 @@ int main(int argc, char *argv[]) {
 
   // create one spike source to all first population
   spike_sources[P].r = RAND_MAX / 3;
-  spike_sources[P].num_synapses = 0;
   spike_sources[P].synapses = &synapses[S];
+  spike_sources[P].num_synapses = 0;
   for (int m = 0; m < N1; m++) {
     // make connection
     spike_sources[P].num_synapses++;
     // connection to first population
     synapses[S].target_neuron = m;
-    synapses[S].d = 1;
     synapses[S].w = 30;
+    synapses[S].d = 1;
     S++;
   }
   P++;
+
+  // clear input
+  for (int i = 0; i <= max_delay; i++) {
+    for (int n = 0; n < N; n++) {
+      input[i][n] = 0;
+    }
+  }
+
+  assert(N < MAX_NEURON);
 
   printf_("Got %d neurons, %d synapses, %d spike sources, %d timesteps\r\n", N,
           S, P, T);
