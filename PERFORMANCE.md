@@ -1,6 +1,6 @@
 # performance history
 
-verilator/SingleCoreDef/benchmark.log:
+verilator/SingleCoreConfig/benchmark.log:
 
 dhrystone per second:
 
@@ -22,3 +22,4 @@ dhrystone per second:
 - 2022.03.01: 2696
 - 2022.04.18: 1994
 - 2022.04.18: 1949
+- 2025.03.13: 2098

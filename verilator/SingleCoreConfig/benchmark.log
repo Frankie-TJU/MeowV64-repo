@@ -1,292 +1,366 @@
 -------------------------------
-> Loaded 20360 bytes from ELF ../../testcases/riscv-tests/build/benchmarks/axpy.riscv
+> Loaded 17944 bytes from ELF ../../testcases/riscv-tests/build/benchmarks/axpy.riscv
 > Using tohost at 60000000
 > Using fromhost at 60000040
 > Simulation started
 > ISA testsuite pass
 > Simulation finished
-> mcycle: 35799
-> minstret: 12409
-> IPC: 0.35
-> Simulation speed: 25369.35 mcycle/s
-> Issue queue empty cycle: 76.98% 67.44% 14.82% 54.52%
-> Issue queue full cycle: 0.09% 0.00% 0.00% 0.00%
-> Cycles when issue num is bounded by ROB size: 81.73%
-> Cycles when issue num is bounded by LSQ size: 0.33%
-> Issue Num: 0=74.06% 1=10.44% 2=15.49%
-> Retire Num: 0=76.36% 1=12.64% 2=11.00%
-Scalar: 170 Mflops @ 1 GHz
-Vector: 121 Mflops @ 1 GHz
--------------------------------
-> Loaded 43504 bytes from ELF ../../testcases/riscv-tests/build/benchmarks/coremark.riscv
-> Using tohost at 60000000
-> Using fromhost at 60000040
-> Simulation started
-> ISA testsuite pass
-> Simulation finished
-> mcycle: 543282
-> minstret: 464914
-> IPC: 0.86
-> Simulation speed: 25207.00 mcycle/s
-> Issue queue empty cycle: 19.49% 99.85% 38.89% 100.00%
-> Issue queue full cycle: 0.13% 0.00% 0.00% 0.00%
-> Cycles when issue num is bounded by ROB size: 32.43%
-> Cycles when issue num is bounded by LSQ size: 3.18%
-> Issue Num: 0=25.89% 1=10.47% 2=63.64%
-> Retire Num: 0=45.28% 1=23.86% 2=30.86%
-2K performance run parameters for coremark.
-CoreMark Size    : 666
-Total ticks      : 474161
-Total time (secs): 0.004742
-Iterations/Sec   : 210.898830
-ERROR! Must execute for at least 10 secs for a valid result!
-Iterations       : 1
-Compiler version : GCCDebian Clang 14.0.6
-Compiler flags   : -O2 -ffast-math -fno-common -fno-builtin-printf -fno-tree-loop-distribute-patterns
-Memory location  : STACK
-seedcrc          : 0xe9f5
-[0]crclist       : 0xe714
-[0]crcmatrix     : 0x1fd7
-[0]crcstate      : 0x8e3a
-[0]crcfinal      : 0xe714
-Errors detected
-mcycle = 474304
-minstret = 422106
--------------------------------
-> Loaded 22288 bytes from ELF ../../testcases/riscv-tests/build/benchmarks/dhrystone.riscv
-> Using tohost at 60000000
-> Using fromhost at 60000040
-> Simulation started
-> ISA testsuite pass
-> Simulation finished
-> mcycle: 269176
-> minstret: 207180
-> IPC: 0.77
-> Simulation speed: 24886.79 mcycle/s
-> Issue queue empty cycle: 25.07% 100.00% 40.77% 100.00%
+> mcycle: 27541
+> minstret: 8829
+> IPC: 0.32
+> Simulation speed: 45994.11 mcycle/s
+> Issue queue empty cycle: 83.02% 18.39% 14.22% 99.99%
 > Issue queue full cycle: 0.00% 0.00% 0.00% 0.00%
-> Cycles when issue num is bounded by ROB size: 22.14%
-> Cycles when issue num is bounded by LSQ size: 13.45%
-> Issue Num: 0=37.67% 1=15.20% 2=47.13%
-> Retire Num: 0=48.28% 1=26.48% 2=25.24%
-Microseconds for one run through Dhrystone: 512
-Dhrystones per Second:                      1951
-mcycle = 256314
-minstret = 202037
+> Cycles when issue num is bounded by ROB size: 57.31%
+> Cycles when issue num is bounded by LSQ size: 0.00%
+> Issue num: 0=75.92% 1=13.69% 2=10.39%
+> Retire num: 0=74.88% 1=18.19% 2=6.92%
+> Memory access: 10368 bytes read, 32 bytes written
+Scalar: 184 Mflops @ 1 GHz
 -------------------------------
-> Loaded 23264 bytes from ELF ../../testcases/riscv-tests/build/benchmarks/median.riscv
+> Loaded 22640 bytes from ELF ../../testcases/riscv-tests/build/benchmarks/dhrystone.riscv
 > Using tohost at 60000000
 > Using fromhost at 60000040
 > Simulation started
 > ISA testsuite pass
 > Simulation finished
-> mcycle: 29997
-> minstret: 13070
+> mcycle: 250860
+> minstret: 202250
+> IPC: 0.81
+> Simulation speed: 48267.88 mcycle/s
+> Issue queue empty cycle: 22.68% 100.00% 38.55% 100.00%
+> Issue queue full cycle: 0.00% 0.00% 0.00% 0.00%
+> Cycles when issue num is bounded by ROB size: 28.28%
+> Cycles when issue num is bounded by LSQ size: 15.12%
+> Issue num: 0=38.28% 1=16.28% 2=45.44%
+> Retire num: 0=46.08% 1=27.22% 2=26.70%
+> Memory access: 5856 bytes read, 0 bytes written
+Microseconds for one run through Dhrystone: 476
+Dhrystones per Second:                      2098
+mcycle = 238323
+minstret = 197031
+-------------------------------
+> Loaded 21352 bytes from ELF ../../testcases/riscv-tests/build/benchmarks/median.riscv
+> Using tohost at 60000000
+> Using fromhost at 60000040
+> Simulation started
+> ISA testsuite pass
+> Simulation finished
+> mcycle: 29122
+> minstret: 12933
 > IPC: 0.44
-> Simulation speed: 24952.63 mcycle/s
-> Issue queue empty cycle: 33.33% 99.99% 54.77% 99.99%
+> Simulation speed: 47059.01 mcycle/s
+> Issue queue empty cycle: 34.63% 99.99% 53.18% 99.99%
 > Issue queue full cycle: 0.00% 0.00% 0.00% 0.00%
-> Cycles when issue num is bounded by ROB size: 23.11%
-> Cycles when issue num is bounded by LSQ size: 0.03%
-> Issue Num: 0=45.75% 1=7.12% 2=47.13%
-> Retire Num: 0=69.16% 1=18.13% 2=12.71%
-mcycle = 10334
-minstret = 4631
+> Cycles when issue num is bounded by ROB size: 20.34%
+> Cycles when issue num is bounded by LSQ size: 0.10%
+> Issue num: 0=42.57% 1=11.66% 2=45.76%
+> Retire num: 0=67.84% 1=19.92% 2=12.24%
+> Memory access: 7328 bytes read, 96 bytes written
+mcycle = 9875
+minstret = 4606
 -------------------------------
-> Loaded 31864 bytes from ELF ../../testcases/riscv-tests/build/benchmarks/mm.riscv
+> Loaded 33992 bytes from ELF ../../testcases/riscv-tests/build/benchmarks/memcpy.riscv
 > Using tohost at 60000000
 > Using fromhost at 60000040
 > Simulation started
 > ISA testsuite pass
 > Simulation finished
-> mcycle: 558211
-> minstret: 328979
-> IPC: 0.59
-> Simulation speed: 25606.61 mcycle/s
-> Issue queue empty cycle: 82.30% 13.76% 77.45% 100.00%
-> Issue queue full cycle: 0.02% 0.00% 0.00% 0.00%
-> Cycles when issue num is bounded by ROB size: 26.98%
-> Cycles when issue num is bounded by LSQ size: 2.73%
-> Issue Num: 0=57.15% 1=20.54% 2=22.31%
-> Retire Num: 0=59.12% 1=22.84% 2=18.05%
-C0: reg block 4x5x6, cache block 24x25x24
-C0: 24684 instructions
-C0: 48748 cycles
-C0: 28800 flops
-C0: 590 Mflops @ 1 GHz
+> mcycle: 67093
+> minstret: 29036
+> IPC: 0.43
+> Simulation speed: 47653.21 mcycle/s
+> Issue queue empty cycle: 50.81% 100.00% 38.54% 100.00%
+> Issue queue full cycle: 0.00% 0.00% 0.00% 0.00%
+> Cycles when issue num is bounded by ROB size: 45.78%
+> Cycles when issue num is bounded by LSQ size: 45.24%
+> Issue num: 0=72.25% 1=10.27% 2=17.48%
+> Retire num: 0=72.23% 1=12.27% 2=15.50%
+> Memory access: 36704 bytes read, 1920 bytes written
+mcycle = 31457
+minstret = 5526
 -------------------------------
-> Loaded 23920 bytes from ELF ../../testcases/riscv-tests/build/benchmarks/mt-matmul.riscv
+> Loaded 28680 bytes from ELF ../../testcases/riscv-tests/build/benchmarks/mm.riscv
 > Using tohost at 60000000
 > Using fromhost at 60000040
 > Simulation started
 > ISA testsuite pass
 > Simulation finished
-> mcycle: 50077
-> minstret: 54411
-> IPC: 1.09
-> Simulation speed: 25111.05 mcycle/s
-> Issue queue empty cycle: 11.89% 100.00% 51.50% 100.00%
-> Issue queue full cycle: 0.06% 0.00% 0.00% 0.00%
-> Cycles when issue num is bounded by ROB size: 46.80%
-> Cycles when issue num is bounded by LSQ size: 0.08%
-> Issue Num: 0=28.70% 1=10.31% 2=60.99%
-> Retire Num: 0=37.38% 1=16.61% 2=46.01%
-
-matmul(cid, nc, 16, input1_data, input2_data, results_data); barrier(nc): 37062 cycles, 9.0 cycles/iter, 0.7 CPI
--------------------------------
-> Loaded 45176 bytes from ELF ../../testcases/riscv-tests/build/benchmarks/mt-vvadd.riscv
-> Using tohost at 60000000
-> Using fromhost at 60000040
-> Simulation started
-> ISA testsuite pass
-> Simulation finished
-> mcycle: 102391
-> minstret: 47657
+> mcycle: 582015
+> minstret: 270927
 > IPC: 0.47
-> Simulation speed: 26037.59 mcycle/s
-> Issue queue empty cycle: 51.72% 32.58% 27.70% 100.00%
-> Issue queue full cycle: 0.05% 0.00% 0.00% 0.00%
-> Cycles when issue num is bounded by ROB size: 85.12%
-> Cycles when issue num is bounded by LSQ size: 0.13%
-> Issue Num: 0=66.56% 1=11.35% 2=22.08%
-> Retire Num: 0=69.56% 1=14.33% 2=16.10%
-
-vvadd(cid, nc, 1000, input1_data, input2_data, results_data); barrier(nc): 24995 cycles, 24.9 cycles/iter, 2.4 CPI
-
-vvadd(cid, nc, 1000, results_data, input2_data, results_data); barrier(nc): 21622 cycles, 21.6 cycles/iter, 2.1 CPI
--------------------------------
-> Loaded 21304 bytes from ELF ../../testcases/riscv-tests/build/benchmarks/multiply.riscv
-> Using tohost at 60000000
-> Using fromhost at 60000040
-> Simulation started
-> ISA testsuite pass
-> Simulation finished
-> mcycle: 49040
-> minstret: 52261
-> IPC: 1.07
-> Simulation speed: 26208.37 mcycle/s
-> Issue queue empty cycle: 23.70% 100.00% 90.40% 100.00%
+> Simulation speed: 49197.63 mcycle/s
+> Issue queue empty cycle: 91.33% 19.53% 79.79% 100.00%
 > Issue queue full cycle: 0.00% 0.00% 0.00% 0.00%
-> Cycles when issue num is bounded by ROB size: 4.99%
-> Cycles when issue num is bounded by LSQ size: 0.01%
-> Issue Num: 0=23.40% 1=15.80% 2=60.80%
-> Retire Num: 0=37.18% 1=19.09% 2=43.73%
-mcycle = 21175
-minstret = 24991
+> Cycles when issue num is bounded by ROB size: 3.95%
+> Cycles when issue num is bounded by LSQ size: 3.78%
+> Issue num: 0=65.46% 1=19.11% 2=15.42%
+> Retire num: 0=67.15% 1=19.16% 2=13.69%
+> Memory access: 20096 bytes read, 352 bytes written
+C0: reg block 4x5x6, cache block 24x25x24
+C0: 24692 instructions
+C0: 51803 cycles
+C0: 28800 flops
+C0: 555 Mflops @ 1 GHz
 -------------------------------
-> Loaded 21128 bytes from ELF ../../testcases/riscv-tests/build/benchmarks/pmp.riscv
+> Loaded 22224 bytes from ELF ../../testcases/riscv-tests/build/benchmarks/mt-matmul.riscv
 > Using tohost at 60000000
 > Using fromhost at 60000040
 > Simulation started
 > ISA testsuite pass
 > Simulation finished
-> mcycle: 3163
-> minstret: 534
-> IPC: 0.17
-> Simulation speed: 25758.38 mcycle/s
-> Issue queue empty cycle: 88.14% 99.94% 95.42% 99.94%
+> mcycle: 49841
+> minstret: 33318
+> IPC: 0.67
+> Simulation speed: 48238.70 mcycle/s
+> Issue queue empty cycle: 16.30% 100.00% 48.39% 100.00%
+> Issue queue full cycle: 0.00% 0.00% 0.00% 0.00%
+> Cycles when issue num is bounded by ROB size: 55.70%
+> Cycles when issue num is bounded by LSQ size: 4.53%
+> Issue num: 0=41.38% 1=12.82% 2=45.80%
+> Retire num: 0=55.72% 1=21.72% 2=22.56%
+> Memory access: 7328 bytes read, 32 bytes written
+
+matmul(cid, nc, 16, input1_data, input2_data, results_data); barrier(nc): 37968 cycles, 9.2 cycles/iter, 1.3 CPI
+-------------------------------
+> Loaded 66600 bytes from ELF ../../testcases/riscv-tests/build/benchmarks/mt-memcpy.riscv
+> Using tohost at 60000000
+> Using fromhost at 60000040
+> Simulation started
+> ISA testsuite pass
+> Simulation finished
+> mcycle: 259219
+> minstret: 99242
+> IPC: 0.38
+> Simulation speed: 48809.32 mcycle/s
+> Issue queue empty cycle: 61.94% 100.00% 27.60% 100.00%
+> Issue queue full cycle: 0.00% 0.00% 0.00% 0.00%
+> Cycles when issue num is bounded by ROB size: 34.96%
+> Cycles when issue num is bounded by LSQ size: 60.06%
+> Issue num: 0=73.31% 1=13.76% 2=12.93%
+> Retire num: 0=73.90% 1=13.92% 2=12.18%
+> Memory access: 103264 bytes read, 800 bytes written
+
+memcpy(results_data + block * cid, input_data + block * cid, sizeof(long) * n); barrier(nc): 74128 cycles, 12.3 cycles/iter, 5.1 CPI
+-------------------------------
+> Loaded 43032 bytes from ELF ../../testcases/riscv-tests/build/benchmarks/mt-vvadd.riscv
+> Using tohost at 60000000
+> Using fromhost at 60000040
+> Simulation started
+> ISA testsuite pass
+> Simulation finished
+> mcycle: 104823
+> minstret: 44490
+> IPC: 0.42
+> Simulation speed: 49314.36 mcycle/s
+> Issue queue empty cycle: 58.23% 16.39% 26.37% 100.00%
+> Issue queue full cycle: 0.00% 0.00% 0.00% 0.00%
+> Cycles when issue num is bounded by ROB size: 88.35%
+> Cycles when issue num is bounded by LSQ size: 0.19%
+> Issue num: 0=67.73% 1=16.02% 2=16.26%
+> Retire num: 0=70.45% 1=16.66% 2=12.89%
+> Memory access: 35200 bytes read, 64 bytes written
+
+vvadd(cid, nc, 1000, input1_data, input2_data, results_data); barrier(nc): 27382 cycles, 27.3 cycles/iter, 2.7 CPI
+
+vvadd(cid, nc, 1000, results_data, input2_data, results_data); barrier(nc): 24109 cycles, 24.1 cycles/iter, 2.4 CPI
+-------------------------------
+> Loaded 19384 bytes from ELF ../../testcases/riscv-tests/build/benchmarks/multiply.riscv
+> Using tohost at 60000000
+> Using fromhost at 60000040
+> Simulation started
+> ISA testsuite pass
+> Simulation finished
+> mcycle: 45910
+> minstret: 50238
+> IPC: 1.09
+> Simulation speed: 47404.52 mcycle/s
+> Issue queue empty cycle: 24.29% 100.00% 94.08% 100.00%
+> Issue queue full cycle: 0.22% 0.00% 0.00% 0.00%
+> Cycles when issue num is bounded by ROB size: 4.54%
+> Cycles when issue num is bounded by LSQ size: 0.07%
+> Issue num: 0=23.95% 1=16.84% 2=59.21%
+> Retire num: 0=37.49% 1=15.62% 2=46.89%
+> Memory access: 4128 bytes read, 32 bytes written
+mcycle = 19353
+minstret = 24099
+-------------------------------
+> Loaded 19232 bytes from ELF ../../testcases/riscv-tests/build/benchmarks/pmp.riscv
+> Using tohost at 60000000
+> Using fromhost at 60000040
+> Simulation started
+> ISA testsuite pass
+> Simulation finished
+> mcycle: 3295
+> minstret: 496
+> IPC: 0.15
+> Simulation speed: 37063.28 mcycle/s
+> Issue queue empty cycle: 89.15% 99.94% 91.40% 99.94%
 > Issue queue full cycle: 0.03% 0.03% 0.03% 0.03%
-> Cycles when issue num is bounded by ROB size: 4.58%
-> Cycles when issue num is bounded by LSQ size: 0.88%
-> Issue Num: 0=88.07% 1=2.90% 2=9.02%
-> Retire Num: 0=88.42% 1=6.31% 2=5.27%
+> Cycles when issue num is bounded by ROB size: 10.06%
+> Cycles when issue num is bounded by LSQ size: 2.57%
+> Issue num: 0=89.34% 1=4.18% 2=6.48%
+> Retire num: 0=88.94% 1=7.09% 2=3.97%
+> Memory access: 1664 bytes read, 0 bytes written
 -------------------------------
-> Loaded 36672 bytes from ELF ../../testcases/riscv-tests/build/benchmarks/qsort.riscv
+> Loaded 34768 bytes from ELF ../../testcases/riscv-tests/build/benchmarks/qsort.riscv
 > Using tohost at 60000000
 > Using fromhost at 60000040
 > Simulation started
 > ISA testsuite pass
 > Simulation finished
-> mcycle: 346738
-> minstret: 263271
-> IPC: 0.76
-> Simulation speed: 25363.99 mcycle/s
-> Issue queue empty cycle: 19.56% 100.00% 57.48% 100.00%
-> Issue queue full cycle: 0.00% 0.00% 0.00% 0.00%
-> Cycles when issue num is bounded by ROB size: 31.24%
-> Cycles when issue num is bounded by LSQ size: 0.01%
-> Issue Num: 0=32.28% 1=7.36% 2=60.36%
-> Retire Num: 0=51.52% 1=21.04% 2=27.44%
-mcycle = 217714
-minstret = 153273
--------------------------------
-> Loaded 37128 bytes from ELF ../../testcases/riscv-tests/build/benchmarks/rsort.riscv
-> Using tohost at 60000000
-> Using fromhost at 60000040
-> Simulation started
-> ISA testsuite pass
-> Simulation finished
-> mcycle: 1040262
-> minstret: 367655
-> IPC: 0.35
-> Simulation speed: 24780.54 mcycle/s
-> Issue queue empty cycle: 1.74% 100.00% 4.68% 100.00%
-> Issue queue full cycle: 16.31% 0.00% 0.00% 0.00%
-> Cycles when issue num is bounded by ROB size: 77.69%
-> Cycles when issue num is bounded by LSQ size: 0.01%
-> Issue Num: 0=75.89% 1=12.71% 2=11.40%
-> Retire Num: 0=74.78% 1=15.11% 2=10.12%
-mcycle = 497395
-minstret = 174822
--------------------------------
-> Loaded 71616 bytes from ELF ../../testcases/riscv-tests/build/benchmarks/spmv.riscv
-> Using tohost at 60000000
-> Using fromhost at 60000040
-> Simulation started
-> ISA testsuite pass
-> Simulation finished
-> mcycle: 495076
-> minstret: 202197
-> IPC: 0.41
-> Simulation speed: 22939.69 mcycle/s
-> Issue queue empty cycle: 16.70% 29.41% 11.63% 77.04%
-> Issue queue full cycle: 0.01% 0.00% 0.00% 0.00%
-> Cycles when issue num is bounded by ROB size: 69.77%
+> mcycle: 327158
+> minstret: 232119
+> IPC: 0.71
+> Simulation speed: 48801.74 mcycle/s
+> Issue queue empty cycle: 19.29% 100.00% 51.69% 100.00%
+> Issue queue full cycle: 0.02% 0.00% 0.00% 0.00%
+> Cycles when issue num is bounded by ROB size: 27.45%
 > Cycles when issue num is bounded by LSQ size: 0.03%
-> Issue Num: 0=59.28% 1=6.57% 2=34.15%
-> Retire Num: 0=74.88% 1=9.41% 2=15.72%
+> Issue num: 0=29.76% 1=16.40% 2=53.84%
+> Retire num: 0=52.75% 1=23.54% 2=23.70%
+> Memory access: 19488 bytes read, 32 bytes written
+mcycle = 207105
+minstret = 123504
+-------------------------------
+> Loaded 35152 bytes from ELF ../../testcases/riscv-tests/build/benchmarks/rsort.riscv
+> Using tohost at 60000000
+> Using fromhost at 60000040
+> Simulation started
+> ISA testsuite pass
+> Simulation finished
+> mcycle: 1030311
+> minstret: 370623
+> IPC: 0.36
+> Simulation speed: 49184.26 mcycle/s
+> Issue queue empty cycle: 1.33% 100.00% 3.91% 100.00%
+> Issue queue full cycle: 22.31% 0.00% 0.00% 0.00%
+> Cycles when issue num is bounded by ROB size: 72.29%
+> Cycles when issue num is bounded by LSQ size: 0.72%
+> Issue num: 0=75.48% 1=12.84% 2=11.68%
+> Retire num: 0=74.78% 1=14.48% 2=10.75%
+> Memory access: 30208 bytes read, 384 bytes written
+mcycle = 495409
+minstret = 171161
+-------------------------------
+> Loaded 68992 bytes from ELF ../../testcases/riscv-tests/build/benchmarks/spmv.riscv
+> Using tohost at 60000000
+> Using fromhost at 60000040
+> Simulation started
+> ISA testsuite pass
+> Simulation finished
+> mcycle: 323926
+> minstret: 123519
+> IPC: 0.38
+> Simulation speed: 48814.89 mcycle/s
+> Issue queue empty cycle: 9.13% 20.40% 12.97% 100.00%
+> Issue queue full cycle: 0.04% 0.00% 0.00% 0.00%
+> Cycles when issue num is bounded by ROB size: 70.31%
+> Cycles when issue num is bounded by LSQ size: 0.01%
+> Issue num: 0=61.13% 1=8.43% 2=30.44%
+> Retire num: 0=75.91% 1=10.06% 2=14.04%
+> Memory access: 58240 bytes read, 384 bytes written
 Row: 500
 Col: 500
 NNZ: 2399
-Scalar: 59 Mflops @ 1 GHz
-Vector: 63 Mflops @ 1 GHz
-mcycle = 398139
-minstret = 164156
+Scalar: 63 Mflops @ 1 GHz
+mcycle = 230355
+minstret = 89651
 -------------------------------
-> Loaded 21160 bytes from ELF ../../testcases/riscv-tests/build/benchmarks/towers.riscv
+> Loaded 19304 bytes from ELF ../../testcases/riscv-tests/build/benchmarks/towers.riscv
 > Using tohost at 60000000
 > Using fromhost at 60000040
 > Simulation started
 > ISA testsuite pass
 > Simulation finished
-> mcycle: 20416
-> minstret: 10241
-> IPC: 0.50
-> Simulation speed: 15953.29 mcycle/s
-> Issue queue empty cycle: 29.14% 99.99% 35.43% 99.99%
-> Issue queue full cycle: 0.08% 0.00% 0.00% 0.00%
-> Cycles when issue num is bounded by ROB size: 16.34%
-> Cycles when issue num is bounded by LSQ size: 26.53%
-> Issue Num: 0=47.51% 1=17.87% 2=34.61%
-> Retire Num: 0=58.15% 1=33.56% 2=8.29%
-mcycle = 7267
-minstret = 4160
--------------------------------
-> Loaded 23640 bytes from ELF ../../testcases/riscv-tests/build/benchmarks/vvadd.riscv
-> Using tohost at 60000000
-> Using fromhost at 60000040
-> Simulation started
-> ISA testsuite pass
-> Simulation finished
-> mcycle: 16619
-> minstret: 8717
+> mcycle: 19760
+> minstret: 10278
 > IPC: 0.52
-> Simulation speed: 23591.49 mcycle/s
-> Issue queue empty cycle: 19.71% 99.99% 34.46% 99.99%
-> Issue queue full cycle: 0.04% 0.01% 0.01% 0.01%
-> Cycles when issue num is bounded by ROB size: 73.92%
-> Cycles when issue num is bounded by LSQ size: 0.08%
-> Issue Num: 0=64.56% 1=14.14% 2=21.31%
-> Retire Num: 0=65.90% 1=15.79% 2=18.32%
-mcycle = 4134
-minstret = 2723
+> Simulation speed: 45833.04 mcycle/s
+> Issue queue empty cycle: 31.38% 99.99% 30.15% 99.99%
+> Issue queue full cycle: 0.02% 0.01% 0.01% 0.01%
+> Cycles when issue num is bounded by ROB size: 12.63%
+> Cycles when issue num is bounded by LSQ size: 42.53%
+> Issue num: 0=50.80% 1=25.57% 2=23.62%
+> Retire num: 0=56.23% 1=35.55% 2=8.22%
+> Memory access: 3808 bytes read, 0 bytes written
+mcycle = 6605
+minstret = 4226
+-------------------------------
+> Loaded 42216 bytes from ELF ../../testcases/riscv-tests/build/benchmarks/vec-daxpy.riscv
+> Using tohost at 60000000
+> Using fromhost at 60000040
+> Simulation started
+[30350] %Error: meowv64.rocket.MeowV64SingleCoreConfig.v:125305: Assertion failed in TOP.RiscVSystem.top.tile_prci_domain.element_reset_domain.meowv64tile.core.exec.LSU: Assertion failed
+    at LSU.scala:807 assert(vectorBeats <= 2.U)
+
+%Error: meowv64.rocket.MeowV64SingleCoreConfig.v:125305: Verilog $stop
+Aborting...
+-------------------------------
+> Loaded 34120 bytes from ELF ../../testcases/riscv-tests/build/benchmarks/vec-memcpy.riscv
+> Using tohost at 60000000
+> Using fromhost at 60000040
+> Simulation started
+[29590] %Error: meowv64.rocket.MeowV64SingleCoreConfig.v:125305: Assertion failed in TOP.RiscVSystem.top.tile_prci_domain.element_reset_domain.meowv64tile.core.exec.LSU: Assertion failed
+    at LSU.scala:807 assert(vectorBeats <= 2.U)
+
+%Error: meowv64.rocket.MeowV64SingleCoreConfig.v:125305: Verilog $stop
+Aborting...
+-------------------------------
+> Loaded 31176 bytes from ELF ../../testcases/riscv-tests/build/benchmarks/vec-sgemm.riscv
+> Using tohost at 60000000
+> Using fromhost at 60000040
+> Simulation started
+> ISA testsuite pass
+> Simulation finished
+> mcycle: 99494
+> minstret: 41235
+> IPC: 0.41
+> Simulation speed: 48624.88 mcycle/s
+> Issue queue empty cycle: 73.40% 91.78% 83.59% 33.90%
+> Issue queue full cycle: 0.06% 0.00% 0.00% 0.00%
+> Cycles when issue num is bounded by ROB size: 93.39%
+> Cycles when issue num is bounded by LSQ size: 3.25%
+> Issue num: 0=74.28% 1=7.18% 2=18.54%
+> Retire num: 0=75.59% 1=7.37% 2=17.03%
+> Memory access: 20192 bytes read, 672 bytes written
+mcycle = 37786
+minstret = 15216
+-------------------------------
+> Loaded 18168 bytes from ELF ../../testcases/riscv-tests/build/benchmarks/vec-strcmp.riscv
+> Using tohost at 60000000
+> Using fromhost at 60000040
+> Simulation started
+> ISA testsuite failed case 1337
+> Simulation finished
+> mcycle: 3241
+> minstret: 404
+> IPC: 0.12
+> Simulation speed: 34305.37 mcycle/s
+> Issue queue empty cycle: 90.06% 99.94% 93.20% 99.94%
+> Issue queue full cycle: 0.03% 0.03% 0.03% 0.03%
+> Cycles when issue num is bounded by ROB size: 6.34%
+> Cycles when issue num is bounded by LSQ size: 2.49%
+> Issue num: 0=91.04% 1=3.23% 2=5.72%
+> Retire num: 0=90.67% 1=6.22% 2=3.11%
+> Memory access: 1760 bytes read, 0 bytes written
+-------------------------------
+> Loaded 21744 bytes from ELF ../../testcases/riscv-tests/build/benchmarks/vvadd.riscv
+> Using tohost at 60000000
+> Using fromhost at 60000040
+> Simulation started
+> ISA testsuite pass
+> Simulation finished
+> mcycle: 16517
+> minstret: 7992
+> IPC: 0.48
+> Simulation speed: 45080.62 mcycle/s
+> Issue queue empty cycle: 22.50% 99.99% 35.86% 99.99%
+> Issue queue full cycle: 0.01% 0.01% 0.01% 0.01%
+> Cycles when issue num is bounded by ROB size: 69.17%
+> Cycles when issue num is bounded by LSQ size: 0.21%
+> Issue num: 0=62.44% 1=18.52% 2=19.05%
+> Retire num: 0=65.49% 1=20.67% 2=13.84%
+> Memory access: 7392 bytes read, 128 bytes written
+mcycle = 3822
+minstret = 2415
