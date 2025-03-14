@@ -22,7 +22,11 @@ object CSRHelper {
     csr.readers("mimpid") := 0.U(csr.XLEN.W)
     csr.readers("misa") := 2.U(2.W) ## 0
       .U((csr.XLEN - 2 - 26).W) ## CSRHelper.buildExt("IMAFDCSUV").U(26.W)
-    csr.readers("mcounteren") := 0.U(csr.XLEN.W)
+    // allow cycle, time and instret to be read from S/U-mode
+    // validated by OpenSBI since v1.6 to enable time csr emulation
+    csr.readers("mcounteren") := 7.U(
+      csr.XLEN.W
+    )
     csr.readers("scounteren") := 0.U(csr.XLEN.W)
   }
 }
