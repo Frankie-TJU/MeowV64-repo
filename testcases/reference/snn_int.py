@@ -18,10 +18,10 @@ neuron_params = {}
 neuron_vars = {
     "V": -65 * 100,  # scaled by 100
     "U": -20 * 1000,  # scaled by 1000
-    "a": [2, 10, 2, 2],  # scaled by 100
-    "b": [2, 2, 2, 2],  # scaled by 10
-    "c": [-65, -65, -50, -55],
-    "d": [8, 2, 2, 4],
+    "a": 2,  # scaled by 100
+    "b": 2,  # scaled by 10
+    "c": -65,
+    "d": 8,
 }
 
 # from http://genn-team.github.io/genn/documentation/5/custom_models.html
@@ -66,15 +66,17 @@ neuron_model = pygenn.create_neuron_model(
     ],
 )
 
-neurons_per_population = 4
+neurons_per_population = 5
 
 pop1 = model.add_neuron_population(
     "Neurons1", neurons_per_population, neuron_model, neuron_params, neuron_vars
 )
+pop1.spike_recording_enabled = True
 
 pop2 = model.add_neuron_population(
     "Neurons2", neurons_per_population, neuron_model, neuron_params, neuron_vars
 )
+pop2.spike_recording_enabled = True
 
 sources_ini = {"startSpike": [0], "endSpike": [200]}
 sources = model.add_neuron_population("Sources", 1, "SpikeSourceArray", {}, sources_ini)
@@ -95,9 +97,9 @@ model.add_synapse_population(
     "SPARSE",
     pop1,
     pop2,
-    init_weight_update("StaticPulseConstantWeight", {"g": 10.0}),
+    init_weight_update("StaticPulseConstantWeight", {"g": 30.0}),
     init_postsynaptic("DeltaCurr", {}),
-    init_sparse_connectivity("FixedProbability", {"prob": 1.0}),
+    init_sparse_connectivity("FixedProbability", {"prob": 0.9}),
 )
 
 model.add_synapse_population(
@@ -105,14 +107,14 @@ model.add_synapse_population(
     "SPARSE",
     pop2,
     pop1,
-    init_weight_update("StaticPulseConstantWeight", {"g": 10.0}),
+    init_weight_update("StaticPulseConstantWeight", {"g": 30.0}),
     init_postsynaptic("DeltaCurr", {}),
-    init_sparse_connectivity("FixedProbability", {"prob": 1.0}),
+    init_sparse_connectivity("FixedProbability", {"prob": 0.9}),
 )
 
 
 model.build()
-model.load()
+model.load(num_recording_timesteps=2000)
 
 voltage = pop1.vars["V"]
 
@@ -121,6 +123,13 @@ while model.t < 2000.0:
     model.step_time()
     voltage.pull_from_device()
     voltages.append(voltage.values)
+
+model.pull_recording_buffers_from_device()
+
+print(
+    "Fire count: ",
+    len(pop1.spike_recording_data[0][0]) + len(pop2.spike_recording_data[0][0]),
+)
 
 # Stack voltages together into a 2000x4 matrix
 voltages = np.vstack(voltages)
