@@ -1,5 +1,7 @@
 # Buffets
 
+## Buffets
+
 Register Address Map:
 
 1. 0x00: HEAD
@@ -15,7 +17,7 @@ How to use:
 3. shrink data
 4. loop
 
-# Address Generation
+## Address Generation
 
 Address Map:
 
@@ -90,3 +92,26 @@ instructions:
 	2. \[26:25\]: rs1
 	3. \[24:23\]: rd
 	4. \[22:0\]: simm
+
+## L2 Buffets
+
+Connects to all L1 Buffets via TileLink
+
+Maintain head/tail pointers for each L1 Buffets, automatic fast path without explicit pop
+
+Only free space when all L1 Buffets bumped through the pointer
+
+L1 Buffets send a long unanswered TileLink request until data is ready
+
+Allow user to push data to L2 Buffets directly, or through Address Generation
+
+Allow large portion of data to be pushed to L2 Buffets atomically: 2 stage commit & fastpath
+
+By default, it is a broadcast interface: each L1 Buffets needs to read & acknowledge the data before L2 Buffets release the data
+
+Add additional capability to mask data out for specific L1 Buffets to allow multicast & unicast operation
+
+### Usage
+
+1. TLB Shootdown: One core send data to L2 Buffets with broadcast
+2. Distributed Data Structure: Send data to specified remote core via masking
