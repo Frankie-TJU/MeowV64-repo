@@ -14,7 +14,17 @@ from pygenn import (
     init_sparse_connectivity,
 )
 
-model = GeNNModel("float", "izhikevich")
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "-n", type=int, help="number of neurons per population", default=1024
+)
+args = parser.parse_args()
+
+neurons_per_population = args.n
+timesteps = 100000
+prob = 100
+
+model = GeNNModel("float", f"izhikevich_{neurons_per_population}")
 model.dt = 1.0  # scaled by 10
 
 neuron_params = {}
@@ -70,15 +80,6 @@ neuron_model = pygenn.create_neuron_model(
     ],
 )
 
-parser = argparse.ArgumentParser()
-parser.add_argument(
-    "-n", type=int, help="number of neurons per population", default=1024
-)
-args = parser.parse_args()
-
-neurons_per_population = args.n
-timesteps = 10000
-prob = 100
 
 pop1 = model.add_neuron_population(
     "Neurons1", neurons_per_population, neuron_model, neuron_params, neuron_vars
@@ -184,7 +185,7 @@ print(
 )
 
 # Stack voltages together into a 2000x4 matrix
-voltages = np.vstack(voltages)
+# voltages = np.vstack(voltages)
 # print(voltages)
 
 # Create figure with 4 axes

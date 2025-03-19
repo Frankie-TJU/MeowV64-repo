@@ -61,7 +61,7 @@ int main(int argc, char *argv[]) {
   N = 0;         // number of neurons
   P = 0;         // number of spike sources
   S = 0;         // number of synapses
-  T = 10000;     // number of timesteps
+  T = 100000;    // number of timesteps
   max_delay = 1; // maximum delay is 1
   dt = 1;
 
