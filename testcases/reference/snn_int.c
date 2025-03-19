@@ -69,6 +69,7 @@ int main(int argc, char *argv[]) {
   S = 0;         // number of synapses
   T = 100;       // number of timesteps
   max_delay = 1; // maximum delay is 1
+  dt = 1;
 
   int N1 = NEURONS_PER_POPULATION; // number of neurons in one population
   int prob = 10;                   // probability of synapse connection (1/10)
