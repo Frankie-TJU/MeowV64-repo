@@ -70,7 +70,8 @@ neuron_model = pygenn.create_neuron_model(
 )
 
 neurons_per_population = 1024
-timesteps = 1000
+timesteps = 10000
+prob = 100
 
 pop1 = model.add_neuron_population(
     "Neurons1", neurons_per_population, neuron_model, neuron_params, neuron_vars
@@ -121,7 +122,7 @@ model.add_synapse_population(
     pop2,
     init_weight_update("StaticPulseConstantWeight", {"g": 30.0}),
     init_postsynaptic("DeltaCurr", {}),
-    init_sparse_connectivity(custom_connect, {"prob": 10}),
+    init_sparse_connectivity(custom_connect, {"prob": prob}),
 )
 
 model.add_synapse_population(
@@ -131,10 +132,11 @@ model.add_synapse_population(
     pop1,
     init_weight_update("StaticPulseConstantWeight", {"g": 30.0}),
     init_postsynaptic("DeltaCurr", {}),
-    init_sparse_connectivity(custom_connect, {"prob": 10}),
+    init_sparse_connectivity(custom_connect, {"prob": prob}),
 )
 
 
+print("Initialize data")
 model.build()
 model.load(num_recording_timesteps=timesteps)
 
@@ -151,19 +153,32 @@ while model.t < timesteps:
     voltages.append(voltage.values)
 elapsed = time.time() - begin
 power = (pynvml.nvmlDeviceGetTotalEnergyConsumption(handle) - power_begin) / 1000
-print(f"{elapsed} seconds elapsed")
-print(f"{power} J, {power / elapsed} W used")
 
 model.pull_recording_buffers_from_device()
 
+# count synapses
+synapses = 0
+for id_pre in range(neurons_per_population):
+    for i in range(neurons_per_population):
+        x = id_pre * 2654435761
+        x ^= i * 2654435761
+        rand = x & 32767
+        if rand < 32767 / prob:
+            synapses += 2  # symmetric
+synapses += neurons_per_population # count sources to pop1
 print(
-    "Fire count: ",
+    f"Got {neurons_per_population * 2} neurons, {synapses} synapses, 1 spike sources, {timesteps} timesteps"
+)
+print(f"{elapsed} seconds elapsed")
+print(f"{power} J, {power / elapsed} W used")
+print(
+    "Fire rate:",
     len(pop1.spike_recording_data[0][0]) + len(pop2.spike_recording_data[0][0]),
 )
 
 # Stack voltages together into a 2000x4 matrix
 voltages = np.vstack(voltages)
-print(voltages)
+# print(voltages)
 
 # Create figure with 4 axes
 # fig, axes = plt.subplots(neurons_per_population, sharex=True, figsize=(15, 8))
