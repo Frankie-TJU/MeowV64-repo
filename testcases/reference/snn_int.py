@@ -1,6 +1,7 @@
 # from http://genn-team.github.io/genn/documentation/5/tutorials/comp_neuro_101/1_neurons.html#Build-model
 import numpy as np
 import matplotlib.pyplot as plt
+import argparse
 
 # install nvidia-ml-py from pypi
 import pynvml
@@ -69,7 +70,13 @@ neuron_model = pygenn.create_neuron_model(
     ],
 )
 
-neurons_per_population = 1024
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "-n", type=int, help="number of neurons per population", default=1024
+)
+args = parser.parse_args()
+
+neurons_per_population = args.n
 timesteps = 10000
 prob = 100
 
@@ -165,7 +172,7 @@ for id_pre in range(neurons_per_population):
         rand = x & 32767
         if rand < 32767 / prob:
             synapses += 2  # symmetric
-synapses += neurons_per_population # count sources to pop1
+synapses += neurons_per_population  # count sources to pop1
 print(
     f"Got {neurons_per_population * 2} neurons, {synapses} synapses, 1 spike sources, {timesteps} timesteps"
 )
