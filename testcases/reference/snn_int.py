@@ -3,19 +3,23 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import pygenn
-from pygenn import GeNNModel
+from pygenn import (
+    GeNNModel,
+    init_weight_update,
+    init_postsynaptic,
+    init_sparse_connectivity,
+)
 
 model = GeNNModel("float", "izhikevich")
-model.dt = 1.0 # scaled by 10
+model.dt = 1.0  # scaled by 10
 
-neuron_params = {
-}
+neuron_params = {}
 
 neuron_vars = {
-    "V": -65 * 100, # scaled by 100
-    "U": -20 * 1000, # scaled by 1000
-    "a": [2, 10, 2, 2], # scaled by 100
-    "b": [2, 2, 2, 2], # scaled by 10
+    "V": -65 * 100,  # scaled by 100
+    "U": -20 * 1000,  # scaled by 1000
+    "a": [2, 10, 2, 2],  # scaled by 100
+    "b": [2, 2, 2, 2],  # scaled by 10
     "c": [-65, -65, -50, -55],
     "d": [8, 2, 2, 4],
 }
@@ -62,17 +66,55 @@ neuron_model = pygenn.create_neuron_model(
     ],
 )
 
+neurons_per_population = 4
 
-pop = model.add_neuron_population(
-    "Neurons", 4, neuron_model, neuron_params, neuron_vars
+pop1 = model.add_neuron_population(
+    "Neurons1", neurons_per_population, neuron_model, neuron_params, neuron_vars
 )
 
-model.add_current_source("CurrentSource", "DC", pop, {"amp": 10.0}, {})
+pop2 = model.add_neuron_population(
+    "Neurons2", neurons_per_population, neuron_model, neuron_params, neuron_vars
+)
+
+sources_ini = {"startSpike": [0], "endSpike": [200]}
+sources = model.add_neuron_population("Sources", 1, "SpikeSourceArray", {}, sources_ini)
+sources.extra_global_params["spikeTimes"].set_init_values(np.arange(0, 2000, 10))
+
+model.add_synapse_population(
+    "SourceToPop1",
+    "SPARSE",
+    sources,
+    pop1,
+    init_weight_update("StaticPulseConstantWeight", {"g": 100.0}),
+    init_postsynaptic("DeltaCurr", {}),
+    init_sparse_connectivity("FixedProbability", {"prob": 1.0}),
+)
+
+model.add_synapse_population(
+    "Pop1ToPop2",
+    "SPARSE",
+    pop1,
+    pop2,
+    init_weight_update("StaticPulseConstantWeight", {"g": 10.0}),
+    init_postsynaptic("DeltaCurr", {}),
+    init_sparse_connectivity("FixedProbability", {"prob": 1.0}),
+)
+
+model.add_synapse_population(
+    "Pop2ToPop1",
+    "SPARSE",
+    pop2,
+    pop1,
+    init_weight_update("StaticPulseConstantWeight", {"g": 10.0}),
+    init_postsynaptic("DeltaCurr", {}),
+    init_sparse_connectivity("FixedProbability", {"prob": 1.0}),
+)
+
 
 model.build()
 model.load()
 
-voltage = pop.vars["V"]
+voltage = pop1.vars["V"]
 
 voltages = []
 while model.t < 2000.0:
@@ -84,13 +126,12 @@ while model.t < 2000.0:
 voltages = np.vstack(voltages)
 
 # Create figure with 4 axes
-fig, axes = plt.subplots(4, sharex=True, figsize=(15, 8))
+fig, axes = plt.subplots(neurons_per_population, sharex=True, figsize=(15, 8))
 
 # Plot voltages of each neuron in
-for i, t in enumerate(["RS", "FS", "CH", "IB"]):
-    axes[i].set_title(t)
+for i in range(neurons_per_population):
     axes[i].set_ylabel("V [mV]")
-    axes[i].plot(np.arange(0.0, 200.0, 0.1), voltages[:, i])
+    axes[i].plot(np.arange(0.0, 2000.0, model.dt), voltages[:, i])
 
 axes[-1].set_xlabel("Time [ms]")
 
