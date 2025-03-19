@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import pygenn
+import time
 from pygenn import (
     GeNNModel,
     init_weight_update,
@@ -66,8 +67,8 @@ neuron_model = pygenn.create_neuron_model(
     ],
 )
 
-neurons_per_population = 10
-timesteps = 2000
+neurons_per_population = 1024
+timesteps = 1000
 
 pop1 = model.add_neuron_population(
     "Neurons1", neurons_per_population, neuron_model, neuron_params, neuron_vars
@@ -138,10 +139,13 @@ model.load(num_recording_timesteps=timesteps)
 voltage = pop1.vars["V"]
 
 voltages = []
+begin = time.time()
 while model.t < timesteps:
     model.step_time()
     voltage.pull_from_device()
     voltages.append(voltage.values)
+elapsed = time.time() - begin
+print(f"{elapsed} seconds elapsed")
 
 model.pull_recording_buffers_from_device()
 
@@ -155,13 +159,13 @@ voltages = np.vstack(voltages)
 print(voltages)
 
 # Create figure with 4 axes
-fig, axes = plt.subplots(neurons_per_population, sharex=True, figsize=(15, 8))
+# fig, axes = plt.subplots(neurons_per_population, sharex=True, figsize=(15, 8))
 
 # Plot voltages of each neuron in
-for i in range(neurons_per_population):
-    axes[i].set_ylabel("V [mV]")
-    axes[i].plot(np.arange(0.0, timesteps, model.dt), voltages[:, i])
+# for i in range(neurons_per_population):
+#     axes[i].set_ylabel("V [mV]")
+#     axes[i].plot(np.arange(0.0, timesteps, model.dt), voltages[:, i])
 
-axes[-1].set_xlabel("Time [ms]")
+# axes[-1].set_xlabel("Time [ms]")
 
-plt.savefig("plot.png")
+# plt.savefig("plot.png")

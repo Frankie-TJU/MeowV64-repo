@@ -34,7 +34,7 @@ struct Neuron {
 };
 
 #ifndef NEURONS_PER_POPULATION
-#define NEURONS_PER_POPULATION 10
+#define NEURONS_PER_POPULATION 5
 #endif
 
 // [time][neuron]
@@ -209,10 +209,10 @@ int main(int argc, char *argv[]) {
     }
 
     printf_("Timestep %d fire %d times\r\n", t, fire_count);
-    for (int n = 0; n < NEURONS_PER_POPULATION; n++) {
-      printf_("%s%d", (n == 0 ? "" : " "), neurons[n].v);
-    }
-    printf_("\n");
+    // for (int n = 0; n < NEURONS_PER_POPULATION; n++) {
+    //   printf_("%s%d", (n == 0 ? "" : " "), neurons[n].v);
+    // }
+    // printf_("\n");
     sum_fire_count += fire_count;
   }
 
