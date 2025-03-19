@@ -34,14 +34,14 @@ struct Neuron {
 };
 
 #ifndef NEURONS_PER_POPULATION
-#define NEURONS_PER_POPULATION 1
+#define NEURONS_PER_POPULATION 2
 #endif
 
 // [time][neuron]
-#define MAX_TIME 10000
-#define MAX_NEURON 1024
+#define MAX_TIME 200
+#define MAX_NEURON 2048
 #define MAX_SOURCES 1024
-#define MAX_SYNAPSES 1024
+#define MAX_SYNAPSES 262144
 int input[MAX_TIME][MAX_NEURON];
 
 struct Neuron neurons[MAX_NEURON];
@@ -61,12 +61,12 @@ int main(int argc, char *argv[]) {
   N = 0;         // number of neurons
   P = 0;         // number of spike sources
   S = 0;         // number of synapses
-  T = 10;       // number of timesteps
+  T = 200;       // number of timesteps
   max_delay = 1; // maximum delay is 1
   dt = 1;
 
   int N1 = NEURONS_PER_POPULATION; // number of neurons in one population
-  int prob = 10;                   // probability of synapse connection (1/10)
+  int prob = 100;                  // probability of synapse connection (1/10)
 
   // init data
   printf_("Initialize data\r\n");
@@ -150,7 +150,7 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  assert(N < MAX_NEURON);
+  assert(N <= MAX_NEURON);
 
   printf_("Got %d neurons, %d synapses, %d spike sources, %d timesteps\r\n", N,
           S, P, T);
@@ -177,13 +177,18 @@ int main(int argc, char *argv[]) {
       int old_v = neurons[n].v;
       int old_u = neurons[n].u;
       int new_v = old_v;
-      int new_u = new_u;
+      int new_u = old_u;
       if (new_v >= 30 * vscale) {
         new_v = neurons[n].c * vscale;
         new_u += neurons[n].d * uscale;
       }
-      new_v = new_v + dt * (new_v * new_v / vscale / 25 + 5 * new_v + 140 * vscale - new_u * vscale / uscale + input[t % (max_delay + 1)][n] * vscale) / 10;
-      new_u = new_u + (neurons[n].b * new_v * uscale / vscale / 10 - new_u) * neurons[n].a * dt / bscale / ascale;
+      new_v = new_v + dt *
+                          (new_v * new_v / vscale / 25 + 5 * new_v +
+                           140 * vscale - new_u * vscale / uscale +
+                           input[t % (max_delay + 1)][n] * vscale) /
+                          10;
+      new_u = new_u + (neurons[n].b * new_v * uscale / vscale / 10 - new_u) *
+                          neurons[n].a * dt / bscale / ascale;
 
       input[t % (max_delay + 1)][n] = 0.0;
 

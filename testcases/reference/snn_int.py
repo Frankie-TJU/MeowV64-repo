@@ -53,7 +53,7 @@ neuron_model = pygenn.create_neuron_model(
         V = iV;
         U = iU;
         """,
-    threshold_condition_code="V >= 30",
+    threshold_condition_code="V >= 30 * 100",
     reset_code="""
         """,
     vars=[
@@ -67,7 +67,7 @@ neuron_model = pygenn.create_neuron_model(
 )
 
 neurons_per_population = 2
-timesteps = 30
+timesteps = 200
 
 pop1 = model.add_neuron_population(
     "Neurons1", neurons_per_population, neuron_model, neuron_params, neuron_vars
