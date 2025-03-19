@@ -1,3 +1,8 @@
+# install genn:
+# 1. clone genn, checkout to release version
+# 2. install: numpy pybind11 psutil
+# 3. run CUDA_PATH=/usr/local/cuda python3 setup.py install under genn
+# 4. run CUDA_PATH=/usr/local/cuda python3 snn_int.py
 # from http://genn-team.github.io/genn/documentation/5/tutorials/comp_neuro_101/1_neurons.html#Build-model
 import numpy as np
 import matplotlib.pyplot as plt
