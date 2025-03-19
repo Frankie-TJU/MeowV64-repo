@@ -2,6 +2,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+# install nvidia-ml-py from pypi
+import pynvml
 import pygenn
 import time
 from pygenn import (
@@ -139,13 +141,18 @@ model.load(num_recording_timesteps=timesteps)
 voltage = pop1.vars["V"]
 
 voltages = []
+pynvml.nvmlInit()
+handle = pynvml.nvmlDeviceGetHandleByIndex(0)
+power_begin = pynvml.nvmlDeviceGetTotalEnergyConsumption(handle)
 begin = time.time()
 while model.t < timesteps:
     model.step_time()
     voltage.pull_from_device()
     voltages.append(voltage.values)
 elapsed = time.time() - begin
+power = (pynvml.nvmlDeviceGetTotalEnergyConsumption(handle) - power_begin) / 1000
 print(f"{elapsed} seconds elapsed")
+print(f"{power} J, {power / elapsed} W used")
 
 model.pull_recording_buffers_from_device()
 
