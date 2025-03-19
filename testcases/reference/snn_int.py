@@ -66,8 +66,8 @@ neuron_model = pygenn.create_neuron_model(
     ],
 )
 
-neurons_per_population = 2
-timesteps = 200
+neurons_per_population = 10
+timesteps = 2000
 
 pop1 = model.add_neuron_population(
     "Neurons1", neurons_per_population, neuron_model, neuron_params, neuron_vars

@@ -34,11 +34,11 @@ struct Neuron {
 };
 
 #ifndef NEURONS_PER_POPULATION
-#define NEURONS_PER_POPULATION 2
+#define NEURONS_PER_POPULATION 10
 #endif
 
 // [time][neuron]
-#define MAX_TIME 200
+#define MAX_TIME 2000
 #define MAX_NEURON 2048
 #define MAX_SOURCES 1024
 #define MAX_SYNAPSES 262144
@@ -61,7 +61,7 @@ int main(int argc, char *argv[]) {
   N = 0;         // number of neurons
   P = 0;         // number of spike sources
   S = 0;         // number of synapses
-  T = 200;       // number of timesteps
+  T = 2000;      // number of timesteps
   max_delay = 1; // maximum delay is 1
   dt = 1;
 
@@ -209,7 +209,10 @@ int main(int argc, char *argv[]) {
     }
 
     printf_("Timestep %d fire %d times\r\n", t, fire_count);
-    printf_("%d %d\n", neurons[0].v, neurons[1].v);
+    for (int n = 0; n < NEURONS_PER_POPULATION; n++) {
+      printf_("%s%d", (n == 0 ? "" : " "), neurons[n].v);
+    }
+    printf_("\n");
     sum_fire_count += fire_count;
   }
 
