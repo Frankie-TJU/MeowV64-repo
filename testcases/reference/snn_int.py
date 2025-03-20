@@ -23,10 +23,13 @@ parser = argparse.ArgumentParser()
 parser.add_argument(
     "-n", type=int, help="number of neurons per population", default=1024
 )
+parser.add_argument(
+    "-t", type=int, help="number of timesteps", default=100000
+)
 args = parser.parse_args()
 
 neurons_per_population = args.n
-timesteps = 100000
+timesteps = args.t
 prob = 100
 
 model = GeNNModel("float", f"izhikevich_{neurons_per_population}")
@@ -155,17 +158,29 @@ model.load(num_recording_timesteps=timesteps)
 
 voltage = pop1.vars["V"]
 
-voltages = []
 pynvml.nvmlInit()
 handle = pynvml.nvmlDeviceGetHandleByIndex(0)
-power_begin = pynvml.nvmlDeviceGetTotalEnergyConsumption(handle)
+get_energy_supported = False
+
+try:
+    pynvml.nvmlDeviceGetTotalEnergyConsumption(handle)
+    get_energy_supported = True
+except pynvml.NVMLError_NotSupported:
+    pass
+
+voltages = []
+if get_energy_supported:
+    power_begin = pynvml.nvmlDeviceGetTotalEnergyConsumption(handle)
 begin = time.time()
 while model.t < timesteps:
     model.step_time()
     voltage.pull_from_device()
     voltages.append(voltage.values)
 elapsed = time.time() - begin
-power = (pynvml.nvmlDeviceGetTotalEnergyConsumption(handle) - power_begin) / 1000
+if get_energy_supported:
+    power_j = (pynvml.nvmlDeviceGetTotalEnergyConsumption(handle) - power_begin) / 1000
+else:
+    power_w = pynvml.nvmlDeviceGetPowerUsage(handle) / 1000
 
 model.pull_recording_buffers_from_device()
 
@@ -183,7 +198,10 @@ print(
     f"Got {neurons_per_population * 2} neurons, {synapses} synapses, 1 spike sources, {timesteps} timesteps"
 )
 print(f"{elapsed} seconds elapsed")
-print(f"{power} J, {power / elapsed} W used")
+if get_energy_supported:
+    print(f"{power_j} J, {power_j / elapsed} W")
+else:
+    print(f"{power_w} W")
 print(
     "Fire rate:",
     len(pop1.spike_recording_data[0][0]) + len(pop2.spike_recording_data[0][0]),

@@ -1,0 +1,3 @@
+matplotlib
+nvidia-ml-py
+numpy
