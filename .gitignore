@@ -374,3 +374,4 @@ firrtl_black_box_resource_files.f
 emu
 emu-compile/
 compile_commands.json
+venv/
