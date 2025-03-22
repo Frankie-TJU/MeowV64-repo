@@ -170,34 +170,20 @@ int main(int hartid) {
 
   if (hartid == 0)
     printf_("Run spmv vector buffets\r\n");
-  before = read_csr(mcycle);
-  global_sync_nodata(hartid);
-  assert(spmv_buffets_rvv(hartid, N, val, idx, x, ptr, y2) == 0);
-  global_sync_nodata(hartid);
-  unsigned long elapsed_buffets_rvv = read_csr(mcycle) - before;
+
+  int repeat = 10;
+  unsigned long elapsed_buffets_rvv = 0;
+  for (int i = 0; i < repeat; i++) {
+    before = read_csr(mcycle);
+    global_sync_nodata(hartid);
+    assert(spmv_buffets_rvv(hartid, N, val, idx, x, ptr, y2) == 0);
+    global_sync_nodata(hartid);
+    elapsed_buffets_rvv += read_csr(mcycle) - before;
+  }
 
   if (hartid == 0) {
-    // for (int i = 0; i < N; i++) {
-    //   float diff = (y1[i] - y2[i]) / max(y1[i], y2[i]);
-    //   if (diff > 1e-5 || diff < -1e-5) {
-    //     printf_("y1 vs y2 Mismatch: %f vs %f\r\n", y1[i], y2[i]);
-    //     return 1;
-    //   }
-    // }
-
-    // printf_("Result is validated\r\n");
-
-    // printf_("Perf spmv scalar: %d cycles\r\n", elapsed_scalar);
+    elapsed_buffets_rvv /= repeat;
     printf_("Perf spmv vector buffets: %d cycles\r\n", elapsed_buffets_rvv);
-
-    // printf_("Result: [%f", y2[0]);
-    // for (int i = 1; i < N; i++) {
-    //   printf_(", %f", y2[i]);
-    // }
-    // printf_("]\r\n");
-
-    // printf_("Perf spmv scalar: %d cycles\r\n", elapsed_scalar);
-    // printf_("Perf spmv vector buffets: %d cycles\r\n", elapsed_buffets_rvv);
   } else {
     spin();
   }
