@@ -186,7 +186,11 @@ int main() {
 
   // 打印执行时间
   printf("Duration: %.10f s.\n", seconds);
+  printf("FLOP: %d FLOPS.\n", NNZ * 2);
+  printf("Perf: %.3f GFLOPS.\n", (double)NNZ * 2 / seconds / 1000000000.0);
   printf("Power: %.3f W.\n", (double)power / 1000);
+  printf("Perf/Power: %.3f GFLOPS/W.\n",
+         (double)NNZ * 2 / seconds / 1000000000.0 / (double)power * 1000);
 
   // 将结果写入文件
   fprintf(fp, "Result: [%f", h_y[0]);
