@@ -1,6 +1,7 @@
 // Author: Chu Xu
 // Build with:
-// /usr/local/cuda/bin/nvcc spmv.cu -o spmv -lcusparse
+// /usr/local/cuda/bin/nvcc spmv.cu -o spmv -lcusparse -lnvidia-ml
+// optionally, add -DN=xxx and -DNNZ=xxx
 
 #include <assert.h>
 #include <cuda_runtime.h>
@@ -8,6 +9,8 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#include <nvml.h>
 
 #ifndef N
 #define N 2048
@@ -42,6 +45,16 @@ __host__ __device__ static uint64_t lfsr63(uint64_t x) {
     }                                                                          \
   } while (0)
 
+#define CHECK_NVML(call)                                                       \
+  do {                                                                         \
+    nvmlReturn_t err = call;                                                   \
+    if (err != NVML_SUCCESS) {                                                 \
+      printf("NVML error at %s:%d: %s\n", __FILE__, __LINE__,                  \
+             nvmlErrorString(err));                                            \
+      exit(1);                                                                 \
+    }                                                                          \
+  } while (0)
+
 int main() {
   // 创建输出文件
   FILE *fp = fopen("out_GPU.log", "w");
@@ -49,6 +62,11 @@ int main() {
     printf("Error opening output file\n");
     return 1;
   }
+
+  // NVML 初始化
+  nvmlDevice_t device;
+  CHECK_NVML(nvmlInit_v2());
+  CHECK_NVML(nvmlDeviceGetHandleByIndex_v2(0, &device));
 
   // CPU内存分配和初始化
   float *h_val = new float[NNZ];
@@ -155,6 +173,9 @@ int main() {
   CHECK_CUDA(cudaEventRecord(stop));
   CHECK_CUDA(cudaEventSynchronize(stop));
 
+  unsigned int power;
+  CHECK_NVML(nvmlDeviceGetPowerUsage(device, &power));
+
   // 计算执行时间
   float milliseconds = 0;
   CHECK_CUDA(cudaEventElapsedTime(&milliseconds, start, stop));
@@ -165,6 +186,7 @@ int main() {
 
   // 打印执行时间
   printf("Duration: %.10f s.\n", seconds);
+  printf("Power: %.3f W.\n", (double)power / 1000);
 
   // 将结果写入文件
   fprintf(fp, "Result: [%f", h_y[0]);
